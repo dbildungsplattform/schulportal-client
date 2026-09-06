@@ -1,4 +1,5 @@
 import routes from '@/router/routes';
+import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
 import { RollenArt, useRolleStore, type RolleStore } from '@/stores/RolleStore';
 import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
@@ -14,12 +15,14 @@ type MptRollenManagementViewVm = {
 };
 
 let router: Router;
+let authStore: AuthStore;
 let rolleStore: RolleStore;
 let organisationStore: OrganisationStore;
 let searchFilterStore: SearchFilterStore;
+let wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> | null = null;
 
 function mountComponent(): VueWrapper<InstanceType<typeof MptRollenManagementView>> {
-  return mount(MptRollenManagementView, {
+  wrapper = mount(MptRollenManagementView, {
     attachTo: document.getElementById('app') || '',
     global: {
       components: {
@@ -28,9 +31,10 @@ function mountComponent(): VueWrapper<InstanceType<typeof MptRollenManagementVie
       plugins: [router],
     },
   });
+  return wrapper;
 }
 
-beforeEach(async () => {
+beforeEach(async (): Promise<void> => {
   document.body.innerHTML = `
     <div>
       <div id="app"></div>
@@ -45,19 +49,25 @@ beforeEach(async () => {
   router.push('/admin/rollen/mpt');
   await router.isReady();
 
+  authStore = useAuthStore();
   rolleStore = useRolleStore();
   organisationStore = useOrganisationStore();
   searchFilterStore = useSearchFilterStore();
 
+  authStore.$reset();
   rolleStore.$reset();
   organisationStore.$reset();
   searchFilterStore.$reset();
+  authStore.hasRollenerweiternPermission = true;
 
   vi.spyOn(rolleStore, 'getAllRollen').mockResolvedValue();
   vi.spyOn(organisationStore, 'getOrganisationById').mockResolvedValue();
 });
 
-afterEach(() => {
+afterEach((): void => {
+  wrapper?.unmount();
+  wrapper = null;
+  vi.restoreAllMocks();
   document.body.innerHTML = '';
 });
 
@@ -100,6 +110,51 @@ describe('MptRollenManagementView', () => {
     expect(wrapper.text()).toContain('Rollenname');
     expect(wrapper.text()).toContain('Rollenart');
     expect(wrapper.find('[data-testid="rolle-management-title"]').exists()).toBe(false);
+  });
+
+  it('navigates to the role details with the selected school', async () => {
+    const schuleId: string = DoFactory.getSchule().id;
+    const rolle: ReturnType<typeof DoFactory.getRolleWithServiceProviders> = DoFactory.getRolleWithServiceProviders();
+    searchFilterStore.selectedSchuleForMptRollen = schuleId;
+    rolleStore.allRollen = [rolle];
+    rolleStore.totalRollen = 1;
+    const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
+    await flushPromises();
+    const routerPushSpy: ReturnType<typeof vi.spyOn> = vi.spyOn(router, 'push').mockResolvedValue();
+
+    const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' });
+    resultTable.vm.$emit('onHandleRowClick', new PointerEvent('click'), {
+      item: {
+        id: rolle.id,
+        name: rolle.name,
+        rollenart: rolle.rollenart,
+      },
+    });
+    await flushPromises();
+
+    expect(routerPushSpy).toHaveBeenCalledWith({
+      name: 'mpt-rolle-details',
+      params: { id: rolle.id },
+      query: { orga: schuleId },
+    });
+  });
+
+  it('disables role navigation without permission to extend roles', async () => {
+    authStore.hasRollenerweiternPermission = false;
+    const rolle: ReturnType<typeof DoFactory.getRolleWithServiceProviders> = DoFactory.getRolleWithServiceProviders();
+    searchFilterStore.selectedSchuleForMptRollen = DoFactory.getSchule().id;
+    const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
+    await flushPromises();
+    const routerPushSpy: ReturnType<typeof vi.spyOn> = vi.spyOn(router, 'push').mockResolvedValue();
+
+    const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' });
+    const resultTableProps: { disableRowClick?: boolean } = resultTable.props();
+    expect(resultTableProps.disableRowClick).toBe(true);
+    resultTable.vm.$emit('onHandleRowClick', new PointerEvent('click'), {
+      item: { id: rolle.id, name: rolle.name, rollenart: rolle.rollenart },
+    });
+    await flushPromises();
+    expect(routerPushSpy).not.toHaveBeenCalled();
   });
 
   it('sorts by rollenart and then by rollenname', async () => {

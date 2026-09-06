@@ -48,7 +48,9 @@ describe('serviceProviderStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     serviceProviderStore = useServiceProviderStore();
+    serviceProviderStore.$reset();
     mockadapter.reset();
+    vi.restoreAllMocks();
   });
 
   it('should initalize state correctly', () => {
@@ -184,6 +186,51 @@ describe('serviceProviderStore', () => {
       await getAllServiceProvidersPromise;
       expect(serviceProviderStore.allServiceProviders).toEqual([]);
       expect(serviceProviderStore.errorCode).toEqual('some mock server error');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+  });
+
+  describe('getServiceProvidersForRollenerweiterung', () => {
+    const organisationId: string = faker.string.uuid();
+
+    it('should load service providers allowed for role extensions', async () => {
+      const serviceProvider: ServiceProviderResponse = DoFactory.getServiceProviderResponse();
+      serviceProviderStore.allServiceProviders = [DoFactory.getStartPageServiceProvider()];
+      mockadapter.onGet().replyOnce(200, {
+        total: 1,
+        offset: 0,
+        limit: 1,
+        items: [serviceProvider],
+      });
+
+      const promise: Promise<void> = serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId);
+      expect(serviceProviderStore.loading).toBe(true);
+      expect(serviceProviderStore.allServiceProviders).toEqual([]);
+      await promise;
+
+      const requestUrl: string = mockadapter.history.get[0]?.url ?? '';
+      expect(requestUrl).toContain(`organisationId=${organisationId}`);
+      expect(requestUrl).toContain('ROLLEN_ERWEITERN');
+      expect(serviceProviderStore.allServiceProviders).toEqual([serviceProvider]);
+      expect(serviceProviderStore.errorCode).toBe('');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle an unstructured error', async () => {
+      mockadapter.onGet().replyOnce(500, 'server error');
+
+      await serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId);
+
+      expect(serviceProviderStore.errorCode).toBe('UNSPECIFIED_ERROR');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle a structured error', async () => {
+      mockadapter.onGet().replyOnce(500, { code: 'SERVICE_PROVIDER_LOADING_ERROR' });
+
+      await serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId);
+
+      expect(serviceProviderStore.errorCode).toBe('SERVICE_PROVIDER_LOADING_ERROR');
       expect(serviceProviderStore.loading).toBe(false);
     });
   });
@@ -754,7 +801,7 @@ describe('serviceProviderStore', () => {
         kategorie: filter.kategorie,
         requires2fa: filter.requires2fa,
         merkmale: filter.merkmale,
-        rollenartenWhitelist: filter.rollenartenWhitelist,
+        rollenartenWhitelist: filter.rollenartenWhitelist ?? [],
       };
 
       mockadapter.onPost(url).replyOnce(200, mockResponse);

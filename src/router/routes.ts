@@ -147,6 +147,19 @@ const routes: readonly RouteRecordRaw[] = [
     },
   },
   {
+    path: '/admin/rollen/mpt/:id',
+    name: 'mpt-rolle-details',
+    component: () => import('../views/admin/rollen/MptRolleDetailsView.vue'),
+    meta: {
+      layout: 'AdminLayout',
+      requiresAuth: true,
+      requiredStepUpLevel: StepUpLevel.GOLD,
+      requiresPermission: 'schulspezifischeangebotsverwaltung',
+      requiresOrga: true,
+      missingOrgaRedirect: { name: 'mpt-rolle-management' },
+    },
+  },
+  {
     path: '/admin/rollen/:id',
     name: 'rolle-details',
     component: () => import('../views/admin/rollen/RolleDetailsView.vue'),
