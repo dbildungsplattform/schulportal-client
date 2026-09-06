@@ -69,12 +69,10 @@ describe('MptRolleDetailsView', (): void => {
     expect(wrapper?.text()).toContain(`Rolle bearbeiten ${schule.name}`);
     expect(wrapper?.text()).toContain(rolle.name);
     expect(wrapper?.text()).toContain(existingServiceProvider.name);
-    expect(wrapper?.find('[data-testid="angebot-selection-tree"]').exists()).toBe(false);
-    expect(wrapper?.find('[data-testid="mpt-rolle-edit-button"]').exists()).toBe(true);
+    expect(wrapper?.find('[data-testid="angebot-selection-tree"]').exists()).toBe(true);
   });
 
   it('persists added and removed service provider ids', async (): Promise<void> => {
-    await wrapper!.find('[data-testid="mpt-rolle-edit-button"]').trigger('click');
     const treeview: VueWrapper = wrapper!.findComponent({ name: 'AngebotSelectionTreeview' });
     treeview.vm.$emit('update:selectedServiceProviderIds', [availableServiceProvider.id]);
     await wrapper!.find('[data-testid="mpt-rolle-save-button"]').trigger('click');
@@ -94,7 +92,6 @@ describe('MptRolleDetailsView', (): void => {
       return Promise.resolve();
     });
 
-    await wrapper!.find('[data-testid="mpt-rolle-edit-button"]').trigger('click');
     await wrapper!.find('[data-testid="mpt-rolle-save-button"]').trigger('click');
     await flushPromises();
 
@@ -102,17 +99,20 @@ describe('MptRolleDetailsView', (): void => {
     expect(wrapper?.find('[data-testid="mpt-rolle-save-success-close-button"]').exists()).toBe(false);
   });
 
-  it('closes the treeview when cancel is clicked', async (): Promise<void> => {
-    await wrapper!.find('[data-testid="mpt-rolle-edit-button"]').trigger('click');
+  it('resets changed selections when cancel is clicked', async (): Promise<void> => {
     const treeview: VueWrapper = wrapper!.findComponent({ name: 'AngebotSelectionTreeview' });
     treeview.vm.$emit('update:selectedServiceProviderIds', [availableServiceProvider.id]);
 
     await wrapper!.find('[data-testid="mpt-rolle-cancel-button"]').trigger('click');
+    await wrapper!.find('[data-testid="mpt-rolle-save-button"]').trigger('click');
     await flushPromises();
 
-    expect(wrapper?.find('[data-testid="angebot-selection-tree"]').exists()).toBe(false);
-    expect(wrapper?.find('[data-testid="mpt-rolle-edit-button"]').exists()).toBe(true);
-    expect(rolleStore.persistRollenerweiterungenForRolle).not.toHaveBeenCalled();
+    expect(rolleStore.persistRollenerweiterungenForRolle).toHaveBeenCalledWith({
+      rolleId: rolle.id,
+      organisationId: schule.id,
+      existingServiceProviderIds: [existingServiceProvider.id],
+      selectedServiceProviderIds: [existingServiceProvider.id],
+    });
   });
 
   it('returns to MPT role management when the card is closed', async (): Promise<void> => {
@@ -147,7 +147,6 @@ describe('MptRolleDetailsView', (): void => {
 
   it('renders an empty tree and hides saving when the provider state is temporarily undefined', async (): Promise<void> => {
     Reflect.set(serviceProviderStore, 'allServiceProviders', undefined);
-    await wrapper!.find('[data-testid="mpt-rolle-edit-button"]').trigger('click');
     await flushPromises();
 
     expect(wrapper?.find('[data-testid="angebot-selection-tree-empty"]').exists()).toBe(true);
