@@ -59,6 +59,96 @@ describe('serviceProviderStore', () => {
     expect(serviceProviderStore.loading).toBe(false);
   });
 
+  describe('getServiceProvidersForRollenVerwaltung', () => {
+    const url: string = '/api/provider/manageable-land-root?limit=25';
+    describe('when response is successful', () => {
+      it('should load service providers and their total', async () => {
+        const mockItems: ServiceProviderResponse[] = [
+          DoFactory.getServiceProviderResponse(),
+          DoFactory.getServiceProviderResponse(),
+        ];
+        const mockResponse: { items: ServiceProviderResponse[]; total: number; offset: number; limit: number } = {
+          items: mockItems,
+          total: 42,
+          offset: 0,
+          limit: 25,
+        };
+
+        mockadapter.onGet(url).replyOnce(200, mockResponse);
+        await serviceProviderStore.getServiceProvidersForRollenVerwaltung({ limit: 25 });
+
+        expect(serviceProviderStore.serviceProvidersForRollenVerwaltung).toEqual(
+          mockItems.map((serviceProvider: ServiceProviderResponse) => ({
+            id: serviceProvider.id,
+            name: serviceProvider.name,
+          })),
+        );
+        expect(serviceProviderStore.totalServiceProvidersForRollenVerwaltung).toEqual(42);
+      });
+    });
+
+    describe('when response is a string error', () => {
+      it('should handle string error', async () => {
+        mockadapter.onGet(url).replyOnce(500, 'some mock server error');
+
+        await serviceProviderStore.getServiceProvidersForRollenVerwaltung({ limit: 25 });
+
+        expect(serviceProviderStore.serviceProvidersForRollenVerwaltung).toEqual([]);
+        expect(serviceProviderStore.errorCode).toEqual('UNSPECIFIED_ERROR');
+        expect(serviceProviderStore.loading).toBe(false);
+      });
+    });
+
+    describe('when response is an error with code', () => {
+      it('should handle error code', async () => {
+        mockadapter.onGet(url).replyOnce(500, { code: 'some mock server error' });
+
+        await serviceProviderStore.getServiceProvidersForRollenVerwaltung({ limit: 25 });
+
+        expect(serviceProviderStore.serviceProvidersForRollenVerwaltung).toEqual([]);
+        expect(serviceProviderStore.errorCode).toEqual('some mock server error');
+        expect(serviceProviderStore.loading).toBe(false);
+      });
+    });
+
+    describe('when searchStr is provided', () => {
+      it('should pass searchStr as query parameter', async () => {
+        const mockItems: ServiceProviderResponse[] = [DoFactory.getServiceProviderResponse()];
+        const mockResponse: { items: ServiceProviderResponse[]; total: number; offset: number; limit: number } = {
+          items: mockItems,
+          total: 1,
+          offset: 0,
+          limit: 25,
+        };
+
+        mockadapter.onGet('/api/provider/manageable-land-root?limit=25&searchStr=test').replyOnce(200, mockResponse);
+        await serviceProviderStore.getServiceProvidersForRollenVerwaltung({ limit: 25, searchStr: 'test' });
+
+        expect(serviceProviderStore.serviceProvidersForRollenVerwaltung).toHaveLength(1);
+        expect(serviceProviderStore.totalServiceProvidersForRollenVerwaltung).toEqual(1);
+      });
+    });
+
+    describe('when a previous successful load is followed by a failed request', () => {
+      it('should clear stale state instead of keeping previous results', async () => {
+        const mockItems: ServiceProviderResponse[] = [
+          DoFactory.getServiceProviderResponse(),
+          DoFactory.getServiceProviderResponse(),
+        ];
+        mockadapter.onGet(url).replyOnce(200, { items: mockItems, total: 2, offset: 0, limit: 25 });
+        await serviceProviderStore.getServiceProvidersForRollenVerwaltung({ limit: 25 });
+        expect(serviceProviderStore.serviceProvidersForRollenVerwaltung).toHaveLength(2);
+        expect(serviceProviderStore.totalServiceProvidersForRollenVerwaltung).toBe(2);
+
+        mockadapter.onGet(url).replyOnce(500, { code: 'UNSPECIFIED_ERROR' });
+        await serviceProviderStore.getServiceProvidersForRollenVerwaltung({ limit: 25 });
+
+        expect(serviceProviderStore.serviceProvidersForRollenVerwaltung).toEqual([]);
+        expect(serviceProviderStore.totalServiceProvidersForRollenVerwaltung).toBe(0);
+      });
+    });
+  });
+
   describe('getAssignableServiceProvidersForRolleByOrganisationId', () => {
     const schulstrukturknotenOfRolle: string = faker.string.uuid();
     const url: string = `/api/provider/assignable-for-rolle?schulstrukturknotenOfRolle=${schulstrukturknotenOfRolle}`;

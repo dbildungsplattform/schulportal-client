@@ -117,6 +117,7 @@ export type RolleFilter = {
   systemrechte?: RollenSystemRechtEnum[];
   rollenarten?: Array<RollenArt>;
   merkmale?: Array<RollenMerkmal>;
+  serviceProviderIds?: Array<string>;
 };
 
 export type PersistRollenerweiterungForRolle = {
@@ -193,6 +194,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               filter.systemrechte,
               filter.rollenarten,
               filter.merkmale,
+              filter.serviceProviderIds,
             );
           this.allRollen = response.data;
           this.totalRollen = +response.headers['x-paging-total'];

@@ -3,6 +3,7 @@
   import SearchField from '@/components/admin/SearchField.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
+  import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
   import {
     RollenArt,
     RollenMerkmal,
@@ -13,12 +14,20 @@
     type RolleTableItem,
   } from '@/stores/RolleStore';
   import { rollenPerPageDefault, useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
-  import { computed, onMounted, Ref, ref, type ComputedRef } from 'vue';
+  import {
+    ServiceProviderIdNameResponse,
+    ServiceProviderStore,
+    useServiceProviderStore,
+  } from '@/stores/ServiceProviderStore';
+  import { computed, ComputedRef, onMounted, ref, Ref } from 'vue';
+
   import { useI18n, type Composer } from 'vue-i18n';
   import { useRouter, type Router } from 'vue-router';
 
+  const authStore: AuthStore = useAuthStore();
   const rolleStore: RolleStore = useRolleStore();
   const searchFilterStore: SearchFilterStore = useSearchFilterStore();
+  const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
 
   const router: Router = useRouter();
   const { t }: Composer = useI18n({ useScope: 'global' });
@@ -37,6 +46,16 @@
       title: t(`admin.rolle.mappingFrontBackEnd.rollenarten.${rollenart}`),
       value: rollenart,
     }),
+  );
+
+  type AngebotItem = { title: string; value: string };
+  const angeboteItems: ComputedRef<AngebotItem[]> = computed(() =>
+    serviceProviderStore.serviceProvidersForRollenVerwaltung.map(
+      (serviceProvider: ServiceProviderIdNameResponse): AngebotItem => ({
+        title: serviceProvider.name,
+        value: serviceProvider.id,
+      }),
+    ),
   );
 
   type ReadonlyHeaders = Headers;
@@ -86,6 +105,7 @@
       searchFilterStore.selectedMerkmaleForRollen?.length > 0 ||
       searchFilterStore.selectedRollenartenForRollen?.length > 0 ||
       searchFilterStore.selectedOrganisationenForRollen?.length > 0 ||
+      searchFilterStore.selectedAngeboteForRollen?.length > 0 ||
       (searchFilterStore.searchStringForRollen !== null && searchFilterStore.searchStringForRollen?.length > 0)
     );
   });
@@ -108,6 +128,9 @@
         : undefined,
       rollenarten: searchFilterStore.selectedRollenartenForRollen?.length
         ? searchFilterStore.selectedRollenartenForRollen
+        : undefined,
+      serviceProviderIds: searchFilterStore.selectedAngeboteForRollen?.length
+        ? searchFilterStore.selectedAngeboteForRollen
         : undefined,
     });
   }
@@ -135,6 +158,35 @@
     await getRollen();
   }
 
+  function setSelectedAngeboteCache(angebote: string[]): void {
+    const newCache: Record<string, string> = {};
+
+    for (const id of angebote) {
+      const found: AngebotItem | undefined = angeboteItems.value.find((i: AngebotItem) => i.value === id);
+
+      if (found) {
+        newCache[id] = found.title;
+      }
+    }
+
+    searchFilterStore.setAngeboteNamesForRollen(newCache);
+  }
+
+  async function setAngeboteFilter(angebote: string[]): Promise<void> {
+    setSelectedAngeboteCache(angebote);
+    searchFilterStore.setAngeboteFilterForRollen(angebote ?? []);
+    searchFilterStore.rollenPage = 1;
+    await getRollen();
+  }
+
+  let angeboteSearchTimerId: ReturnType<typeof setTimeout>;
+  function handleAngeboteSearch(searchStr: string): void {
+    clearTimeout(angeboteSearchTimerId);
+    angeboteSearchTimerId = setTimeout(() => {
+      serviceProviderStore.getServiceProvidersForRollenVerwaltung({ limit: 25, searchStr: searchStr || undefined });
+    }, 500);
+  }
+
   async function getPaginatedRollenWithLimit(limit: number): Promise<void> {
     /* reset page to 1 if entries are equal to or less than selected limit */
     if (rolleStore.totalRollen <= limit) {
@@ -149,6 +201,8 @@
     searchFilterStore.setMerkmaleFilterForRollen([]);
     searchFilterStore.setRollenartenFilterForRollen([]);
     searchFilterStore.setOrganisationenFilterForRollen([]);
+    searchFilterStore.setAngeboteFilterForRollen([]);
+    searchFilterStore.setAngeboteNamesForRollen({});
     searchFilterStore.rollenPage = 1;
     searchFilterStore.rollenPerPage = rollenPerPageDefault;
     searchFilter.value = '';
@@ -165,7 +219,13 @@
   }
 
   onMounted(async () => {
-    await getRollen();
+    const tasks: Promise<unknown>[] = [getRollen()];
+
+    if (authStore.hasAngeboteVerwaltenPermission) {
+      tasks.push(serviceProviderStore.getServiceProvidersForRollenVerwaltung({ limit: 25 }));
+    }
+
+    await Promise.all(tasks);
   });
 </script>
 
@@ -202,7 +262,7 @@
 
         <v-col
           cols="12"
-          md="3"
+          md="2"
         >
           <v-autocomplete
             id="rollenarten-filter-select"
@@ -242,7 +302,7 @@
 
         <v-col
           cols="12"
-          md="3"
+          md="2"
         >
           <v-autocomplete
             id="merkmale-filter-select"
@@ -297,23 +357,85 @@
             @update:selectedSchulen="setOrganisationenFilter"
           />
         </v-col>
-        <v-spacer />
+
         <v-col
+          v-if="authStore.hasAngeboteVerwaltenPermission"
           cols="12"
-          md="5"
-          offset-md="7"
+          md="3"
         >
-          <SearchField
-            ref="searchFieldComponent"
-            :initial-value="searchFilter"
-            :input-cols="6"
-            :input-cols-md="3"
-            :button-cols="6"
-            :button-cols-md="2"
-            :hover-text="$t('admin.rolle.rollenname')"
-            @on-apply-search-filter="handleSearchFilter"
-          />
+          <v-autocomplete
+            id="angebote-filter-select"
+            ref="angeboteFilterSelect"
+            v-model="searchFilterStore.selectedAngeboteForRollen"
+            autocomplete="off"
+            clearable
+            class="filter-dropdown"
+            :class="{ selected: searchFilterStore.selectedAngeboteForRollen?.length }"
+            data-testid="angebote-filter-select"
+            density="compact"
+            hide-details
+            :items="angeboteItems"
+            item-value="value"
+            item-title="title"
+            multiple
+            :custom-filter="() => true"
+            :no-data-text="$t('noDataFound')"
+            :placeholder="$t('admin.rolle.landesangebote')"
+            variant="outlined"
+            @update:model-value="setAngeboteFilter"
+            @update:search="handleAngeboteSearch"
+          >
+            <template #prepend-item>
+              <v-list-item>
+                <v-progress-circular
+                  v-if="serviceProviderStore.loading"
+                  indeterminate
+                />
+                <span
+                  v-else
+                  class="filter-header"
+                  >{{
+                    $t(
+                      'admin.rolle.landesangeboteFound',
+                      {
+                        count: serviceProviderStore.totalServiceProvidersForRollenVerwaltung,
+                      },
+                      serviceProviderStore.totalServiceProvidersForRollenVerwaltung,
+                    )
+                  }}</span
+                >
+              </v-list-item>
+            </template>
+            <template #selection="{ internalItem: item, index }">
+              <v-chip v-if="searchFilterStore.selectedAngeboteForRollen.length < 2">
+                <span>{{ searchFilterStore.selectedAngeboteNamesForRollen[item.value] ?? item.title }}</span>
+              </v-chip>
+              <span
+                v-else-if="index === 0"
+                class="selection-count"
+              >
+                {{
+                  $t('admin.rolle.landesangeboteSelected', {
+                    count: searchFilterStore.selectedAngeboteForRollen.length,
+                  })
+                }}
+              </span>
+            </template>
+          </v-autocomplete>
         </v-col>
+      </v-row>
+      <v-row class="ma-3 mt-0">
+        <v-spacer />
+        <SearchField
+          ref="searchFieldComponent"
+          :initial-value="searchFilter"
+          :input-cols="6"
+          :input-cols-md="3"
+          :button-cols="6"
+          :button-cols-md="2"
+          :hover-text="$t('admin.rolle.rollenname')"
+          @on-apply-search-filter="handleSearchFilter"
+        />
       </v-row>
       <ResultTable
         :current-page="searchFilterStore.rollenPage"
