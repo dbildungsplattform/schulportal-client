@@ -31,7 +31,7 @@
       align: 'start',
     },
     { title: t('admin.schule.schulname'), key: 'name', align: 'start' },
-    { title: t('admin.schule.emailAdresse'), key: 'emailAdresse', align: 'start' },
+    { title: t('admin.schule.emailAdresse'), key: 'emailAdress', align: 'start' },
     { title: t('admin.schule.itsLearningStatus'), key: 'itslearning', sortable: false, align: 'start' },
     {
       title: t('action'),

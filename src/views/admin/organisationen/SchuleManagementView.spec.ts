@@ -41,7 +41,7 @@ beforeEach(async () => {
       kuerzel: 'rsg',
       typ: OrganisationsTyp.Schule,
       administriertVon: '1',
-      emailAdresse: 'test@example.com',
+      emailAdress: 'test@example.com',
     },
     {
       id: '1123',
@@ -94,12 +94,12 @@ describe('SchuleManagementView', () => {
         {
           kennung: '9356494',
           name: 'Random Schulname Gymnasium',
-          emailAdresse: 'test@example.com',
+          emailAdress: 'test@example.com',
         },
         {
           kennung: '2745475',
           name: 'Albert-Emil-Hansebrot-Gymnasium',
-          emailAdresse: '',
+          emailAdress: '',
         },
       ];
 
@@ -112,7 +112,7 @@ describe('SchuleManagementView', () => {
 
         expect(cells[1]?.text()).toBe(expectedRow.kennung);
         expect(cells[2]?.text()).toBe(expectedRow.name);
-        expect(cells[3]?.text()).toBe(expectedRow.emailAdresse);
+        expect(cells[3]?.text()).toBe(expectedRow.emailAdress);
         expect(cells[4]?.find('.v-icon.mdi-power').exists()).toBe(true);
         expect(cells[5]?.find('.v-icon.mdi-delete').exists()).toBe(true);
       });

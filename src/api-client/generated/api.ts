@@ -2064,7 +2064,7 @@ export interface OrganisationResponse {
      * @type {string}
      * @memberof OrganisationResponse
      */
-    'emailAdresse': string;
+    'emailAdress': string;
 }
 
 
@@ -2161,31 +2161,6 @@ export type OrganisationsTyp = typeof OrganisationsTyp[keyof typeof Organisation
 /**
  * 
  * @export
- * @interface ParentInfoResponse
- */
-export interface ParentInfoResponse {
-    /**
-     * 
-     * @type {string}
-     * @memberof ParentInfoResponse
-     */
-    'id': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ParentInfoResponse
-     */
-    'name': string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ParentInfoResponse
-     */
-    'typ': string | null;
-}
-/**
- * 
- * @export
  * @interface ParentOrganisationenResponse
  */
 export interface ParentOrganisationenResponse {
@@ -2208,19 +2183,6 @@ export interface ParentOrganisationsByIdsBodyParams {
      * @memberof ParentOrganisationsByIdsBodyParams
      */
     'organisationIds': Array<string>;
-}
-/**
- * 
- * @export
- * @interface ParentsTreeResponse
- */
-export interface ParentsTreeResponse {
-    /**
-     * 
-     * @type {Array<ParentInfoResponse>}
-     * @memberof ParentsTreeResponse
-     */
-    'parentsTree': Array<ParentInfoResponse>;
 }
 /**
  * 
@@ -4646,6 +4608,19 @@ export interface UserExeternalDataResponseVidis {
      * @memberof UserExeternalDataResponseVidis
      */
     'dienststellenNummern': Array<string>;
+}
+/**
+ * 
+ * @export
+ * @interface UserExternalDataBodyParams
+ */
+export interface UserExternalDataBodyParams {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataBodyParams
+     */
+    'sub': string;
 }
 /**
  * 
@@ -7587,10 +7562,13 @@ export const KeycloakinternalApiAxiosParamCreator = function (configuration?: Co
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        keycloakInternalControllerGetExternalData: async (options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        keycloakInternalControllerGetExternalData: async (userExternalDataBodyParams: UserExternalDataBodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'userExternalDataBodyParams' is not null or undefined
+            assertParamExists('keycloakInternalControllerGetExternalData', 'userExternalDataBodyParams', userExternalDataBodyParams)
             const localVarPath = `/keycloakinternal/externaldata`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -7605,9 +7583,12 @@ export const KeycloakinternalApiAxiosParamCreator = function (configuration?: Co
 
 
     
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(userExternalDataBodyParams, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -7627,11 +7608,12 @@ export const KeycloakinternalApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async keycloakInternalControllerGetExternalData(options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserExternalDataResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.keycloakInternalControllerGetExternalData(options);
+        async keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserExternalDataResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -7647,11 +7629,12 @@ export const KeycloakinternalApiFactory = function (configuration?: Configuratio
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        keycloakInternalControllerGetExternalData(options?: any): AxiosPromise<UserExternalDataResponse> {
-            return localVarFp.keycloakInternalControllerGetExternalData(options).then((request) => request(axios, basePath));
+        keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: any): AxiosPromise<UserExternalDataResponse> {
+            return localVarFp.keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -7665,11 +7648,12 @@ export interface KeycloakinternalApiInterface {
     /**
      * 
      * @summary External Data about requested in user.
+     * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof KeycloakinternalApiInterface
      */
-    keycloakInternalControllerGetExternalData(options?: AxiosRequestConfig): AxiosPromise<UserExternalDataResponse>;
+    keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): AxiosPromise<UserExternalDataResponse>;
 
 }
 
@@ -7683,12 +7667,13 @@ export class KeycloakinternalApi extends BaseAPI implements KeycloakinternalApiI
     /**
      * 
      * @summary External Data about requested in user.
+     * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof KeycloakinternalApi
      */
-    public keycloakInternalControllerGetExternalData(options?: AxiosRequestConfig) {
-        return KeycloakinternalApiFp(this.configuration).keycloakInternalControllerGetExternalData(options).then((request) => request(this.axios, this.basePath));
+    public keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig) {
+        return KeycloakinternalApiFp(this.configuration).keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -8771,47 +8756,6 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
         },
         /**
          * 
-         * @param {string} organisationId The id of an organization
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        organisationControllerGetParentsTree: async (organisationId: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'organisationId' is not null or undefined
-            assertParamExists('organisationControllerGetParentsTree', 'organisationId', organisationId)
-            const localVarPath = `/api/organisationen/{organisationId}/parents-tree`
-                .replace(`{${"organisationId"}}`, encodeURIComponent(String(organisationId)));
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearer required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-            // authentication oauth2 required
-            // oauth required
-            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -9129,16 +9073,6 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
-         * @param {string} organisationId The id of an organization
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async organisationControllerGetParentsTree(organisationId: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ParentsTreeResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerGetParentsTree(organisationId, options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-        /**
-         * 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -9289,15 +9223,6 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
         },
         /**
          * 
-         * @param {string} organisationId The id of an organization
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        organisationControllerGetParentsTree(organisationId: string, options?: any): AxiosPromise<ParentsTreeResponse> {
-            return localVarFp.organisationControllerGetParentsTree(organisationId, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -9439,15 +9364,6 @@ export interface OrganisationenApiInterface {
      * @memberof OrganisationenApiInterface
      */
     organisationControllerGetParentsByIds(parentOrganisationsByIdsBodyParams: ParentOrganisationsByIdsBodyParams, options?: AxiosRequestConfig): AxiosPromise<ParentOrganisationenResponse>;
-
-    /**
-     * 
-     * @param {string} organisationId The id of an organization
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof OrganisationenApiInterface
-     */
-    organisationControllerGetParentsTree(organisationId: string, options?: AxiosRequestConfig): AxiosPromise<ParentsTreeResponse>;
 
     /**
      * 
@@ -9607,17 +9523,6 @@ export class OrganisationenApi extends BaseAPI implements OrganisationenApiInter
      */
     public organisationControllerGetParentsByIds(parentOrganisationsByIdsBodyParams: ParentOrganisationsByIdsBodyParams, options?: AxiosRequestConfig) {
         return OrganisationenApiFp(this.configuration).organisationControllerGetParentsByIds(parentOrganisationsByIdsBodyParams, options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * 
-     * @param {string} organisationId The id of an organization
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof OrganisationenApi
-     */
-    public organisationControllerGetParentsTree(organisationId: string, options?: AxiosRequestConfig) {
-        return OrganisationenApiFp(this.configuration).organisationControllerGetParentsTree(organisationId, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
