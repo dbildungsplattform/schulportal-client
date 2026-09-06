@@ -1,101 +1,48 @@
 <script setup lang="ts">
-  import { computed, onMounted, onUnmounted, ref, type ComputedRef, type Ref } from 'vue';
-  import { useI18n, type Composer } from 'vue-i18n';
-  import {
-    type Router,
-    useRouter,
-    onBeforeRouteLeave,
-    type RouteLocationNormalized,
-    type NavigationGuardNext,
-  } from 'vue-router';
-  import { useDisplay } from 'vuetify';
+  import SchuleForm, { SchuleDetailsForm } from '@/components/admin/schulen/SchuleForm.vue';
+  import SchuleSuccessTemplate from '@/components/admin/schulen/SchuleSuccessTemplate.vue';
+  import SpshAlert from '@/components/alert/SpshAlert.vue';
+  import LayoutCard from '@/components/cards/LayoutCard.vue';
   import {
     OrganisationsTyp,
     useOrganisationStore,
     type Organisation,
     type OrganisationStore,
   } from '@/stores/OrganisationStore';
-  import { useForm, type TypedSchema, type BaseFieldProps } from 'vee-validate';
-  import { object, string } from 'yup';
-  import { toTypedSchema } from '@vee-validate/yup';
-  import { DIN_91379A_EXT, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
-  import SpshAlert from '@/components/alert/SpshAlert.vue';
-  import LayoutCard from '@/components/cards/LayoutCard.vue';
-  import FormWrapper from '@/components/form/FormWrapper.vue';
-  import FormRow from '@/components/form/FormRow.vue';
+  import { computed, onMounted, onUnmounted, ref, type ComputedRef, type Ref } from 'vue';
+  import { NavigationGuardNext, onBeforeRouteLeave, RouteLocationNormalized, useRouter, type Router } from 'vue-router';
 
   const initialSchulFormCache: Ref<string> = ref('');
+  const isDirty: Ref<boolean> = ref(false);
+  const showUnsavedChangesDialog: Ref<boolean> = ref(false);
 
-  const { mdAndDown }: { mdAndDown: Ref<boolean> } = useDisplay();
-
-  const { t }: Composer = useI18n({ useScope: 'global' });
   const router: Router = useRouter();
   const organisationStore: OrganisationStore = useOrganisationStore();
 
-  const validationSchema: TypedSchema = toTypedSchema(
-    object({
-      selectedDienststellennummer: string()
-        .matches(NO_LEADING_TRAILING_SPACES, t('admin.schule.rules.dienststellennummer.noLeadingTrailingSpaces'))
-        .required(t('admin.schule.rules.dienststellennummer.required')),
-      selectedSchulname: string()
-        .matches(DIN_91379A_EXT, t('admin.schule.rules.schulname.matches'))
-        .matches(NO_LEADING_TRAILING_SPACES, t('admin.schule.rules.schulname.noLeadingTrailingSpaces'))
-        .required(t('admin.schule.rules.schulname.required')),
-    }),
-  );
-
-  const vuetifyConfig = (state: {
-    errors: Array<string>;
-  }): { props: { error: boolean; 'error-messages': Array<string> } } => ({
-    props: {
-      error: !!state.errors.length,
-      'error-messages': state.errors,
-    },
-  });
-
-  type SchuleCreationForm = {
-    selectedSchulform: string;
-    selectedDienststellennummer: string;
-    selectedSchulname: string;
-  };
-
-  // eslint-disable-next-line @typescript-eslint/typedef
-  const { defineField, handleSubmit, isFieldDirty, resetForm, isFieldTouched } = useForm<SchuleCreationForm>({
-    validationSchema,
-  });
-
-  const preservedSchulform: Ref<string | undefined> = ref<string>('');
-
-  const [selectedSchulform]: [Ref<string>, Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>] =
-    defineField('selectedSchulform', vuetifyConfig);
-  const [selectedSchulname, selectedSchulnameProps]: [
-    Ref<string>,
-    Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
-  ] = defineField('selectedSchulname', vuetifyConfig);
-  const [selectedDienststellennummer, selectedDienststellennummerProps]: [
-    Ref<string>,
-    Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
-  ] = defineField('selectedDienststellennummer', vuetifyConfig);
+  const selectedSchulform: Ref<string> = ref<string>('');
 
   const schultraegerList: ComputedRef<Organisation[] | undefined> = computed(() => {
     return organisationStore.schultraeger;
   });
 
-  function isFormDirty(): boolean {
-    return (
-      (isFieldDirty('selectedSchulform') && isFieldTouched('selectedSchulform')) ||
-      isFieldDirty('selectedSchulname') ||
-      isFieldDirty('selectedDienststellennummer')
-    );
-  }
-
-  const showUnsavedChangesDialog: Ref<boolean> = ref(false);
-  let blockedNext: () => void = () => {
+  let blockedNext = (): void => {
     /* empty */
   };
 
+  const onSubmit = async (payload: SchuleDetailsForm): Promise<void> => {
+    await organisationStore.createOrganisation(
+      payload.selectedSchulform,
+      payload.selectedSchulform,
+      payload.selectedDienststellennummer,
+      payload.selectedSchulname,
+      undefined,
+      undefined,
+      OrganisationsTyp.Schule,
+    );
+  };
+
   onBeforeRouteLeave((_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
-    if (isFormDirty()) {
+    if (isDirty.value) {
       showUnsavedChangesDialog.value = true;
       blockedNext = next;
     } else {
@@ -103,33 +50,8 @@
     }
   });
 
-  const onSubmit: (e?: Event) => Promise<Promise<void> | undefined> = handleSubmit(async () => {
-    preservedSchulform.value = schultraegerList.value?.find(
-      (schultraeger: Organisation) => schultraeger.id === selectedSchulform.value,
-    )?.name;
-    if (selectedDienststellennummer.value && selectedSchulname.value) {
-      await organisationStore.createOrganisation(
-        selectedSchulform.value,
-        selectedSchulform.value,
-        selectedDienststellennummer.value,
-        selectedSchulname.value,
-        undefined,
-        undefined,
-        OrganisationsTyp.Schule,
-      );
-      resetForm({
-        values: {
-          selectedSchulform: initialSchulFormCache.value,
-          selectedDienststellennummer: '',
-          selectedSchulname: '',
-        },
-      });
-    }
-  });
-
   const handleCreateAnotherSchule = (): void => {
     organisationStore.createdSchule = null;
-    resetForm();
     router.push({ name: 'create-schule' });
   };
 
@@ -147,7 +69,6 @@
 
   async function navigateBackToSchuleForm(): Promise<void> {
     if (organisationStore.errorCode === 'REQUIRED_STEP_UP_LEVEL_NOT_MET') {
-      resetForm();
       await router.push({ name: 'create-schule' }).then(() => {
         router.go(0);
       });
@@ -158,13 +79,22 @@
   }
 
   function preventNavigation(event: BeforeUnloadEvent): void {
-    if (!isFormDirty()) {
+    if (!isDirty.value) {
       return;
     }
     event.preventDefault();
     /* Chrome requires returnValue to be set. */
     event.returnValue = '';
   }
+
+  onBeforeRouteLeave((_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
+    if (isDirty.value) {
+      showUnsavedChangesDialog.value = true;
+      blockedNext = next;
+    } else {
+      next();
+    }
+  });
 
   onMounted(async () => {
     organisationStore.createdSchule = null;
@@ -195,228 +125,48 @@
     </h1>
     <LayoutCard
       :closable="!organisationStore.errorCode"
+      :header="$t('admin.schule.addNew')"
       headlineTestId="schule-creation-headline"
       @onCloseClicked="navigateToSchuleManagement"
-      :header="$t('admin.schule.addNew')"
       :padded="true"
       :showCloseText="true"
     >
       <!-- The form to create a new school (No created school yet and no errorCode) -->
       <template v-if="!organisationStore.createdSchule">
-        <FormWrapper
-          id="schule-creation-form"
-          ref="schule-creation-form"
-          :confirm-unsaved-changes-action="handleConfirmUnsavedChanges"
-          :create-button-label="$t('admin.schule.create')"
-          :discard-button-label="$t('admin.schule.discard')"
-          :hide-actions="!!organisationStore.errorCode"
-          :is-loading="organisationStore.loading"
-          :on-discard="navigateToSchuleManagement"
-          :on-submit="onSubmit"
+        <!-- Error Message Display if error on submit -->
+        <SpshAlert
+          :model-value="!!organisationStore.errorCode"
+          :title="$t('admin.schule.schuleCreateErrorTitle')"
+          :type="'error'"
+          :closable="false"
+          :text="$t(`admin.schule.errors.${organisationStore.errorCode}`)"
+          :show-button="true"
+          :button-text="$t('admin.schule.backToCreateSchule')"
+          :button-action="navigateBackToSchuleForm"
+          button-class="primary"
+        />
+        <SchuleForm
           :show-unsaved-changes-dialog="showUnsavedChangesDialog"
-          @on-show-dialog-change="(value?: boolean) => (showUnsavedChangesDialog = value || false)"
-        >
-          <!-- Error Message Display if error on submit -->
-          <SpshAlert
-            :model-value="!!organisationStore.errorCode"
-            :title="$t('admin.schule.schuleCreateErrorTitle')"
-            :type="'error'"
-            :closable="false"
-            :text="organisationStore.errorCode ? $t(`admin.schule.errors.${organisationStore.errorCode}`) : ''"
-            :show-button="true"
-            :button-text="$t('admin.schule.backToCreateSchule')"
-            :button-action="navigateBackToSchuleForm"
-            button-class="primary"
-          />
-
-          <template v-if="!organisationStore.errorCode">
-            <!-- Select school type. For now not bound to anything and just a UI element -->
-            <v-row>
-              <v-col>
-                <h3 class="headline-3">1. {{ $t('admin.schule.assignSchulform') }}</h3>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col
-                cols="4"
-                class="d-none d-md-flex"
-              />
-              <v-radio-group
-                v-model="selectedSchulform"
-                inline
-                data-testid="schulform-radio-group"
-              >
-                <v-row justify="center">
-                  <v-col
-                    v-for="(schultraeger, index) in schultraegerList"
-                    :key="schultraeger.id"
-                    cols="12"
-                    sm="5"
-                    class="pb-0"
-                  >
-                    <v-radio
-                      :label="schultraeger.name"
-                      :value="schultraeger.id"
-                      :data-testid="'schulform-radio-button-' + index"
-                    />
-                  </v-col>
-                </v-row>
-              </v-radio-group>
-            </v-row>
-            <!-- Enter service number -->
-            <v-row>
-              <v-col>
-                <h3 class="headline-3">2. {{ $t('admin.schule.enterDienststellennummer') }}</h3>
-              </v-col>
-            </v-row>
-            <FormRow
-              :error-label="selectedDienststellennummerProps['error']"
-              label-for-id="dienststellennummer-input"
-              :is-required="true"
-              :label="$t('admin.schule.dienststellennummer')"
-            >
-              <v-text-field
-                v-bind="selectedDienststellennummerProps"
-                ref="dienststellennummer-input"
-                v-model="selectedDienststellennummer"
-                clearable
-                data-testid="dienststellennummer-input"
-                :placeholder="$t('admin.schule.dienststellennummer')"
-                variant="outlined"
-                density="compact"
-              />
-            </FormRow>
-            <!-- select school name -->
-            <v-row>
-              <v-col>
-                <h3 class="headline-3">3. {{ $t('admin.schule.enterSchulname') }}</h3>
-              </v-col>
-            </v-row>
-            <FormRow
-              :error-label="selectedSchulnameProps['error']"
-              label-for-id="schulname-input"
-              :is-required="true"
-              :label="$t('admin.schule.schulname')"
-            >
-              <v-text-field
-                v-bind="selectedSchulnameProps"
-                ref="schulname-input"
-                v-model="selectedSchulname"
-                clearable
-                data-testid="schulname-input"
-                :placeholder="$t('admin.schule.schulname')"
-                variant="outlined"
-                density="compact"
-                required
-              />
-            </FormRow>
-          </template>
-        </FormWrapper>
+          :is-edit-mode="false"
+          :organisation-store="organisationStore"
+          :schultraeger-list="schultraegerList"
+          @update:dirty="(value: boolean) => (isDirty = value)"
+          @click:submit="onSubmit"
+          @click:discard="navigateToSchuleManagement"
+          @update:showUnsavedChangesDialog="(visible: boolean) => (showUnsavedChangesDialog = visible)"
+          @click:confirmUnsaved="handleConfirmUnsavedChanges"
+        />
       </template>
       <!-- Result template on success after submit (Present value in createdSchule and no errorCode)  -->
       <template v-if="organisationStore.createdSchule && !organisationStore.errorCode">
-        <v-container class="new-schule-success">
-          <v-row class="justify-center">
-            <v-col
-              class="subtitle-1"
-              cols="auto"
-            >
-              <span data-testid="schule-success-text">{{ $t('admin.schule.schuleAddedSuccessfully') }}</span>
-            </v-col>
-          </v-row>
-          <v-row class="justify-center">
-            <v-col cols="auto">
-              <v-icon
-                small
-                color="#1EAE9C"
-                data-testid="schule-success-icon"
-                icon="mdi-check-circle"
-              />
-            </v-col>
-          </v-row>
-          <v-row class="justify-center">
-            <v-col
-              class="subtitle-2"
-              cols="auto"
-              data-testid="following-data-created-text"
-            >
-              {{ $t('admin.followingDataCreated') }}
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col
-              class="text-body bold text-right"
-              data-testid="created-schule-form-label"
-            >
-              {{ $t('admin.schule.schulform') }}:
-            </v-col>
-            <v-col class="text-body">
-              <span data-testid="created-schule-form"> {{ preservedSchulform }}</span>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col
-              class="text-body bold text-right"
-              data-testid="created-schule-dienststellennummer-label"
-            >
-              {{ $t('admin.schule.dienststellennummer') }}:
-            </v-col>
-            <v-col class="text-body">
-              <span data-testid="created-schule-dienststellennummer">{{
-                organisationStore.createdSchule.kennung
-              }}</span>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col
-              class="text-body bold text-right"
-              data-testid="created-schule-name-label"
-            >
-              {{ $t('admin.schule.schulname') }}:
-            </v-col>
-            <v-col class="text-body"
-              ><span data-testid="created-schule-name">{{ organisationStore.createdSchule.name }}</span>
-            </v-col>
-          </v-row>
-          <v-divider
-            class="border-opacity-100 rounded my-6"
-            color="#E5EAEF"
-            thickness="6"
-          />
-          <v-row class="justify-end">
-            <v-col
-              cols="12"
-              sm="6"
-              md="auto"
-            >
-              <v-btn
-                class="secondary"
-                data-testid="back-to-list-button"
-                :block="mdAndDown"
-                @click="navigateToSchuleManagement"
-              >
-                {{ $t('nav.backToList') }}
-              </v-btn>
-            </v-col>
-            <v-col
-              cols="12"
-              sm="6"
-              md="auto"
-            >
-              <v-btn
-                class="primary button"
-                data-testid="create-another-schule-button"
-                :block="mdAndDown"
-                @click="handleCreateAnotherSchule"
-              >
-                {{ $t('admin.schule.createAnother') }}
-              </v-btn>
-            </v-col>
-          </v-row>
-        </v-container>
+        <SchuleSuccessTemplate
+          :successMessage="$t('admin.schule.schuleAddedSuccessfully')"
+          :preservedSchulform="selectedSchulform"
+          :organisationStore="organisationStore"
+          @onNavigateBackToSchuleManagement="navigateToSchuleManagement"
+          @onCreateAnotherSchule="handleCreateAnotherSchule"
+        />
       </template>
     </LayoutCard>
   </div>
 </template>
-
-<style></style>
