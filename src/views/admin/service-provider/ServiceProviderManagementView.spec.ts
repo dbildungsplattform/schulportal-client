@@ -195,7 +195,7 @@ describe('ServiceProviderManagementView', () => {
           .mockResolvedValue();
 
         searchFilterStore.searchStringForServiceProvider = 'meine-suche';
-        wrapper.findComponent(SearchField).vm.$emit('onApplySearchFilter', 'meine-suche');
+        (wrapper.findComponent(SearchField) as VueWrapper).vm.$emit('onApplySearchFilter', 'meine-suche');
         await flushPromises();
 
         expect(searchFilterStore.serviceProviderPage).toBe(1);
@@ -215,7 +215,7 @@ describe('ServiceProviderManagementView', () => {
           .spyOn(serviceProviderStore, 'getManageableServiceProviders')
           .mockResolvedValue();
 
-        wrapper.findComponent(SearchField).vm.$emit('onApplySearchFilter', 'meine-suche');
+        (wrapper.findComponent(SearchField) as VueWrapper).vm.$emit('onApplySearchFilter', 'meine-suche');
         await flushPromises();
 
         expect(searchFilterStore.setSearchFilterForServiceProvider).toHaveBeenCalledWith('meine-suche');
@@ -231,7 +231,7 @@ describe('ServiceProviderManagementView', () => {
         const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
         expect(wrapper.find('[data-testid="reset-filter-button"]').attributes('disabled')).toBeDefined();
 
-        wrapper.findComponent(SearchField).vm.$emit('onApplySearchFilter', 'meine-suche');
+        (wrapper.findComponent(SearchField) as VueWrapper).vm.$emit('onApplySearchFilter', 'meine-suche');
         await flushPromises();
 
         expect(wrapper.find('[data-testid="reset-filter-button"]').attributes('disabled')).toBeUndefined();
