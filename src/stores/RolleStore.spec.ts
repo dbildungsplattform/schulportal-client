@@ -1,7 +1,9 @@
 import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
 import {
+  RollenArt,
   RollenMerkmal,
+  RollenSystemRechtEnum,
   type ApplyRollenerweiterungChangesBodyParams,
   type RolleResponse,
   type RolleWithServiceProvidersResponse,
@@ -486,6 +488,51 @@ describe('rolleStore', () => {
         expect(rolleStore.errorCode).toEqual('some mock server error');
         expect(rolleStore.loading).toBe(false);
       });
+    });
+  });
+
+  describe('getRollenForPersonenkontextCreation', () => {
+    it('should load available Rollen and update state', async () => {
+      const mockResponse: RolleResponse[] = [DoFactory.getRolleResponse(), DoFactory.getRolleResponse()];
+      mockadapter.onGet(/\/api\/rolle\/for-personenkontext-creation/).replyOnce(200, mockResponse);
+
+      const promise: Promise<void> = rolleStore.getRollenForPersonenkontextCreation({
+        organisationId: 'organisation-1',
+        offset: 0,
+        limit: 20,
+        rollenartOfUser: RollenArt.Lehr,
+        rolleName: 'Lehrer',
+        rollenIds: ['rolle-1', 'rolle-2'],
+        systemrecht: RollenSystemRechtEnum.RollenVerwalten,
+      });
+
+      expect(rolleStore.loading).toBe(true);
+      await promise;
+
+      expect(rolleStore.rollenForPersonenkontextCreation).toEqual(mockResponse);
+      expect(mockadapter.history.get[0]?.url).toContain('organisationId=organisation-1');
+      expect(mockadapter.history.get[0]?.url).toContain('rollenIds=rolle-1');
+      expect(mockadapter.history.get[0]?.url).toContain('rollenIds=rolle-2');
+      expect(rolleStore.errorCode).toBe('');
+      expect(rolleStore.loading).toBe(false);
+    });
+
+    it('should handle a structured error', async () => {
+      mockadapter.onGet(/\/api\/rolle\/for-personenkontext-creation/).replyOnce(500, { code: 'ROLLE_ERROR_CODE' });
+
+      await rolleStore.getRollenForPersonenkontextCreation({ organisationId: 'organisation-1' });
+
+      expect(rolleStore.errorCode).toBe('ROLLE_ERROR_CODE');
+      expect(rolleStore.loading).toBe(false);
+    });
+
+    it('should handle an unstructured error', async () => {
+      mockadapter.onGet(/\/api\/rolle\/for-personenkontext-creation/).replyOnce(500, 'server error');
+
+      await rolleStore.getRollenForPersonenkontextCreation({ organisationId: 'organisation-1' });
+
+      expect(rolleStore.errorCode).toBe('ROLLE_ERROR');
+      expect(rolleStore.loading).toBe(false);
     });
   });
 });
