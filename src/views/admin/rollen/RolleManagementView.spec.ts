@@ -278,6 +278,26 @@ describe('RolleManagementView', () => {
     });
   });
 
+  test('requests only RollenVerwalten when user lacks MPT permission', async () => {
+    authStore.hasMptRollenVerwaltenPermission = false;
+
+    const rollenartenSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+      '[data-testid="rollenarten-filter-select"]',
+    );
+    await rollenartenSelect?.setValue([RollenArt.Lehr]);
+
+    expect(rolleStore.getAllRollen).toHaveBeenLastCalledWith({
+      offset: 0,
+      limit: 30,
+      searchString: '',
+      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
+      merkmale: undefined,
+      rollenarten: [RollenArt.Lehr],
+      organisationenForFilter: undefined,
+      serviceProviderIds: undefined,
+    });
+  });
+
   test('organisationen filter change calls store action and reloads rollen', async () => {
     const schulenFilter: VueWrapper | undefined = wrapper?.findComponent({
       name: 'SchulenFilter',
@@ -346,6 +366,7 @@ describe('RolleManagementView', () => {
         offset: 0,
         limit: 30,
         searchString: '',
+        systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
         merkmale: undefined,
         rollenarten: undefined,
         organisationenForFilter: undefined,
