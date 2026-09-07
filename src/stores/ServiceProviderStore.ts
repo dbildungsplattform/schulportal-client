@@ -157,6 +157,7 @@ export type UpdatedServiceProvider = BaseServiceProvider & {
 type ServiceProviderState = {
   allServiceProviders: StartPageServiceProvider[];
   availableServiceProviders: StartPageServiceProvider[];
+  assignedServiceProviders: ServiceProviderResponse[];
   manageableServiceProviders: ManageableServiceProviderSimpleListEntryResponse[];
   manageableServiceProvidersForOrganisation: ManageableServiceProviderListEntry[];
   serviceProvidersForRollenVerwaltung: ServiceProviderIdNameResponse[];
@@ -204,6 +205,7 @@ type ServiceProviderGetters = object;
 type ServiceProviderActions = {
   getAssignableServiceProvidersForRolleByOrganisationId: (administeredBySchulstrukturknoten: string) => Promise<void>;
   getAvailableServiceProviders: () => Promise<void>;
+  getServiceProvidersByPersonId: (personId: string) => Promise<void>;
   getManageableServiceProviders: (filter: ManageableServiceProviderFilter) => Promise<void>;
   getManageableServiceProvidersForOrganisation: (
     organisationId: string,
@@ -240,6 +242,7 @@ export const useServiceProviderStore: StoreDefinition<
     return {
       allServiceProviders: [],
       availableServiceProviders: [],
+      assignedServiceProviders: [],
       manageableServiceProviders: [],
       manageableServiceProvidersForOrganisation: [],
       serviceProvidersForRollenVerwaltung: [],
@@ -280,6 +283,20 @@ export const useServiceProviderStore: StoreDefinition<
         const { data }: { data: StartPageServiceProvider[] } =
           await serviceProviderApi.providerControllerGetAvailableServiceProviders();
         this.availableServiceProviders = data;
+      } catch (error: unknown) {
+        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async getServiceProvidersByPersonId(personId: string) {
+      this.loading = true;
+      this.assignedServiceProviders = [];
+      try {
+        const { data }: AxiosResponse<ServiceProviderResponse[]> =
+          await serviceProviderApi.providerControllerGetServiceProvidersByPersonId(personId);
+        this.assignedServiceProviders = data;
       } catch (error: unknown) {
         this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
       } finally {
