@@ -104,6 +104,8 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
+  vi.clearAllTimers();
+  vi.useRealTimers();
   wrapper?.unmount();
   wrapper = null;
 });

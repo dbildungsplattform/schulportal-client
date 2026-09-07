@@ -134,12 +134,7 @@ describe('RolleModify', () => {
     }
 
     // Wait for all promises to resolve
-    await new Promise((resolve: (value: unknown) => void) => {
-      setTimeout(resolve, 0);
-    });
-    await flushPromises();
-
-    expect(bulkModifyPersonenRolleSpy).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(bulkModifyPersonenRolleSpy).toHaveBeenCalledTimes(1));
   });
 
   test('shows error dialog if bulk operation has errors', async () => {

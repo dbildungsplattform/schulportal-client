@@ -1,25 +1,25 @@
-import type { AxiosError, AxiosResponse } from 'axios';
+import type { AxiosResponse } from 'axios';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
 
 import type { ServiceProviderFormSubmitData } from '@/components/admin/service-provider/types';
 import axiosApiInstance from '@/services/ApiService';
-import { getResponseErrorCode } from '@/utils/errorHandlers';
+import { getResponseErrorCode, getRollenerweiterungErrors } from '@/utils/errorHandlers';
 import {
-  DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInner,
   DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum,
   ProviderApiFactory,
   RolleApiFactory,
   RollenArt,
+  RollenSystemRechtEnum,
   ServiceProviderKategorie,
   ServiceProviderMerkmal,
   VidisApiFactory,
   type ApplyRollenerweiterungBodyParams,
   type CreateServiceProviderBodyParams,
   type CreateServiceProviderResponse,
-  type DbiamApplyRollenerweiterungMultiError,
   type ManageableServiceProviderResponse,
   type ManageableServiceProviderSimpleListEntryResponse,
   type ProviderApiInterface,
+  type ProviderControllerGetAvailableServiceProviders200Response,
   type ProviderControllerFindRollenerweiterungenByServiceProviderId200Response,
   type ProviderControllerGetManageableServiceProviders200Response,
   type ProviderControllerGetManageableServiceProvidersForOrganisationId200Response,
@@ -100,6 +100,12 @@ export type ServiceProviderIdNameResponse = {
   name: string;
 };
 
+export type ServiceProviderRollenVerwaltungFilter = {
+  offset?: number;
+  limit?: number;
+  searchStr?: string;
+};
+
 export type RollenerweiterungFilter = {
   serviceProviderId: string;
   organisationIds?: string[];
@@ -152,6 +158,8 @@ type ServiceProviderState = {
   availableServiceProviders: StartPageServiceProvider[];
   manageableServiceProviders: ManageableServiceProviderSimpleListEntryResponse[];
   manageableServiceProvidersForOrganisation: ManageableServiceProviderListEntry[];
+  serviceProvidersForRollenVerwaltung: ServiceProviderIdNameResponse[];
+  totalServiceProvidersForRollenVerwaltung: number;
   totalManageableServiceProviders: number;
   totalManageableServiceProvidersForOrganisation: number;
   currentServiceProvider: ManageableServiceProviderDetail | null;
@@ -166,34 +174,27 @@ type ServiceProviderState = {
   errors: Map<string, DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum>;
 };
 
-function containsMultiError(error: unknown): error is AxiosError<DbiamApplyRollenerweiterungMultiError> {
-  const domainError: DbiamApplyRollenerweiterungMultiError | undefined = (error as AxiosError)?.response?.data as
-    | DbiamApplyRollenerweiterungMultiError
-    | undefined;
-  if (!domainError) {
-    return false;
-  }
-  if (typeof domainError !== 'object') {
-    return false;
-  }
-  if (!('code' in domainError)) {
-    return false;
-  }
-  if (!(typeof domainError.code === 'string' || typeof domainError.code === 'number')) {
-    return false;
-  }
-  if (!('idsWithI18nKeys' in domainError)) {
-    return false;
-  }
-  if (!Array.isArray(domainError.idsWithI18nKeys)) {
-    return false;
-  }
-  return true;
+type AvailableServiceProviderFilter = {
+  organisationId: string;
+  systemrechte: Array<RollenSystemRechtEnum>;
+};
+
+function fetchAvailableServiceProviders(
+  filter: AvailableServiceProviderFilter,
+): Promise<AxiosResponse<ProviderControllerGetAvailableServiceProviders200Response>> {
+  return serviceProviderApi.providerControllerGetAvailableServiceProviders(
+    undefined,
+    undefined,
+    undefined,
+    filter.organisationId,
+    filter.systemrechte,
+  );
 }
 
 type ServiceProviderGetters = object;
 type ServiceProviderActions = {
   getAssignableServiceProvidersForRolleByOrganisationId: (administeredBySchulstrukturknoten: string) => Promise<void>;
+  getServiceProvidersForRollenerweiterung: (organisationId: string) => Promise<void>;
   getMyServiceProviders: () => Promise<void>;
   getManageableServiceProviders: (filter: ManageableServiceProviderFilter) => Promise<void>;
   getManageableServiceProvidersForOrganisation: (
@@ -202,6 +203,7 @@ type ServiceProviderActions = {
     entriesPerPage: number,
   ) => Promise<void>;
   getManageableServiceProviderById: (serviceProviderId: string) => Promise<void>;
+  getServiceProvidersForRollenVerwaltung: (filter?: ServiceProviderRollenVerwaltungFilter) => Promise<void>;
   getServiceProviderLogoById: (serviceProviderId: string) => Promise<void>;
   getRollenerweiterungenById: (filter: RollenerweiterungFilter) => Promise<void>;
   persistRollenerweiterungenForServiceProvider: (filter: PersistRollenerweiterung) => Promise<void>;
@@ -232,6 +234,8 @@ export const useServiceProviderStore: StoreDefinition<
       availableServiceProviders: [],
       manageableServiceProviders: [],
       manageableServiceProvidersForOrganisation: [],
+      serviceProvidersForRollenVerwaltung: [],
+      totalServiceProvidersForRollenVerwaltung: 0,
       totalManageableServiceProviders: 0,
       totalManageableServiceProvidersForOrganisation: 0,
       currentServiceProvider: null,
@@ -255,6 +259,24 @@ export const useServiceProviderStore: StoreDefinition<
             administeredBySchulstrukturknoten,
           );
         this.allServiceProviders = data;
+      } catch (error: unknown) {
+        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async getServiceProvidersForRollenerweiterung(organisationId: string): Promise<void> {
+      this.loading = true;
+      this.errorCode = '';
+      this.allServiceProviders = [];
+      try {
+        const response: AxiosResponse<ProviderControllerGetAvailableServiceProviders200Response> =
+          await fetchAvailableServiceProviders({
+            organisationId,
+            systemrechte: [RollenSystemRechtEnum.RollenErweitern],
+          });
+        this.allServiceProviders = response.data.items;
       } catch (error: unknown) {
         this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
       } finally {
@@ -327,6 +349,31 @@ export const useServiceProviderStore: StoreDefinition<
           await serviceProviderApi.providerControllerGetManageableServiceProviderById(serviceProviderId);
         this.currentServiceProvider = data;
       } catch (error) {
+        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async getServiceProvidersForRollenVerwaltung(filter?: ServiceProviderRollenVerwaltungFilter) {
+      this.loading = true;
+      this.serviceProvidersForRollenVerwaltung = [];
+      this.totalServiceProvidersForRollenVerwaltung = 0;
+      try {
+        const response: ProviderControllerGetAvailableServiceProviders200Response = (
+          await serviceProviderApi.providerControllerGetManageableLandRootServiceProviders(
+            filter?.offset,
+            filter?.limit,
+            filter?.searchStr,
+          )
+        ).data;
+
+        this.serviceProvidersForRollenVerwaltung = response.items.map((serviceProvider: ServiceProviderResponse) => ({
+          id: serviceProvider.id,
+          name: serviceProvider.name,
+        }));
+        this.totalServiceProvidersForRollenVerwaltung = response.total;
+      } catch (error: unknown) {
         this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
       } finally {
         this.loading = false;
@@ -425,20 +472,13 @@ export const useServiceProviderStore: StoreDefinition<
           bodyParams,
         );
       } catch (error) {
-        if (containsMultiError(error)) {
-          this.errors = new Map<string, DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum>(
-            error.response?.data.idsWithI18nKeys
-              .filter(
-                (
-                  item: DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInner,
-                ): item is Required<DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInner> =>
-                  item.id !== undefined && item.i18nKey !== undefined,
-              )
-              .map((item: Required<DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInner>) => [
-                item.id,
-                item.i18nKey,
-              ]),
-          );
+        const rollenerweiterungErrors: Map<
+          string,
+          DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum
+        > | null =
+          getRollenerweiterungErrors<DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum>(error);
+        if (rollenerweiterungErrors) {
+          this.errors = rollenerweiterungErrors;
         } else {
           this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
         }

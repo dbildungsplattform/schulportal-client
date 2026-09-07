@@ -1,19 +1,16 @@
 <script setup lang="ts">
+  import { RollenSystemRechtEnum } from '@/api-client/generated/api';
   import ResultTable, { type Headers } from '@/components/admin/ResultTable.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
+  import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
   import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
-  import {
-    RollenSystemRecht,
-    useRolleStore,
-    type RolleStore,
-    type RolleWithServiceProvidersResponse,
-  } from '@/stores/RolleStore';
+  import { useRolleStore, type RolleStore, type RolleWithServiceProvidersResponse } from '@/stores/RolleStore';
   import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
   import { computed, onMounted, ref, watchEffect, type ComputedRef, type Ref } from 'vue';
+  import { onBeforeRouteLeave, useRouter, type Router } from 'vue-router';
   import { useI18n, type Composer } from 'vue-i18n';
-  import { onBeforeRouteLeave } from 'vue-router';
 
   type MptRolleTableItem = {
     id: string;
@@ -22,9 +19,11 @@
   };
 
   const { t }: Composer = useI18n({ useScope: 'global' });
+  const authStore: AuthStore = useAuthStore();
   const rolleStore: RolleStore = useRolleStore();
   const searchFilterStore: SearchFilterStore = useSearchFilterStore();
   const organisationStore: OrganisationStore = useOrganisationStore();
+  const router: Router = useRouter();
 
   const {
     hasAutoselectedSchule,
@@ -32,7 +31,7 @@
   }: {
     hasAutoselectedSchule: ComputedRef<boolean>;
     autoselectedSchule: ComputedRef<Organisation | null>;
-  } = useAutoselectedSchule([RollenSystemRecht.MptRollenVerwalten]);
+  } = useAutoselectedSchule([RollenSystemRechtEnum.MptRollenVerwalten]);
 
   const selectedOrganisationId: Ref<string> = ref('');
 
@@ -81,7 +80,7 @@
       limit: searchFilterStore.mptRollenPerPage,
       searchString: '',
       organisationenForFilter: [selectedOrganisationId.value],
-      systemrechte: [RollenSystemRecht.MptRollenVerwalten],
+      systemrechte: [RollenSystemRechtEnum.MptRollenVerwalten],
     });
   }
 
@@ -97,6 +96,17 @@
 
     searchFilterStore.mptRollenPerPage = limit;
     void getMptRollen();
+  }
+
+  function navigateToRolleDetails(_event: PointerEvent, row: { item: MptRolleTableItem }): void {
+    if (!authStore.hasRollenerweiternPermission) {
+      return;
+    }
+    void router.push({
+      name: 'mpt-rolle-details',
+      params: { id: row.item.id },
+      query: { orga: selectedOrganisationId.value },
+    });
   }
 
   watchEffect(async (): Promise<void> => {
@@ -171,7 +181,7 @@
           includeAll
           highlightSelection
           parentId="mpt-rolle-management"
-          :systemrechteForSearch="[RollenSystemRecht.MptRollenVerwalten]"
+          :systemrechteForSearch="[RollenSystemRechtEnum.MptRollenVerwalten]"
           :selectedSchulen="selectedOrganisationId ? [selectedOrganisationId] : []"
           @update:selected-schulen="setOrganisationFilter"
           :placeholderText="$t('admin.schule.schule')"
@@ -184,7 +194,7 @@
       data-testid="mpt-rolle-table"
       :headers="headers"
       :hide-select="true"
-      :disable-row-click="true"
+      :disable-row-click="!authStore.hasRollenerweiternPermission"
       :items="items"
       :items-per-page="searchFilterStore.mptRollenPerPage"
       :current-page="searchFilterStore.mptRollenPage"
@@ -194,6 +204,7 @@
       :no-data-text="
         selectedOrganisationId ? $t('admin.rolle.noRollenFound') : $t('admin.rolle.mptManagement.noSchuleSelected')
       "
+      @on-handle-row-click="navigateToRolleDetails"
       @on-items-per-page-update="getPaginatedRollenWithLimit"
       @on-page-update="getPaginatedRollen"
     />

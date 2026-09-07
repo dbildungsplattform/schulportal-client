@@ -658,6 +658,15 @@
         "menuItem": "Rollen für multiprofessionelle Teams verwalten",
         "noSchuleSelected": "Bitte wählen Sie zunächst im Filter eine Schule aus"
       },
+      "mptDetails": {
+        "title": "Rolle bearbeiten",
+        "editOffers": "Angebotsauswahl bearbeiten",
+        "saveSuccess": "Die Angebotsauswahl wurde erfolgreich gespeichert.",
+        "loadErrorTitle": "Fehler beim Laden der Rolle und ihrer Angebotsauswahl",
+        "loadErrorText": "Die Rolle und ihre Angebotsauswahl konnten nicht geladen werden.",
+        "saveErrorTitle": "Angebotsauswahl konnte nicht gespeichert werden",
+        "saveErrorText": "Beim Speichern der Angebotsauswahl ist ein Fehler aufgetreten."
+      },
       "mappingFrontBackEnd": {
         "systemrechte": {
           "ANGEBOTE_EINGESCHRAENKT_VERWALTEN": "Darf Angebote eingeschränkt verwalten",
@@ -710,6 +719,9 @@
       "merkmaleSelected": "{count} Merkmale ausgewählt",
       "rollenartenSelected": "{count} Rollenarten ausgewählt",
       "administrationsebenenSelected": "{count} Administrationsebenen ausgewählt",
+      "landesangebote": "Landesangebote",
+      "landesangeboteSelected": "{count} Landesangebote ausgewählt",
+      "landesangeboteFound": "{count} Landesangebot gefunden | {count} Landesangebote gefunden",
       "kategorienSelected": "{count} Kategorien ausgewählt",
       "rollenSelected": "{count} Rollen ausgewählt",
       "rolleAddedSuccessfully": "Die Rolle wurde erfolgreich hinzugefügt.",
