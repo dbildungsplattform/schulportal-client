@@ -99,6 +99,16 @@ type OnBeforeRouteLeaveCallback = (
   _next: NavigationGuardNext,
 ) => void;
 
+vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
+  const mod: object = await importOriginal();
+  return {
+    ...mod,
+    onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
+      storedBeforeRouteLeaveCallback = actualCallback;
+    }),
+  };
+});
+
 let { storedBeforeRouteLeaveCallback }: { storedBeforeRouteLeaveCallback: OnBeforeRouteLeaveCallback } = vi.hoisted(
   () => {
     return {
@@ -577,21 +587,8 @@ describe('PersonCreationView', () => {
   });
 
   describe('navigation interception', () => {
-    afterEach(() => {
-      vi.unmock('vue-router');
-    });
-
     test('it triggers if form is dirty', async () => {
       const expectedCallsToNext: number = 0;
-      vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
-        const mod: object = await importOriginal();
-        return {
-          ...mod,
-          onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
-            storedBeforeRouteLeaveCallback = actualCallback;
-          }),
-        };
-      });
 
       wrapper = await mountComponent();
       await fillForm({
@@ -618,15 +615,6 @@ describe('PersonCreationView', () => {
     test('it does not trigger if form is not dirty', async () => {
       // autoselected orgnisation doesnt count as dirty
       const expectedCallsToNext: number = 1;
-      vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
-        const mod: object = await importOriginal();
-        return {
-          ...mod,
-          onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
-            storedBeforeRouteLeaveCallback = actualCallback;
-          }),
-        };
-      });
       wrapper = await mountComponent();
       const spy: Mock = vi.fn();
       storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, spy);
