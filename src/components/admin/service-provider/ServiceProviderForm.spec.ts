@@ -3,9 +3,9 @@ import { useOrganisationStore, type Organisation, type OrganisationStore } from 
 import { RollenArt, RollenSystemRecht } from '@/stores/RolleStore';
 import { ServiceProviderKategorie, ServiceProviderMerkmal } from '@/stores/ServiceProviderStore';
 import { extractAnbietenInMerkmale } from '@/utils/serviceProvider.helper.js';
-import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
-import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 import type { ComponentInstance } from 'vue';
 import ServiceProviderForm from './ServiceProviderForm.vue';
 import type {
@@ -13,6 +13,8 @@ import type {
   ServiceProviderFormSubmitData,
   ServiceProviderForm as ServiceProviderFormType,
 } from './types';
+
+enableAutoUnmount(afterEach);
 
 const defaultProps: ServiceProviderFormProps = {
   initialValues: {
