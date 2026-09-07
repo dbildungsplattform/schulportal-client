@@ -1,5 +1,5 @@
 import axiosApiInstance from '@/services/ApiService';
-import { getResponseErrorCode } from '@/utils/errorHandlers';
+import { getResponseErrorCode, getRollenerweiterungErrors } from '@/utils/errorHandlers';
 import { type AxiosResponse } from 'axios';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import {
@@ -7,52 +7,20 @@ import {
   RollenArt,
   RollenMerkmal,
   RollenSystemRechtEnum,
+  type ApplyRollenerweiterungChangesBodyParams,
   type CreateRolleBodyParams,
+  type DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum,
   type RolleApiInterface,
   type RolleResponse,
   type RolleWithServiceProvidersResponse,
   type ServiceProviderIdNameResponse,
+  type ServiceProviderResponse,
   type SystemRechtResponse,
   type UpdateRolleBodyParams,
 } from '../api-client/generated/api';
 import type { BaseServiceProvider } from './ServiceProviderStore';
 
 const rolleApi: RolleApiInterface = RolleApiFactory(undefined, '', axiosApiInstance);
-
-type RolleState = {
-  createdRolle: Rolle | null;
-  updatedRolle: RolleWithServiceProvidersResponse | null;
-  currentRolle: Rolle | null;
-  allRollen: Array<RolleWithServiceProvidersResponse>;
-  rollenForPersonenkontextCreation: Array<RolleResponse>;
-  errorCode: string;
-  loading: boolean;
-  totalRollen: number;
-};
-
-type RolleGetters = object;
-type RolleActions = {
-  createRolle: (
-    rollenName: string,
-    administrationsebene: string,
-    rollenArt: RollenArt,
-    merkmale: RollenMerkmal[],
-    systemrechte: RollenSystemRechtEnum[],
-    serviceProvider: string[],
-  ) => Promise<void>;
-  getAllRollen: (filter: RolleFilter) => Promise<void>;
-  getRolleById: (rolleId: string) => Promise<void>;
-  updateRolle: (
-    rolleId: string,
-    rollenName: string,
-    merkmale: RollenMerkmal[],
-    systemrechte: RollenSystemRechtEnum[],
-    serviceProviderIds: string[],
-    version: number,
-  ) => Promise<void>;
-  deleteRolleById: (rolleId: string) => Promise<void>;
-  getRollenForPersonenkontextCreation: (params: RollenForPersonenkontextCreationQuery) => Promise<void>;
-};
 
 export { RollenArt, RollenMerkmal, RollenSystemRechtEnum as RollenSystemRecht };
 export type { RolleResponse, RolleWithServiceProvidersResponse };
@@ -67,19 +35,6 @@ export type Rolle = {
   serviceProviders?: Array<ServiceProviderIdNameResponse>;
   version: number;
 };
-
-function mapRolleResponseToRolle(response: RolleWithServiceProvidersResponse): Rolle {
-  return {
-    administeredBySchulstrukturknoten: response.administeredBySchulstrukturknoten,
-    id: response.id,
-    merkmale: response.merkmale,
-    name: response.name,
-    rollenart: response.rollenart,
-    systemrechte: new Set(Array.from(response.systemrechte).map((recht: SystemRechtResponse) => recht.name)),
-    version: response.version,
-    serviceProviders: response.serviceProviders,
-  };
-}
 
 export type RolleTableItem = {
   administeredBySchulstrukturknoten: string;
@@ -123,7 +78,68 @@ export type RollenForPersonenkontextCreationQuery = {
   systemrecht?: RollenSystemRechtEnum;
 };
 
+export type PersistRollenerweiterungForRolle = {
+  rolleId: string;
+  organisationId: string;
+  existingServiceProviderIds: Array<string>;
+  selectedServiceProviderIds: Array<string>;
+};
+
+type RolleState = {
+  createdRolle: Rolle | null;
+  updatedRolle: RolleWithServiceProvidersResponse | null;
+  currentRolle: Rolle | null;
+  currentMptRolle: Rolle | null;
+  allRollen: Array<RolleWithServiceProvidersResponse>;
+  rollenForPersonenkontextCreation: Array<RolleResponse>;
+  rollenerweiterungServiceProviders: Array<ServiceProviderResponse>;
+  errorCode: string;
+  loading: boolean;
+  totalRollen: number;
+  errors: Map<string, DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum>;
+};
+
+type RolleGetters = object;
+type RolleActions = {
+  createRolle: (
+    rollenName: string,
+    administrationsebene: string,
+    rollenArt: RollenArt,
+    merkmale: RollenMerkmal[],
+    systemrechte: RollenSystemRechtEnum[],
+    serviceProvider: string[],
+  ) => Promise<void>;
+  getAllRollen: (filter: RolleFilter) => Promise<void>;
+  getRolleById: (rolleId: string) => Promise<void>;
+  getMptRolleById: (rolleId: string, organisationId: string) => Promise<void>;
+  getRollenerweiterungenForRolle: (rolleId: string, organisationId: string) => Promise<void>;
+  persistRollenerweiterungenForRolle: (filter: PersistRollenerweiterungForRolle) => Promise<void>;
+  updateRolle: (
+    rolleId: string,
+    rollenName: string,
+    merkmale: RollenMerkmal[],
+    systemrechte: RollenSystemRechtEnum[],
+    serviceProviderIds: string[],
+    version: number,
+  ) => Promise<void>;
+  deleteRolleById: (rolleId: string) => Promise<void>;
+  getRollenForPersonenkontextCreation: (params: RollenForPersonenkontextCreationQuery) => Promise<void>;
+};
+
 export type RolleStore = Store<'rolleStore', RolleState, RolleGetters, RolleActions>;
+
+function mapRolleResponseToRolle(response: RolleWithServiceProvidersResponse): Rolle {
+  return {
+    administeredBySchulstrukturknoten: response.administeredBySchulstrukturknoten,
+    id: response.id,
+    merkmale: response.merkmale,
+    name: response.name,
+    rollenart: response.rollenart,
+    systemrechte: new Set(Array.from(response.systemrechte).map((recht: SystemRechtResponse) => recht.name)),
+    version: response.version,
+    serviceProviders: response.serviceProviders,
+  };
+}
 
 export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGetters, RolleActions> = defineStore(
   'rolleStore',
@@ -133,11 +149,14 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
         createdRolle: null,
         updatedRolle: null,
         currentRolle: null,
+        currentMptRolle: null,
         allRollen: [],
         rollenForPersonenkontextCreation: [],
+        rollenerweiterungServiceProviders: [],
         errorCode: '',
         loading: false,
         totalRollen: 0,
+        errors: new Map<string, DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum>(),
       };
     },
     actions: {
@@ -208,6 +227,91 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
           this.currentRolle = mapRolleResponseToRolle(data);
         } catch (error) {
           this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async getMptRolleById(rolleId: string, organisationId: string): Promise<void> {
+        this.loading = true;
+        this.errorCode = '';
+        this.currentMptRolle = null;
+        try {
+          const rolleFromList: RolleWithServiceProvidersResponse | undefined = this.allRollen.find(
+            (rolle: RolleWithServiceProvidersResponse): boolean => rolle.id === rolleId,
+          );
+          if (rolleFromList) {
+            this.currentMptRolle = mapRolleResponseToRolle(rolleFromList);
+            return;
+          }
+
+          const { data }: AxiosResponse<Array<RolleWithServiceProvidersResponse>> =
+            await rolleApi.rolleControllerFindRollen(
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              [organisationId],
+              [rolleId],
+              [RollenSystemRechtEnum.MptRollenVerwalten],
+            );
+          const rolle: RolleWithServiceProvidersResponse | undefined = data[0];
+          if (!rolle) {
+            this.errorCode = 'UNSPECIFIED_ERROR';
+            return;
+          }
+          this.currentMptRolle = mapRolleResponseToRolle(rolle);
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async getRollenerweiterungenForRolle(rolleId: string, organisationId: string): Promise<void> {
+        this.loading = true;
+        this.errorCode = '';
+        this.rollenerweiterungServiceProviders = [];
+        try {
+          const { data }: { data: Array<ServiceProviderResponse> } =
+            await rolleApi.rolleControllerFindRollenerweiterungenForRolleAndOrga(rolleId, organisationId);
+          this.rollenerweiterungServiceProviders = data;
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async persistRollenerweiterungenForRolle(filter: PersistRollenerweiterungForRolle): Promise<void> {
+        this.loading = true;
+        this.errorCode = '';
+        this.errors.clear();
+        try {
+          const bodyParams: ApplyRollenerweiterungChangesBodyParams = {
+            addErweiterungenForServiceProviderIds: filter.selectedServiceProviderIds.filter(
+              (id: string): boolean => !filter.existingServiceProviderIds.includes(id),
+            ),
+            removeErweiterungenForServiceProviderIds: filter.existingServiceProviderIds.filter(
+              (id: string): boolean => !filter.selectedServiceProviderIds.includes(id),
+            ),
+          };
+          await rolleApi.rolleControllerApplyRollenerweiterungChangesForRolle(
+            filter.rolleId,
+            filter.organisationId,
+            bodyParams,
+          );
+        } catch (error: unknown) {
+          const rollenerweiterungErrors: Map<
+            string,
+            DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum
+          > | null =
+            getRollenerweiterungErrors<DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum>(error);
+          if (rollenerweiterungErrors) {
+            this.errors = rollenerweiterungErrors;
+          } else {
+            this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+          }
         } finally {
           this.loading = false;
         }

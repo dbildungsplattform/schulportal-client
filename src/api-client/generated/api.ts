@@ -3458,44 +3458,44 @@ export interface ProviderControllerFindRollenerweiterungenByServiceProviderId200
 /**
  * 
  * @export
- * @interface ProviderControllerGetManageableLandRootServiceProviders200Response
+ * @interface ProviderControllerGetAvailableServiceProviders200Response
  */
-export interface ProviderControllerGetManageableLandRootServiceProviders200Response {
+export interface ProviderControllerGetAvailableServiceProviders200Response {
     /**
      * 
      * @type {number}
-     * @memberof ProviderControllerGetManageableLandRootServiceProviders200Response
+     * @memberof ProviderControllerGetAvailableServiceProviders200Response
      */
     'total': number;
     /**
      * 
      * @type {number}
-     * @memberof ProviderControllerGetManageableLandRootServiceProviders200Response
+     * @memberof ProviderControllerGetAvailableServiceProviders200Response
      */
     'offset': number;
     /**
      * 
      * @type {number}
-     * @memberof ProviderControllerGetManageableLandRootServiceProviders200Response
+     * @memberof ProviderControllerGetAvailableServiceProviders200Response
      */
     'limit': number;
     /**
      * 
      * @type {Array<ServiceProviderResponse>}
-     * @memberof ProviderControllerGetManageableLandRootServiceProviders200Response
+     * @memberof ProviderControllerGetAvailableServiceProviders200Response
      */
     'items': Array<ServiceProviderResponse>;
 }
 /**
  * 
  * @export
- * @interface ProviderControllerGetManageableLandRootServiceProviders200ResponseAllOf
+ * @interface ProviderControllerGetAvailableServiceProviders200ResponseAllOf
  */
-export interface ProviderControllerGetManageableLandRootServiceProviders200ResponseAllOf {
+export interface ProviderControllerGetAvailableServiceProviders200ResponseAllOf {
     /**
      * 
      * @type {Array<ServiceProviderResponse>}
-     * @memberof ProviderControllerGetManageableLandRootServiceProviders200ResponseAllOf
+     * @memberof ProviderControllerGetAvailableServiceProviders200ResponseAllOf
      */
     'items': Array<ServiceProviderResponse>;
 }
@@ -13047,7 +13047,7 @@ export const ProviderApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async providerControllerGetAvailableServiceProviders(offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<ServiceProviderResponse>>> {
+        async providerControllerGetAvailableServiceProviders(offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ProviderControllerGetAvailableServiceProviders200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.providerControllerGetAvailableServiceProviders(offset, limit, searchStr, organisationId, systemrechte, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -13060,7 +13060,7 @@ export const ProviderApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async providerControllerGetManageableLandRootServiceProviders(offset?: number, limit?: number, searchStr?: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ProviderControllerGetManageableLandRootServiceProviders200Response>> {
+        async providerControllerGetManageableLandRootServiceProviders(offset?: number, limit?: number, searchStr?: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ProviderControllerGetAvailableServiceProviders200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.providerControllerGetManageableLandRootServiceProviders(offset, limit, searchStr, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -13199,7 +13199,7 @@ export const ProviderApiFactory = function (configuration?: Configuration, baseP
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        providerControllerGetAvailableServiceProviders(offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options?: any): AxiosPromise<Array<ServiceProviderResponse>> {
+        providerControllerGetAvailableServiceProviders(offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options?: any): AxiosPromise<ProviderControllerGetAvailableServiceProviders200Response> {
             return localVarFp.providerControllerGetAvailableServiceProviders(offset, limit, searchStr, organisationId, systemrechte, options).then((request) => request(axios, basePath));
         },
         /**
@@ -13211,7 +13211,7 @@ export const ProviderApiFactory = function (configuration?: Configuration, baseP
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        providerControllerGetManageableLandRootServiceProviders(offset?: number, limit?: number, searchStr?: string, options?: any): AxiosPromise<ProviderControllerGetManageableLandRootServiceProviders200Response> {
+        providerControllerGetManageableLandRootServiceProviders(offset?: number, limit?: number, searchStr?: string, options?: any): AxiosPromise<ProviderControllerGetAvailableServiceProviders200Response> {
             return localVarFp.providerControllerGetManageableLandRootServiceProviders(offset, limit, searchStr, options).then((request) => request(axios, basePath));
         },
         /**
@@ -13343,7 +13343,7 @@ export interface ProviderApiInterface {
      * @throws {RequiredError}
      * @memberof ProviderApiInterface
      */
-    providerControllerGetAvailableServiceProviders(offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): AxiosPromise<Array<ServiceProviderResponse>>;
+    providerControllerGetAvailableServiceProviders(offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): AxiosPromise<ProviderControllerGetAvailableServiceProviders200Response>;
 
     /**
      * Get service-providers provided at LAND or ROOT level. Requires root-level ANGEBOTE_VERWALTEN.
@@ -13355,7 +13355,7 @@ export interface ProviderApiInterface {
      * @throws {RequiredError}
      * @memberof ProviderApiInterface
      */
-    providerControllerGetManageableLandRootServiceProviders(offset?: number, limit?: number, searchStr?: string, options?: AxiosRequestConfig): AxiosPromise<ProviderControllerGetManageableLandRootServiceProviders200Response>;
+    providerControllerGetManageableLandRootServiceProviders(offset?: number, limit?: number, searchStr?: string, options?: AxiosRequestConfig): AxiosPromise<ProviderControllerGetAvailableServiceProviders200Response>;
 
     /**
      * Get service-provider the logged-in user is allowed to manage.
@@ -13987,13 +13987,15 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
          * Get Erweiterte Angebote for a rolle.
          * @summary 
          * @param {string} rolleId The id for the rolle.
-         * @param {string} [organisationId] The id of the organisation where the role should be available.
+         * @param {string} organisationId The id of the organisation where the role should be available.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollenerweiterungenForRolleAndOrga: async (rolleId: string, organisationId?: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        rolleControllerFindRollenerweiterungenForRolleAndOrga: async (rolleId: string, organisationId: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'rolleId' is not null or undefined
             assertParamExists('rolleControllerFindRollenerweiterungenForRolleAndOrga', 'rolleId', rolleId)
+            // verify required parameter 'organisationId' is not null or undefined
+            assertParamExists('rolleControllerFindRollenerweiterungenForRolleAndOrga', 'organisationId', organisationId)
             const localVarPath = `/api/rolle/{rolleId}/angebote-via-rollenerweiterungen`
                 .replace(`{${"rolleId"}}`, encodeURIComponent(String(rolleId)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
@@ -14318,11 +14320,11 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * Get Erweiterte Angebote for a rolle.
          * @summary 
          * @param {string} rolleId The id for the rolle.
-         * @param {string} [organisationId] The id of the organisation where the role should be available.
+         * @param {string} organisationId The id of the organisation where the role should be available.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async rolleControllerFindRollenerweiterungenForRolleAndOrga(rolleId: string, organisationId?: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<ServiceProviderResponse>>> {
+        async rolleControllerFindRollenerweiterungenForRolleAndOrga(rolleId: string, organisationId: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<ServiceProviderResponse>>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollenerweiterungenForRolleAndOrga(rolleId, organisationId, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -14473,11 +14475,11 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * Get Erweiterte Angebote for a rolle.
          * @summary 
          * @param {string} rolleId The id for the rolle.
-         * @param {string} [organisationId] The id of the organisation where the role should be available.
+         * @param {string} organisationId The id of the organisation where the role should be available.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollenerweiterungenForRolleAndOrga(rolleId: string, organisationId?: string, options?: any): AxiosPromise<Array<ServiceProviderResponse>> {
+        rolleControllerFindRollenerweiterungenForRolleAndOrga(rolleId: string, organisationId: string, options?: any): AxiosPromise<Array<ServiceProviderResponse>> {
             return localVarFp.rolleControllerFindRollenerweiterungenForRolleAndOrga(rolleId, organisationId, options).then((request) => request(axios, basePath));
         },
         /**
@@ -14622,12 +14624,12 @@ export interface RolleApiInterface {
      * Get Erweiterte Angebote for a rolle.
      * @summary 
      * @param {string} rolleId The id for the rolle.
-     * @param {string} [organisationId] The id of the organisation where the role should be available.
+     * @param {string} organisationId The id of the organisation where the role should be available.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof RolleApiInterface
      */
-    rolleControllerFindRollenerweiterungenForRolleAndOrga(rolleId: string, organisationId?: string, options?: AxiosRequestConfig): AxiosPromise<Array<ServiceProviderResponse>>;
+    rolleControllerFindRollenerweiterungenForRolleAndOrga(rolleId: string, organisationId: string, options?: AxiosRequestConfig): AxiosPromise<Array<ServiceProviderResponse>>;
 
     /**
      * Get all systemrechte for rollen.
@@ -14785,12 +14787,12 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
      * Get Erweiterte Angebote for a rolle.
      * @summary 
      * @param {string} rolleId The id for the rolle.
-     * @param {string} [organisationId] The id of the organisation where the role should be available.
+     * @param {string} organisationId The id of the organisation where the role should be available.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof RolleApi
      */
-    public rolleControllerFindRollenerweiterungenForRolleAndOrga(rolleId: string, organisationId?: string, options?: AxiosRequestConfig) {
+    public rolleControllerFindRollenerweiterungenForRolleAndOrga(rolleId: string, organisationId: string, options?: AxiosRequestConfig) {
         return RolleApiFp(this.configuration).rolleControllerFindRollenerweiterungenForRolleAndOrga(rolleId, organisationId, options).then((request) => request(this.axios, this.basePath));
     }
 
