@@ -467,6 +467,12 @@ export interface CreateServiceProviderResponse {
      * @memberof CreateServiceProviderResponse
      */
     'rollenartenWhitelist': Array<RollenArt>;
+    /**
+     * 
+     * @type {ServiceProviderSystem}
+     * @memberof CreateServiceProviderResponse
+     */
+    'externalSystem': ServiceProviderSystem;
 }
 
 
@@ -4121,7 +4127,29 @@ export interface ServiceProviderResponse {
      * @memberof ServiceProviderResponse
      */
     'rollenartenWhitelist': Array<RollenArt>;
+    /**
+     * 
+     * @type {ServiceProviderSystem}
+     * @memberof ServiceProviderResponse
+     */
+    'externalSystem': ServiceProviderSystem;
 }
+
+
+/**
+ * 
+ * @export
+ * @enum {string}
+ */
+
+export const ServiceProviderSystem = {
+    None: 'NONE',
+    Email: 'EMAIL',
+    Itslearning: 'ITSLEARNING',
+    Uem: 'UEM'
+} as const;
+
+export type ServiceProviderSystem = typeof ServiceProviderSystem[keyof typeof ServiceProviderSystem];
 
 
 /**
