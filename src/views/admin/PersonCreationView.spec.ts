@@ -99,16 +99,6 @@ type OnBeforeRouteLeaveCallback = (
   _next: NavigationGuardNext,
 ) => void;
 
-vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
-  const mod: object = await importOriginal();
-  return {
-    ...mod,
-    onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
-      storedBeforeRouteLeaveCallback = actualCallback;
-    }),
-  };
-});
-
 let { storedBeforeRouteLeaveCallback }: { storedBeforeRouteLeaveCallback: OnBeforeRouteLeaveCallback } = vi.hoisted(
   () => {
     return {
@@ -122,6 +112,16 @@ let { storedBeforeRouteLeaveCallback }: { storedBeforeRouteLeaveCallback: OnBefo
     };
   },
 );
+
+vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
+  const mod: object = await importOriginal();
+  return {
+    ...mod,
+    onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
+      storedBeforeRouteLeaveCallback = actualCallback;
+    }),
+  };
+});
 
 async function mountComponent(): Promise<ReturnType<typeof mount<typeof PersonCreationView>>> {
   await vi.dynamicImportSettled();
