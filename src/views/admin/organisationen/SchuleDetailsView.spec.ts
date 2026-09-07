@@ -20,7 +20,7 @@ const mockSchule: Organisation = DoFactory.getSchule({
   id: 'schule-1',
   name: 'Test Grundschule',
   kennung: '1234567',
-  emailAdresse: 'schule@example.com',
+  emailAdress: 'schule@example.com',
   administriertVon: 'schultraeger-1',
   itslearningEnabled: true,
 });

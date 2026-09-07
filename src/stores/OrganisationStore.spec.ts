@@ -1,4 +1,4 @@
-import { OrganisationsTyp, ParentsTreeResponse, type OrganisationRootChildrenResponse } from '@/api-client/generated';
+import { OrganisationResponse, OrganisationsTyp, type OrganisationRootChildrenResponse } from '@/api-client/generated';
 import axiosApiInstance from '@/services/ApiService';
 import { faker } from '@faker-js/faker';
 import { flushPromises } from '@vue/test-utils';
@@ -638,18 +638,27 @@ describe('OrganisationStore', () => {
         typ: OrganisationsTyp.Schule,
         administriertVon: 'schultraeger-1',
       };
-      const mockParentsTree: ParentsTreeResponse = {
-        parentsTree: [
+      const mockParentsTree: { parents: OrganisationResponse[] } = {
+        parents: [
           {
             id: 'schultraeger-1',
             name: 'Test Schultraeger',
             typ: OrganisationsTyp.Land,
+            administriertVon: 'root',
+            kennung: '1',
+            zugehoerigZu: null,
+            namensergaenzung: null,
+            kuerzel: '',
+            traegerschaft: '01',
+            itslearningEnabled: false,
+            version: 0,
+            emailAdress: '',
           },
         ],
       };
 
       mockadapter.onGet('/api/organisationen/schule-1').replyOnce(200, mockSchule);
-      mockadapter.onGet('/api/organisationen/schule-1/parents-tree').replyOnce(200, mockParentsTree);
+      mockadapter.onPost('/api/organisationen/parents-by-ids').replyOnce(200, mockParentsTree);
 
       const promise: Promise<void> = organisationStore.fetchSchulDetails('schule-1');
 
@@ -658,7 +667,7 @@ describe('OrganisationStore', () => {
 
       expect(organisationStore.currentSchule).toEqual({
         ...mockSchule,
-        schultraegerform: mockParentsTree.parentsTree[0],
+        schultraegerform: mockParentsTree.parents[0],
       });
       expect(organisationStore.errorCode).toBe('');
       expect(organisationStore.loading).toBe(false);
@@ -666,10 +675,10 @@ describe('OrganisationStore', () => {
 
     it('should preserve the error code from a failed organisation request', async () => {
       organisationStore.errorCode = 'PREVIOUS_ERROR';
-      const mockParentsTree: ParentsTreeResponse = { parentsTree: [] };
+      const mockParentsTree: { parents: OrganisationResponse[] } = { parents: [] };
 
       mockadapter.onGet('/api/organisationen/schule-1').replyOnce(500, { code: 'SCHULE_NOT_FOUND' });
-      mockadapter.onGet('/api/organisationen/schule-1/parents-tree').replyOnce(200, mockParentsTree);
+      mockadapter.onPost('/api/organisationen/parents-by-ids').replyOnce(200, mockParentsTree);
 
       await organisationStore.fetchSchulDetails('schule-1');
 
@@ -682,7 +691,7 @@ describe('OrganisationStore', () => {
       mockadapter.onGet('/api/organisationen/1').replyOnce(500, 'some mock server error');
       const getOrganisationByIdPromise: Promise<void> = organisationStore.fetchSchulDetails('schule-1');
       await getOrganisationByIdPromise;
-      expect(organisationStore.currentOrganisation).toEqual(null);
+      expect(organisationStore.currentSchule).toEqual(null);
       expect(organisationStore.errorCode).toEqual('UNSPECIFIED_ERROR');
       expect(organisationStore.loading).toBe(false);
     });
@@ -703,7 +712,7 @@ describe('OrganisationStore', () => {
           zugehoerigZu: '1',
           version: 1,
           itslearningEnabled: true,
-          emailAdresse: 'oeffentlich@example.com',
+          emailAdress: 'oeffentlich@example.com',
         },
         ersatz: {
           id: '3',
@@ -717,7 +726,7 @@ describe('OrganisationStore', () => {
           zugehoerigZu: '1',
           version: 1,
           itslearningEnabled: true,
-          emailAdresse: 'ersatz@example.com',
+          emailAdress: 'ersatz@example.com',
         },
       };
 

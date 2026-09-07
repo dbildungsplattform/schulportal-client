@@ -13,13 +13,10 @@ import {
   type OrganisationenApiInterface,
   type OrganisationResponse,
   type OrganisationRootChildrenResponse,
-  type ParentInfoResponse,
   type ParentOrganisationenResponse,
   type RollenSystemRechtEnum,
 } from '../api-client/generated/api';
 import { useSearchFilterStore, type SearchFilterStore } from './SearchFilterStore';
-
-export type ParentInfo = ParentInfoResponse;
 
 const organisationApi: OrganisationenApiInterface = OrganisationenApiFactory(undefined, '', axiosApiInstance);
 const searchFilterStore: SearchFilterStore = useSearchFilterStore();
@@ -36,7 +33,7 @@ export type Organisation = {
   schuleDetails?: string;
   version?: number;
   itslearningEnabled?: boolean;
-  emailAdresse?: string;
+  emailAdress?: string;
   /* isNotPersisted is optional and currently only used for SchultraegerDetailsView */
   isNotPersisted?: boolean;
 };
@@ -63,7 +60,7 @@ export type SchuleTableItem = {
   administriertVon?: string | null;
   createdAt?: string;
   updatedAt?: string;
-  emailAdresse?: string;
+  emailAdress?: string;
 };
 
 export type SchultraegerTableItem = {
@@ -595,17 +592,17 @@ export const useOrganisationStore: StoreDefinition<
       this.errorCode = '';
       this.loading = true;
       try {
-        const [organisationResponse, parentsTreeResponse] = await Promise.all([
+        const [organisationResponse, parentsResponse]: [
+          AxiosResponse<Organisation>,
+          AxiosResponse<{ parents: OrganisationResponse[] }>,
+        ] = await Promise.all([
           organisationApi.organisationControllerFindOrganisationById(organisationId),
-          organisationApi.organisationControllerGetParentsTree(organisationId),
+          organisationApi.organisationControllerGetParentsByIds({ organisationIds: [organisationId] }),
         ]);
 
-        if (
-          organisationResponse.data.typ === OrganisationsTyp.Schule &&
-          parentsTreeResponse.data.parentsTree?.length > 0
-        ) {
-          const schultraegerform: ParentInfo | undefined = parentsTreeResponse.data.parentsTree.find(
-            (parent: ParentInfo) => parent.id === organisationResponse.data?.administriertVon,
+        if (organisationResponse.data.typ === OrganisationsTyp.Schule && parentsResponse.data.parents?.length > 0) {
+          const schultraegerform: OrganisationResponse | undefined = parentsResponse.data.parents.find(
+            (parent: OrganisationResponse) => parent.id === organisationResponse.data?.administriertVon,
           );
           this.currentSchule = { ...organisationResponse.data, schultraegerform };
         }
