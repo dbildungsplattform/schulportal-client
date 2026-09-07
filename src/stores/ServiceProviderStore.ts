@@ -47,6 +47,7 @@ export type StartPageServiceProvider = BaseServiceProvider & {
   url?: string;
   hasLogo: boolean;
   target: string;
+  externalSystem: string;
   // Could be undefined if the logo is not provided by the backend
   logoUrl?: string;
   logoId?: number;

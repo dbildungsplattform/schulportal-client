@@ -1,10 +1,5 @@
 <script setup lang="ts">
-  import {
-    OrganisationsTyp,
-    RollenMerkmal,
-    ServiceProviderSystem,
-    type ServiceProviderResponse,
-  } from '@/api-client/generated/api';
+  import { OrganisationsTyp, RollenMerkmal, ServiceProviderSystem } from '@/api-client/generated/api';
   import PasswordReset from '@/components/admin/personen/PasswordReset.vue';
   import SpshTooltip from '@/components/admin/SpshTooltip.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
@@ -14,7 +9,11 @@
   import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
   import { usePersonInfoStore, type PersonInfoStore } from '@/stores/PersonInfoStore';
   import { EmailStatus, usePersonStore, type PersonStore } from '@/stores/PersonStore';
-  import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
+  import {
+    useServiceProviderStore,
+    type ServiceProviderStore,
+    type StartPageServiceProvider,
+  } from '@/stores/ServiceProviderStore';
   import {
     TokenKind,
     useTwoFactorAuthentificationStore,
@@ -69,8 +68,8 @@
 
   // The UEM Angebot is modelled as a service provider with target NONE
   const hasUEMServiceProvider: ComputedRef<boolean> = computed(() => {
-    return serviceProviderStore.assignedServiceProviders.some(
-      (serviceProvider: ServiceProviderResponse) => serviceProvider.externalSystem === ServiceProviderSystem.Uem,
+    return serviceProviderStore.availableServiceProviders.some(
+      (serviceProvider: StartPageServiceProvider) => serviceProvider.externalSystem === ServiceProviderSystem.Uem,
     );
   });
 
@@ -205,14 +204,13 @@
 
       const twoFARequirementPromise: Promise<void> = twoFactorAuthenticationStore.get2FARequirement(personId);
       const personUebersichtPromise: Promise<void> = personStore.getPersonenuebersichtById(personId);
-      const assignedServiceProvidersPromise: Promise<void> =
-        serviceProviderStore.getServiceProvidersByPersonId(personId);
+      const availableServiceProvidersPromise: Promise<void> = serviceProviderStore.getAvailableServiceProviders();
       const twoFAStatePromise: Promise<void> = twoFactorAuthenticationStore.get2FAState(personId);
 
       await Promise.all([
         twoFARequirementPromise,
         personUebersichtPromise,
-        assignedServiceProvidersPromise,
+        availableServiceProvidersPromise,
         twoFAStatePromise,
       ]);
       loading2FA.value = false;
