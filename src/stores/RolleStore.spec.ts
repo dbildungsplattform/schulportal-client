@@ -8,7 +8,6 @@ import {
   type RolleResponse,
   type RolleWithServiceProvidersResponse,
   type ServiceProviderResponse,
-  type SystemRechtResponse,
 } from '../api-client/generated/api';
 import { useRolleStore, type RolleStore } from './RolleStore';
 
@@ -38,20 +37,16 @@ describe('rolleStore', () => {
 
   describe('createRolle', () => {
     it('should create rolle and update state', async () => {
-      const mockResponse: RolleResponse = {
+      const mockResponse: RolleResponse = DoFactory.getRolleResponse({
         administeredBySchulstrukturknoten: '1234',
-        rollenart: 'LEHR',
+        rollenart: RollenArt.Lehr,
         name: 'Lehrer',
-        // TODO remove type casting when generator is fixed
         merkmale: [RollenMerkmal.KopersPflicht],
-        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
-        createdAt: '2022',
-        updatedAt: '2022',
+        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
         id: '1',
         administeredBySchulstrukturknotenName: null,
         administeredBySchulstrukturknotenKennung: null,
-        version: 1,
-      };
+      });
 
       mockadapter.onPost('/api/rolle').replyOnce(200, mockResponse);
       const createRollePromise: Promise<void> = rolleStore.createRolle(
@@ -106,19 +101,16 @@ describe('rolleStore', () => {
   describe('getAllRollen', () => {
     it('should load rollen and update state', async () => {
       const mockResponse: RolleResponse[] = [
-        {
+        DoFactory.getRolleResponse({
           administeredBySchulstrukturknoten: '1234',
-          rollenart: 'LEHR',
+          rollenart: RollenArt.Lehr,
           name: 'Lehrer',
           merkmale: [RollenMerkmal.KopersPflicht],
-          systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
-          createdAt: '2022',
-          updatedAt: '2022',
+          systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
           id: '1',
           administeredBySchulstrukturknotenName: 'Testschule-15',
           administeredBySchulstrukturknotenKennung: '1111115',
-          version: 1,
-        },
+        }),
       ];
 
       mockadapter.onGet('/api/rolle?offset=0&limit=30&searchStr=').replyOnce(200, mockResponse, {});
@@ -174,20 +166,16 @@ describe('rolleStore', () => {
 
   describe('getRolleById', () => {
     it('should load Rolle and update state', async () => {
-      const mockResponse: RolleResponse = {
+      const mockResponse: RolleResponse = DoFactory.getRolleResponse({
         administeredBySchulstrukturknoten: '1234',
-        rollenart: 'LEHR',
+        rollenart: RollenArt.Lehr,
         name: 'Lehrer',
-        // TODO: remove type casting when generator is fixed
         merkmale: [RollenMerkmal.KopersPflicht],
-        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
-        createdAt: '2022',
-        updatedAt: '2022',
+        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
         id: '1',
         administeredBySchulstrukturknotenName: null,
         administeredBySchulstrukturknotenKennung: null,
-        version: 1,
-      };
+      });
 
       mockadapter.onGet('/api/rolle/1').replyOnce(200, mockResponse, {});
       const getRolleByIdPromise: Promise<void> = rolleStore.getRolleById('1');
@@ -398,20 +386,18 @@ describe('rolleStore', () => {
 
   describe('updateRolle', () => {
     it('should update Rolle and update state', async () => {
-      const mockResponse: RolleWithServiceProvidersResponse = {
+      const mockResponse: RolleWithServiceProvidersResponse = DoFactory.getRolleWithServiceProviders({
         administeredBySchulstrukturknoten: '1234',
-        rollenart: 'LEHR',
+        rollenart: RollenArt.Lehr,
         name: 'Updated Lehrer',
-        merkmale: ['KOPERS_PFLICHT'],
-        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
-        createdAt: '2022',
-        updatedAt: '2023',
+        merkmale: [RollenMerkmal.KopersPflicht],
+        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
         id: '1',
         serviceProviders: [{ id: 'sp1', name: 'ServiceProvider1' }],
         administeredBySchulstrukturknotenName: null,
         administeredBySchulstrukturknotenKennung: null,
-        version: 1,
-      };
+        updatedAt: '2023',
+      });
 
       mockadapter.onPut('/api/rolle/1').replyOnce(200, mockResponse);
       const updateRollePromise: Promise<void> = rolleStore.updateRolle(
