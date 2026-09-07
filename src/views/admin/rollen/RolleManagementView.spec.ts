@@ -9,6 +9,7 @@ import { expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import { RollenSystemRechtEnum } from '../../../api-client/generated/api';
+import { DoFactory } from '../../../../test/DoFactory';
 import RolleManagementView from './RolleManagementView.vue';
 
 let wrapper: VueWrapper | null = null;
@@ -52,67 +53,31 @@ beforeEach(() => {
   searchFilterStore.searchStringForRollen = '';
 
   rolleStore.allRollen = [
-    {
-      administeredBySchulstrukturknoten: '1234',
-      rollenart: 'LEHR',
+    DoFactory.getRolleWithServiceProviders({
       name: 'Lehrer',
       merkmale: [RollenMerkmal.KopersPflicht],
       systemrechte: [{ name: RollenSystemRechtEnum.RollenVerwalten, isTechnical: false }],
-      createdAt: '2022',
-      updatedAt: '2022',
-      id: '1',
       serviceProviders: [
-        {
-          id: '1',
-          name: 'itslearning',
-        },
-        {
-          id: '2',
-          name: 'E-Mail',
-        },
+        { id: '1', name: 'itslearning' },
+        { id: '2', name: 'E-Mail' },
       ],
       administeredBySchulstrukturknotenName: 'Land SH',
       administeredBySchulstrukturknotenKennung: '',
-      version: 1,
-    },
-    {
-      administeredBySchulstrukturknoten: '1234',
-      rollenart: 'LERN',
+    }),
+    DoFactory.getRolleWithServiceProviders({
       name: 'SuS',
-      merkmale: [],
-      systemrechte: [],
-      createdAt: '2022',
-      updatedAt: '2022',
-      id: '2',
-      serviceProviders: [
-        {
-          id: '1',
-          name: 'itslearning',
-        },
-      ],
+      rollenart: RollenArt.Lern,
+      serviceProviders: [{ id: '1', name: 'itslearning' }],
       administeredBySchulstrukturknotenName: 'Land SH',
       administeredBySchulstrukturknotenKennung: '1234567',
-      version: 1,
-    },
-    {
-      administeredBySchulstrukturknoten: '42',
-      rollenart: 'LERN',
+    }),
+    DoFactory.getRolleWithServiceProviders({
       name: 'Rolle ohne Namen',
-      merkmale: [],
-      systemrechte: [],
-      createdAt: '2022',
-      updatedAt: '2022',
-      id: '2',
-      serviceProviders: [
-        {
-          id: '1',
-          name: 'itslearning',
-        },
-      ],
+      rollenart: RollenArt.Lern,
+      serviceProviders: [{ id: '1', name: 'itslearning' }],
       administeredBySchulstrukturknotenName: '',
       administeredBySchulstrukturknotenKennung: '1234567',
-      version: 1,
-    },
+    }),
   ];
 
   rolleStore.totalRollen = 3;
