@@ -29,7 +29,7 @@ import {
   TraegerschaftTyp,
   type UserinfoResponse,
 } from '@/api-client/generated';
-import { PersonenkontextWorkflowResponse, ServiceProviderMerkmal } from '@/api-client/generated/api';
+import { PersonenkontextWorkflowResponse, ServiceProviderMerkmal, ServiceProviderSystem } from '@/api-client/generated/api';
 import type { Organisation } from '@/stores/OrganisationStore';
 import { type Personendatensatz } from '@/stores/PersonStore';
 import type { Rolle, RolleResponse, RolleWithServiceProvidersResponse } from '@/stores/RolleStore';
@@ -470,6 +470,7 @@ export class DoFactory {
       requires2fa: false,
       merkmale: [],
       rollenartenWhitelist: [],
+      externalSystem: faker.helpers.enumValue(ServiceProviderSystem),
       ...props,
     };
   }
