@@ -1,6 +1,7 @@
 import {
   OrganisationResponseLegacy,
   PersonenkontexteUpdateResponse,
+  type RolleResponse,
   type DBiamPersonResponse,
   type PersonLandesbediensteterSearchResponse,
 } from '@/api-client/generated';
@@ -54,23 +55,21 @@ const mockCreatedPersonWithKontext: DBiamPersonResponse = DoFactory.getDBiamPers
     }),
   ],
 });
-
 const workflowOrganisation: OrganisationResponseLegacy = DoFactory.getOrganisationenResponseLegacy({
   id: ORGANISATION_ID,
 });
 
+const mockRolleForPersonenkontextCreation: RolleResponse = DoFactory.getRolleResponse({
+  id: ROLLE_ID,
+  rollenart: 'LERN',
+  administeredBySchulstrukturknoten: workflowOrganisation.id,
+  administeredBySchulstrukturknotenName: workflowOrganisation.name,
+  administeredBySchulstrukturknotenKennung: workflowOrganisation.kennung,
+  merkmale: [RollenMerkmal.KopersPflicht],
+});
+
 const mockWorkflowStepResponse: PersonenkontextWorkflowResponse = DoFactory.getPersonenkontextWorkflowResponse({
   organisations: [workflowOrganisation],
-  rollen: [
-    DoFactory.getRolleResponse({
-      id: ROLLE_ID,
-      rollenart: 'LERN',
-      administeredBySchulstrukturknoten: workflowOrganisation.id,
-      administeredBySchulstrukturknotenName: workflowOrganisation.name,
-      administeredBySchulstrukturknotenKennung: workflowOrganisation.kennung,
-      merkmale: [RollenMerkmal.KopersPflicht],
-    }),
-  ],
   canCommit: true,
 });
 
@@ -233,6 +232,7 @@ beforeEach(async () => {
   router.push('/');
   await router.isReady();
 
+  rolleStore.rollenForPersonenkontextCreation = [mockRolleForPersonenkontextCreation];
   wrapper = await mountComponent();
   personStore.errorCode = '';
   personenkontextStore.errorCode = '';
@@ -510,7 +510,6 @@ describe('PersonCreationView', () => {
           id: organisationId,
         }),
       ],
-      rollen: [DoFactory.getRolleResponse({ id: rolleId })],
       canCommit: true,
     });
 

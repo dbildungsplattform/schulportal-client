@@ -356,13 +356,6 @@ export class DoFactory {
     const organisation: OrganisationResponseLegacy = this.getOrganisationenResponseLegacy();
     return {
       organisations: [organisation],
-      rollen: [
-        this.getRolleResponse({
-          administeredBySchulstrukturknoten: organisation.id,
-          administeredBySchulstrukturknotenName: organisation.name,
-          administeredBySchulstrukturknotenKennung: organisation.kennung,
-        }),
-      ],
       selectedOrganisation: null,
       selectedRollen: null,
       canCommit: false,
