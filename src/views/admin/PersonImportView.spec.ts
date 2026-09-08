@@ -1,4 +1,4 @@
-import { ImportDataItemStatus, type ImportUploadResponse } from '@/api-client/generated';
+import { ImportDataItemStatus, type ImportResultResponse, type ImportUploadResponse } from '@/api-client/generated';
 import routes from '@/router/routes';
 import { useImportStore, type ImportStore } from '@/stores/ImportStore';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
@@ -379,6 +379,85 @@ describe('PersonImportView', () => {
 
     const downloadButton: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="download-all-data-button"]');
     downloadButton?.trigger('click');
+  });
+
+  test('it does not duplicate rows when a page request fails during download', async () => {
+    vi.useFakeTimers();
+
+    importStore.uploadResponse = {
+      importvorgangId: '1',
+      isValid: true,
+      totalImportDataItems: 3,
+      totalInvalidImportDataItems: 0,
+      invalidImportDataItems: [],
+    };
+    importStore.importedUsersPerPage = 1;
+    importStore.importResponse = {
+      importvorgandId: '1',
+      rollenname: 'itslearning-Schulbegleitung',
+      organisationsname: 'Carl-Orff-Schule',
+      importedUsers: [],
+      total: 3,
+      pageTotal: 1,
+    };
+
+    const makePage = (benutzername: string): ImportResultResponse => ({
+      importvorgandId: '1',
+      rollenname: 'itslearning-Schulbegleitung',
+      organisationsname: 'Carl-Orff-Schule',
+      importedUsers: [
+        {
+          klasse: '9a',
+          vorname: 'Vorname',
+          nachname: 'Nachname',
+          benutzername,
+          startpasswort: 'pw',
+          status: ImportDataItemStatus.Success,
+        },
+      ],
+      total: 3,
+      pageTotal: 1,
+    });
+
+    // Page at offset 1 fails on every attempt; the old code fell back to the previous page's stale data.
+    const getImportedPersonsSpy: MockInstance = vi
+      .spyOn(importStore, 'getImportedPersons')
+      .mockImplementation((_id: string, offset?: number): Promise<void> => {
+        if (offset === 0) {
+          importStore.importResponse = makePage('alpha');
+          return Promise.resolve();
+        }
+        if (offset === 2) {
+          importStore.importResponse = makePage('charlie');
+          return Promise.resolve();
+        }
+        importStore.importResponse = null;
+        return Promise.resolve();
+      });
+
+    let capturedBlob: Blob | undefined;
+    globalThis.URL.createObjectURL = vi.fn((blob: Blob): string => {
+      capturedBlob = blob;
+      return 'blob:mock';
+    });
+    globalThis.URL.revokeObjectURL = vi.fn();
+
+    importStore.importProgress = 100;
+    await nextTick();
+
+    const downloadButton: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="download-all-data-button"]');
+    downloadButton?.trigger('click');
+
+    await vi.runAllTimersAsync();
+    await flushPromises();
+    vi.useRealTimers();
+
+    const fileContent: string = capturedBlob ? await capturedBlob.text() : '';
+
+    expect(fileContent.match(/alpha/g)?.length).toBe(1);
+    expect(fileContent.match(/charlie/g)?.length).toBe(1);
+    // The failed middle page must be retried, not silently reused from stale state.
+    expect(getImportedPersonsSpy.mock.calls.filter(([, offset]: [string, number]) => offset === 1)).toHaveLength(3);
   });
 
   test('it shows loading bar', async () => {

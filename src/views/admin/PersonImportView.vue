@@ -5,7 +5,12 @@
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
   import FormRow from '@/components/form/FormRow.vue';
   import FormWrapper from '@/components/form/FormWrapper.vue';
-  import { useImportStore, type ImportedUserResponse, type ImportStore } from '@/stores/ImportStore';
+  import {
+    useImportStore,
+    type ImportedUserResponse,
+    type ImportResultResponse,
+    type ImportStore,
+  } from '@/stores/ImportStore';
   import { RollenArt, useRolleStore, type RolleResponse, type RolleStore } from '@/stores/RolleStore';
   import type { TranslatedObject } from '@/types';
   import { toTypedSchema } from '@vee-validate/yup';
@@ -302,24 +307,30 @@
       const totalUsers: number = importStore.importResponse?.total as number;
       const itemsPerPage: number = importStore.importedUsersPerPage;
       const totalPagesNumber: number = Math.ceil(totalUsers / itemsPerPage);
+      const importvorgangId: string = importStore.uploadResponse?.importvorgangId as string;
+      const maxAttemptsPerPage: number = 3;
 
       let allImportedUsers: ImportedUserResponse[] = [];
 
       for (let pageIndex: number = 0; pageIndex < totalPagesNumber; pageIndex++) {
         const offset: number = pageIndex * itemsPerPage;
-        // eslint-disable-next-line no-await-in-loop
-        await new Promise((resolve: (value: unknown) => void) => {
-          setTimeout(resolve, pageIndex * 600);
-        });
 
-        // eslint-disable-next-line no-await-in-loop
-        await importStore.getImportedPersons(
-          importStore.uploadResponse?.importvorgangId as string,
-          offset,
-          itemsPerPage,
-        );
+        // Retry transient failures so a failed page never falls back to stale data (which caused duplicate rows).
+        let page: ImportResultResponse | null = null;
+        for (let attempt: number = 0; attempt < maxAttemptsPerPage && page === null; attempt++) {
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise((resolve: (value: unknown) => void) => {
+            setTimeout(resolve, (pageIndex + attempt) * 600);
+          });
 
-        allImportedUsers = allImportedUsers.concat(importStore.importResponse?.importedUsers || []);
+          // eslint-disable-next-line no-await-in-loop
+          await importStore.getImportedPersons(importvorgangId, offset, itemsPerPage);
+          // On failure the store sets importResponse to null; only that page's data is used.
+          page = importStore.importResponse;
+        }
+
+        // Only append the users actually returned for this page; never reuse the previous page's data.
+        allImportedUsers = allImportedUsers.concat(page?.importedUsers ?? []);
       }
 
       const fileContent: string = createFileContentFromUsers(allImportedUsers);
