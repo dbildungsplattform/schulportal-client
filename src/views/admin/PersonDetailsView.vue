@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ServiceProviderSystem, type LockUserBodyParams, type ServiceProviderResponse } from '@/api-client/generated';
+  import { ServiceProviderSystem, type LockUserBodyParams } from '@/api-client/generated';
   import SpshTooltip from '@/components/admin/SpshTooltip.vue';
   import KlasseChange from '@/components/admin/klassen/KlasseChange.vue';
   import BefristungInput from '@/components/admin/personen/BefristungInput.vue';
@@ -39,7 +39,11 @@
     type RolleResponse,
   } from '@/stores/PersonenkontextStore';
   import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
-  import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
+  import {
+    StartPageServiceProvider,
+    useServiceProviderStore,
+    type ServiceProviderStore,
+  } from '@/stores/ServiceProviderStore';
   import {
     TokenKind,
     useTwoFactorAuthentificationStore,
@@ -615,7 +619,7 @@
   // Used to show device password block; the UEM Angebot is modelled as a service provider with target NONE
   const hasUEMServiceProvider: ComputedRef<boolean> = computed(() => {
     return serviceProviderStore.assignedServiceProviders.some(
-      (serviceProvider: ServiceProviderResponse) => serviceProvider.externalSystem === ServiceProviderSystem.Uem,
+      (serviceProvider: StartPageServiceProvider) => serviceProvider.externalSystem === ServiceProviderSystem.Uem,
     );
   });
 

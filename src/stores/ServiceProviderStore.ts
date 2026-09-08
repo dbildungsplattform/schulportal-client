@@ -157,8 +157,7 @@ export type UpdatedServiceProvider = BaseServiceProvider & {
 
 type ServiceProviderState = {
   allServiceProviders: StartPageServiceProvider[];
-  availableServiceProviders: StartPageServiceProvider[];
-  assignedServiceProviders: ServiceProviderResponse[];
+  assignedServiceProviders: StartPageServiceProvider[];
   manageableServiceProviders: ManageableServiceProviderSimpleListEntryResponse[];
   manageableServiceProvidersForOrganisation: ManageableServiceProviderListEntry[];
   serviceProvidersForRollenVerwaltung: ServiceProviderIdNameResponse[];
@@ -205,7 +204,6 @@ function containsMultiError(error: unknown): error is AxiosError<DbiamApplyRolle
 type ServiceProviderGetters = object;
 type ServiceProviderActions = {
   getAssignableServiceProvidersForRolleByOrganisationId: (administeredBySchulstrukturknoten: string) => Promise<void>;
-  getAvailableServiceProviders: () => Promise<void>;
   getServiceProvidersByPersonId: (personId: string) => Promise<void>;
   getManageableServiceProviders: (filter: ManageableServiceProviderFilter) => Promise<void>;
   getManageableServiceProvidersForOrganisation: (
@@ -242,7 +240,6 @@ export const useServiceProviderStore: StoreDefinition<
   state: (): ServiceProviderState => {
     return {
       allServiceProviders: [],
-      availableServiceProviders: [],
       assignedServiceProviders: [],
       manageableServiceProviders: [],
       manageableServiceProvidersForOrganisation: [],
@@ -278,24 +275,11 @@ export const useServiceProviderStore: StoreDefinition<
       }
     },
 
-    async getAvailableServiceProviders() {
-      this.loading = true;
-      try {
-        const { data }: { data: StartPageServiceProvider[] } =
-          await serviceProviderApi.providerControllerGetAvailableServiceProviders();
-        this.availableServiceProviders = data;
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
-      } finally {
-        this.loading = false;
-      }
-    },
-
     async getServiceProvidersByPersonId(personId: string) {
       this.loading = true;
       this.assignedServiceProviders = [];
       try {
-        const { data }: AxiosResponse<ServiceProviderResponse[]> =
+        const { data }: { data: StartPageServiceProvider[] } =
           await serviceProviderApi.providerControllerGetServiceProvidersByPersonId(personId);
         this.assignedServiceProviders = data;
       } catch (error: unknown) {

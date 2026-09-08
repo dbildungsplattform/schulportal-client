@@ -68,7 +68,7 @@
 
   // The UEM Angebot is modelled as a service provider with target NONE
   const hasUEMServiceProvider: ComputedRef<boolean> = computed(() => {
-    return serviceProviderStore.availableServiceProviders.some(
+    return serviceProviderStore.assignedServiceProviders.some(
       (serviceProvider: StartPageServiceProvider) => serviceProvider.externalSystem === ServiceProviderSystem.Uem,
     );
   });
@@ -204,7 +204,8 @@
 
       const twoFARequirementPromise: Promise<void> = twoFactorAuthenticationStore.get2FARequirement(personId);
       const personUebersichtPromise: Promise<void> = personStore.getPersonenuebersichtById(personId);
-      const availableServiceProvidersPromise: Promise<void> = serviceProviderStore.getAvailableServiceProviders();
+      const availableServiceProvidersPromise: Promise<void> =
+        serviceProviderStore.getServiceProvidersByPersonId(personId);
       const twoFAStatePromise: Promise<void> = twoFactorAuthenticationStore.get2FAState(personId);
 
       await Promise.all([
