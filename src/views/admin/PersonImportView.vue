@@ -324,7 +324,9 @@
           });
 
           // eslint-disable-next-line no-await-in-loop
-          page = await importStore.getImportedPersons(importvorgangId, offset, itemsPerPage);
+          await importStore.getImportedPersons(importvorgangId, offset, itemsPerPage);
+          // On failure the store sets importResponse to null; only that page's data is used.
+          page = importStore.importResponse;
         }
 
         // Only append the users actually returned for this page; never reuse the previous page's data.

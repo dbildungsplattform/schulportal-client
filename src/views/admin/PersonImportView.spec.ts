@@ -422,16 +422,17 @@ describe('PersonImportView', () => {
     // Page at offset 1 fails on every attempt; the old code fell back to the previous page's stale data.
     const getImportedPersonsSpy: MockInstance = vi
       .spyOn(importStore, 'getImportedPersons')
-      .mockImplementation((_id: string, offset?: number): Promise<ImportResultResponse | null> => {
+      .mockImplementation((_id: string, offset?: number): Promise<void> => {
         if (offset === 0) {
           importStore.importResponse = makePage('alpha');
-          return Promise.resolve(importStore.importResponse);
+          return Promise.resolve();
         }
         if (offset === 2) {
           importStore.importResponse = makePage('charlie');
-          return Promise.resolve(importStore.importResponse);
+          return Promise.resolve();
         }
-        return Promise.resolve(null);
+        importStore.importResponse = null;
+        return Promise.resolve();
       });
 
     let capturedBlob: Blob | undefined;
