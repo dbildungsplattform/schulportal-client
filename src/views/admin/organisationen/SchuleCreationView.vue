@@ -1,25 +1,36 @@
 <script setup lang="ts">
   import SchuleForm, { SchuleDetailsForm } from '@/components/admin/schulen/SchuleForm.vue';
-  import SchuleSuccessTemplate from '@/components/admin/schulen/SchuleSuccessTemplate.vue';
-  import SpshAlert from '@/components/alert/SpshAlert.vue';
-  import LayoutCard from '@/components/cards/LayoutCard.vue';
-  import {
-    OrganisationsTyp,
-    useOrganisationStore,
-    type Organisation,
-    type OrganisationStore,
-  } from '@/stores/OrganisationStore';
-  import { computed, onMounted, onUnmounted, ref, type ComputedRef, type Ref } from 'vue';
-  import { NavigationGuardNext, onBeforeRouteLeave, RouteLocationNormalized, useRouter, type Router } from 'vue-router';
+import SchuleSuccessTemplate from '@/components/admin/schulen/SchuleSuccessTemplate.vue';
+import SpshAlert from '@/components/alert/SpshAlert.vue';
+import LayoutCard from '@/components/cards/LayoutCard.vue';
+import {
+  OrganisationsTyp,
+  useOrganisationStore,
+  type Organisation,
+  type OrganisationStore,
+} from '@/stores/OrganisationStore';
+import { computed, onMounted, onUnmounted, ref, type ComputedRef, type Ref } from 'vue';
+import { NavigationGuardNext, onBeforeRouteLeave, RouteLocationNormalized, useRouter, type Router } from 'vue-router';
 
-  const initialSchulFormCache: Ref<string> = ref('');
   const isDirty: Ref<boolean> = ref(false);
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
 
   const router: Router = useRouter();
   const organisationStore: OrganisationStore = useOrganisationStore();
 
-  const selectedSchulform: Ref<string> = ref<string>('');
+
+  const defaultSchulform: ComputedRef<string | undefined> = computed(() => {
+    if (organisationStore.schultraeger && organisationStore.schultraeger.length > 0) {
+      return organisationStore?.schultraeger[0]?.id;
+    }
+    return undefined;
+  }); 
+
+  const initialFormValues: Ref<Partial<SchuleDetailsForm>> = ref({
+    selectedSchulform: defaultSchulform.value,
+    selectedDienststellennummer: '',
+    selectedSchulname: '',
+  });
 
   const schultraegerList: ComputedRef<Organisation[] | undefined> = computed(() => {
     return organisationStore.schultraeger;
@@ -39,6 +50,12 @@
       undefined,
       OrganisationsTyp.Schule,
     );
+    // if (!organisationStore.errorCode) {
+    isDirty.value = false;
+    // showSuccess.value = true;
+    // selectedOrganisationIdCache.value = values.selectedOrganisation.id;
+    // selectedOrganisationNameCache.value = values.selectedOrganisation.name;
+    //}
   };
 
   onBeforeRouteLeave((_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
@@ -101,11 +118,6 @@
     organisationStore.errorCode = '';
     await organisationStore.getRootKinderSchultraeger();
 
-    if (schultraegerList.value && schultraegerList.value.length > 0) {
-      const defaultSchulform: string = schultraegerList.value[0]?.id ?? '';
-      selectedSchulform.value = defaultSchulform;
-      initialSchulFormCache.value = defaultSchulform;
-    }
     /* listen for browser changes and prevent them when form is dirty */
     window.addEventListener('beforeunload', preventNavigation);
   });
@@ -139,16 +151,19 @@
           :title="$t('admin.schule.schuleCreateErrorTitle')"
           :type="'error'"
           :closable="false"
-          :text="$t(`admin.schule.errors.${organisationStore.errorCode}`)"
+          :text="organisationStore.errorCode ? $t(`admin.schule.errors.${organisationStore.errorCode}`) : ''"
           :show-button="true"
           :button-text="$t('admin.schule.backToCreateSchule')"
           :button-action="navigateBackToSchuleForm"
           button-class="primary"
         />
         <SchuleForm
+          v-if="!organisationStore.errorCode"
           :show-unsaved-changes-dialog="showUnsavedChangesDialog"
           :is-edit-mode="false"
-          :organisation-store="organisationStore"
+          :error-code="organisationStore.errorCode"
+          :is-loading="organisationStore.loading"
+          :initialValues="initialFormValues"
           :schultraeger-list="schultraegerList"
           @update:dirty="(value: boolean) => (isDirty = value)"
           @click:submit="onSubmit"
@@ -161,8 +176,8 @@
       <template v-if="organisationStore.createdSchule && !organisationStore.errorCode">
         <SchuleSuccessTemplate
           :successMessage="$t('admin.schule.schuleAddedSuccessfully')"
-          :preservedSchulform="selectedSchulform"
-          :organisationStore="organisationStore"
+          :followingDataChanged="organisationStore?.createdSchule"
+          :schultraeger-list="schultraegerList"
           @onNavigateBackToSchuleManagement="navigateToSchuleManagement"
           @onCreateAnotherSchule="handleCreateAnotherSchule"
         />

@@ -1,24 +1,24 @@
 <script setup lang="ts">
   import LayoutCard from '@/components/cards/LayoutCard.vue';
-  import ServiceProviderCard from '@/components/cards/ServiceProviderCard.vue';
-  import SchulenFilter from '@/components/filter/SchulenFilter.vue';
-  import FormRow from '@/components/form/FormRow.vue';
-  import FormWrapper from '@/components/form/FormWrapper.vue';
-  import LogoSelector from '@/components/form/LogoSelector.vue';
-  import { type Organisation } from '@/stores/OrganisationStore';
-  import { RollenArt, RollenSystemRecht } from '@/stores/RolleStore';
-  import { ServiceProviderKategorie, ServiceProviderMerkmal } from '@/stores/ServiceProviderStore';
-  import { getLogoPath } from '@/utils/logosConfig';
-  import { DIN_91379A_EXT, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
-  import { toTypedSchema } from '@vee-validate/yup';
-  import { useForm, type BaseFieldProps, type FormContext, type FormMeta, type TypedSchema } from 'vee-validate';
-  import { computed, onMounted, ref, watch, watchEffect, type ComputedRef, type Ref } from 'vue';
-  import { useI18n, type Composer } from 'vue-i18n';
-  import { useDisplay } from 'vuetify';
-  import { array, boolean, number, object, string } from 'yup';
-  import { ANBIETEN_IN_MERKMALE, extractAnbietenInMerkmale } from '../../../utils/serviceProvider.helper';
-  import type { ServiceProviderFormProps as Props, ServiceProviderForm, ServiceProviderFormSubmitData } from './types';
-  import { TranslatedObject } from '@/types';
+import ServiceProviderCard from '@/components/cards/ServiceProviderCard.vue';
+import SchulenFilter from '@/components/filter/SchulenFilter.vue';
+import FormRow from '@/components/form/FormRow.vue';
+import FormWrapper from '@/components/form/FormWrapper.vue';
+import LogoSelector from '@/components/form/LogoSelector.vue';
+import { type Organisation } from '@/stores/OrganisationStore';
+import { RollenArt, RollenSystemRecht } from '@/stores/RolleStore';
+import { ServiceProviderKategorie, ServiceProviderMerkmal } from '@/stores/ServiceProviderStore';
+import { TranslatedObject } from '@/types';
+import { getLogoPath } from '@/utils/logosConfig';
+import { DIN_91379A_EXT, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
+import { toTypedSchema } from '@vee-validate/yup';
+import { useForm, type BaseFieldProps, type FormContext, type FormMeta, type TypedSchema } from 'vee-validate';
+import { computed, onMounted, ref, watch, watchEffect, type ComputedRef, type Ref } from 'vue';
+import { useI18n, type Composer } from 'vue-i18n';
+import { useDisplay } from 'vuetify';
+import { array, boolean, number, object, string } from 'yup';
+import { ANBIETEN_IN_MERKMALE, extractAnbietenInMerkmale } from '../../../utils/serviceProvider.helper';
+import type { ServiceProviderFormProps as Props, ServiceProviderForm, ServiceProviderFormSubmitData } from './types';
 
   type Emits = {
     (e: 'click:confirmUnsaved'): void;

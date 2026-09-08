@@ -1,13 +1,13 @@
 <script setup lang="ts">
   import FormRow from '@/components/form/FormRow.vue';
-  import FormWrapper from '@/components/form/FormWrapper.vue';
-  import { Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
-  import { DIN_91379A_EXT, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
-  import { toTypedSchema } from '@vee-validate/yup';
-  import { FormMeta, TypedSchema, useForm, type BaseFieldProps } from 'vee-validate';
-  import { onMounted, ref, Ref, watch } from 'vue';
-  import { Composer, useI18n } from 'vue-i18n';
-  import { object, string } from 'yup';
+import FormWrapper from '@/components/form/FormWrapper.vue';
+import { Organisation } from '@/stores/OrganisationStore';
+import { DIN_91379A_EXT, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
+import { toTypedSchema } from '@vee-validate/yup';
+import { FormMeta, TypedSchema, useForm, type BaseFieldProps } from 'vee-validate';
+import { computed, ComputedRef, ModelRef, onMounted, Ref, watch, watchEffect } from 'vue';
+import { Composer, useI18n } from 'vue-i18n';
+import { object, string } from 'yup';
 
   export type SchuleDetailsForm = {
     selectedSchulform: string;
@@ -16,11 +16,14 @@
   };
 
   type Props = {
+    initialValues?: Partial<SchuleDetailsForm>;
     cachedValues?: Partial<SchuleDetailsForm>;
     isEditMode: boolean;
-    organisationStore: OrganisationStore;
     schultraegerList: Organisation[] | undefined;
     showUnsavedChangesDialog: boolean;
+    isLoading: boolean;
+    errorCode?: string;
+    selectedSchultraegerId?: string;
   };
 
   type Emits = {
@@ -33,14 +36,16 @@
   };
 
   const props: Props = defineProps<Props>();
+  const selectedSchultraegerform: ModelRef<string | undefined, string> = defineModel('selectedSchultraegerId');
 
   const emit: Emits = defineEmits<Emits>();
 
   const { t }: Composer = useI18n({ useScope: 'global' });
-  const initialSchulFormCache: Ref<string> = ref('');
+  //const initialSchulFormCache: Ref<string> = ref('');
 
   const validationSchema: TypedSchema = toTypedSchema(
     object({
+      selectedSchulform: string().required(t('admin.schule.rules.schulform.required')),
       selectedDienststellennummer: string()
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.schule.rules.dienststellennummer.noLeadingTrailingSpaces'))
         .required(t('admin.schule.rules.dienststellennummer.required')),
@@ -61,12 +66,21 @@
   });
 
   // eslint-disable-next-line @typescript-eslint/typedef
-  const { defineField, handleSubmit, meta } = useForm<SchuleDetailsForm>({
+  const { defineField, handleSubmit, meta, setValues } = useForm<SchuleDetailsForm>({
     validationSchema,
+    initialValues: {
+      selectedSchulform: props.initialValues?.selectedSchulform ?? '',
+      selectedDienststellennummer: props.initialValues?.selectedDienststellennummer ?? '',
+      selectedSchulname: props.initialValues?.selectedSchulname ?? '',
+    },
   });
 
-  const [selectedSchulform]: [Ref<string>, Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>] =
-    defineField('selectedSchulform', vuetifyConfig);
+  const canCommit: ComputedRef<boolean> = computed(() => meta.value.valid && meta.value.dirty);
+
+  const [selectedSchulform, selectedSchulformProps]: [
+    Ref<string>,
+    Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
+  ] = defineField('selectedSchulform', vuetifyConfig);
   const [selectedSchulname, selectedSchulnameProps]: [
     Ref<string>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
@@ -86,12 +100,20 @@
     emit('update:dirty', dirty);
   });
 
-  onMounted(() => {
-    if (props.schultraegerList && props.schultraegerList.length > 0) {
-      const defaultSchulform: string = props.schultraegerList[0]?.id ?? '';
-      selectedSchulform.value = defaultSchulform;
-      initialSchulFormCache.value = defaultSchulform;
+  watchEffect(() => {
+    emit('update:canSubmit', canCommit.value);
+  });
+
+  const initializeFormWithCachedValues = (): void => {
+    if (!props.cachedValues) {
+      return;
     }
+    const cached: Partial<SchuleDetailsForm> = props.cachedValues;
+    setValues(cached);
+  };
+
+  onMounted(() => {
+    initializeFormWithCachedValues();
   });
 </script>
 
@@ -99,16 +121,17 @@
   <FormWrapper
     :id="isEditMode ? 'schule-edit-form' : 'schule-create-form'"
     :confirm-unsaved-changes-action="() => emit('click:confirmUnsaved')"
+    :can-commit="canCommit"
     :create-button-label="isEditMode ? $t('save') : $t('admin.schule.create')"
     :discard-button-label="isEditMode ? $t('cancel') : $t('admin.schule.discard')"
-    :hide-actions="!!organisationStore.errorCode"
-    :is-loading="organisationStore.loading"
+    :hide-actions="Boolean(errorCode)"
+    :is-loading="isLoading"
     :on-discard="() => emit('click:discard')"
     :on-submit="onSubmit"
     :show-unsaved-changes-dialog
     @on-show-dialog-change="(value?: boolean) => emit('update:showUnsavedChangesDialog', !!value)"
   >
-    <template v-if="!organisationStore.errorCode">
+    <template v-if="!errorCode">
       <!-- Select school type. For now not bound to anything and just a UI element -->
       <v-row>
         <v-col>
@@ -121,6 +144,7 @@
           class="d-none d-md-flex"
         />
         <v-radio-group
+          v-bind="selectedSchulformProps"
           v-model="selectedSchulform"
           inline
           data-testid="schulform-radio-group"

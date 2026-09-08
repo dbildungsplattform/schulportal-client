@@ -806,6 +806,9 @@
           "matches": "Der Schulname darf keine ungültigen Zeichen beinhalten.",
           "noLeadingTrailingSpaces": "Der Schulname darf nicht mit Leerzeichen beginnen oder enden.",
           "required": "Der Schulname muss angegeben werden."
+        },
+        "schulform": {
+          "required": "Die Schulform muss ausgewählt werden."
         }
       },
       "selectSchule": "Schule auswählen",

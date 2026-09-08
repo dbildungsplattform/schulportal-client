@@ -1,14 +1,20 @@
 <script setup lang="ts">
-  import { type OrganisationStore } from '@/stores/OrganisationStore';
-  import { type Ref } from 'vue';
-  import { useI18n } from 'vue-i18n';
-  import { useDisplay } from 'vuetify';
+  import { Organisation } from '@/stores/OrganisationStore';
+import { type Ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useDisplay } from 'vuetify';
 
-  defineProps<{
+  type Props = {
     successMessage: string;
-    preservedSchulform: string;
-    organisationStore: OrganisationStore;
-  }>();
+    followingDataChanged: {
+      name: string;
+      kennung: string;
+      administriertVon: string;
+    };
+    schultraegerList: Organisation[];
+  };
+
+  const props: Props = defineProps();
 
   type Emits = {
     (event: 'onNavigateBackToSchuleManagement'): void;
@@ -22,6 +28,15 @@
 
   const navigateToSchuleManagement = (): void => emit('onNavigateBackToSchuleManagement');
   const handleCreateAnotherSchule = (): void => emit('onCreateAnotherSchule');
+
+  const findSchultraegerName = (id: string | undefined | null): string => {
+    if (!id || !props.schultraegerList) {
+      return '';
+    }
+    const schultraeger: Organisation | undefined = props.schultraegerList.find((s) => s.id === id);
+  
+    return schultraeger ? schultraeger.name : '';
+  };
 </script>
 
 <template>
@@ -61,7 +76,7 @@
         {{ $t('admin.schule.schulform') }}:
       </v-col>
       <v-col class="text-body">
-        <span data-testid="created-schule-form"> {{ preservedSchulform }}</span>
+        <span data-testid="created-schule-form"> {{ findSchultraegerName(followingDataChanged?.administriertVon) }}</span>
       </v-col>
     </v-row>
     <v-row>
@@ -72,7 +87,7 @@
         {{ $t('admin.schule.dienststellennummer') }}:
       </v-col>
       <v-col class="text-body">
-        <span data-testid="created-schule-dienststellennummer">{{ organisationStore?.createdSchule?.kennung }}</span>
+        <span data-testid="created-schule-dienststellennummer">{{ followingDataChanged?.kennung }}</span>
       </v-col>
     </v-row>
     <v-row>
@@ -83,7 +98,7 @@
         {{ $t('admin.schule.schulname') }}:
       </v-col>
       <v-col class="text-body"
-        ><span data-testid="created-schule-name">{{ organisationStore?.createdSchule?.name }}</span>
+        ><span data-testid="created-schule-name">{{ followingDataChanged?.name }}</span>
       </v-col>
     </v-row>
     <v-divider
