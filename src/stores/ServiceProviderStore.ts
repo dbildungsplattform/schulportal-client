@@ -21,6 +21,7 @@ import {
   type ManageableServiceProviderSimpleListEntryResponse,
   type ProviderApiInterface,
   type ProviderControllerFindRollenerweiterungenByServiceProviderId200Response,
+  type ProviderControllerGetManageableLandRootServiceProviders200Response,
   type ProviderControllerGetManageableServiceProviders200Response,
   type ProviderControllerGetManageableServiceProvidersForOrganisationId200Response,
   type RolleApiInterface,
@@ -100,6 +101,12 @@ export type ServiceProviderIdNameResponse = {
   name: string;
 };
 
+export type ServiceProviderRollenVerwaltungFilter = {
+  offset?: number;
+  limit?: number;
+  searchStr?: string;
+};
+
 export type RollenerweiterungFilter = {
   serviceProviderId: string;
   organisationIds?: string[];
@@ -126,6 +133,13 @@ export type ServiceProviderCreationFilter = {
   rollenartenWhitelist?: Array<RollenArt>;
 };
 
+export type ManageableServiceProviderFilter = {
+  kategorien: Array<ServiceProviderKategorie>;
+  searchFilter?: string;
+  page: number;
+  entriesPerPage: number;
+};
+
 export type CreatedServiceProvider = BaseServiceProvider & {
   url: string;
   merkmale: Array<ServiceProviderMerkmal>;
@@ -145,6 +159,8 @@ type ServiceProviderState = {
   availableServiceProviders: StartPageServiceProvider[];
   manageableServiceProviders: ManageableServiceProviderSimpleListEntryResponse[];
   manageableServiceProvidersForOrganisation: ManageableServiceProviderListEntry[];
+  serviceProvidersForRollenVerwaltung: ServiceProviderIdNameResponse[];
+  totalServiceProvidersForRollenVerwaltung: number;
   totalManageableServiceProviders: number;
   totalManageableServiceProvidersForOrganisation: number;
   currentServiceProvider: ManageableServiceProviderDetail | null;
@@ -188,13 +204,14 @@ type ServiceProviderGetters = object;
 type ServiceProviderActions = {
   getAssignableServiceProvidersForRolleByOrganisationId: (administeredBySchulstrukturknoten: string) => Promise<void>;
   getAvailableServiceProviders: () => Promise<void>;
-  getManageableServiceProviders: (page: number, entriesPerPage: number) => Promise<void>;
+  getManageableServiceProviders: (filter: ManageableServiceProviderFilter) => Promise<void>;
   getManageableServiceProvidersForOrganisation: (
     organisationId: string,
     page: number,
     entriesPerPage: number,
   ) => Promise<void>;
   getManageableServiceProviderById: (serviceProviderId: string) => Promise<void>;
+  getServiceProvidersForRollenVerwaltung: (filter?: ServiceProviderRollenVerwaltungFilter) => Promise<void>;
   getServiceProviderLogoById: (serviceProviderId: string) => Promise<void>;
   getRollenerweiterungenById: (filter: RollenerweiterungFilter) => Promise<void>;
   persistRollenerweiterungenForServiceProvider: (filter: PersistRollenerweiterung) => Promise<void>;
@@ -225,6 +242,8 @@ export const useServiceProviderStore: StoreDefinition<
       availableServiceProviders: [],
       manageableServiceProviders: [],
       manageableServiceProvidersForOrganisation: [],
+      serviceProvidersForRollenVerwaltung: [],
+      totalServiceProvidersForRollenVerwaltung: 0,
       totalManageableServiceProviders: 0,
       totalManageableServiceProvidersForOrganisation: 0,
       currentServiceProvider: null,
@@ -268,13 +287,18 @@ export const useServiceProviderStore: StoreDefinition<
       }
     },
 
-    async getManageableServiceProviders(page: number, entriesPerPage: number) {
+    async getManageableServiceProviders(filter: ManageableServiceProviderFilter) {
       this.loading = true;
       try {
-        const limit: number = entriesPerPage;
-        const offset: number = (page - 1) * entriesPerPage;
+        const limit: number = filter.entriesPerPage;
+        const offset: number = (filter.page - 1) * filter.entriesPerPage;
         const response: ProviderControllerGetManageableServiceProviders200Response = (
-          await serviceProviderApi.providerControllerGetManageableServiceProviders(offset, limit)
+          await serviceProviderApi.providerControllerGetManageableServiceProviders(
+            offset,
+            limit,
+            filter.kategorien,
+            filter.searchFilter,
+          )
         ).data;
         const { items, total }: ProviderControllerGetManageableServiceProviders200Response = response;
         this.manageableServiceProviders = items;
@@ -315,6 +339,31 @@ export const useServiceProviderStore: StoreDefinition<
           await serviceProviderApi.providerControllerGetManageableServiceProviderById(serviceProviderId);
         this.currentServiceProvider = data;
       } catch (error) {
+        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async getServiceProvidersForRollenVerwaltung(filter?: ServiceProviderRollenVerwaltungFilter) {
+      this.loading = true;
+      this.serviceProvidersForRollenVerwaltung = [];
+      this.totalServiceProvidersForRollenVerwaltung = 0;
+      try {
+        const response: ProviderControllerGetManageableLandRootServiceProviders200Response = (
+          await serviceProviderApi.providerControllerGetManageableLandRootServiceProviders(
+            filter?.offset,
+            filter?.limit,
+            filter?.searchStr,
+          )
+        ).data;
+
+        this.serviceProvidersForRollenVerwaltung = response.items.map((serviceProvider: ServiceProviderResponse) => ({
+          id: serviceProvider.id,
+          name: serviceProvider.name,
+        }));
+        this.totalServiceProvidersForRollenVerwaltung = response.total;
+      } catch (error: unknown) {
         this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
       } finally {
         this.loading = false;

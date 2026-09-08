@@ -1636,6 +1636,16 @@
             "in": "query",
             "description": "The requested limit for the page size.",
             "schema": { "type": "number" }
+          },
+          {
+            "name": "kategorien",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "nullable": true,
+              "type": "array",
+              "items": { "type": "string", "enum": ["EMAIL", "UNTERRICHT", "VERWALTUNG", "SCHULISCH", "HINWEISE"] }
+            }
           }
         ],
         "responses": {

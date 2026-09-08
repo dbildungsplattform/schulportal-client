@@ -88,7 +88,7 @@
     if (newValue && newValue !== oldValue) {
       // Fetch rollen after selecting the organization
       await rolleStore.getAllRollen({
-        organisationId: newValue,
+        organisationContextForOperation: newValue,
         systemrechte: [RollenSystemRechtEnum.ImportDurchfuehren],
         rollenarten: [RollenArt.Lern],
       });

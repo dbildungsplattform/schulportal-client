@@ -205,33 +205,31 @@
       // the workflow response triggered by this selection.
       clearTimeout(timerId.value);
 
+      const filter: WorkflowFilter = {
+        personId: props.personId,
+        organisationId: selectedOrganisation.value,
+        limit: 25,
+      };
+
       if (props.allowMultipleRollen) {
         const newRollen: string[] | undefined = newValue as string[] | undefined;
+
         if (newRollen && newRollen.length > 0) {
-          const filter: WorkflowFilter = {
-            personId: props.personId,
-            organisationId: selectedOrganisation.value,
-            rollenIds: newRollen,
-            limit: 25,
-          };
-          await handleWorkflowStep(filter);
+          filter.rollenIds = newRollen;
         } else {
           selectedKlasse.value = undefined;
           emits('fieldReset', 'selectedKlasse');
           emits('fieldReset', 'selectedRollen');
           canCommit.value = false;
         }
+        await handleWorkflowStep(filter);
+
         emits('update:selectedRollen', newRollen);
       } else {
         const newRolle: string | undefined = newValue as string | undefined;
 
         if (newRolle && newRolle !== oldValue) {
-          const filter: WorkflowFilter = {
-            personId: props.personId,
-            organisationId: selectedOrganisation.value,
-            rollenIds: [newRolle],
-            limit: 25,
-          };
+          filter.rollenIds = [newRolle];
           await handleWorkflowStep(filter);
         }
 

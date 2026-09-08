@@ -43,7 +43,7 @@
       limit: searchFilterStore.schulenPerPage,
       includeTyp: OrganisationsTyp.Schule,
       systemrechte: [RollenSystemRecht.SchulenVerwalten],
-      searchString: searchFilterStore.searchFilterSchulen || '',
+      searchString: searchFilterStore.searchStringForSchulen || '',
     });
   }
 
@@ -130,7 +130,7 @@
         <v-row class="ma-3 align-center justify-end">
           <SearchField
             ref="searchFieldComponent"
-            :initial-value="searchFilterStore.searchFilterSchulen ?? ''"
+            :initial-value="searchFilterStore.searchStringForSchulen ?? ''"
             :input-cols="6"
             :input-cols-md="3"
             :button-cols="6"

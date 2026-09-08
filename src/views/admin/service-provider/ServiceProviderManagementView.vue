@@ -1,20 +1,25 @@
 <script setup lang="ts">
-  import { computed, ref, watchEffect, type ComputedRef, type Ref } from 'vue';
-  import { useI18n, type Composer } from 'vue-i18n';
-  import { useRouter, type Router } from 'vue-router';
-
   import ResultTable, { type Headers, type TableRow } from '@/components/admin/ResultTable.vue';
+  import SearchField from '@/components/admin/SearchField.vue';
   import ServiceProviderDelete from '@/components/admin/service-provider/ServiceProviderDelete.vue';
   import VidisInfoDialog from '@/components/admin/service-provider/VidisInfoDialog.vue';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
-  import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
   import {
+    DEFAULT_SERVICE_PROVIDER_KATEGORIEN,
+    useSearchFilterStore,
+    type SearchFilterStore,
+  } from '@/stores/SearchFilterStore';
+  import {
+    ServiceProviderKategorie,
     useServiceProviderStore,
     type ManageableServiceProviderSimpleListEntry,
     type ServiceProviderStore,
   } from '@/stores/ServiceProviderStore';
   import { getDisplayNameForOrg } from '@/utils/formatting';
+  import { computed, ref, watch, watchEffect, type ComputedRef, type Ref } from 'vue';
+  import { useI18n, type Composer } from 'vue-i18n';
+  import { useRouter, type Router } from 'vue-router';
 
   type ServiceProviderRow = {
     id: string;
@@ -27,13 +32,37 @@
     isVidisAngebot: boolean;
   };
 
+  type ServiceProviderItem = {
+    value: ServiceProviderKategorie;
+    title: string;
+  };
+
   const router: Router = useRouter();
   const { t }: Composer = useI18n();
 
   const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
   const searchFilterStore: SearchFilterStore = useSearchFilterStore();
 
+  const searchFieldComponent: Ref<{ searchFilter?: string } | null> = ref(null);
+  const searchFilter: Ref<string> = ref(searchFilterStore.searchStringForServiceProvider ?? '');
+
+  const allKategorien: readonly ServiceProviderKategorie[] = Object.values(ServiceProviderKategorie);
+
+  function isDefaultKategorienSelection(selection: readonly ServiceProviderKategorie[]): boolean {
+    return (
+      selection.length === DEFAULT_SERVICE_PROVIDER_KATEGORIEN.length &&
+      DEFAULT_SERVICE_PROVIDER_KATEGORIEN.every((kategorie: ServiceProviderKategorie) => selection.includes(kategorie))
+    );
+  }
+
   const cachedServiceProviderId: Ref<string | null> = ref(null);
+  const selectedKategorien: Ref<ServiceProviderKategorie[]> = ref(
+    searchFilterStore.selectedKategorienForServiceProvider,
+  );
+  const kategorien: readonly ServiceProviderItem[] = allKategorien.map((item: ServiceProviderKategorie) => ({
+    value: item,
+    title: t(`angebot.mappingFrontBackEnd.kategorien.${item}`),
+  }));
 
   const serviceProviderToDelete: Ref<ServiceProviderRow | null> = ref(null);
   const isDeleteDialogOpen: Ref<boolean, boolean> = ref(false);
@@ -59,6 +88,12 @@
     });
   });
 
+  const filterOrSearchActive: ComputedRef<boolean> = computed(
+    () =>
+      !isDefaultKategorienSelection(selectedKategorien.value) ||
+      (!!searchFilter.value && searchFilter.value.length > 0),
+  );
+
   const headers: Headers = [
     { title: t('angebot.kategorie'), key: 'kategorie', align: 'start' },
     { title: t('angebot.name'), key: 'name', align: 'start' },
@@ -75,10 +110,12 @@
   ];
 
   async function reloadData(): Promise<void> {
-    await serviceProviderStore.getManageableServiceProviders(
-      searchFilterStore.serviceProviderPage,
-      searchFilterStore.serviceProviderPerPage,
-    );
+    await serviceProviderStore.getManageableServiceProviders({
+      kategorien: selectedKategorien.value,
+      page: searchFilterStore.serviceProviderPage,
+      entriesPerPage: searchFilterStore.serviceProviderPerPage,
+      searchFilter: searchFilterStore.searchStringForServiceProvider || '',
+    });
   }
 
   const handleAlertClose = async (): Promise<void> => {
@@ -135,6 +172,27 @@
     router.push({ name: 'angebot-details', params: { id: item.id } });
   }
 
+  function resetSearchAndFilter(): void {
+    searchFilter.value = '';
+    if (searchFieldComponent.value) {
+      searchFieldComponent.value.searchFilter = '';
+    }
+    searchFilterStore.setSearchFilterForServiceProvider('');
+
+    searchFilterStore.resetKategorienForServiceProvider();
+    selectedKategorien.value = searchFilterStore.selectedKategorienForServiceProvider;
+  }
+
+  function handleSearchFilter(filter: string): void {
+    searchFilterStore.serviceProviderPage = 1;
+    searchFilterStore.setSearchFilterForServiceProvider(filter);
+    searchFilter.value = filter;
+  }
+
+  watch(selectedKategorien, (newKategorien: Array<ServiceProviderKategorie>) => {
+    searchFilterStore.setKategorienForServiceProvider(newKategorien);
+  });
+
   watchEffect(async () => {
     await reloadData();
   });
@@ -159,6 +217,75 @@
       :title="errorTitle"
       :type="'error'"
     />
+    <v-row class="ma-3 align-start">
+      <v-col
+        cols="12"
+        md="2"
+        class="py-md-0 text-md-right align-self-center"
+      >
+        <v-btn
+          class="reset-filter"
+          data-testid="reset-filter-button"
+          :disabled="!filterOrSearchActive"
+          size="x-small"
+          variant="text"
+          width="auto"
+          @click="resetSearchAndFilter()"
+        >
+          {{ $t('resetFilter') }}
+        </v-btn>
+      </v-col>
+      <v-col
+        cols="12"
+        md="3"
+        class="py-md-0"
+      >
+        <v-autocomplete
+          id="kategorien-select"
+          v-model="selectedKategorien"
+          multiple
+          class="filter-dropdown"
+          :class="{ selected: selectedKategorien.length > 0 }"
+          clearable
+          data-testid="kategorien-select"
+          density="compact"
+          hide-details
+          :items="kategorien"
+          item-value="value"
+          item-text="title"
+          :no-data-text="$t('noDataFound')"
+          :placeholder="$t('angebot.kategorie')"
+          variant="outlined"
+        >
+          <template #selection="{ internalItem: item, index }">
+            <v-chip v-if="selectedKategorien.length < 2">
+              <span>{{ item.title }}</span>
+            </v-chip>
+            <span
+              v-else-if="index === 0"
+              class="selection-count"
+            >
+              {{
+                $t('admin.rolle.kategorienSelected', {
+                  count: selectedKategorien.length,
+                })
+              }}
+            </span>
+          </template>
+        </v-autocomplete>
+      </v-col>
+      <v-spacer />
+      <SearchField
+        ref="searchFieldComponent"
+        :initial-value="searchFilter"
+        :input-cols="6"
+        :input-cols-md="3"
+        :button-cols="6"
+        :button-cols-md="2"
+        :hover-text="$t('admin.angebot.management.name')"
+        @on-apply-search-filter="handleSearchFilter"
+      />
+    </v-row>
     <ResultTable
       v-if="!serviceProviderStore.errorCode"
       :headers
@@ -220,3 +347,11 @@
     />
   </LayoutCard>
 </template>
+
+<style scoped>
+  .selection-count {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+</style>

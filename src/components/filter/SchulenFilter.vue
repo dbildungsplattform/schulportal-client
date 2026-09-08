@@ -28,6 +28,7 @@
     hideDetails?: boolean;
     systemrechteForSearch?: Array<RollenSystemRechtEnum>;
     multiple: boolean;
+    selectionCountKey?: string;
     readonly?: boolean;
     selectedSchuleProps?: BaseFieldProps & { error: boolean; 'error-messages': Array<string> };
     highlightSelection?: boolean;
@@ -44,10 +45,13 @@
   type Emits = {
     (e: 'update:selectedSchulenObjects', value: Array<Organisation>): void;
   };
+  type ResolvedProps = Omit<Props, 'selectionCountKey'> & { selectionCountKey: string };
   type SelectionChange = [SelectedSchulenIds, boolean];
   type PreviousSelectionChange = [SelectedSchulenIds, boolean | undefined];
 
-  const props: Props = defineProps<Props>();
+  const props: ResolvedProps = withDefaults(defineProps<Props>(), {
+    selectionCountKey: 'admin.schule.schulenSelected',
+  });
   const emits: Emits = defineEmits<Emits>();
   const selectedSchulen: Ref<SelectedSchulenIds> = defineModel('selectedSchulen');
   const lastEmittedSelection: Ref<SelectedSchulenIds> = ref(undefined);
@@ -220,7 +224,7 @@
       return item.title;
     }
     if (index === 0) {
-      return t('admin.schule.schulenSelected', { count: selectedIds.length });
+      return t(props.selectionCountKey, { count: selectedIds.length });
     }
     return '';
   };

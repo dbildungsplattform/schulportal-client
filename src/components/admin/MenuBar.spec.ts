@@ -87,6 +87,7 @@ describe('MenuBar', () => {
       await nextTick();
       expect(wrapper?.find('[data-testid="menu-bar-title"]').isVisible()).toBe(true);
       expect(wrapper?.find('[data-testid="back-to-start-link"]').isVisible()).toBe(true);
+      expect(wrapper?.find('[data-testid="faq-link"]').isVisible()).toBe(true);
 
       expect(wrapper?.find('[data-testid="person-management-title"]').exists()).toBe(hasPermission);
       expect(wrapper?.find('[data-testid="person-management-menu-item"]').exists()).toBe(hasPermission);

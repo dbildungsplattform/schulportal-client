@@ -7,6 +7,7 @@ import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import {
   OrganisationsTyp,
   useOrganisationStore,
+  type AutoCompleteStore,
   type Organisation,
   type OrganisationenFilter,
   type OrganisationStore,
@@ -23,6 +24,8 @@ type Props = {
   includeTraeger?: boolean;
   systemrechteForSearch?: Array<RollenSystemRechtEnum>;
   multiple: boolean;
+  selectionCountKey?: string;
+  selectedSchulen?: Array<string> | string;
   readonly?: boolean;
   selectedSchuleProps?: BaseFieldProps & { error: boolean; 'error-messages': Array<string> };
   highlightSelection?: boolean;
@@ -301,6 +304,51 @@ describe('SchulenFilter', () => {
             }
           });
         });
+      });
+    });
+  });
+
+  describe('when multiple schools are selected', () => {
+    const setup = (): { schule1: Organisation; schule2: Organisation } => {
+      const schule1: Organisation = DoFactory.getSchule();
+      const schule2: Organisation = DoFactory.getSchule();
+      const filterEntry: AutoCompleteStore<Organisation> = {
+        filterResult: [schule1, schule2],
+        total: 2,
+        loading: false,
+      };
+
+      organisationStore.organisationenFilters.set('', filterEntry);
+
+      return { schule1, schule2 };
+    };
+
+    describe('when selectionCountKey is not provided', () => {
+      test('it uses the default key to display the selection count', async () => {
+        const { schule1, schule2 }: { schule1: Organisation; schule2: Organisation } = setup();
+
+        const wrapper: VueWrapper = mountComponent({
+          multiple: true,
+          selectedSchulen: [schule1.id, schule2.id],
+        }) as VueWrapper;
+
+        await flushPromises();
+        expect(wrapper.find('[data-testid="schule-select"]').text()).toContain('2 Schulen ausgewählt');
+      });
+    });
+
+    describe('when selectionCountKey is provided', () => {
+      test('it uses a custom selectionCountKey to display the selection count', async () => {
+        const { schule1, schule2 }: { schule1: Organisation; schule2: Organisation } = setup();
+
+        const wrapper: VueWrapper = mountComponent({
+          multiple: true,
+          selectionCountKey: 'admin.rolle.administrationsebenenSelected',
+          selectedSchulen: [schule1.id, schule2.id],
+        }) as VueWrapper;
+
+        await flushPromises();
+        expect(wrapper.find('[data-testid="schule-select"]').text()).toContain('2 Administrationsebenen ausgewählt');
       });
     });
   });

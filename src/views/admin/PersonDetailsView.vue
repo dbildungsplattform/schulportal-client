@@ -636,6 +636,18 @@
     return !!selectedZuordnungen.value[0]?.rolleId && isLernRolleForChangeKlasseResult.value && hasOneSelectedZuordnung;
   });
 
+  // Landesadmins have a personenkontext at the root organisation node; Schuladmins do not.
+  const isDeleteExternZuordnungDisabled: ComputedRef<boolean> = computed(() => {
+    const hasExternSelected: boolean = selectedZuordnungen.value.some(
+      (z: ZuordnungWithKlasse) => z.rollenArt === RollenArt.Extern,
+    );
+    const isLandesadmin: boolean =
+      authStore.currentUser?.personenkontexte?.some(
+        (pk: PersonenkontextRolleFields) => pk.organisation.typ === OrganisationsTyp.Root,
+      ) ?? false;
+    return hasExternSelected && !isLandesadmin;
+  });
+
   watch(
     () => selectedZuordnungen.value[0], // Watch the first selected Zuordnung
     (newValue: Zuordnung | undefined) => {
@@ -2189,7 +2201,8 @@
                     ref="personenkontext-delete"
                     :error-code="personStore.errorCode"
                     :person="personStore.currentPerson"
-                    :disabled="selectedZuordnungen.length === 0"
+                    :disabled="selectedZuordnungen.length === 0 || isDeleteExternZuordnungDisabled"
+                    :disabled-tooltip-text="isDeleteExternZuordnungDisabled ? '' : undefined"
                     :zuordnung-count="
                       zuordnungenWithPendingChanges?.filter((zuordnung: Zuordnung) => zuordnung.editable).length ?? 0
                     "

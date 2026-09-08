@@ -62,6 +62,7 @@
         :title="props.hoverText"
         variant="outlined"
         @keyup.enter="applySearchFilter"
+        @click:clear="applySearchFilter"
       />
       <v-btn
         class="primary search button flex-shrink-0"

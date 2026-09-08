@@ -9,10 +9,6 @@
     RollenSystemRechtEnum,
   } from '@/api-client/generated';
   import SchulPortalLogo from '@/assets/logos/Schulportal_SH_Bildmarke_RGB_Anwendung_HG_Blau.svg';
-  import {
-    formatServiceProviderAnbietenMerkmale,
-    formatServiceProviderRollenartenWhitelist,
-  } from '@/utils/serviceProvider.helper';
   import LabeledField from '@/components/admin/LabeledField.vue';
   import RollenerweiterungAssignErrorDialog from '@/components/admin/service-provider/RollenerweiterungAssignErrorDialog.vue';
   import RollenerweiterungTreeview, {
@@ -37,6 +33,10 @@
   } from '@/stores/ServiceProviderStore';
   import { intersect } from '@/utils/arrays';
   import { getLogoPath } from '@/utils/logosConfig';
+  import {
+    formatServiceProviderAnbietenMerkmale,
+    formatServiceProviderRollenartenWhitelist,
+  } from '@/utils/serviceProvider.helper';
 
   const router: Router = useRouter();
   const route: RouteLocationNormalizedLoaded = useRoute();
@@ -197,7 +197,7 @@
     // Load available rollen for this organisation if not yet loaded
     if (organisationIdFromQuery.value) {
       await rolleStore.getAllRollen({
-        organisationId: organisationIdFromQuery.value,
+        organisationContextForOperation: organisationIdFromQuery.value,
         systemrechte: [RollenSystemRechtEnum.RollenErweitern],
       });
     }

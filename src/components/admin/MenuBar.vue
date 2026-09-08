@@ -104,7 +104,7 @@
 
     <!-- Back to start page -->
     <v-list-item
-      class="menu-bar-back caption"
+      class="menu-bar-back caption menu-bar-nav-item"
       data-testid="back-to-start-link"
       :title="$t('nav.backToStart')"
       to="/start"
@@ -112,6 +112,22 @@
       <template #prepend>
         <v-icon
           icon="mdi-home"
+          size="x-large"
+        />
+      </template>
+    </v-list-item>
+
+    <v-list-item
+      class="menu-bar-faq caption menu-bar-nav-item"
+      data-testid="faq-link"
+      :title="$t('nav.faq')"
+      href="https://medienberatung.iqsh.de/faq-administration-schulportal-sh.html"
+      rel="noopener noreferrer"
+      target="_blank"
+    >
+      <template #prepend>
+        <v-icon
+          icon="mdi-help-circle-outline"
           size="x-large"
         />
       </template>

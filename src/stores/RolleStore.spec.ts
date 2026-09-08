@@ -7,6 +7,7 @@ import {
   type SystemRechtResponse,
 } from '../api-client/generated/api';
 import { useRolleStore, type RolleStore } from './RolleStore';
+
 import axiosApiInstance from '@/services/ApiService';
 
 const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
@@ -138,6 +139,28 @@ describe('rolleStore', () => {
       expect(rolleStore.errorCode).toEqual('some mock server error');
       expect(rolleStore.allRollen).toEqual([]);
       expect(rolleStore.loading).toBe(false);
+    });
+
+    it('should pass all filter params to the api', async () => {
+      mockadapter.onGet(/\/api\/rolle/).replyOnce(200, [], {});
+
+      await rolleStore.getAllRollen({
+        offset: 0,
+        limit: 30,
+        searchString: '',
+        organisationContextForOperation: 'org1',
+        organisationenForFilter: ['org2', 'org3'],
+        merkmale: [RollenMerkmal.KopersPflicht],
+        serviceProviderIds: ['sp1', 'sp2'],
+      });
+
+      const requestedUrl: string = mockadapter.history.get[0]!.url!;
+      expect(requestedUrl).toContain('organisationContextForOperation=org1');
+      expect(requestedUrl).toContain('organisationenForFilter=org2');
+      expect(requestedUrl).toContain('organisationenForFilter=org3');
+      expect(requestedUrl).toContain(`merkmale=${RollenMerkmal.KopersPflicht}`);
+      expect(requestedUrl).toContain('serviceProviderIds=sp1');
+      expect(requestedUrl).toContain('serviceProviderIds=sp2');
     });
   });
 

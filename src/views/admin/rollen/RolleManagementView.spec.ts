@@ -1,16 +1,23 @@
+import type { SystemRechtResponse } from '@/api-client/generated';
+import SchulenFilter from '@/components/filter/SchulenFilter.vue';
+import routes from '@/router/routes';
+import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
+import { RollenArt, RollenMerkmal, useRolleStore, type RolleStore } from '@/stores/RolleStore';
+import { rollenPerPageDefault, useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
+import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
+import { VueWrapper, flushPromises, mount } from '@vue/test-utils';
 import { expect, test, type MockInstance } from 'vitest';
-import { VueWrapper, mount } from '@vue/test-utils';
-import RolleManagementView from './RolleManagementView.vue';
-import { RollenMerkmal, useRolleStore, type RolleStore } from '@/stores/RolleStore';
 import { nextTick, type Component } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
-import routes from '@/router/routes';
-import type { SystemRechtResponse } from '@/api-client/generated';
 import { RollenSystemRechtEnum } from '../../../api-client/generated/api';
+import RolleManagementView from './RolleManagementView.vue';
 
 let wrapper: VueWrapper | null = null;
 let router: Router;
+let authStore: AuthStore;
 let rolleStore: RolleStore;
+let searchFilterStore: SearchFilterStore;
+let serviceProviderStore: ServiceProviderStore;
 
 beforeEach(() => {
   document.body.innerHTML = `
@@ -24,7 +31,24 @@ beforeEach(() => {
     routes,
   });
 
+  authStore = useAuthStore();
+  authStore.hasAngeboteVerwaltenPermission = true;
   rolleStore = useRolleStore();
+  searchFilterStore = useSearchFilterStore();
+  serviceProviderStore = useServiceProviderStore();
+
+  searchFilterStore.selectedMerkmaleForRollen = [];
+  searchFilterStore.selectedRollenartenForRollen = [];
+  searchFilterStore.selectedOrganisationenForRollen = [];
+  searchFilterStore.selectedAngeboteForRollen = [];
+
+  serviceProviderStore.serviceProvidersForRollenVerwaltung = [
+    { id: 'sp1', name: 'Service Provider 1' },
+    { id: 'sp2', name: 'Service Provider 2' },
+  ];
+  serviceProviderStore.totalServiceProvidersForRollenVerwaltung = 2;
+  serviceProviderStore.loading = false;
+  searchFilterStore.searchStringForRollen = '';
 
   rolleStore.allRollen = [
     {
@@ -164,5 +188,277 @@ describe('RolleManagementView', () => {
     await nextTick();
 
     expect(push).toHaveBeenCalledTimes(1);
+  });
+
+  test('it renders filter elements', () => {
+    expect(wrapper?.find('[data-testid="reset-filter-button"]').exists()).toBe(true);
+    expect(wrapper?.find('[data-testid="rollenarten-filter-select"]').exists()).toBe(true);
+    expect(wrapper?.find('[data-testid="merkmale-filter-select"]').exists()).toBe(true);
+    expect(wrapper?.findComponent(SchulenFilter).exists()).toBe(true);
+    expect(wrapper?.find('[data-testid="angebote-filter-select"]').exists()).toBe(true);
+  });
+
+  test('reset button is disabled when no filter is active', () => {
+    expect(wrapper?.find('[data-testid="reset-filter-button"]').classes()).toContain('v-btn--disabled');
+  });
+
+  test('reset button is enabled when a filter is active', async () => {
+    searchFilterStore.selectedMerkmaleForRollen = [RollenMerkmal.KopersPflicht];
+    await nextTick();
+    expect(wrapper?.find('[data-testid="reset-filter-button"]').classes()).not.toContain('v-btn--disabled');
+  });
+
+  test('reset button is enabled when rollenarten filter is active', async () => {
+    searchFilterStore.selectedRollenartenForRollen = [RollenArt.Lehr];
+    await nextTick();
+    expect(wrapper?.find('[data-testid="reset-filter-button"]').classes()).not.toContain('v-btn--disabled');
+  });
+
+  test('reset button is enabled when organisationen filter is active', async () => {
+    searchFilterStore.selectedOrganisationenForRollen = ['org1'];
+    await nextTick();
+    expect(wrapper?.find('[data-testid="reset-filter-button"]').classes()).not.toContain('v-btn--disabled');
+  });
+
+  test('reset button is enabled when angebote filter is active', async () => {
+    searchFilterStore.selectedAngeboteForRollen = ['sp1'];
+    await nextTick();
+    expect(wrapper?.find('[data-testid="reset-filter-button"]').classes()).not.toContain('v-btn--disabled');
+  });
+
+  test('clicking reset button resets filters and reloads rollen', async () => {
+    searchFilterStore.selectedMerkmaleForRollen = [RollenMerkmal.KopersPflicht];
+    await nextTick();
+
+    await wrapper?.find('[data-testid="reset-filter-button"]').trigger('click');
+    await nextTick();
+
+    expect(searchFilterStore.setMerkmaleFilterForRollen).toHaveBeenCalledWith([]);
+    expect(searchFilterStore.setRollenartenFilterForRollen).toHaveBeenCalledWith([]);
+    expect(searchFilterStore.setOrganisationenFilterForRollen).toHaveBeenCalledWith([]);
+    expect(searchFilterStore.setAngeboteFilterForRollen).toHaveBeenCalledWith([]);
+    expect(searchFilterStore.setAngeboteNamesForRollen).toHaveBeenCalledWith({});
+    expect(searchFilterStore.searchStringForRollen).toEqual('');
+    expect(searchFilterStore.rollenPage).toEqual(1);
+    expect(searchFilterStore.rollenPerPage).toEqual(rollenPerPageDefault);
+    expect(rolleStore.getAllRollen).toHaveBeenCalled();
+  });
+
+  test('merkmale filter change calls store action and reloads rollen', async () => {
+    const merkmaleSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+      '[data-testid="merkmale-filter-select"]',
+    );
+    await merkmaleSelect?.setValue([RollenMerkmal.KopersPflicht]);
+
+    expect(searchFilterStore.setMerkmaleFilterForRollen).toHaveBeenCalledWith([RollenMerkmal.KopersPflicht]);
+    expect(rolleStore.getAllRollen).toHaveBeenLastCalledWith({
+      offset: 0,
+      limit: 30,
+      searchString: '',
+      merkmale: [RollenMerkmal.KopersPflicht],
+      rollenarten: undefined,
+      organisationenForFilter: undefined,
+      serviceProviderIds: undefined,
+    });
+  });
+
+  test('rollenarten filter change calls store action and reloads rollen', async () => {
+    const rollenartenSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+      '[data-testid="rollenarten-filter-select"]',
+    );
+    await rollenartenSelect?.setValue([RollenArt.Lehr]);
+
+    expect(searchFilterStore.setRollenartenFilterForRollen).toHaveBeenCalledWith([RollenArt.Lehr]);
+    expect(rolleStore.getAllRollen).toHaveBeenLastCalledWith({
+      offset: 0,
+      limit: 30,
+      searchString: '',
+      merkmale: undefined,
+      rollenarten: [RollenArt.Lehr],
+      organisationenForFilter: undefined,
+      serviceProviderIds: undefined,
+    });
+  });
+
+  test('organisationen filter change calls store action and reloads rollen', async () => {
+    const schulenFilter: VueWrapper | undefined = wrapper?.findComponent({
+      name: 'SchulenFilter',
+    });
+    const orgs: Array<string> = ['org1', 'org2'];
+    searchFilterStore.selectedOrganisationenForRollen = orgs;
+    await schulenFilter?.setValue(orgs);
+    schulenFilter?.vm.$emit('update:selectedSchulen', orgs);
+    await flushPromises();
+
+    expect(searchFilterStore.setOrganisationenFilterForRollen).toHaveBeenCalledWith(['org1', 'org2']);
+    expect(rolleStore.getAllRollen).toHaveBeenLastCalledWith({
+      offset: 0,
+      limit: 30,
+      searchString: '',
+      merkmale: undefined,
+      rollenarten: undefined,
+      organisationenForFilter: orgs,
+      serviceProviderIds: undefined,
+    });
+  });
+
+  test('angebote filter is visible when user has AngeboteVerwalten permission', async () => {
+    authStore.hasAngeboteVerwaltenPermission = true;
+    await nextTick();
+    expect(wrapper?.find('[data-testid="angebote-filter-select"]').exists()).toBe(true);
+  });
+
+  test('angebote filter is hidden when user lacks AngeboteVerwalten permission', async () => {
+    authStore.hasAngeboteVerwaltenPermission = false;
+    await nextTick();
+    expect(wrapper?.find('[data-testid="angebote-filter-select"]').exists()).toBe(false);
+  });
+
+  test('getServiceProvidersForRollenVerwaltung is called on mount when user has AngeboteVerwalten permission', async () => {
+    authStore.hasAngeboteVerwaltenPermission = true;
+    wrapper = mount(RolleManagementView, {
+      attachTo: document.getElementById('app') || '',
+      global: { plugins: [router] },
+    });
+    await flushPromises();
+    expect(serviceProviderStore.getServiceProvidersForRollenVerwaltung).toHaveBeenCalledWith({ limit: 25 });
+  });
+
+  test('getServiceProvidersForRollenVerwaltung is not called on mount when user lacks AngeboteVerwalten permission', async () => {
+    authStore.hasAngeboteVerwaltenPermission = false;
+    vi.mocked(serviceProviderStore.getServiceProvidersForRollenVerwaltung).mockClear();
+    wrapper = mount(RolleManagementView, {
+      attachTo: document.getElementById('app') || '',
+      global: { plugins: [router] },
+    });
+    await flushPromises();
+    expect(serviceProviderStore.getServiceProvidersForRollenVerwaltung).not.toHaveBeenCalled();
+  });
+
+  describe('when angebote is selected in filter', () => {
+    test('angebote filter change calls store action and reloads rollen', async () => {
+      const angeboteSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+        '[data-testid="angebote-filter-select"]',
+      );
+      await angeboteSelect?.setValue(['sp1']);
+
+      expect(searchFilterStore.setAngeboteFilterForRollen).toHaveBeenCalledWith(['sp1']);
+      expect(rolleStore.getAllRollen).toHaveBeenLastCalledWith({
+        offset: 0,
+        limit: 30,
+        searchString: '',
+        merkmale: undefined,
+        rollenarten: undefined,
+        organisationenForFilter: undefined,
+        serviceProviderIds: ['sp1'],
+      });
+    });
+
+    test('angebote filter shows selected items', async () => {
+      serviceProviderStore.loading = false;
+      serviceProviderStore.totalServiceProvidersForRollenVerwaltung = 5;
+      searchFilterStore.selectedAngeboteForRollen = ['sp1', 'sp2'];
+      await nextTick();
+
+      expect(wrapper?.find('[data-testid="angebote-filter-select"]').text()).toContain('Landesangebote ausgewählt');
+    });
+
+    test('selecting an angebot stores its name in the cache', async () => {
+      const angeboteSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+        '[data-testid="angebote-filter-select"]',
+      );
+      await angeboteSelect?.setValue(['sp1']);
+
+      expect(searchFilterStore.setAngeboteNamesForRollen).toHaveBeenCalledWith({ sp1: 'Service Provider 1' });
+    });
+  });
+
+  describe('when selected angebot is not in current search results', () => {
+    test('chip still displays provider name from cache after search filters it out', async () => {
+      vi.mocked(searchFilterStore.setAngeboteNamesForRollen).mockImplementation((names: Record<string, string>) => {
+        searchFilterStore.selectedAngeboteNamesForRollen = names;
+      });
+
+      const angeboteSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+        '[data-testid="angebote-filter-select"]',
+      );
+      await angeboteSelect?.setValue(['sp1']);
+      await nextTick();
+
+      serviceProviderStore.serviceProvidersForRollenVerwaltung = [];
+      await nextTick();
+
+      expect(wrapper?.find('[data-testid="angebote-filter-select"]').text()).toContain('Service Provider 1');
+    });
+  });
+
+  describe('when typing string in angebote filter', () => {
+    test('triggers debounced server search', () => {
+      vi.useFakeTimers();
+      vi.mocked(serviceProviderStore.getServiceProvidersForRollenVerwaltung).mockClear();
+
+      const angeboteSelect: VueWrapper | undefined = wrapper?.findComponent({ ref: 'angeboteFilterSelect' });
+      angeboteSelect?.vm.$emit('update:search', 'test');
+
+      vi.runAllTimers();
+      vi.runAllTicks();
+
+      expect(serviceProviderStore.getServiceProvidersForRollenVerwaltung).toHaveBeenCalledWith({
+        limit: 25,
+        searchStr: 'test',
+      });
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe('when typing empty string in angebote filter', () => {
+    test('angebote filter passes undefined as searchStr', () => {
+      vi.useFakeTimers();
+      vi.mocked(serviceProviderStore.getServiceProvidersForRollenVerwaltung).mockClear();
+
+      const angeboteSelect: VueWrapper | undefined = wrapper?.findComponent({ ref: 'angeboteFilterSelect' });
+      angeboteSelect?.vm.$emit('update:search', '');
+
+      vi.runAllTimers();
+      vi.runAllTicks();
+
+      expect(serviceProviderStore.getServiceProvidersForRollenVerwaltung).toHaveBeenCalledWith({
+        limit: 25,
+        searchStr: undefined,
+      });
+
+      vi.useRealTimers();
+    });
+  });
+
+  test('search filter change resets to first page, calls store action and reloads rollen', async () => {
+    const searchString: string = 'search';
+    searchFilterStore.searchStringForRollen = searchString;
+    searchFilterStore.rollenPage = 2;
+
+    const searchInput: VueWrapper | undefined = wrapper?.findComponent({
+      name: 'SearchField',
+    });
+    await searchInput?.setValue(searchString);
+    searchInput?.vm.$emit('onApplySearchFilter', searchString);
+    await flushPromises();
+
+    expect(searchFilterStore.setSearchFilterForRollen).toHaveBeenCalledWith(searchString);
+    expect(searchFilterStore.rollenPage).toEqual(1);
+    expect(rolleStore.getAllRollen).toHaveBeenLastCalledWith({
+      offset: 0,
+      limit: 30,
+      searchString: searchString,
+      merkmale: undefined,
+      rollenarten: undefined,
+      organisationenForFilter: undefined,
+    });
+  });
+
+  test('reset button is enabled when rollen filter is active', async () => {
+    searchFilterStore.searchStringForRollen = 'search';
+    await nextTick();
+    expect(wrapper?.find('[data-testid="reset-filter-button"]').classes()).not.toContain('v-btn--disabled');
   });
 });

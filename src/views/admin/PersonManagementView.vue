@@ -160,13 +160,13 @@
     }));
   });
 
-  const filterOrSearchActive: Ref<boolean> = computed(
+  const filterOrSearchActive: ComputedRef<boolean> = computed(
     () =>
       (!hasAutoselectedSchule.value && selectedOrganisationIds.value.length > 0) ||
       selectedRollen.value.length > 0 ||
       !!searchFilterStore.selectedOrganisationen?.length ||
       !!searchFilterStore.selectedRollen?.length ||
-      !!searchFilterStore.searchFilterPersonen ||
+      !!searchFilterStore.searchStringForPersonen ||
       (selectedKlassen.value && selectedKlassen.value.length > 0) ||
       !!selectedStatus.value,
   );
@@ -216,7 +216,7 @@
         ? searchFilterStore.selectedKlassen
         : searchFilterStore.selectedOrganisationen || [],
       rolleIDs: searchFilterStore.selectedRollen || [],
-      searchFilter: searchFilterStore.searchFilterPersonen || '',
+      searchFilter: searchFilterStore.searchStringForPersonen || '',
       sortField: searchFilterStore.personenSortField as SortField,
       sortOrder: searchFilterStore.personenSortOrder as SortOrder,
     });
@@ -239,7 +239,7 @@
       limit: searchFilterStore.personenPerPage,
       organisationIDs: searchFilterStore.selectedOrganisationen || selectedOrganisationIds.value,
       rolleIDs: searchFilterStore.selectedRollen || selectedRollen.value,
-      searchFilter: searchFilterStore.searchFilterPersonen || searchFilter.value,
+      searchFilter: searchFilterStore.searchStringForPersonen || searchFilter.value,
     });
 
     await applySearchAndFilters();
@@ -948,7 +948,7 @@
         <v-spacer />
         <SearchField
           ref="searchFieldComponent"
-          :initial-value="searchFilterStore.searchFilterPersonen ?? ''"
+          :initial-value="searchFilterStore.searchStringForPersonen ?? ''"
           :input-cols="6"
           :input-cols-md="3"
           :button-cols="6"
