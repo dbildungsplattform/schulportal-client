@@ -19,9 +19,7 @@ import {
   type ManageableServiceProviderResponse,
   type ManageableServiceProviderSimpleListEntryResponse,
   type ProviderApiInterface,
-  type ProviderControllerGetAvailableServiceProviders200Response,
   type ProviderControllerFindRollenerweiterungenByServiceProviderId200Response,
-  type ProviderControllerGetManageableLandRootServiceProviders200Response,
   type ProviderControllerGetManageableServiceProviders200Response,
   type ProviderControllerGetManageableServiceProvidersForOrganisationId200Response,
   type RolleApiInterface,
@@ -29,6 +27,7 @@ import {
   type ServiceProviderResponse,
   type UpdateServiceProviderBodyParams,
   type VidisApiInterface,
+  ProviderControllerGetAvailableServiceProviders200Response,
 } from '../api-client/generated/api';
 import type { RollenSystemRecht } from './RolleStore';
 
@@ -361,7 +360,7 @@ export const useServiceProviderStore: StoreDefinition<
       this.serviceProvidersForRollenVerwaltung = [];
       this.totalServiceProvidersForRollenVerwaltung = 0;
       try {
-        const response: ProviderControllerGetManageableLandRootServiceProviders200Response = (
+        const response: ProviderControllerGetAvailableServiceProviders200Response = (
           await serviceProviderApi.providerControllerGetManageableLandRootServiceProviders(
             filter?.offset,
             filter?.limit,
