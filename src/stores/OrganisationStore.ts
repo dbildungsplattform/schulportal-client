@@ -82,7 +82,7 @@ export type AutoCompleteStore<T> = {
   loading: boolean;
 };
 
-export type CurrentSchulDetails = Organisation & { schultraegerform?: ParentInfo };
+export type CurrentSchulDetails = Organisation & { schultraegerform?: Organisation | null };
 
 type OrganisationState = {
   allOrganisationen: Array<Organisation>;
