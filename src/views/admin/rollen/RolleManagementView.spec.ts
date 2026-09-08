@@ -1,4 +1,3 @@
-import type { SystemRechtResponse } from '@/api-client/generated';
 import SchulenFilter from '@/components/filter/SchulenFilter.vue';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
@@ -53,13 +52,10 @@ beforeEach(() => {
   rolleStore.allRollen = [
     {
       administeredBySchulstrukturknoten: '1234',
-      rollenart: 'LEHR',
+      rollenart: RollenArt.Lehr,
       name: 'Lehrer',
-      // TODO: remove type casting when generator is fixed
-      merkmale: ['KOPERS_PFLICHT'],
-      systemrechte: [
-        { name: RollenSystemRechtEnum.RollenVerwalten, isTechnical: false },
-      ] as unknown as Set<SystemRechtResponse>,
+      merkmale: [RollenMerkmal.KopersPflicht],
+      systemrechte: [{ name: RollenSystemRechtEnum.RollenVerwalten, isTechnical: false }],
       createdAt: '2022',
       updatedAt: '2022',
       id: '1',
@@ -79,11 +75,10 @@ beforeEach(() => {
     },
     {
       administeredBySchulstrukturknoten: '1234',
-      rollenart: 'LERN',
+      rollenart: RollenArt.Lern,
       name: 'SuS',
-      // TODO: remove type casting when generator is fixed
       merkmale: [],
-      systemrechte: [] as unknown as Set<SystemRechtResponse>,
+      systemrechte: [],
       createdAt: '2022',
       updatedAt: '2022',
       id: '2',
@@ -99,11 +94,10 @@ beforeEach(() => {
     },
     {
       administeredBySchulstrukturknoten: '42',
-      rollenart: 'LERN',
+      rollenart: RollenArt.Lern,
       name: 'Rolle ohne Namen',
-      // TODO: remove type casting when generator is fixed
       merkmale: [],
-      systemrechte: [] as unknown as Set<SystemRechtResponse>,
+      systemrechte: [],
       createdAt: '2022',
       updatedAt: '2022',
       id: '2',
@@ -350,6 +344,7 @@ describe('RolleManagementView', () => {
         offset: 0,
         limit: 30,
         searchString: '',
+        systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
         merkmale: undefined,
         rollenarten: undefined,
         organisationenForFilter: undefined,

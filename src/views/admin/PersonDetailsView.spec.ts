@@ -1,4 +1,4 @@
-import { EmailAddressStatus, type SystemRechtResponse } from '@/api-client/generated';
+import { EmailAddressStatus } from '@/api-client/generated';
 import type { TranslatedRolleWithAttrs } from '@/composables/useRollen';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore, type PersonenkontextRolleFields, type UserInfo } from '@/stores/AuthStore';
@@ -157,6 +157,35 @@ describe('PersonDetailsView', () => {
     configStore.$reset();
     rolleStore.$reset();
 
+    rolleStore.rollenForPersonenkontextCreation = [
+      {
+        id: '54321',
+        createdAt: '2024-06-25T13:03:53.802Z',
+        updatedAt: '2024-06-25T13:03:53.802Z',
+        name: 'string',
+        administeredBySchulstrukturknoten: 'string',
+        rollenart: 'LERN',
+        merkmale: [RollenMerkmal.KopersPflicht],
+        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
+        administeredBySchulstrukturknotenName: 'Land SH',
+        administeredBySchulstrukturknotenKennung: '',
+        version: 1,
+      },
+      {
+        id: '1',
+        createdAt: '2024-06-25T13:03:53.802Z',
+        updatedAt: '2024-06-25T13:03:53.802Z',
+        name: 'SuS',
+        administeredBySchulstrukturknoten: '1',
+        rollenart: 'LERN',
+        merkmale: [RollenMerkmal.BefristungPflicht],
+        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
+        administeredBySchulstrukturknotenName: 'Land SH',
+        administeredBySchulstrukturknotenKennung: '',
+        version: 1,
+      },
+    ];
+
     personenkontextStore.workflowStepResponse = {
       organisations: [
         {
@@ -167,34 +196,6 @@ describe('PersonDetailsView', () => {
           namensergaenzung: 'string',
           kuerzel: 'string',
           typ: 'ROOT',
-        },
-      ],
-      rollen: [
-        {
-          id: '54321',
-          createdAt: '2024-06-25T13:03:53.802Z',
-          updatedAt: '2024-06-25T13:03:53.802Z',
-          name: 'string',
-          administeredBySchulstrukturknoten: 'string',
-          rollenart: 'LERN',
-          merkmale: [RollenMerkmal.KopersPflicht],
-          systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
-          administeredBySchulstrukturknotenName: 'Land SH',
-          administeredBySchulstrukturknotenKennung: '',
-          version: 1,
-        },
-        {
-          id: '1',
-          createdAt: '2024-06-25T13:03:53.802Z',
-          updatedAt: '2024-06-25T13:03:53.802Z',
-          name: 'SuS',
-          administeredBySchulstrukturknoten: '1',
-          rollenart: 'LERN',
-          merkmale: [RollenMerkmal.BefristungPflicht],
-          systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
-          administeredBySchulstrukturknotenName: 'Land SH',
-          administeredBySchulstrukturknotenKennung: '',
-          version: 1,
         },
       ],
       selectedOrganisation: 'string',

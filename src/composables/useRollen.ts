@@ -1,5 +1,10 @@
-import { usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
-import type { RollenArt, RollenMerkmal, RolleResponse } from '@/stores/RolleStore';
+import {
+  useRolleStore,
+  type RollenArt,
+  type RollenMerkmal,
+  type RolleResponse,
+  type RolleStore,
+} from '@/stores/RolleStore';
 import { computed, type ComputedRef } from 'vue';
 
 export type TranslatedRolleWithAttrs = {
@@ -9,10 +14,10 @@ export type TranslatedRolleWithAttrs = {
   rollenart: RollenArt;
 };
 export function useRollen(): ComputedRef<TranslatedRolleWithAttrs[] | undefined> {
-  const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
+  const rolleStore: RolleStore = useRolleStore();
 
   return computed(() => {
-    return personenkontextStore.workflowStepResponse?.rollen
+    return rolleStore.rollenForPersonenkontextCreation
       .map((rolle: RolleResponse) => ({
         value: rolle.id,
         title: rolle.name,

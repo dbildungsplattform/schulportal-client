@@ -21,7 +21,6 @@ import {
   type ProviderApiInterface,
   type ProviderControllerGetAvailableServiceProviders200Response,
   type ProviderControllerFindRollenerweiterungenByServiceProviderId200Response,
-  type ProviderControllerGetManageableLandRootServiceProviders200Response,
   type ProviderControllerGetManageableServiceProviders200Response,
   type ProviderControllerGetManageableServiceProvidersForOrganisationId200Response,
   type RolleApiInterface,
@@ -361,7 +360,7 @@ export const useServiceProviderStore: StoreDefinition<
       this.serviceProvidersForRollenVerwaltung = [];
       this.totalServiceProvidersForRollenVerwaltung = 0;
       try {
-        const response: ProviderControllerGetManageableLandRootServiceProviders200Response = (
+        const response: ProviderControllerGetAvailableServiceProviders200Response = (
           await serviceProviderApi.providerControllerGetManageableLandRootServiceProviders(
             filter?.offset,
             filter?.limit,

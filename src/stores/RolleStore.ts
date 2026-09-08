@@ -22,45 +22,6 @@ import type { BaseServiceProvider } from './ServiceProviderStore';
 
 const rolleApi: RolleApiInterface = RolleApiFactory(undefined, '', axiosApiInstance);
 
-type RolleState = {
-  createdRolle: Rolle | null;
-  updatedRolle: RolleWithServiceProvidersResponse | null;
-  currentRolle: Rolle | null;
-  currentMptRolle: Rolle | null;
-  allRollen: Array<RolleWithServiceProvidersResponse>;
-  rollenerweiterungServiceProviders: Array<ServiceProviderResponse>;
-  errorCode: string;
-  loading: boolean;
-  totalRollen: number;
-  errors: Map<string, DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum>;
-};
-
-type RolleGetters = object;
-type RolleActions = {
-  createRolle: (
-    rollenName: string,
-    administrationsebene: string,
-    rollenArt: RollenArt,
-    merkmale: RollenMerkmal[],
-    systemrechte: RollenSystemRechtEnum[],
-    serviceProvider: string[],
-  ) => Promise<void>;
-  getAllRollen: (filter: RolleFilter) => Promise<void>;
-  getRolleById: (rolleId: string) => Promise<void>;
-  getMptRolleById: (rolleId: string, organisationId: string) => Promise<void>;
-  getRollenerweiterungenForRolle: (rolleId: string, organisationId: string) => Promise<void>;
-  persistRollenerweiterungenForRolle: (filter: PersistRollenerweiterungForRolle) => Promise<void>;
-  updateRolle: (
-    rolleId: string,
-    rollenName: string,
-    merkmale: RollenMerkmal[],
-    systemrechte: RollenSystemRechtEnum[],
-    serviceProviderIds: string[],
-    version: number,
-  ) => Promise<void>;
-  deleteRolleById: (rolleId: string) => Promise<void>;
-};
-
 export { RollenArt, RollenMerkmal, RollenSystemRechtEnum as RollenSystemRecht };
 export type { RolleResponse, RolleWithServiceProvidersResponse };
 
@@ -74,19 +35,6 @@ export type Rolle = {
   serviceProviders?: Array<ServiceProviderIdNameResponse>;
   version: number;
 };
-
-function mapRolleResponseToRolle(response: RolleWithServiceProvidersResponse): Rolle {
-  return {
-    administeredBySchulstrukturknoten: response.administeredBySchulstrukturknoten,
-    id: response.id,
-    merkmale: response.merkmale,
-    name: response.name,
-    rollenart: response.rollenart,
-    systemrechte: new Set(Array.from(response.systemrechte).map((recht: SystemRechtResponse) => recht.name)),
-    version: response.version,
-    serviceProviders: response.serviceProviders,
-  };
-}
 
 export type RolleTableItem = {
   administeredBySchulstrukturknoten: string;
@@ -120,6 +68,16 @@ export type RolleFilter = {
   serviceProviderIds?: Array<string>;
 };
 
+export type RollenForPersonenkontextCreationQuery = {
+  organisationId: string;
+  offset?: number;
+  limit?: number;
+  rollenartOfUser?: RollenArt;
+  rolleName?: string;
+  rollenIds?: Array<string>;
+  systemrecht?: RollenSystemRechtEnum;
+};
+
 export type PersistRollenerweiterungForRolle = {
   rolleId: string;
   organisationId: string;
@@ -127,7 +85,61 @@ export type PersistRollenerweiterungForRolle = {
   selectedServiceProviderIds: Array<string>;
 };
 
+type RolleState = {
+  createdRolle: Rolle | null;
+  updatedRolle: RolleWithServiceProvidersResponse | null;
+  currentRolle: Rolle | null;
+  currentMptRolle: Rolle | null;
+  allRollen: Array<RolleWithServiceProvidersResponse>;
+  rollenForPersonenkontextCreation: Array<RolleResponse>;
+  rollenerweiterungServiceProviders: Array<ServiceProviderResponse>;
+  errorCode: string;
+  loading: boolean;
+  totalRollen: number;
+  errors: Map<string, DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum>;
+};
+
+type RolleGetters = object;
+type RolleActions = {
+  createRolle: (
+    rollenName: string,
+    administrationsebene: string,
+    rollenArt: RollenArt,
+    merkmale: RollenMerkmal[],
+    systemrechte: RollenSystemRechtEnum[],
+    serviceProvider: string[],
+  ) => Promise<void>;
+  getAllRollen: (filter: RolleFilter) => Promise<void>;
+  getRolleById: (rolleId: string) => Promise<void>;
+  getMptRolleById: (rolleId: string, organisationId: string) => Promise<void>;
+  getRollenerweiterungenForRolle: (rolleId: string, organisationId: string) => Promise<void>;
+  persistRollenerweiterungenForRolle: (filter: PersistRollenerweiterungForRolle) => Promise<void>;
+  updateRolle: (
+    rolleId: string,
+    rollenName: string,
+    merkmale: RollenMerkmal[],
+    systemrechte: RollenSystemRechtEnum[],
+    serviceProviderIds: string[],
+    version: number,
+  ) => Promise<void>;
+  deleteRolleById: (rolleId: string) => Promise<void>;
+  getRollenForPersonenkontextCreation: (params: RollenForPersonenkontextCreationQuery) => Promise<void>;
+};
+
 export type RolleStore = Store<'rolleStore', RolleState, RolleGetters, RolleActions>;
+
+function mapRolleResponseToRolle(response: RolleWithServiceProvidersResponse): Rolle {
+  return {
+    administeredBySchulstrukturknoten: response.administeredBySchulstrukturknoten,
+    id: response.id,
+    merkmale: response.merkmale,
+    name: response.name,
+    rollenart: response.rollenart,
+    systemrechte: new Set(Array.from(response.systemrechte).map((recht: SystemRechtResponse) => recht.name)),
+    version: response.version,
+    serviceProviders: response.serviceProviders,
+  };
+}
 
 export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGetters, RolleActions> = defineStore(
   'rolleStore',
@@ -139,6 +151,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
         currentRolle: null,
         currentMptRolle: null,
         allRollen: [],
+        rollenForPersonenkontextCreation: [],
         rollenerweiterungServiceProviders: [],
         errorCode: '',
         loading: false,
@@ -339,6 +352,28 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
         this.errorCode = '';
         try {
           await rolleApi.rolleControllerDeleteRolle(rolleId);
+        } catch (error) {
+          this.errorCode = getResponseErrorCode(error, 'ROLLE_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async getRollenForPersonenkontextCreation(params: RollenForPersonenkontextCreationQuery): Promise<void> {
+        this.loading = true;
+        this.errorCode = '';
+        try {
+          const { data }: { data: Array<RolleResponse> } =
+            await rolleApi.rolleControllerFindAvailableRollenForPersonenkontextCreation(
+              params.organisationId,
+              params.offset,
+              params.limit,
+              params.rollenartOfUser,
+              params.rolleName,
+              params.rollenIds,
+              params.systemrecht,
+            );
+          this.rollenForPersonenkontextCreation = data;
         } catch (error) {
           this.errorCode = getResponseErrorCode(error, 'ROLLE_ERROR');
         } finally {

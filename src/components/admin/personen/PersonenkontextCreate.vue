@@ -16,7 +16,13 @@
     type WorkflowFilter,
   } from '@/stores/PersonenkontextStore';
   import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
-  import { RollenArt, RollenSystemRecht } from '@/stores/RolleStore';
+  import {
+    RollenArt,
+    RollenForPersonenkontextCreationQuery,
+    RollenSystemRecht,
+    RolleStore,
+    useRolleStore,
+  } from '@/stores/RolleStore';
   import type { Zuordnung } from '@/stores/types/Zuordnung';
   import { type TranslatedObject } from '@/types.d';
   import { blurActiveElement } from '@/utils/focus';
@@ -28,8 +34,10 @@
 
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
   const personStore: PersonStore = usePersonStore();
+  const rolleStore: RolleStore = useRolleStore();
 
-  const timerId: Ref<ReturnType<typeof setTimeout> | undefined> = ref<ReturnType<typeof setTimeout>>();
+  const rollenSearchDebounceTimerId: Ref<ReturnType<typeof setTimeout> | undefined> =
+    ref<ReturnType<typeof setTimeout>>();
   const canCommit: Ref<boolean> = ref(false);
 
   const searchInputRolle: Ref<string | undefined> = ref('');
@@ -95,18 +103,41 @@
   // doing it this way prevents an issue where the reactive system constantly re-runs which causes requests to be issued in a loop
   const administriertVon: Ref<string[] | undefined> = ref([]);
 
-  const selectedRolleTitles: ComputedRef<string[]> = computed(() => {
-    if (!Array.isArray(selectedRollen.value)) {
-      return [];
+  const isSelectedRolleAlreadyPresent: ComputedRef<boolean> = computed(() => {
+    if (props.allowMultipleRollen) {
+      return props.rollen?.some((rolle: TranslatedObject) => rolle.title === searchInputRollen.value) ?? false;
+    } else {
+      return props.rollen?.some((rolle: TranslatedObject) => rolle.title === searchInputRolle.value) ?? false;
     }
-    return selectedRollen.value
-      .map((id: string) => props.rollen?.find((rolle: TranslatedObject) => rolle.value === id)?.title)
-      .filter((title: string | undefined): title is string => !!title);
   });
 
-  // Computed property to get the title of the selected role
-  const selectedRolleTitle: ComputedRef<string | undefined> = computed(() => {
-    return props.rollen?.find((rolle: TranslatedObject) => rolle.value === selectedRolle.value)?.title;
+  const rollenFilter: ComputedRef<RollenForPersonenkontextCreationQuery | undefined> = computed(() => {
+    if (!selectedOrganisation.value) {
+      return;
+    }
+    const filter: RollenForPersonenkontextCreationQuery = {
+      organisationId: selectedOrganisation.value,
+      rollenartOfUser: personStore.personenuebersicht?.zuordnungen[0]?.rollenArt,
+      limit: 25,
+      systemrecht:
+        props.createType === CreationType.Limited ? RollenSystemRecht.EingeschraenktNeueBenutzerErstellen : undefined,
+    };
+
+    if (props.allowMultipleRollen) {
+      filter.rollenIds = selectedRollen.value;
+      if (searchInputRollen.value && !isSelectedRolleAlreadyPresent.value) {
+        filter.rolleName = searchInputRollen.value;
+      }
+    } else {
+      if (selectedRolle.value) {
+        filter.rollenIds = [selectedRolle.value];
+      }
+      if (searchInputRolle.value && !isSelectedRolleAlreadyPresent.value) {
+        filter.rolleName = searchInputRolle.value;
+      }
+    }
+
+    return filter;
   });
 
   const useLandesbediensteteWorkflow: ComputedRef<boolean> = computed((): boolean => {
@@ -153,57 +184,113 @@
     canCommit.value = personenkontextStore.workflowStepResponse?.canCommit ?? false;
   }
 
-  // Watcher for selectedOrganisation to fetch roles and classes
-  watch(selectedOrganisation, (newValue: string | undefined, oldValue: string | undefined) => {
-    // Reset selected roles if oldValue existed (change event)
-    if (oldValue !== undefined) {
-      if (selectedRolle.value) {
-        selectedRolle.value = undefined;
-        emits('fieldReset', 'selectedRolle');
-      }
-      if (selectedRollen.value?.length) {
-        selectedRollen.value = undefined;
-        emits('fieldReset', 'selectedRollen');
-      }
+  const handleFocusChange = (focused: boolean): void => {
+    if (!focused) {
+      searchInputRollen.value = '';
+      searchInputRolle.value = '';
     }
-    emits('update:selectedOrganisation', newValue);
+  };
 
-    if (newValue && newValue !== oldValue) {
-      administriertVon.value?.pop();
-      administriertVon.value?.push(newValue);
+  function updateKlasseSelection(selectedKlassen: string | undefined): void {
+    selectedKlasse.value = selectedKlassen;
+    emits('update:selectedKlasse', selectedKlassen);
+  }
 
-      // Check if all Klassen for this orga are the same
-      const klassenZuordnungen: Zuordnung[] | undefined = personStore.personenuebersicht?.zuordnungen.filter(
-        (zuordnung: Zuordnung) => zuordnung.typ === OrganisationsTyp.Klasse && zuordnung.administriertVon === newValue,
-      );
+  function updateKlasseSelectionForRadio(selectedKlassen: string | undefined): void {
+    selectedKlasseForRadio.value = selectedKlassen;
+    emits('update:selectedKlasseForRadio', selectedKlassen);
+  }
 
-      const klassenIds: Set<string> = new Set(klassenZuordnungen?.map((zuordnung: Zuordnung) => zuordnung.sskId));
-      if (klassenIds.size === 1) {
-        const klasseId: string | undefined = klassenIds.values().next().value;
-        if (klasseId) {
-          selectedKlasse.value = klasseId;
-          emits('update:selectedKlasse', klasseId);
+  // Clear the selected Rolle once the input field is cleared (This is the only way to fetch all Rollen again)
+  // This is also important since we only want to fetch all orgas once the selected Rolle is null, otherwise an extra request is made with an empty string
+  function clearSelectedRolle(): void {
+    emits('fieldReset', 'selectedRolle');
+  }
+
+  function clearSelectedRollen(): void {
+    emits('fieldReset', 'selectedRollen');
+  }
+
+  const handleBefristungChange = (value: string | undefined): void => {
+    emits('update:befristung', value);
+  };
+
+  const handleCalculatedBefristungOptionChange = (value: string | undefined): void => {
+    emits('update:calculatedBefristungOption', value);
+  };
+
+  function updateSchuleSelection(orgaId: string): void {
+    selectedOrganisation.value = orgaId;
+    emits('update:selectedOrganisation', orgaId);
+  }
+
+  function handleKlassenOption(value: string | null): void {
+    if (value === null) {
+      return;
+    }
+    if (value === KlassenOption.KEEP_KLASSE.toString()) {
+      selectedKlasseForRadio.value = undefined;
+      emits('update:selectedKlasseForRadio', undefined);
+    }
+    localKlassenOption.value = value;
+    emits('update:selectedKlassenOption', value);
+  }
+
+  // Watcher for selectedOrganisation to fetch Rollen and Klassen
+  watch(
+    selectedOrganisation,
+    (newSelectedOrganisationId: string | undefined, oldSelectedOrganisationId: string | undefined) => {
+      // Reset selected Rollen if oldSelectedOrganisationId existed (change event)
+      if (oldSelectedOrganisationId !== undefined) {
+        if (selectedRolle.value) {
+          selectedRolle.value = undefined;
+          emits('fieldReset', 'selectedRolle');
         }
-      } else {
+        if (selectedRollen.value?.length) {
+          selectedRollen.value = undefined;
+          emits('fieldReset', 'selectedRollen');
+        }
+      }
+      emits('update:selectedOrganisation', newSelectedOrganisationId);
+
+      if (newSelectedOrganisationId && newSelectedOrganisationId !== oldSelectedOrganisationId) {
+        administriertVon.value?.pop();
+        administriertVon.value?.push(newSelectedOrganisationId);
+
+        // Check if all Klassen for this orga are the same
+        const klassenZuordnungen: Zuordnung[] | undefined = personStore.personenuebersicht?.zuordnungen.filter(
+          (zuordnung: Zuordnung) =>
+            zuordnung.typ === OrganisationsTyp.Klasse && zuordnung.administriertVon === newSelectedOrganisationId,
+        );
+
+        const klassenIds: Set<string> = new Set(klassenZuordnungen?.map((zuordnung: Zuordnung) => zuordnung.sskId));
+        if (klassenIds.size === 1) {
+          const klasseId: string | undefined = klassenIds.values().next().value;
+          if (klasseId) {
+            selectedKlasse.value = klasseId;
+            emits('update:selectedKlasse', klasseId);
+          }
+        } else {
+          selectedKlasse.value = undefined;
+          emits('fieldReset', 'selectedKlasse');
+        }
+      } else if (!newSelectedOrganisationId) {
+        // Clear selections if orga was cleared
+        administriertVon.value?.pop();
+        selectedRolle.value = undefined;
         selectedKlasse.value = undefined;
+        emits('fieldReset', 'selectedRolle');
         emits('fieldReset', 'selectedKlasse');
       }
-    } else if (!newValue) {
-      // Clear selections if orga was cleared
-      administriertVon.value?.pop();
-      selectedRolle.value = undefined;
-      selectedKlasse.value = undefined;
-      emits('fieldReset', 'selectedRolle');
-      emits('fieldReset', 'selectedKlasse');
-    }
-  });
+    },
+  );
 
   watch(
     () => (props.allowMultipleRollen ? selectedRollen.value : selectedRolle.value),
     async (newValue: string | string[] | undefined, oldValue: string | string[] | undefined) => {
       // Cancel any pending debounced search to prevent a stale request from overwriting
       // the workflow response triggered by this selection.
-      clearTimeout(timerId.value);
+      clearTimeout(rollenSearchDebounceTimerId.value);
 
       const filter: WorkflowFilter = {
         personId: props.personId,
@@ -246,72 +333,34 @@
   );
 
   watch(
-    props.allowMultipleRollen ? searchInputRollen : searchInputRolle,
-    (newValue: string | undefined, oldValue: string | undefined) => {
-      clearTimeout(timerId.value);
-
-      if (!newValue && !oldValue) {
+    rollenFilter,
+    async (
+      newFilter: RollenForPersonenkontextCreationQuery | undefined,
+      oldFilter: RollenForPersonenkontextCreationQuery | undefined,
+    ) => {
+      clearTimeout(rollenSearchDebounceTimerId.value);
+      if (!newFilter) {
         return;
       }
 
-      if (
-        newValue &&
-        (props.allowMultipleRollen
-          ? selectedRolleTitles.value.includes(newValue)
-          : selectedRolleTitle.value === newValue)
-      ) {
+      // first load
+      if (!oldFilter) {
+        await rolleStore.getRollenForPersonenkontextCreation(newFilter);
         return;
       }
 
-      const filter: WorkflowFilter = {
-        personId: props.personId,
-        organisationId: selectedOrganisation.value,
-        rollenIds: props.allowMultipleRollen
-          ? selectedRollen.value
-          : selectedRolle.value
-            ? [selectedRolle.value]
-            : undefined,
-        limit: 25,
-      };
-
-      if (!newValue) {
-        // No rolleName (cleared)
+      // search updated
+      if (newFilter.rolleName !== oldFilter.rolleName) {
+        // Debounce the search to avoid too many requests
+        rollenSearchDebounceTimerId.value = setTimeout(async () => {
+          await rolleStore.getRollenForPersonenkontextCreation(newFilter);
+        }, 500);
       } else {
-        filter.rolleName = newValue;
+        // selection changed
+        await rolleStore.getRollenForPersonenkontextCreation(newFilter);
       }
-
-      timerId.value = setTimeout(async () => {
-        await handleWorkflowStep(filter);
-      }, 500);
     },
   );
-
-  const handleFocusChange = (focused: boolean): void => {
-    if (!focused) {
-      searchInputRollen.value = '';
-      searchInputRolle.value = '';
-    }
-  };
-
-  function updateKlasseSelection(selectedKlassen: string | undefined): void {
-    selectedKlasse.value = selectedKlassen;
-    emits('update:selectedKlasse', selectedKlassen);
-  }
-
-  function updateKlasseSelectionForRadio(selectedKlassen: string | undefined): void {
-    selectedKlasseForRadio.value = selectedKlassen;
-    emits('update:selectedKlasseForRadio', selectedKlassen);
-  }
-
-  // Clear the selected Rolle once the input field is cleared (This is the only way to fetch all Rollen again)
-  // This is also important since we only want to fetch all orgas once the selected Rolle is null, otherwise an extra request is made with an empty string
-  function clearSelectedRolle(): void {
-    emits('fieldReset', 'selectedRolle');
-  }
-
-  function clearSelectedRollen(): void {
-    emits('fieldReset', 'selectedRollen');
-  }
 
   watch(
     autoselectedSchule,
@@ -324,14 +373,6 @@
     { immediate: true },
   );
 
-  const handleBefristungChange = (value: string | undefined): void => {
-    emits('update:befristung', value);
-  };
-
-  const handleCalculatedBefristungOptionChange = (value: string | undefined): void => {
-    emits('update:calculatedBefristungOption', value);
-  };
-
   watch(
     canCommit,
     (newValue: boolean) => {
@@ -339,23 +380,6 @@
     },
     { immediate: true },
   );
-
-  function updateSchuleSelection(orgaId: string): void {
-    selectedOrganisation.value = orgaId;
-    emits('update:selectedOrganisation', orgaId);
-  }
-
-  function handleKlassenOption(value: string | null): void {
-    if (value === null) {
-      return;
-    }
-    if (value === KlassenOption.KEEP_KLASSE.toString()) {
-      selectedKlasseForRadio.value = undefined;
-      emits('update:selectedKlasseForRadio', undefined);
-    }
-    localKlassenOption.value = value;
-    emits('update:selectedKlassenOption', value);
-  }
 
   // If the submission of the form goes wrong and the user needs to correct something, we need to ensure that the canCommit value is updated
   onMounted(() => {

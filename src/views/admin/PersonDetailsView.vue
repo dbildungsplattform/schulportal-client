@@ -35,8 +35,6 @@
     usePersonenkontextStore,
     type PersonenkontextStore,
     type PersonenkontextUpdate,
-    type PersonenkontextWorkflowResponse,
-    type RolleResponse,
   } from '@/stores/PersonenkontextStore';
   import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
   import {
@@ -580,23 +578,6 @@
     return !!rolle && rolle.rollenart === RollenArt.Lern;
   }
 
-  async function isLernRolleForChangeKlasse(selectedRolleId: string): Promise<boolean> {
-    await personenkontextStore.processWorkflowStep({
-      personId: currentPersonId,
-      operationContext: OperationContext.PERSON_BEARBEITEN,
-      organisationId: selectedZuordnungen.value[0]?.sskId,
-      rollenIds: [selectedRolleId],
-      limit: 1,
-    });
-
-    const workflowStepResponse: PersonenkontextWorkflowResponse | null = personenkontextStore.workflowStepResponse;
-
-    const rolle: RolleResponse | undefined = workflowStepResponse?.rollen.find(
-      (r: RolleResponse) => r.id === selectedRolleId,
-    );
-    return !!rolle && rolle.rollenart === RollenArt.Lern;
-  }
-
   const hasKopersNummer: ComputedRef<boolean> = computed(() => {
     return !!personStore.currentPerson?.person.personalnummer;
   });
@@ -618,18 +599,6 @@
       }) || false
     );
   });
-
-  watch(
-    () => selectedZuordnungen.value[0]?.rolleId,
-    async (rolleId: string | undefined) => {
-      if (rolleId) {
-        isLernRolleForChangeKlasseResult.value = await isLernRolleForChangeKlasse(rolleId);
-      } else {
-        isLernRolleForChangeKlasseResult.value = false;
-      }
-    },
-    { immediate: true },
-  );
 
   const canChangeKlasse: ComputedRef<boolean> = computed(() => {
     const hasOneSelectedZuordnung: boolean = selectedZuordnungen.value.length === 1;
@@ -664,6 +633,8 @@
           limit: 25,
         });
       }
+
+      isLernRolleForChangeKlasseResult.value = newValue?.rollenArt === RollenArt.Lern;
     },
     { immediate: true }, // Run on initialization if there's already a selected Zuordnung
   );
