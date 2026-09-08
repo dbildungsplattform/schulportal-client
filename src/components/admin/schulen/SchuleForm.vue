@@ -5,7 +5,7 @@ import { Organisation } from '@/stores/OrganisationStore';
 import { DIN_91379A_EXT, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
 import { toTypedSchema } from '@vee-validate/yup';
 import { FormMeta, TypedSchema, useForm, type BaseFieldProps } from 'vee-validate';
-import { computed, ComputedRef, ModelRef, onMounted, Ref, watch, watchEffect } from 'vue';
+import { computed, ComputedRef, onMounted, Ref, watch, watchEffect } from 'vue';
 import { Composer, useI18n } from 'vue-i18n';
 import { object, string } from 'yup';
 
@@ -13,6 +13,7 @@ import { object, string } from 'yup';
     selectedSchulform: string;
     selectedDienststellennummer: string;
     selectedSchulname: string;
+    selectedEmailAdress: string;
   };
 
   type Props = {
@@ -36,12 +37,8 @@ import { object, string } from 'yup';
   };
 
   const props: Props = defineProps<Props>();
-  const selectedSchultraegerform: ModelRef<string | undefined, string> = defineModel('selectedSchultraegerId');
-
   const emit: Emits = defineEmits<Emits>();
-
   const { t }: Composer = useI18n({ useScope: 'global' });
-  //const initialSchulFormCache: Ref<string> = ref('');
 
   const validationSchema: TypedSchema = toTypedSchema(
     object({
@@ -53,6 +50,10 @@ import { object, string } from 'yup';
         .matches(DIN_91379A_EXT, t('admin.schule.rules.schulname.matches'))
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.schule.rules.schulname.noLeadingTrailingSpaces'))
         .required(t('admin.schule.rules.schulname.required')),
+      selectedEmailAdress: string()
+      .email(t('admin.schule.rules.emailAddress.invalid'))
+      .required(t('admin.schule.rules.emailAddress.required'))
+      .matches(NO_LEADING_TRAILING_SPACES, t('admin.schule.rules.emailAddress.noLeadingTrailingSpaces'))
     }),
   );
 
@@ -69,9 +70,7 @@ import { object, string } from 'yup';
   const { defineField, handleSubmit, meta, setValues } = useForm<SchuleDetailsForm>({
     validationSchema,
     initialValues: {
-      selectedSchulform: props.initialValues?.selectedSchulform ?? '',
-      selectedDienststellennummer: props.initialValues?.selectedDienststellennummer ?? '',
-      selectedSchulname: props.initialValues?.selectedSchulname ?? '',
+      ...props.initialValues,
     },
   });
 
@@ -89,9 +88,13 @@ import { object, string } from 'yup';
     Ref<string>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = defineField('selectedDienststellennummer', vuetifyConfig);
+  const [selectedEmailAdress, selectedEmailAdressProps]: [
+    Ref<string>,
+    Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
+  ] = defineField('selectedEmailAdress', vuetifyConfig);
 
   const onSubmit: (e?: Event) => Promise<void> = handleSubmit((values: SchuleDetailsForm) => {
-    if (selectedDienststellennummer.value && selectedSchulname.value) {
+    if (selectedDienststellennummer.value && selectedSchulname.value && selectedEmailAdress.value) {
       emit('click:submit', values);
     }
   });
@@ -208,6 +211,30 @@ import { object, string } from 'yup';
           clearable
           data-testid="schulname-input"
           :placeholder="$t('admin.schule.schulname')"
+          variant="outlined"
+          density="compact"
+          required
+        />
+      </FormRow>
+      <!-- select school email -->
+      <v-row>
+        <v-col>
+          <h3 class="headline-3">4. {{ $t('admin.schule.enterEmailAdresse') }}</h3>
+        </v-col>
+      </v-row>
+      <FormRow
+        :error-label="selectedEmailAdressProps['error']"
+        label-for-id="email-adress-input"
+        :is-required="true"
+        :label="$t('admin.schule.emailAdresse')"
+      >
+        <v-text-field
+          v-bind="selectedEmailAdressProps"
+          ref="email-adress-input"
+          v-model="selectedEmailAdress"
+          clearable
+          data-testid="email-adress-input"
+          :placeholder="$t('admin.schule.emailAdresse')"
           variant="outlined"
           density="compact"
           required

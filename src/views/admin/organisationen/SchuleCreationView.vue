@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import SchuleForm, { SchuleDetailsForm } from '@/components/admin/schulen/SchuleForm.vue';
+  import SchuleForm, { type SchuleDetailsForm } from '@/components/admin/schulen/SchuleForm.vue';
 import SchuleSuccessTemplate from '@/components/admin/schulen/SchuleSuccessTemplate.vue';
 import SpshAlert from '@/components/alert/SpshAlert.vue';
 import LayoutCard from '@/components/cards/LayoutCard.vue';
@@ -40,22 +40,21 @@ import { NavigationGuardNext, onBeforeRouteLeave, RouteLocationNormalized, useRo
     /* empty */
   };
 
-  const onSubmit = async (payload: SchuleDetailsForm): Promise<void> => {
+  const onSubmit = async ({ selectedSchulform, selectedDienststellennummer, selectedSchulname, selectedEmailAdress }: SchuleDetailsForm): Promise<void> => {
     await organisationStore.createOrganisation(
-      payload.selectedSchulform,
-      payload.selectedSchulform,
-      payload.selectedDienststellennummer,
-      payload.selectedSchulname,
+      selectedSchulform as string,
+      selectedSchulform as string,
+      selectedDienststellennummer as string,
+      selectedSchulname as string,
       undefined,
       undefined,
       OrganisationsTyp.Schule,
+      undefined,
+      selectedEmailAdress as string
     );
-    // if (!organisationStore.errorCode) {
-    isDirty.value = false;
-    // showSuccess.value = true;
-    // selectedOrganisationIdCache.value = values.selectedOrganisation.id;
-    // selectedOrganisationNameCache.value = values.selectedOrganisation.name;
-    //}
+    if (!organisationStore.errorCode) {
+      isDirty.value = false;
+    }
   };
 
   onBeforeRouteLeave((_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {

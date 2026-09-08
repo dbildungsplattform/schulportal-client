@@ -6,15 +6,11 @@ import { useDisplay } from 'vuetify';
 
   type Props = {
     successMessage: string;
-    followingDataChanged: {
-      name: string;
-      kennung: string;
-      administriertVon: string;
-    };
-    schultraegerList: Organisation[];
+    followingDataChanged: Organisation | undefined;
+    schultraegerList: Organisation[] | undefined;
   };
 
-  const props: Props = defineProps();
+  const props: Props = defineProps<Props>();
 
   type Emits = {
     (event: 'onNavigateBackToSchuleManagement'): void;
@@ -99,6 +95,17 @@ import { useDisplay } from 'vuetify';
       </v-col>
       <v-col class="text-body"
         ><span data-testid="created-schule-name">{{ followingDataChanged?.name }}</span>
+      </v-col>
+    </v-row>
+    <v-row>
+      <v-col
+        class="text-body bold text-right"
+        data-testid="created-schule-email-label"
+      >
+        {{ $t('admin.schule.emailAdresse') }}:
+      </v-col>
+      <v-col class="text-body"
+        ><span data-testid="created-schule-email">{{ followingDataChanged?.emailAdress }}</span>
       </v-col>
     </v-row>
     <v-divider

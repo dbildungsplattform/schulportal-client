@@ -162,6 +162,7 @@ type OrganisationActions = {
     kuerzel: string | undefined,
     typ: OrganisationsTyp,
     traegerschaft?: TraegerschaftTyp,
+    emailAdress?: string
   ) => Promise<void>;
   deleteOrganisationById: (organisationId: string) => Promise<void>;
   updateOrganisationById: (organisationId: string, name: string, type: OrganisationsTyp) => Promise<void>;
@@ -512,6 +513,7 @@ export const useOrganisationStore: StoreDefinition<
       kuerzel: string | undefined,
       typ: OrganisationsTyp,
       traegerschaft?: TraegerschaftTyp,
+      emailAdress?: string
     ): Promise<void> {
       this.loading = true;
       try {
@@ -524,6 +526,7 @@ export const useOrganisationStore: StoreDefinition<
           kuerzel: kuerzel,
           typ: typ,
           traegerschaft: traegerschaft,
+          emailAdress: emailAdress,
         };
         const { data }: { data: Organisation } =
           await organisationApi.organisationControllerCreateOrganisation(createOrganisationBodyParams);

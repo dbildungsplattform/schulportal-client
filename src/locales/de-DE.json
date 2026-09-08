@@ -760,6 +760,7 @@
       "emailAdresse": "E-Mail-Adresse",
       "enterDienststellennummer": "Dienststellennummer eingeben",
       "enterSchulname": "Schulname eingeben",
+      "enterEmailAdresse": "E-Mail-Adresse eingeben",
       "title": {
         "ORGANISATION_SPECIFICATION_ERROR": "Fehler bei Anlage der Schule.",
         "REQUIRED_STEP_UP_LEVEL_NOT_MET": "Zwei-Faktor-Authentifizierung (2FA) erforderlich",
@@ -809,6 +810,11 @@
         },
         "schulform": {
           "required": "Die Schulform muss ausgewählt werden."
+        },
+        "emailAddress": {
+          "required": "Die Email-Adresse muss angegeben werden.",
+          "invalid": "Die Email-Adresse ist ungültig.",
+          "noLeadingTrailingSpaces": "Die Email-Adresse darf nicht mit Leerzeichen beginnen oder enden."
         }
       },
       "selectSchule": "Schule auswählen",
