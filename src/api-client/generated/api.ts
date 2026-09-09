@@ -4521,6 +4521,19 @@ export interface UserExeternalDataResponseVidis {
 /**
  * 
  * @export
+ * @interface UserExternalDataBodyParams
+ */
+export interface UserExternalDataBodyParams {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataBodyParams
+     */
+    'sub': string;
+}
+/**
+ * 
+ * @export
  * @interface UserExternalDataResponse
  */
 export interface UserExternalDataResponse {
@@ -4636,6 +4649,18 @@ export interface UserExternalDataResponseOx {
  * @interface UserExternalDataResponsePolyteia
  */
 export interface UserExternalDataResponsePolyteia {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataResponsePolyteia
+     */
+    'vorname': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataResponsePolyteia
+     */
+    'familienname': string;
     /**
      * 
      * @type {string}
@@ -7458,10 +7483,13 @@ export const KeycloakinternalApiAxiosParamCreator = function (configuration?: Co
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        keycloakInternalControllerGetExternalData: async (options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        keycloakInternalControllerGetExternalData: async (userExternalDataBodyParams: UserExternalDataBodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'userExternalDataBodyParams' is not null or undefined
+            assertParamExists('keycloakInternalControllerGetExternalData', 'userExternalDataBodyParams', userExternalDataBodyParams)
             const localVarPath = `/keycloakinternal/externaldata`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -7476,9 +7504,12 @@ export const KeycloakinternalApiAxiosParamCreator = function (configuration?: Co
 
 
     
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(userExternalDataBodyParams, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -7498,11 +7529,12 @@ export const KeycloakinternalApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async keycloakInternalControllerGetExternalData(options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserExternalDataResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.keycloakInternalControllerGetExternalData(options);
+        async keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserExternalDataResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -7518,11 +7550,12 @@ export const KeycloakinternalApiFactory = function (configuration?: Configuratio
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        keycloakInternalControllerGetExternalData(options?: any): AxiosPromise<UserExternalDataResponse> {
-            return localVarFp.keycloakInternalControllerGetExternalData(options).then((request) => request(axios, basePath));
+        keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: any): AxiosPromise<UserExternalDataResponse> {
+            return localVarFp.keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -7536,11 +7569,12 @@ export interface KeycloakinternalApiInterface {
     /**
      * 
      * @summary External Data about requested in user.
+     * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof KeycloakinternalApiInterface
      */
-    keycloakInternalControllerGetExternalData(options?: AxiosRequestConfig): AxiosPromise<UserExternalDataResponse>;
+    keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): AxiosPromise<UserExternalDataResponse>;
 
 }
 
@@ -7554,12 +7588,13 @@ export class KeycloakinternalApi extends BaseAPI implements KeycloakinternalApiI
     /**
      * 
      * @summary External Data about requested in user.
+     * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof KeycloakinternalApi
      */
-    public keycloakInternalControllerGetExternalData(options?: AxiosRequestConfig) {
-        return KeycloakinternalApiFp(this.configuration).keycloakInternalControllerGetExternalData(options).then((request) => request(this.axios, this.basePath));
+    public keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig) {
+        return KeycloakinternalApiFp(this.configuration).keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -12003,12 +12038,15 @@ export const ProviderApiAxiosParamCreator = function (configuration?: Configurat
          * Get all service-providers assignable for a role.
          * @summary 
          * @param {string} schulstrukturknotenOfRolle The id of the organisation where the service provider should be assignable on
+         * @param {RollenArt} rollenArt The rollenart of the rolle for which the service provider should be found
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        providerControllerGetAssignableServiceProvidersForRolle: async (schulstrukturknotenOfRolle: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        providerControllerGetAssignableServiceProvidersForRolle: async (schulstrukturknotenOfRolle: string, rollenArt: RollenArt, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'schulstrukturknotenOfRolle' is not null or undefined
             assertParamExists('providerControllerGetAssignableServiceProvidersForRolle', 'schulstrukturknotenOfRolle', schulstrukturknotenOfRolle)
+            // verify required parameter 'rollenArt' is not null or undefined
+            assertParamExists('providerControllerGetAssignableServiceProvidersForRolle', 'rollenArt', rollenArt)
             const localVarPath = `/api/provider/assignable-for-rolle`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -12033,6 +12071,10 @@ export const ProviderApiAxiosParamCreator = function (configuration?: Configurat
                 localVarQueryParameter['schulstrukturknotenOfRolle'] = schulstrukturknotenOfRolle;
             }
 
+            if (rollenArt !== undefined) {
+                localVarQueryParameter['rollenArt'] = rollenArt;
+            }
+
 
     
             setSearchParams(localVarUrlObj, localVarQueryParameter);
@@ -12052,10 +12094,11 @@ export const ProviderApiAxiosParamCreator = function (configuration?: Configurat
          * @param {string} [searchStr] The name for the angebot.
          * @param {string} [organisationId] The id of the organisation where the angebot should be available.
          * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be ROLLEN_VERWALTEN, ROLLEN_ERWEITERN or both or IMPORT_DURCHFUEHREN.
+         * @param {Array<RollenArt>} [rollenArten] The rollenart of the rolle for which the service provider should be found
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        providerControllerGetAvailableServiceProviders: async (offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        providerControllerGetAvailableServiceProviders: async (offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, rollenArten?: Array<RollenArt>, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/api/provider`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -12094,6 +12137,10 @@ export const ProviderApiAxiosParamCreator = function (configuration?: Configurat
 
             if (systemrechte) {
                 localVarQueryParameter['systemrechte'] = systemrechte;
+            }
+
+            if (rollenArten) {
+                localVarQueryParameter['rollenArten'] = rollenArten;
             }
 
 
@@ -12493,11 +12540,12 @@ export const ProviderApiFp = function(configuration?: Configuration) {
          * Get all service-providers assignable for a role.
          * @summary 
          * @param {string} schulstrukturknotenOfRolle The id of the organisation where the service provider should be assignable on
+         * @param {RollenArt} rollenArt The rollenart of the rolle for which the service provider should be found
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async providerControllerGetAssignableServiceProvidersForRolle(schulstrukturknotenOfRolle: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<ServiceProviderResponse>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.providerControllerGetAssignableServiceProvidersForRolle(schulstrukturknotenOfRolle, options);
+        async providerControllerGetAssignableServiceProvidersForRolle(schulstrukturknotenOfRolle: string, rollenArt: RollenArt, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<ServiceProviderResponse>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.providerControllerGetAssignableServiceProvidersForRolle(schulstrukturknotenOfRolle, rollenArt, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -12508,11 +12556,12 @@ export const ProviderApiFp = function(configuration?: Configuration) {
          * @param {string} [searchStr] The name for the angebot.
          * @param {string} [organisationId] The id of the organisation where the angebot should be available.
          * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be ROLLEN_VERWALTEN, ROLLEN_ERWEITERN or both or IMPORT_DURCHFUEHREN.
+         * @param {Array<RollenArt>} [rollenArten] The rollenart of the rolle for which the service provider should be found
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async providerControllerGetAvailableServiceProviders(offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ProviderControllerGetAvailableServiceProviders200Response>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.providerControllerGetAvailableServiceProviders(offset, limit, searchStr, organisationId, systemrechte, options);
+        async providerControllerGetAvailableServiceProviders(offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, rollenArten?: Array<RollenArt>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ProviderControllerGetAvailableServiceProviders200Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.providerControllerGetAvailableServiceProviders(offset, limit, searchStr, organisationId, systemrechte, rollenArten, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -12646,11 +12695,12 @@ export const ProviderApiFactory = function (configuration?: Configuration, baseP
          * Get all service-providers assignable for a role.
          * @summary 
          * @param {string} schulstrukturknotenOfRolle The id of the organisation where the service provider should be assignable on
+         * @param {RollenArt} rollenArt The rollenart of the rolle for which the service provider should be found
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        providerControllerGetAssignableServiceProvidersForRolle(schulstrukturknotenOfRolle: string, options?: any): AxiosPromise<Array<ServiceProviderResponse>> {
-            return localVarFp.providerControllerGetAssignableServiceProvidersForRolle(schulstrukturknotenOfRolle, options).then((request) => request(axios, basePath));
+        providerControllerGetAssignableServiceProvidersForRolle(schulstrukturknotenOfRolle: string, rollenArt: RollenArt, options?: any): AxiosPromise<Array<ServiceProviderResponse>> {
+            return localVarFp.providerControllerGetAssignableServiceProvidersForRolle(schulstrukturknotenOfRolle, rollenArt, options).then((request) => request(axios, basePath));
         },
         /**
          * Get service-providers.
@@ -12660,11 +12710,12 @@ export const ProviderApiFactory = function (configuration?: Configuration, baseP
          * @param {string} [searchStr] The name for the angebot.
          * @param {string} [organisationId] The id of the organisation where the angebot should be available.
          * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be ROLLEN_VERWALTEN, ROLLEN_ERWEITERN or both or IMPORT_DURCHFUEHREN.
+         * @param {Array<RollenArt>} [rollenArten] The rollenart of the rolle for which the service provider should be found
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        providerControllerGetAvailableServiceProviders(offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options?: any): AxiosPromise<ProviderControllerGetAvailableServiceProviders200Response> {
-            return localVarFp.providerControllerGetAvailableServiceProviders(offset, limit, searchStr, organisationId, systemrechte, options).then((request) => request(axios, basePath));
+        providerControllerGetAvailableServiceProviders(offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, rollenArten?: Array<RollenArt>, options?: any): AxiosPromise<ProviderControllerGetAvailableServiceProviders200Response> {
+            return localVarFp.providerControllerGetAvailableServiceProviders(offset, limit, searchStr, organisationId, systemrechte, rollenArten, options).then((request) => request(axios, basePath));
         },
         /**
          * Get service-providers provided at LAND or ROOT level. Requires root-level ANGEBOTE_VERWALTEN.
@@ -12789,11 +12840,12 @@ export interface ProviderApiInterface {
      * Get all service-providers assignable for a role.
      * @summary 
      * @param {string} schulstrukturknotenOfRolle The id of the organisation where the service provider should be assignable on
+     * @param {RollenArt} rollenArt The rollenart of the rolle for which the service provider should be found
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof ProviderApiInterface
      */
-    providerControllerGetAssignableServiceProvidersForRolle(schulstrukturknotenOfRolle: string, options?: AxiosRequestConfig): AxiosPromise<Array<ServiceProviderResponse>>;
+    providerControllerGetAssignableServiceProvidersForRolle(schulstrukturknotenOfRolle: string, rollenArt: RollenArt, options?: AxiosRequestConfig): AxiosPromise<Array<ServiceProviderResponse>>;
 
     /**
      * Get service-providers.
@@ -12803,11 +12855,12 @@ export interface ProviderApiInterface {
      * @param {string} [searchStr] The name for the angebot.
      * @param {string} [organisationId] The id of the organisation where the angebot should be available.
      * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be ROLLEN_VERWALTEN, ROLLEN_ERWEITERN or both or IMPORT_DURCHFUEHREN.
+     * @param {Array<RollenArt>} [rollenArten] The rollenart of the rolle for which the service provider should be found
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof ProviderApiInterface
      */
-    providerControllerGetAvailableServiceProviders(offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): AxiosPromise<ProviderControllerGetAvailableServiceProviders200Response>;
+    providerControllerGetAvailableServiceProviders(offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, rollenArten?: Array<RollenArt>, options?: AxiosRequestConfig): AxiosPromise<ProviderControllerGetAvailableServiceProviders200Response>;
 
     /**
      * Get service-providers provided at LAND or ROOT level. Requires root-level ANGEBOTE_VERWALTEN.
@@ -12938,12 +12991,13 @@ export class ProviderApi extends BaseAPI implements ProviderApiInterface {
      * Get all service-providers assignable for a role.
      * @summary 
      * @param {string} schulstrukturknotenOfRolle The id of the organisation where the service provider should be assignable on
+     * @param {RollenArt} rollenArt The rollenart of the rolle for which the service provider should be found
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof ProviderApi
      */
-    public providerControllerGetAssignableServiceProvidersForRolle(schulstrukturknotenOfRolle: string, options?: AxiosRequestConfig) {
-        return ProviderApiFp(this.configuration).providerControllerGetAssignableServiceProvidersForRolle(schulstrukturknotenOfRolle, options).then((request) => request(this.axios, this.basePath));
+    public providerControllerGetAssignableServiceProvidersForRolle(schulstrukturknotenOfRolle: string, rollenArt: RollenArt, options?: AxiosRequestConfig) {
+        return ProviderApiFp(this.configuration).providerControllerGetAssignableServiceProvidersForRolle(schulstrukturknotenOfRolle, rollenArt, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -12954,12 +13008,13 @@ export class ProviderApi extends BaseAPI implements ProviderApiInterface {
      * @param {string} [searchStr] The name for the angebot.
      * @param {string} [organisationId] The id of the organisation where the angebot should be available.
      * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be ROLLEN_VERWALTEN, ROLLEN_ERWEITERN or both or IMPORT_DURCHFUEHREN.
+     * @param {Array<RollenArt>} [rollenArten] The rollenart of the rolle for which the service provider should be found
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof ProviderApi
      */
-    public providerControllerGetAvailableServiceProviders(offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig) {
-        return ProviderApiFp(this.configuration).providerControllerGetAvailableServiceProviders(offset, limit, searchStr, organisationId, systemrechte, options).then((request) => request(this.axios, this.basePath));
+    public providerControllerGetAvailableServiceProviders(offset?: number, limit?: number, searchStr?: string, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, rollenArten?: Array<RollenArt>, options?: AxiosRequestConfig) {
+        return ProviderApiFp(this.configuration).providerControllerGetAvailableServiceProviders(offset, limit, searchStr, organisationId, systemrechte, rollenArten, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

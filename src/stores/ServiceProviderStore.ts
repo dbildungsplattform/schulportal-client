@@ -21,7 +21,6 @@ import {
   type ProviderApiInterface,
   type ProviderControllerGetAvailableServiceProviders200Response,
   type ProviderControllerFindRollenerweiterungenByServiceProviderId200Response,
-  type ProviderControllerGetManageableLandRootServiceProviders200Response,
   type ProviderControllerGetManageableServiceProviders200Response,
   type ProviderControllerGetManageableServiceProvidersForOrganisationId200Response,
   type RolleApiInterface,
@@ -194,7 +193,10 @@ function fetchAvailableServiceProviders(
 
 type ServiceProviderGetters = object;
 type ServiceProviderActions = {
-  getAssignableServiceProvidersForRolleByOrganisationId: (administeredBySchulstrukturknoten: string) => Promise<void>;
+  getAssignableServiceProvidersForRolleByOrganisationId: (
+    administeredBySchulstrukturknoten: string,
+    rollenArt: RollenArt,
+  ) => Promise<void>;
   getServiceProvidersForRollenerweiterung: (organisationId: string) => Promise<void>;
   getMyServiceProviders: () => Promise<void>;
   getManageableServiceProviders: (filter: ManageableServiceProviderFilter) => Promise<void>;
@@ -251,13 +253,17 @@ export const useServiceProviderStore: StoreDefinition<
     };
   },
   actions: {
-    async getAssignableServiceProvidersForRolleByOrganisationId(administeredBySchulstrukturknoten: string) {
+    async getAssignableServiceProvidersForRolleByOrganisationId(
+      administeredBySchulstrukturknoten: string,
+      rollenArt: RollenArt,
+    ) {
       this.loading = true;
       try {
         this.allServiceProviders = [];
         const { data }: AxiosResponse<ServiceProviderResponse[]> =
           await serviceProviderApi.providerControllerGetAssignableServiceProvidersForRolle(
             administeredBySchulstrukturknoten,
+            rollenArt,
           );
         this.allServiceProviders = data;
       } catch (error: unknown) {
@@ -361,7 +367,7 @@ export const useServiceProviderStore: StoreDefinition<
       this.serviceProvidersForRollenVerwaltung = [];
       this.totalServiceProvidersForRollenVerwaltung = 0;
       try {
-        const response: ProviderControllerGetManageableLandRootServiceProviders200Response = (
+        const response: ProviderControllerGetAvailableServiceProviders200Response = (
           await serviceProviderApi.providerControllerGetManageableLandRootServiceProviders(
             filter?.offset,
             filter?.limit,

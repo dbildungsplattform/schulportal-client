@@ -263,12 +263,12 @@
   });
 
   watch(
-    selectedAdministrationsebene,
-    async () => {
+    [selectedAdministrationsebene, selectedRollenArt],
+    async ([administrationsebene, rollenArt]: [string | undefined, RollenArt | undefined]) => {
       selectedServiceProviders.value = [];
-      if (selectedAdministrationsebene.value) {
+      if (administrationsebene && rollenArt) {
         await serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
-          selectedAdministrationsebene.value,
+          administrationsebene, rollenArt
         );
       }
     },
