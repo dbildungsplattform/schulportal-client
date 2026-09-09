@@ -19,7 +19,7 @@ let rolleStore: RolleStore;
 let searchFilterStore: SearchFilterStore;
 let serviceProviderStore: ServiceProviderStore;
 
-beforeEach(() => {
+beforeEach(async (): Promise<void> => {
   document.body.innerHTML = `
     <div>
       <div id="app"></div>
@@ -30,6 +30,8 @@ beforeEach(() => {
     history: createWebHistory(),
     routes,
   });
+  router.push('/admin/rollen');
+  await router.isReady();
 
   authStore = useAuthStore();
   authStore.hasAngeboteVerwaltenPermission = true;
@@ -350,6 +352,7 @@ describe('RolleManagementView', () => {
         offset: 0,
         limit: 30,
         searchString: '',
+        systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
         merkmale: undefined,
         rollenarten: undefined,
         organisationenForFilter: undefined,
