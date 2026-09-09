@@ -1119,19 +1119,6 @@ export interface DbiamUpdatePersonenkontexteBodyParams {
 /**
  * 
  * @export
- * @interface DeleteRevisionBodyParams
- */
-export interface DeleteRevisionBodyParams {
-    /**
-     * The revision of a personenkontext.
-     * @type {string}
-     * @memberof DeleteRevisionBodyParams
-     */
-    'revision': string;
-}
-/**
- * 
- * @export
  * @enum {string}
  */
 
@@ -2303,19 +2290,6 @@ export interface PersonFrontendControllerFindPersons200ResponseAllOf {
 /**
  * 
  * @export
- * @interface PersonIdResponse
- */
-export interface PersonIdResponse {
-    /**
-     * 
-     * @type {string}
-     * @memberof PersonIdResponse
-     */
-    'id': string;
-}
-/**
- * 
- * @export
  * @interface PersonInfoKontextErreichbarkeitResponseV1
  */
 export interface PersonInfoKontextErreichbarkeitResponseV1 {
@@ -2817,61 +2791,6 @@ export interface PersonResponse {
     'email': PersonResponseEmail | null;
 }
 /**
- * 
- * @export
- * @interface PersonResponseAutomapper
- */
-export interface PersonResponseAutomapper {
-    /**
-     * 
-     * @type {string}
-     * @memberof PersonResponseAutomapper
-     */
-    'id': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PersonResponseAutomapper
-     */
-    'username': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PersonResponseAutomapper
-     */
-    'mandant': string;
-    /**
-     * 
-     * @type {PersonNameParams}
-     * @memberof PersonResponseAutomapper
-     */
-    'name': PersonNameParams;
-    /**
-     * 
-     * @type {string}
-     * @memberof PersonResponseAutomapper
-     */
-    'stammorganisation': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PersonResponseAutomapper
-     */
-    'revision': string;
-    /**
-     * Initiales Benutzerpasswort, muss nach der ersten Anmeldung geändert werden
-     * @type {string}
-     * @memberof PersonResponseAutomapper
-     */
-    'startpasswort': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof PersonResponseAutomapper
-     */
-    'personalnummer': string;
-}
-/**
  * Contains status and address. Returns email-address verified by OX (enabled) if available, otherwise returns most recently updated one (no prioritized status)
  * @export
  * @interface PersonResponseEmail
@@ -3155,25 +3074,6 @@ export interface PersonendatensatzResponse {
 /**
  * 
  * @export
- * @interface PersonendatensatzResponseAutomapper
- */
-export interface PersonendatensatzResponseAutomapper {
-    /**
-     * 
-     * @type {PersonResponseAutomapper}
-     * @memberof PersonendatensatzResponseAutomapper
-     */
-    'person': PersonResponseAutomapper;
-    /**
-     * 
-     * @type {Array<PersonenkontextResponse>}
-     * @memberof PersonendatensatzResponseAutomapper
-     */
-    'personenkontexte': Array<PersonenkontextResponse>;
-}
-/**
- * 
- * @export
  * @interface PersonenkontextResponse
  */
 export interface PersonenkontextResponse {
@@ -3339,25 +3239,6 @@ export interface PersonenkontextWorkflowResponse {
      * @memberof PersonenkontextWorkflowResponse
      */
     'canCommit': boolean;
-}
-/**
- * 
- * @export
- * @interface PersonenkontextdatensatzResponse
- */
-export interface PersonenkontextdatensatzResponse {
-    /**
-     * 
-     * @type {PersonIdResponse}
-     * @memberof PersonenkontextdatensatzResponse
-     */
-    'person': PersonIdResponse;
-    /**
-     * 
-     * @type {Array<PersonenkontextResponse>}
-     * @memberof PersonenkontextdatensatzResponse
-     */
-    'personenkontexte': Array<PersonenkontextResponse>;
 }
 /**
  * 
@@ -4665,6 +4546,19 @@ export interface UserExeternalDataResponseVidis {
 /**
  * 
  * @export
+ * @interface UserExternalDataBodyParams
+ */
+export interface UserExternalDataBodyParams {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataBodyParams
+     */
+    'sub': string;
+}
+/**
+ * 
+ * @export
  * @interface UserExternalDataResponse
  */
 export interface UserExternalDataResponse {
@@ -4780,6 +4674,18 @@ export interface UserExternalDataResponseOx {
  * @interface UserExternalDataResponsePolyteia
  */
 export interface UserExternalDataResponsePolyteia {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataResponsePolyteia
+     */
+    'vorname': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataResponsePolyteia
+     */
+    'familienname': string;
     /**
      * 
      * @type {string}
@@ -7602,10 +7508,13 @@ export const KeycloakinternalApiAxiosParamCreator = function (configuration?: Co
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        keycloakInternalControllerGetExternalData: async (options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        keycloakInternalControllerGetExternalData: async (userExternalDataBodyParams: UserExternalDataBodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'userExternalDataBodyParams' is not null or undefined
+            assertParamExists('keycloakInternalControllerGetExternalData', 'userExternalDataBodyParams', userExternalDataBodyParams)
             const localVarPath = `/keycloakinternal/externaldata`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -7620,9 +7529,12 @@ export const KeycloakinternalApiAxiosParamCreator = function (configuration?: Co
 
 
     
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(userExternalDataBodyParams, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -7642,11 +7554,12 @@ export const KeycloakinternalApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async keycloakInternalControllerGetExternalData(options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserExternalDataResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.keycloakInternalControllerGetExternalData(options);
+        async keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserExternalDataResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -7662,11 +7575,12 @@ export const KeycloakinternalApiFactory = function (configuration?: Configuratio
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        keycloakInternalControllerGetExternalData(options?: any): AxiosPromise<UserExternalDataResponse> {
-            return localVarFp.keycloakInternalControllerGetExternalData(options).then((request) => request(axios, basePath));
+        keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: any): AxiosPromise<UserExternalDataResponse> {
+            return localVarFp.keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -7680,11 +7594,12 @@ export interface KeycloakinternalApiInterface {
     /**
      * 
      * @summary External Data about requested in user.
+     * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof KeycloakinternalApiInterface
      */
-    keycloakInternalControllerGetExternalData(options?: AxiosRequestConfig): AxiosPromise<UserExternalDataResponse>;
+    keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): AxiosPromise<UserExternalDataResponse>;
 
 }
 
@@ -7698,12 +7613,13 @@ export class KeycloakinternalApi extends BaseAPI implements KeycloakinternalApiI
     /**
      * 
      * @summary External Data about requested in user.
+     * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof KeycloakinternalApi
      */
-    public keycloakInternalControllerGetExternalData(options?: AxiosRequestConfig) {
-        return KeycloakinternalApiFp(this.configuration).keycloakInternalControllerGetExternalData(options).then((request) => request(this.axios, this.basePath));
+    public keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig) {
+        return KeycloakinternalApiFp(this.configuration).keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -11840,438 +11756,6 @@ export class PersonenkontextApi extends BaseAPI implements PersonenkontextApiInt
      */
     public dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, rolleName?: string, organisationName?: string, limit?: number, requestedWithSystemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig) {
         return PersonenkontextApiFp(this.configuration).dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, rolleName, organisationName, limit, requestedWithSystemrecht, options).then((request) => request(this.axios, this.basePath));
-    }
-}
-
-
-/**
- * PersonenkontexteApi - axios parameter creator
- * @export
- */
-export const PersonenkontexteApiAxiosParamCreator = function (configuration?: Configuration) {
-    return {
-        /**
-         * 
-         * @param {string} personenkontextId The id for the personenkontext.
-         * @param {DeleteRevisionBodyParams} deleteRevisionBodyParams 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        personenkontextControllerDeletePersonenkontextById: async (personenkontextId: string, deleteRevisionBodyParams: DeleteRevisionBodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'personenkontextId' is not null or undefined
-            assertParamExists('personenkontextControllerDeletePersonenkontextById', 'personenkontextId', personenkontextId)
-            // verify required parameter 'deleteRevisionBodyParams' is not null or undefined
-            assertParamExists('personenkontextControllerDeletePersonenkontextById', 'deleteRevisionBodyParams', deleteRevisionBodyParams)
-            const localVarPath = `/api/personenkontexte/{personenkontextId}`
-                .replace(`{${"personenkontextId"}}`, encodeURIComponent(String(personenkontextId)));
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearer required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-            // authentication oauth2 required
-            // oauth required
-            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
-
-
-    
-            localVarHeaderParameter['Content-Type'] = 'application/json';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(deleteRevisionBodyParams, localVarRequestOptions, configuration)
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * 
-         * @param {string} personenkontextId The id for the personenkontext.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        personenkontextControllerFindPersonenkontextById: async (personenkontextId: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'personenkontextId' is not null or undefined
-            assertParamExists('personenkontextControllerFindPersonenkontextById', 'personenkontextId', personenkontextId)
-            const localVarPath = `/api/personenkontexte/{personenkontextId}`
-                .replace(`{${"personenkontextId"}}`, encodeURIComponent(String(personenkontextId)));
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearer required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-            // authentication oauth2 required
-            // oauth required
-            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * 
-         * @param {number} [offset] The offset of the paginated list.
-         * @param {number} [limit] The requested limit for the page size.
-         * @param {string} [personId] 
-         * @param {string} [username] 
-         * @param {Personenstatus} [personenstatus] 
-         * @param {Sichtfreigabe} [sichtfreigabe] 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        personenkontextControllerFindPersonenkontexte: async (offset?: number, limit?: number, personId?: string, username?: string, personenstatus?: Personenstatus, sichtfreigabe?: Sichtfreigabe, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/api/personenkontexte`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearer required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-            // authentication oauth2 required
-            // oauth required
-            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
-
-            if (offset !== undefined) {
-                localVarQueryParameter['offset'] = offset;
-            }
-
-            if (limit !== undefined) {
-                localVarQueryParameter['limit'] = limit;
-            }
-
-            if (personId !== undefined) {
-                localVarQueryParameter['personId'] = personId;
-            }
-
-            if (username !== undefined) {
-                localVarQueryParameter['username'] = username;
-            }
-
-            if (personenstatus !== undefined) {
-                localVarQueryParameter['personenstatus'] = personenstatus;
-            }
-
-            if (sichtfreigabe !== undefined) {
-                localVarQueryParameter['sichtfreigabe'] = sichtfreigabe;
-            }
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * 
-         * @summary 
-         * @param {string} personenkontextId 
-         * @param {*} [options] Override http request option.
-         * @deprecated
-         * @throws {RequiredError}
-         */
-        personenkontextControllerUpdatePersonenkontextWithId: async (personenkontextId: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'personenkontextId' is not null or undefined
-            assertParamExists('personenkontextControllerUpdatePersonenkontextWithId', 'personenkontextId', personenkontextId)
-            const localVarPath = `/api/personenkontexte/{personenkontextId}`
-                .replace(`{${"personenkontextId"}}`, encodeURIComponent(String(personenkontextId)));
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'PUT', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearer required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-            // authentication oauth2 required
-            // oauth required
-            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-    }
-};
-
-/**
- * PersonenkontexteApi - functional programming interface
- * @export
- */
-export const PersonenkontexteApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = PersonenkontexteApiAxiosParamCreator(configuration)
-    return {
-        /**
-         * 
-         * @param {string} personenkontextId The id for the personenkontext.
-         * @param {DeleteRevisionBodyParams} deleteRevisionBodyParams 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async personenkontextControllerDeletePersonenkontextById(personenkontextId: string, deleteRevisionBodyParams: DeleteRevisionBodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.personenkontextControllerDeletePersonenkontextById(personenkontextId, deleteRevisionBodyParams, options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-        /**
-         * 
-         * @param {string} personenkontextId The id for the personenkontext.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async personenkontextControllerFindPersonenkontextById(personenkontextId: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PersonendatensatzResponseAutomapper>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.personenkontextControllerFindPersonenkontextById(personenkontextId, options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-        /**
-         * 
-         * @param {number} [offset] The offset of the paginated list.
-         * @param {number} [limit] The requested limit for the page size.
-         * @param {string} [personId] 
-         * @param {string} [username] 
-         * @param {Personenstatus} [personenstatus] 
-         * @param {Sichtfreigabe} [sichtfreigabe] 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async personenkontextControllerFindPersonenkontexte(offset?: number, limit?: number, personId?: string, username?: string, personenstatus?: Personenstatus, sichtfreigabe?: Sichtfreigabe, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<PersonenkontextdatensatzResponse>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.personenkontextControllerFindPersonenkontexte(offset, limit, personId, username, personenstatus, sichtfreigabe, options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-        /**
-         * 
-         * @summary 
-         * @param {string} personenkontextId 
-         * @param {*} [options] Override http request option.
-         * @deprecated
-         * @throws {RequiredError}
-         */
-        async personenkontextControllerUpdatePersonenkontextWithId(personenkontextId: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PersonenkontextResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.personenkontextControllerUpdatePersonenkontextWithId(personenkontextId, options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-    }
-};
-
-/**
- * PersonenkontexteApi - factory interface
- * @export
- */
-export const PersonenkontexteApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = PersonenkontexteApiFp(configuration)
-    return {
-        /**
-         * 
-         * @param {string} personenkontextId The id for the personenkontext.
-         * @param {DeleteRevisionBodyParams} deleteRevisionBodyParams 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        personenkontextControllerDeletePersonenkontextById(personenkontextId: string, deleteRevisionBodyParams: DeleteRevisionBodyParams, options?: any): AxiosPromise<void> {
-            return localVarFp.personenkontextControllerDeletePersonenkontextById(personenkontextId, deleteRevisionBodyParams, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * 
-         * @param {string} personenkontextId The id for the personenkontext.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        personenkontextControllerFindPersonenkontextById(personenkontextId: string, options?: any): AxiosPromise<PersonendatensatzResponseAutomapper> {
-            return localVarFp.personenkontextControllerFindPersonenkontextById(personenkontextId, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * 
-         * @param {number} [offset] The offset of the paginated list.
-         * @param {number} [limit] The requested limit for the page size.
-         * @param {string} [personId] 
-         * @param {string} [username] 
-         * @param {Personenstatus} [personenstatus] 
-         * @param {Sichtfreigabe} [sichtfreigabe] 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        personenkontextControllerFindPersonenkontexte(offset?: number, limit?: number, personId?: string, username?: string, personenstatus?: Personenstatus, sichtfreigabe?: Sichtfreigabe, options?: any): AxiosPromise<Array<PersonenkontextdatensatzResponse>> {
-            return localVarFp.personenkontextControllerFindPersonenkontexte(offset, limit, personId, username, personenstatus, sichtfreigabe, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * 
-         * @summary 
-         * @param {string} personenkontextId 
-         * @param {*} [options] Override http request option.
-         * @deprecated
-         * @throws {RequiredError}
-         */
-        personenkontextControllerUpdatePersonenkontextWithId(personenkontextId: string, options?: any): AxiosPromise<PersonenkontextResponse> {
-            return localVarFp.personenkontextControllerUpdatePersonenkontextWithId(personenkontextId, options).then((request) => request(axios, basePath));
-        },
-    };
-};
-
-/**
- * PersonenkontexteApi - interface
- * @export
- * @interface PersonenkontexteApi
- */
-export interface PersonenkontexteApiInterface {
-    /**
-     * 
-     * @param {string} personenkontextId The id for the personenkontext.
-     * @param {DeleteRevisionBodyParams} deleteRevisionBodyParams 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof PersonenkontexteApiInterface
-     */
-    personenkontextControllerDeletePersonenkontextById(personenkontextId: string, deleteRevisionBodyParams: DeleteRevisionBodyParams, options?: AxiosRequestConfig): AxiosPromise<void>;
-
-    /**
-     * 
-     * @param {string} personenkontextId The id for the personenkontext.
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof PersonenkontexteApiInterface
-     */
-    personenkontextControllerFindPersonenkontextById(personenkontextId: string, options?: AxiosRequestConfig): AxiosPromise<PersonendatensatzResponseAutomapper>;
-
-    /**
-     * 
-     * @param {number} [offset] The offset of the paginated list.
-     * @param {number} [limit] The requested limit for the page size.
-     * @param {string} [personId] 
-     * @param {string} [username] 
-     * @param {Personenstatus} [personenstatus] 
-     * @param {Sichtfreigabe} [sichtfreigabe] 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof PersonenkontexteApiInterface
-     */
-    personenkontextControllerFindPersonenkontexte(offset?: number, limit?: number, personId?: string, username?: string, personenstatus?: Personenstatus, sichtfreigabe?: Sichtfreigabe, options?: AxiosRequestConfig): AxiosPromise<Array<PersonenkontextdatensatzResponse>>;
-
-    /**
-     * 
-     * @summary 
-     * @param {string} personenkontextId 
-     * @param {*} [options] Override http request option.
-     * @deprecated
-     * @throws {RequiredError}
-     * @memberof PersonenkontexteApiInterface
-     */
-    personenkontextControllerUpdatePersonenkontextWithId(personenkontextId: string, options?: AxiosRequestConfig): AxiosPromise<PersonenkontextResponse>;
-
-}
-
-/**
- * PersonenkontexteApi - object-oriented interface
- * @export
- * @class PersonenkontexteApi
- * @extends {BaseAPI}
- */
-export class PersonenkontexteApi extends BaseAPI implements PersonenkontexteApiInterface {
-    /**
-     * 
-     * @param {string} personenkontextId The id for the personenkontext.
-     * @param {DeleteRevisionBodyParams} deleteRevisionBodyParams 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof PersonenkontexteApi
-     */
-    public personenkontextControllerDeletePersonenkontextById(personenkontextId: string, deleteRevisionBodyParams: DeleteRevisionBodyParams, options?: AxiosRequestConfig) {
-        return PersonenkontexteApiFp(this.configuration).personenkontextControllerDeletePersonenkontextById(personenkontextId, deleteRevisionBodyParams, options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * 
-     * @param {string} personenkontextId The id for the personenkontext.
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof PersonenkontexteApi
-     */
-    public personenkontextControllerFindPersonenkontextById(personenkontextId: string, options?: AxiosRequestConfig) {
-        return PersonenkontexteApiFp(this.configuration).personenkontextControllerFindPersonenkontextById(personenkontextId, options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * 
-     * @param {number} [offset] The offset of the paginated list.
-     * @param {number} [limit] The requested limit for the page size.
-     * @param {string} [personId] 
-     * @param {string} [username] 
-     * @param {Personenstatus} [personenstatus] 
-     * @param {Sichtfreigabe} [sichtfreigabe] 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof PersonenkontexteApi
-     */
-    public personenkontextControllerFindPersonenkontexte(offset?: number, limit?: number, personId?: string, username?: string, personenstatus?: Personenstatus, sichtfreigabe?: Sichtfreigabe, options?: AxiosRequestConfig) {
-        return PersonenkontexteApiFp(this.configuration).personenkontextControllerFindPersonenkontexte(offset, limit, personId, username, personenstatus, sichtfreigabe, options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * 
-     * @summary 
-     * @param {string} personenkontextId 
-     * @param {*} [options] Override http request option.
-     * @deprecated
-     * @throws {RequiredError}
-     * @memberof PersonenkontexteApi
-     */
-    public personenkontextControllerUpdatePersonenkontextWithId(personenkontextId: string, options?: AxiosRequestConfig) {
-        return PersonenkontexteApiFp(this.configuration).personenkontextControllerUpdatePersonenkontextWithId(personenkontextId, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

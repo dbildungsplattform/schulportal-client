@@ -174,6 +174,16 @@
       "post": {
         "operationId": "KeycloakInternalController_getExternalData",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserExternalDataBodyParams"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Returns external Data about the requested user.",
@@ -3628,276 +3638,6 @@
         "tags": ["provider"]
       }
     },
-    "/api/personenkontexte/{personenkontextId}": {
-      "get": {
-        "operationId": "PersonenkontextController_findPersonenkontextById",
-        "parameters": [
-          {
-            "name": "personenkontextId",
-            "required": true,
-            "in": "path",
-            "description": "The id for the personenkontext.",
-            "schema": {
-              "nullable": false,
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The personenkontext was successfully returned.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonendatensatzResponseAutomapper"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request has wrong format."
-          },
-          "401": {
-            "description": "Request is not authorized."
-          },
-          "403": {
-            "description": "Insufficient permissions to perform operation."
-          },
-          "404": {
-            "description": "The personenkontext was not found."
-          },
-          "500": {
-            "description": "An internal server error occurred."
-          }
-        },
-        "security": [
-          {
-            "oauth2": ["openid"]
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "tags": ["personenkontexte"]
-      },
-      "put": {
-        "deprecated": true,
-        "operationId": "PersonenkontextController_updatePersonenkontextWithId",
-        "parameters": [
-          {
-            "name": "personenkontextId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The personenkontext was successfully updated.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonenkontextResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request has wrong format."
-          },
-          "401": {
-            "description": "Request is not authorized."
-          },
-          "403": {
-            "description": "Insufficient permissions to perform operation."
-          },
-          "404": {
-            "description": "The personenkontext was not found."
-          },
-          "500": {
-            "description": "An internal server error occurred."
-          }
-        },
-        "security": [
-          {
-            "oauth2": ["openid"]
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "",
-        "tags": ["personenkontexte"]
-      },
-      "delete": {
-        "operationId": "PersonenkontextController_deletePersonenkontextById",
-        "parameters": [
-          {
-            "name": "personenkontextId",
-            "required": true,
-            "in": "path",
-            "description": "The id for the personenkontext.",
-            "schema": {
-              "nullable": false,
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeleteRevisionBodyParams"
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": "The personenkontext was successfully deleted."
-          },
-          "400": {
-            "description": "Request has wrong format."
-          },
-          "401": {
-            "description": "Request is not authorized."
-          },
-          "403": {
-            "description": "Insufficient permissions to perform operation."
-          },
-          "404": {
-            "description": "The personenkontext was not found."
-          },
-          "500": {
-            "description": "An internal server error occurred."
-          }
-        },
-        "security": [
-          {
-            "oauth2": ["openid"]
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "tags": ["personenkontexte"]
-      }
-    },
-    "/api/personenkontexte": {
-      "get": {
-        "operationId": "PersonenkontextController_findPersonenkontexte",
-        "parameters": [
-          {
-            "name": "offset",
-            "required": false,
-            "in": "query",
-            "description": "The offset of the paginated list.",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "The requested limit for the page size.",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "personId",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "nullable": true,
-              "type": "string"
-            }
-          },
-          {
-            "name": "username",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "nullable": true,
-              "type": "string"
-            }
-          },
-          {
-            "name": "personenstatus",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/Personenstatus"
-            }
-          },
-          {
-            "name": "sichtfreigabe",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/Sichtfreigabe"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The personenkontexte were successfully returned.",
-            "headers": {
-              "X-Paging-Offset": {
-                "description": "The offset of the first item from the list. List starts with index 0."
-              },
-              "X-Paging-Limit": {
-                "description": "The maximum amount of items returned in one request."
-              },
-              "X-Paging-Total": {
-                "description": "The total amount of items in the list."
-              },
-              "X-Paging-pageTotal": {
-                "description": "The total amount of items in the paginated list."
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PersonenkontextdatensatzResponse"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request has wrong format."
-          },
-          "401": {
-            "description": "Request is not authorized."
-          },
-          "403": {
-            "description": "Insufficient permissions to perform operation."
-          },
-          "404": {
-            "description": "The personenkontexte were not found."
-          },
-          "500": {
-            "description": "An internal server error occurred."
-          }
-        },
-        "security": [
-          {
-            "oauth2": ["openid"]
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "tags": ["personenkontexte"]
-      }
-    },
     "/api/personenkontext-workflow/step": {
       "get": {
         "operationId": "DbiamPersonenkontextWorkflowController_processStep",
@@ -6079,6 +5819,15 @@
           "timeLimits"
         ]
       },
+      "UserExternalDataBodyParams": {
+        "type": "object",
+        "properties": {
+          "sub": {
+            "type": "string"
+          }
+        },
+        "required": ["sub"]
+      },
       "UserExternalDataResponseOx": {
         "type": "object",
         "properties": {
@@ -6202,6 +5951,12 @@
       "UserExternalDataResponsePolyteia": {
         "type": "object",
         "properties": {
+          "vorname": {
+            "type": "string"
+          },
+          "familienname": {
+            "type": "string"
+          },
           "rollenart": {
             "type": "string",
             "enum": ["LERN", "LEHR", "EXTERN", "ORGADMIN", "LEIT", "SYSADMIN", "SORGBER", "SCHB", "NLEHR"]
@@ -6213,7 +5968,7 @@
             }
           }
         },
-        "required": ["dienststellenNummern"]
+        "required": ["vorname", "familienname", "dienststellenNummern"]
       },
       "UserExternalDataResponse": {
         "type": "object",
@@ -7911,96 +7666,6 @@
             }
           }
         }
-      },
-      "PersonResponseAutomapper": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "username": {
-            "type": "string"
-          },
-          "mandant": {
-            "type": "string"
-          },
-          "name": {
-            "$ref": "#/components/schemas/PersonNameParams"
-          },
-          "stammorganisation": {
-            "type": "string"
-          },
-          "revision": {
-            "type": "string"
-          },
-          "startpasswort": {
-            "type": "string",
-            "description": "Initiales Benutzerpasswort, muss nach der ersten Anmeldung geändert werden"
-          },
-          "personalnummer": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "username",
-          "mandant",
-          "name",
-          "stammorganisation",
-          "revision",
-          "startpasswort",
-          "personalnummer"
-        ]
-      },
-      "PersonendatensatzResponseAutomapper": {
-        "type": "object",
-        "properties": {
-          "person": {
-            "$ref": "#/components/schemas/PersonResponseAutomapper"
-          },
-          "personenkontexte": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PersonenkontextResponse"
-            }
-          }
-        },
-        "required": ["person", "personenkontexte"]
-      },
-      "PersonIdResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          }
-        },
-        "required": ["id"]
-      },
-      "PersonenkontextdatensatzResponse": {
-        "type": "object",
-        "properties": {
-          "person": {
-            "$ref": "#/components/schemas/PersonIdResponse"
-          },
-          "personenkontexte": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PersonenkontextResponse"
-            }
-          }
-        },
-        "required": ["person", "personenkontexte"]
-      },
-      "DeleteRevisionBodyParams": {
-        "type": "object",
-        "properties": {
-          "revision": {
-            "type": "string",
-            "description": "The revision of a personenkontext.",
-            "nullable": false
-          }
-        },
-        "required": ["revision"]
       },
       "OperationContext": {
         "type": "string",

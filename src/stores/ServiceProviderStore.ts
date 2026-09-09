@@ -19,7 +19,6 @@ import {
   type ManageableServiceProviderResponse,
   type ManageableServiceProviderSimpleListEntryResponse,
   type ProviderApiInterface,
-  type ProviderControllerGetAvailableServiceProviders200Response,
   type ProviderControllerFindRollenerweiterungenByServiceProviderId200Response,
   type ProviderControllerGetManageableServiceProviders200Response,
   type ProviderControllerGetManageableServiceProvidersForOrganisationId200Response,
@@ -28,6 +27,7 @@ import {
   type ServiceProviderResponse,
   type UpdateServiceProviderBodyParams,
   type VidisApiInterface,
+  ProviderControllerGetAvailableServiceProviders200Response,
 } from '../api-client/generated/api';
 import type { RollenSystemRecht } from './RolleStore';
 
