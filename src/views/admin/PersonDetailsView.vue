@@ -1,96 +1,96 @@
 <script setup lang="ts">
   import { ServiceProviderSystem, type LockUserBodyParams } from '@/api-client/generated';
-import SpshTooltip from '@/components/admin/SpshTooltip.vue';
-import KlasseChange from '@/components/admin/klassen/KlasseChange.vue';
-import BefristungInput from '@/components/admin/personen/BefristungInput.vue';
-import KopersInput from '@/components/admin/personen/KopersInput.vue';
-import PasswordReset from '@/components/admin/personen/PasswordReset.vue';
-import PersonDelete from '@/components/admin/personen/PersonDelete.vue';
-import PersonLock from '@/components/admin/personen/PersonLock.vue';
-import PersonSync from '@/components/admin/personen/PersonSync.vue';
-import PersonenMetadataChange from '@/components/admin/personen/PersonenMetadataChange.vue';
-import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
-import PersonenkontextDelete from '@/components/admin/personen/PersonenkontextDelete.vue';
-import { PendingState } from '@/components/admin/personen/details/PersonenkontextItem.types';
-import PersonenkontextItem from '@/components/admin/personen/details/PersonenkontextItem.vue';
-import SpshAlert from '@/components/alert/SpshAlert.vue';
-import LayoutCard from '@/components/cards/LayoutCard.vue';
-import TokenReset from '@/components/two-factor-authentication/TokenReset.vue';
-import TwoFactorAuthenticationSetUp from '@/components/two-factor-authentication/TwoFactorAuthenticationSetUp.vue';
-import { useOrganisationen } from '@/composables/useOrganisationen';
-import { useRollen, type TranslatedRolleWithAttrs } from '@/composables/useRollen';
-import { useAuthStore, type AuthStore, type PersonenkontextRolleFields } from '@/stores/AuthStore';
-import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
-import {
-  OrganisationsTyp,
-  useOrganisationStore,
-  type AutoCompleteStore,
-  type Organisation,
-  type OrganisationStore,
-} from '@/stores/OrganisationStore';
-import { EmailStatus, usePersonStore, type PersonStore } from '@/stores/PersonStore';
-import {
-  mapZuordnungToPersonenkontextUpdate,
-  OperationContext,
-  usePersonenkontextStore,
-  type PersonenkontextStore,
-  type PersonenkontextUpdate,
-  type PersonenkontextWorkflowResponse,
-  type RolleResponse,
-} from '@/stores/PersonenkontextStore';
-import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
-import {
-  StartPageServiceProvider,
-  useServiceProviderStore,
-  type ServiceProviderStore,
-} from '@/stores/ServiceProviderStore';
-import {
-  TokenKind,
-  useTwoFactorAuthentificationStore,
-  type TwoFactorAuthentificationStore,
-} from '@/stores/TwoFactorAuthentificationStore';
-import type { Person } from '@/stores/types/Person';
-import type { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
-import { Zuordnung } from '@/stores/types/Zuordnung';
-import type { TranslatedObject } from '@/types';
-import { isBefristungspflichtRolle, useBefristungUtils, type BefristungUtilsType } from '@/utils/befristung';
-import { adjustDateForTimezoneAndFormat, formatDateToISO, getNextSchuljahresende } from '@/utils/date';
-import { LockKeys, PersonLockOccasion, type UserLock } from '@/utils/lock';
-import { DIN_91379A, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
-import {
-  getBefristungSchema,
-  getDirtyState,
-  getPersonenkontextFieldDefinitions,
-  getValidationSchema,
-  isKopersRolle,
-  type PersonenkontextFieldDefinitions,
-} from '@/utils/validationPersonenkontext';
-import { toTypedSchema } from '@vee-validate/yup';
-import { useForm, type BaseFieldProps, type FormContext, type TypedSchema } from 'vee-validate';
-import {
-  computed,
-  nextTick,
-  onBeforeMount,
-  onMounted,
-  onUnmounted,
-  ref,
-  watch,
-  watchEffect,
-  type ComputedRef,
-  type Ref,
-} from 'vue';
-import { useI18n, type Composer } from 'vue-i18n';
-import {
-  onBeforeRouteLeave,
-  useRoute,
-  useRouter,
-  type NavigationGuardNext,
-  type RouteLocationNormalized,
-  type RouteLocationNormalizedLoaded,
-  type Router,
-} from 'vue-router';
-import { useDisplay } from 'vuetify';
-import { object, string, StringSchema, type AnyObject } from 'yup';
+  import SpshTooltip from '@/components/admin/SpshTooltip.vue';
+  import KlasseChange from '@/components/admin/klassen/KlasseChange.vue';
+  import BefristungInput from '@/components/admin/personen/BefristungInput.vue';
+  import KopersInput from '@/components/admin/personen/KopersInput.vue';
+  import PasswordReset from '@/components/admin/personen/PasswordReset.vue';
+  import PersonDelete from '@/components/admin/personen/PersonDelete.vue';
+  import PersonLock from '@/components/admin/personen/PersonLock.vue';
+  import PersonSync from '@/components/admin/personen/PersonSync.vue';
+  import PersonenMetadataChange from '@/components/admin/personen/PersonenMetadataChange.vue';
+  import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
+  import PersonenkontextDelete from '@/components/admin/personen/PersonenkontextDelete.vue';
+  import { PendingState } from '@/components/admin/personen/details/PersonenkontextItem.types';
+  import PersonenkontextItem from '@/components/admin/personen/details/PersonenkontextItem.vue';
+  import SpshAlert from '@/components/alert/SpshAlert.vue';
+  import LayoutCard from '@/components/cards/LayoutCard.vue';
+  import TokenReset from '@/components/two-factor-authentication/TokenReset.vue';
+  import TwoFactorAuthenticationSetUp from '@/components/two-factor-authentication/TwoFactorAuthenticationSetUp.vue';
+  import { useOrganisationen } from '@/composables/useOrganisationen';
+  import { useRollen, type TranslatedRolleWithAttrs } from '@/composables/useRollen';
+  import { useAuthStore, type AuthStore, type PersonenkontextRolleFields } from '@/stores/AuthStore';
+  import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
+  import {
+    OrganisationsTyp,
+    useOrganisationStore,
+    type AutoCompleteStore,
+    type Organisation,
+    type OrganisationStore,
+  } from '@/stores/OrganisationStore';
+  import { EmailStatus, usePersonStore, type PersonStore } from '@/stores/PersonStore';
+  import {
+    mapZuordnungToPersonenkontextUpdate,
+    OperationContext,
+    usePersonenkontextStore,
+    type PersonenkontextStore,
+    type PersonenkontextUpdate,
+    type PersonenkontextWorkflowResponse,
+    type RolleResponse,
+  } from '@/stores/PersonenkontextStore';
+  import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
+  import {
+    StartPageServiceProvider,
+    useServiceProviderStore,
+    type ServiceProviderStore,
+  } from '@/stores/ServiceProviderStore';
+  import {
+    TokenKind,
+    useTwoFactorAuthentificationStore,
+    type TwoFactorAuthentificationStore,
+  } from '@/stores/TwoFactorAuthentificationStore';
+  import type { Person } from '@/stores/types/Person';
+  import type { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
+  import { Zuordnung } from '@/stores/types/Zuordnung';
+  import type { TranslatedObject } from '@/types';
+  import { isBefristungspflichtRolle, useBefristungUtils, type BefristungUtilsType } from '@/utils/befristung';
+  import { adjustDateForTimezoneAndFormat, formatDateToISO, getNextSchuljahresende } from '@/utils/date';
+  import { LockKeys, PersonLockOccasion, type UserLock } from '@/utils/lock';
+  import { DIN_91379A, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
+  import {
+    getBefristungSchema,
+    getDirtyState,
+    getPersonenkontextFieldDefinitions,
+    getValidationSchema,
+    isKopersRolle,
+    type PersonenkontextFieldDefinitions,
+  } from '@/utils/validationPersonenkontext';
+  import { toTypedSchema } from '@vee-validate/yup';
+  import { useForm, type BaseFieldProps, type FormContext, type TypedSchema } from 'vee-validate';
+  import {
+    computed,
+    nextTick,
+    onBeforeMount,
+    onMounted,
+    onUnmounted,
+    ref,
+    watch,
+    watchEffect,
+    type ComputedRef,
+    type Ref,
+  } from 'vue';
+  import { useI18n, type Composer } from 'vue-i18n';
+  import {
+    onBeforeRouteLeave,
+    useRoute,
+    useRouter,
+    type NavigationGuardNext,
+    type RouteLocationNormalized,
+    type RouteLocationNormalizedLoaded,
+    type Router,
+  } from 'vue-router';
+  import { useDisplay } from 'vuetify';
+  import { object, string, StringSchema, type AnyObject } from 'yup';
 
   type ZuordnungWithKlasse = Zuordnung & {
     klasse?: string;

@@ -1,27 +1,27 @@
 <script setup lang="ts">
   import { ServiceProviderTarget, type PersonTimeLimitInfoResponse } from '@/api-client/generated';
-import SpshBanner from '@/components/alert/SpshBanner.vue';
-import ServiceProviderCategory from '@/components/layout/ServiceProviderCategory.vue';
-import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
-import { useMeldungStore, type Meldung, type MeldungStore } from '@/stores/MeldungStore';
-import { usePersonInfoStore, type PersonInfoStore } from '@/stores/PersonInfoStore';
-import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
-import { RollenMerkmal } from '@/stores/RolleStore';
-import {
-  ServiceProviderKategorie,
-  useServiceProviderStore,
-  type ServiceProviderStore,
-  type StartPageServiceProvider,
-} from '@/stores/ServiceProviderStore';
-import {
-  useTwoFactorAuthentificationStore,
-  type TwoFactorAuthentificationStore,
-} from '@/stores/TwoFactorAuthentificationStore';
-import type { Zuordnung } from '@/stores/types/Zuordnung';
-import { adjustDateForTimezoneAndFormat } from '@/utils/date';
-import { getLogoPath } from '@/utils/logosConfig';
-import { computed, onBeforeMount, onMounted, ref, type ComputedRef, type Ref } from 'vue';
-import { useI18n, type Composer } from 'vue-i18n';
+  import SpshBanner from '@/components/alert/SpshBanner.vue';
+  import ServiceProviderCategory from '@/components/layout/ServiceProviderCategory.vue';
+  import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
+  import { useMeldungStore, type Meldung, type MeldungStore } from '@/stores/MeldungStore';
+  import { usePersonInfoStore, type PersonInfoStore } from '@/stores/PersonInfoStore';
+  import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
+  import { RollenMerkmal } from '@/stores/RolleStore';
+  import {
+    ServiceProviderKategorie,
+    useServiceProviderStore,
+    type ServiceProviderStore,
+    type StartPageServiceProvider,
+  } from '@/stores/ServiceProviderStore';
+  import {
+    useTwoFactorAuthentificationStore,
+    type TwoFactorAuthentificationStore,
+  } from '@/stores/TwoFactorAuthentificationStore';
+  import type { Zuordnung } from '@/stores/types/Zuordnung';
+  import { adjustDateForTimezoneAndFormat } from '@/utils/date';
+  import { getLogoPath } from '@/utils/logosConfig';
+  import { computed, onBeforeMount, onMounted, ref, type ComputedRef, type Ref } from 'vue';
+  import { useI18n, type Composer } from 'vue-i18n';
 
   const { t }: Composer = useI18n();
 
