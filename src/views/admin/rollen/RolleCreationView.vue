@@ -268,7 +268,8 @@
       selectedServiceProviders.value = [];
       if (administrationsebene && rollenArt) {
         await serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
-          administrationsebene, rollenArt
+          administrationsebene,
+          rollenArt,
         );
       }
     },
