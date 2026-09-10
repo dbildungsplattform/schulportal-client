@@ -26,11 +26,31 @@
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
   const showSuccess: Ref<boolean> = ref(false);
 
-  const onSubmit = async ({
-    selectedSchulform,
-    selectedSchulname,
-    selectedEmailAdress,
-  }: SchuleDetailsForm): Promise<void> => {
+  const cachedValues: Ref<SchuleDetailsForm | undefined> = ref(undefined);
+  function cacheSubmittedValues(values: SchuleDetailsForm): void {
+    cachedValues.value = {
+      selectedSchulform: values.selectedSchulform,
+      selectedDienststellennummer: values.selectedDienststellennummer,
+      selectedSchulname: values.selectedSchulname,
+      selectedEmailAdress: values.selectedEmailAdress,
+    };
+  }
+
+  const initialValues: ComputedRef<SchuleDetailsForm | undefined> = computed(() => {
+    if (organisationStore.currentSchule) {
+      return {
+        selectedSchulform: organisationStore.currentSchule?.administriertVon ?? '',
+        selectedDienststellennummer: organisationStore.currentSchule?.kennung ?? '',
+        selectedSchulname: organisationStore.currentSchule?.name ?? '',
+        selectedEmailAdress: organisationStore.currentSchule?.emailAdress ?? '',
+      };
+    }
+    return undefined;
+  });
+
+  const onSubmit = async (params: SchuleDetailsForm): Promise<void> => {
+    const { selectedSchulform, selectedSchulname, selectedEmailAdress } = params;
+    cacheSubmittedValues(params);
     await organisationStore.updateSchuleDetails({
       organisationId: currentSchuleId,
       schultraegerform: selectedSchulform as string,
@@ -46,13 +66,6 @@
   const schultraegerList: ComputedRef<Organisation[] | undefined> = computed(() => {
     return organisationStore.schultraeger;
   });
-
-  const cachedFormValues: ComputedRef<Partial<SchuleDetailsForm>> = computed(() => ({
-    selectedSchulform: organisationStore.currentSchule?.administriertVon,
-    selectedDienststellennummer: organisationStore.currentSchule?.kennung,
-    selectedSchulname: organisationStore.currentSchule?.name,
-    selectedEmailAdress: organisationStore.currentSchule?.emailAdress,
-  }));
 
   let blockedNext = (): void => {
     /* empty */
@@ -92,8 +105,15 @@
   });
 
   onMounted(async () => {
-    await organisationStore.fetchSchulDetails(currentSchuleId);
+    await organisationStore.getOrganisationById(currentSchuleId);
     await organisationStore.getRootKinderSchultraeger();
+
+    cacheSubmittedValues({
+      selectedSchulform: organisationStore.currentSchule?.administriertVon ?? '',
+      selectedDienststellennummer: organisationStore.currentSchule?.kennung ?? '',
+      selectedSchulname: organisationStore.currentSchule?.name ?? '',
+      selectedEmailAdress: organisationStore.currentSchule?.emailAdress ?? '',
+    });
 
     /* listen for browser changes and prevent them when form is dirty */
     window.addEventListener('beforeunload', preventNavigation);
@@ -135,7 +155,8 @@
         <SchuleForm
           v-if="!organisationStore.errorCode"
           :show-unsaved-changes-dialog="showUnsavedChangesDialog"
-          :cached-values="cachedFormValues"
+          :initial-values="initialValues"
+          :cached-values="cachedValues"
           :is-edit-mode="true"
           :error-code="organisationStore.errorCode"
           :is-loading="organisationStore.loading"
@@ -151,7 +172,7 @@
       <template v-if="showSuccess && !organisationStore.errorCode">
         <SchuleSuccessTemplate
           :is-edit-mode="true"
-          :successMessage="$t('admin.schule.schuleAddedSuccessfully')"
+          :successMessage="$t('admin.schule.schuleChangedSuccessfully')"
           :followingDataChanged="organisationStore?.updatedOrganisation"
           :schultraeger-list="schultraegerList"
           @onNavigateBackToSchuleManagement="navigateToSchuleManagement"

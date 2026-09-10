@@ -827,6 +827,7 @@
       "schulnameDienststellennummer": "Schulname/Dienststellennummer",
       "schulform": "Schulform",
       "schuleAddedSuccessfully": "Die Schule wurde erfolgreich hinzugefügt.",
+      "schuleChangedSuccessfully": "Die Schule wurde erfolgreich geändert.",
       "schuleCreateErrorTitle": "Fehler beim Anlegen der Schule",
       "showAll": "Alle Schulen anzeigen"
     },

@@ -100,7 +100,6 @@
   });
 
   watch(meta, ({ dirty }: FormMeta<SchuleDetailsForm>) => {
-    console.log('Form dirty state changed!:', dirty);
     emit('update:dirty', dirty);
   });
 

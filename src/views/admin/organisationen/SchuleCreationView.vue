@@ -26,9 +26,13 @@
   });
 
   const cachedValues: Ref<SchuleDetailsForm | undefined> = ref(undefined);
-
   function cacheSubmittedValues(values: SchuleDetailsForm): void {
-    cachedValues.value = values;
+    cachedValues.value = {
+      selectedSchulform: values.selectedSchulform,
+      selectedDienststellennummer: values.selectedDienststellennummer,
+      selectedSchulname: values.selectedSchulname,
+      selectedEmailAdress: values.selectedEmailAdress,
+    };
   }
 
   const initialFormValues: Ref<Partial<SchuleDetailsForm>> = ref({
@@ -60,9 +64,10 @@
       undefined,
       selectedEmailAdress as string,
     );
-    console.log('Organisation created:', organisationStore.createdSchule, 'Error code:', organisationStore.errorCode);
+
     if (!organisationStore.errorCode) {
       isDirty.value = false;
+      cachedValues.value = undefined;
     }
   };
 
@@ -175,6 +180,7 @@
       <!-- Result template on success after submit (Present value in createdSchule and no errorCode)  -->
       <template v-if="organisationStore.createdSchule && !organisationStore.errorCode">
         <SchuleSuccessTemplate
+          :is-edit-mode="false"
           :successMessage="$t('admin.schule.schuleAddedSuccessfully')"
           :followingDataChanged="organisationStore?.createdSchule"
           :schultraeger-list="schultraegerList"
