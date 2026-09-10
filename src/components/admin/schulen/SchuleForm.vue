@@ -1,19 +1,19 @@
 <script setup lang="ts">
   import FormRow from '@/components/form/FormRow.vue';
-import FormWrapper from '@/components/form/FormWrapper.vue';
-import { Organisation } from '@/stores/OrganisationStore';
-import { DIN_91379A_EXT, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
-import { toTypedSchema } from '@vee-validate/yup';
-import { FormMeta, TypedSchema, useForm, type BaseFieldProps } from 'vee-validate';
-import { computed, ComputedRef, onMounted, Ref, watch, watchEffect } from 'vue';
-import { Composer, useI18n } from 'vue-i18n';
-import { object, string } from 'yup';
+  import FormWrapper from '@/components/form/FormWrapper.vue';
+  import { Organisation } from '@/stores/OrganisationStore';
+  import { DIN_91379A_EXT, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
+  import { toTypedSchema } from '@vee-validate/yup';
+  import { FormMeta, TypedSchema, useForm, type BaseFieldProps } from 'vee-validate';
+  import { computed, ComputedRef, onMounted, Ref, watch, watchEffect } from 'vue';
+  import { Composer, useI18n } from 'vue-i18n';
+  import { object, string } from 'yup';
 
   export type SchuleDetailsForm = {
-    selectedSchulform: string;
-    selectedDienststellennummer: string;
-    selectedSchulname: string;
-    selectedEmailAdress: string;
+    selectedSchulform: string | undefined;
+    selectedDienststellennummer: string | undefined;
+    selectedSchulname: string | undefined;
+    selectedEmailAdress: string | undefined;
   };
 
   type Props = {
@@ -51,9 +51,9 @@ import { object, string } from 'yup';
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.schule.rules.schulname.noLeadingTrailingSpaces'))
         .required(t('admin.schule.rules.schulname.required')),
       selectedEmailAdress: string()
-      .email(t('admin.schule.rules.emailAddress.invalid'))
-      .required(t('admin.schule.rules.emailAddress.required'))
-      .matches(NO_LEADING_TRAILING_SPACES, t('admin.schule.rules.emailAddress.noLeadingTrailingSpaces'))
+        .email(t('admin.schule.rules.emailAddress.invalid'))
+        .required(t('admin.schule.rules.emailAddress.required'))
+        .matches(NO_LEADING_TRAILING_SPACES, t('admin.schule.rules.emailAddress.noLeadingTrailingSpaces')),
     }),
   );
 
@@ -100,6 +100,7 @@ import { object, string } from 'yup';
   });
 
   watch(meta, ({ dirty }: FormMeta<SchuleDetailsForm>) => {
+    console.log('Form dirty state changed!:', dirty);
     emit('update:dirty', dirty);
   });
 
@@ -151,6 +152,7 @@ import { object, string } from 'yup';
           v-model="selectedSchulform"
           inline
           data-testid="schulform-radio-group"
+          :disabled="isEditMode"
         >
           <v-row justify="center">
             <v-col
@@ -190,6 +192,7 @@ import { object, string } from 'yup';
           :placeholder="$t('admin.schule.dienststellennummer')"
           variant="outlined"
           density="compact"
+          :disabled="isEditMode"
         />
       </FormRow>
       <!-- select school name -->

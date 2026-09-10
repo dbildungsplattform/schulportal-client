@@ -1,30 +1,106 @@
 <script setup lang="ts">
-  import LabeledField from '@/components/admin/LabeledField.vue';
+  import SchuleForm, { type SchuleDetailsForm } from '@/components/admin/schulen/SchuleForm.vue';
+  import SchuleSuccessTemplate from '@/components/admin/schulen/SchuleSuccessTemplate.vue';
+  import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
-  import { OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
-  import { onMounted, Ref } from 'vue';
+  import { Organisation, OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
+  import { computed, ComputedRef, onMounted, onUnmounted, ref, Ref } from 'vue';
   import { Composer, useI18n } from 'vue-i18n';
-  import { useRoute, useRouter, type RouteLocationNormalizedLoaded, type Router } from 'vue-router';
-  import { useDisplay } from 'vuetify';
+  import {
+    NavigationGuardNext,
+    onBeforeRouteLeave,
+    RouteLocationNormalized,
+    useRoute,
+    useRouter,
+    type RouteLocationNormalizedLoaded,
+    type Router,
+  } from 'vue-router';
 
-  const { mdAndDown }: { mdAndDown: Ref<boolean> } = useDisplay();
   const organisationStore: OrganisationStore = useOrganisationStore();
 
   const router: Router = useRouter();
   const route: RouteLocationNormalizedLoaded = useRoute();
   const { t }: Composer = useI18n({ useScope: 'global' });
   const currentSchuleId: string = route.params['id'] as string;
+  const isDirty: Ref<boolean> = ref(false);
+  const showUnsavedChangesDialog: Ref<boolean> = ref(false);
+  const showSuccess: Ref<boolean> = ref(false);
 
-  const navigateToSchulenÜbersicht = (): void => {
+  const onSubmit = async ({
+    selectedSchulform,
+    selectedSchulname,
+    selectedEmailAdress,
+  }: SchuleDetailsForm): Promise<void> => {
+    await organisationStore.updateSchuleDetails({
+      organisationId: currentSchuleId,
+      schultraegerform: selectedSchulform as string,
+      name: selectedSchulname as string,
+      emailAdress: selectedEmailAdress as string,
+    });
+    if (!organisationStore.errorCode) {
+      isDirty.value = false;
+      showSuccess.value = true;
+    }
+  };
+
+  const schultraegerList: ComputedRef<Organisation[] | undefined> = computed(() => {
+    return organisationStore.schultraeger;
+  });
+
+  const cachedFormValues: ComputedRef<Partial<SchuleDetailsForm>> = computed(() => ({
+    selectedSchulform: organisationStore.currentSchule?.administriertVon,
+    selectedDienststellennummer: organisationStore.currentSchule?.kennung,
+    selectedSchulname: organisationStore.currentSchule?.name,
+    selectedEmailAdress: organisationStore.currentSchule?.emailAdress,
+  }));
+
+  let blockedNext = (): void => {
+    /* empty */
+  };
+
+  const navigateToSchuleManagement = (): void => {
     router.push({ name: 'schule-management' });
   };
 
   const navigateToSchuleBearbeiten = (): void => {
+    showSuccess.value = false;
+    organisationStore.errorCode = '';
     router.push({ name: 'schule-edit', params: { id: currentSchuleId } });
   };
 
+  function handleConfirmUnsavedChanges(): void {
+    blockedNext();
+    organisationStore.errorCode = '';
+  }
+
+  function preventNavigation(event: BeforeUnloadEvent): void {
+    if (!isDirty.value) {
+      return;
+    }
+    event.preventDefault();
+    /* Chrome requires returnValue to be set. */
+    event.returnValue = '';
+  }
+
+  onBeforeRouteLeave((_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
+    if (isDirty.value) {
+      showUnsavedChangesDialog.value = true;
+      blockedNext = next;
+    } else {
+      next();
+    }
+  });
+
   onMounted(async () => {
     await organisationStore.fetchSchulDetails(currentSchuleId);
+    await organisationStore.getRootKinderSchultraeger();
+
+    /* listen for browser changes and prevent them when form is dirty */
+    window.addEventListener('beforeunload', preventNavigation);
+  });
+
+  onUnmounted(() => {
+    window.removeEventListener('beforeunload', preventNavigation);
   });
 </script>
 <template>
@@ -39,81 +115,49 @@
       :closable="!organisationStore.errorCode"
       data-testid="schule-details-card"
       :header="t('admin.schule.edit')"
-      @onCloseClicked="navigateToSchulenÜbersicht"
+      @onCloseClicked="navigateToSchuleManagement"
       :padded="true"
       :showCloseText="true"
     >
-      <div v-if="!organisationStore.errorCode">
-        <v-container
-          class="px-3 px-sm-16"
-          data-testid="schule-details-container"
-        >
-          <div v-if="organisationStore.currentSchule">
-            <v-row class="mt-2">
-              <v-col
-                cols="12"
-                md="6"
-              >
-                <div class="compact-spacing">
-                  <LabeledField
-                    :label="t('admin.schule.dienststellennummer')"
-                    :value="organisationStore.currentSchule.kennung ?? ''"
-                    test-id="schule-dienststellennummer"
-                  />
-                  <LabeledField
-                    :label="t('admin.schule.schulname')"
-                    :value="organisationStore.currentSchule.name"
-                    test-id="schule-name"
-                  />
-                  <LabeledField
-                    :label="t('admin.schule.emailAdresse')"
-                    :value="organisationStore.currentSchule.emailAdresse ?? ''"
-                    test-id="schule-email"
-                  />
-                </div>
-              </v-col>
-              <v-col
-                cols="12"
-                md="6"
-              >
-                <div class="compact-spacing">
-                  <LabeledField
-                    :label="t('admin.schule.schulform')"
-                    :value="
-                      organisationStore.currentSchule?.schultraegerform?.name ??
-                      t('admin.organisation.unknownOrganisation')
-                    "
-                    test-id="schultraegerform"
-                  />
-                  <LabeledField
-                    :label="t('admin.schule.itsLearningActive')"
-                    :value="organisationStore.currentSchule.itslearningEnabled ? t('yes') : t('no')"
-                    test-id="schule-itslearning-enabled"
-                  />
-                </div>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col
-                cols="12"
-                offset-md="8"
-              >
-                <v-btn
-                  class="primary ml-lg-8"
-                  data-testid="klasse-edit-button"
-                  :block="mdAndDown"
-                  @click="navigateToSchuleBearbeiten"
-                >
-                  {{ $t('save') }}
-                </v-btn>
-              </v-col>
-            </v-row>
-          </div>
-          <div v-else-if="organisationStore.loading">
-            <v-progress-circular indeterminate></v-progress-circular>
-          </div>
-        </v-container>
-      </div>
+      <template v-if="!showSuccess">
+        <!-- Error Message Display if error on submit -->
+        <SpshAlert
+          :model-value="!!organisationStore.errorCode"
+          :title="$t('admin.schule.schuleCreateErrorTitle')"
+          :type="'error'"
+          :closable="false"
+          :text="organisationStore.errorCode ? $t(`admin.schule.errors.${organisationStore.errorCode}`) : ''"
+          :show-button="true"
+          :button-text="$t('admin.schule.backToCreateSchule')"
+          :button-action="navigateToSchuleBearbeiten"
+          button-class="primary"
+        />
+        <SchuleForm
+          v-if="!organisationStore.errorCode"
+          :show-unsaved-changes-dialog="showUnsavedChangesDialog"
+          :cached-values="cachedFormValues"
+          :is-edit-mode="true"
+          :error-code="organisationStore.errorCode"
+          :is-loading="organisationStore.loading"
+          :schultraeger-list="schultraegerList"
+          @update:dirty="(value: boolean) => (isDirty = value)"
+          @click:submit="onSubmit"
+          @click:discard="navigateToSchuleManagement"
+          @update:showUnsavedChangesDialog="(visible: boolean) => (showUnsavedChangesDialog = visible)"
+          @click:confirmUnsaved="handleConfirmUnsavedChanges"
+        />
+      </template>
+      <!-- Result template on success after submit (Present value in createdSchule and no errorCode)  -->
+      <template v-if="showSuccess && !organisationStore.errorCode">
+        <SchuleSuccessTemplate
+          :is-edit-mode="true"
+          :successMessage="$t('admin.schule.schuleAddedSuccessfully')"
+          :followingDataChanged="organisationStore?.updatedOrganisation"
+          :schultraeger-list="schultraegerList"
+          @onNavigateBackToSchuleManagement="navigateToSchuleManagement"
+          @onNavigateToSchuleForm="navigateToSchuleBearbeiten"
+        />
+      </template>
     </LayoutCard>
   </div>
 </template>

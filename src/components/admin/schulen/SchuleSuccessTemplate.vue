@@ -1,20 +1,21 @@
 <script setup lang="ts">
   import { Organisation } from '@/stores/OrganisationStore';
-import { type Ref } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { useDisplay } from 'vuetify';
+  import { type Ref } from 'vue';
+  import { useI18n } from 'vue-i18n';
+  import { useDisplay } from 'vuetify';
 
   type Props = {
     successMessage: string;
-    followingDataChanged: Organisation | undefined;
+    followingDataChanged: Organisation | undefined | null;
     schultraegerList: Organisation[] | undefined;
+    isEditMode: boolean;
   };
 
   const props: Props = defineProps<Props>();
 
   type Emits = {
     (event: 'onNavigateBackToSchuleManagement'): void;
-    (event: 'onCreateAnotherSchule'): void;
+    (event: 'onNavigateToSchuleForm'): void;
   };
 
   const emit: Emits = defineEmits<Emits>();
@@ -23,14 +24,14 @@ import { useDisplay } from 'vuetify';
   useI18n({ useScope: 'global' });
 
   const navigateToSchuleManagement = (): void => emit('onNavigateBackToSchuleManagement');
-  const handleCreateAnotherSchule = (): void => emit('onCreateAnotherSchule');
+  const handleCreateAnotherSchule = (): void => emit('onNavigateToSchuleForm');
 
   const findSchultraegerName = (id: string | undefined | null): string => {
     if (!id || !props.schultraegerList) {
       return '';
     }
     const schultraeger: Organisation | undefined = props.schultraegerList.find((s) => s.id === id);
-  
+
     return schultraeger ? schultraeger.name : '';
   };
 </script>
@@ -72,7 +73,9 @@ import { useDisplay } from 'vuetify';
         {{ $t('admin.schule.schulform') }}:
       </v-col>
       <v-col class="text-body">
-        <span data-testid="created-schule-form"> {{ findSchultraegerName(followingDataChanged?.administriertVon) }}</span>
+        <span data-testid="created-schule-form">
+          {{ findSchultraegerName(followingDataChanged?.administriertVon) }}</span
+        >
       </v-col>
     </v-row>
     <v-row>
@@ -139,7 +142,7 @@ import { useDisplay } from 'vuetify';
           :block="mdAndDown"
           @click="handleCreateAnotherSchule"
         >
-          {{ $t('admin.schule.createAnother') }}
+          {{ isEditMode ? $t('edit') : $t('admin.schule.createAnother') }}
         </v-btn>
       </v-col>
     </v-row>

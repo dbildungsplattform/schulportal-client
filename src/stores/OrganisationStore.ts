@@ -162,7 +162,7 @@ type OrganisationActions = {
     kuerzel: string | undefined,
     typ: OrganisationsTyp,
     traegerschaft?: TraegerschaftTyp,
-    emailAdress?: string
+    emailAdress?: string,
   ) => Promise<void>;
   deleteOrganisationById: (organisationId: string) => Promise<void>;
   updateOrganisationById: (organisationId: string, name: string, type: OrganisationsTyp) => Promise<void>;
@@ -184,6 +184,12 @@ type OrganisationActions = {
   resetKlasseFilter(storeKey?: string): void;
   clearKlasseFilter(storeKey?: string): void;
   fetchSchulDetails: (organisationId: string) => Promise<void>;
+  updateSchuleDetails(params: {
+    organisationId: string;
+    schultraegerform: string;
+    name: string;
+    emailAdress: string;
+  }): Promise<void>;
 };
 
 export { OrganisationsTyp };
@@ -513,7 +519,7 @@ export const useOrganisationStore: StoreDefinition<
       kuerzel: string | undefined,
       typ: OrganisationsTyp,
       traegerschaft?: TraegerschaftTyp,
-      emailAdress?: string
+      emailAdress?: string,
     ): Promise<void> {
       this.loading = true;
       try {
@@ -611,6 +617,34 @@ export const useOrganisationStore: StoreDefinition<
         }
       } catch (error: unknown) {
         this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async updateSchuleDetails(params: {
+      organisationId: string;
+      schultraegerform: string;
+      name: string;
+      emailAdress: string;
+    }): Promise<void> {
+      this.errorCode = '';
+      this.loading = true;
+      try {
+        const { data }: { data: Organisation } = await organisationApi.organisationControllerUpdateOrganisation(
+          params.organisationId,
+          {
+            administriertVon: params.schultraegerform,
+            zugehoerigZu: params.schultraegerform,
+            name: params.name,
+            emailAdress: params.emailAdress,
+            typ: OrganisationsTyp.Schule,
+          },
+        );
+
+        this.updatedOrganisation = data;
+      } catch (error: unknown) {
+        this.errorCode = getResponseErrorCode(error, 'SCHULE_ERROR');
       } finally {
         this.loading = false;
       }

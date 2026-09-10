@@ -96,10 +96,11 @@
             <v-row>
               <v-col
                 cols="12"
-                offset-md="6"
+                col-md="4"
+                offset-md="8"
               >
                 <v-btn
-                  class="primary ml-lg-8"
+                  class="primary"
                   data-testid="schule-edit-button"
                   :block="mdAndDown"
                   @click="goToEditSchule"

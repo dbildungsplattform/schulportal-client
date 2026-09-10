@@ -1,16 +1,16 @@
 <script setup lang="ts">
   import SchuleForm, { type SchuleDetailsForm } from '@/components/admin/schulen/SchuleForm.vue';
-import SchuleSuccessTemplate from '@/components/admin/schulen/SchuleSuccessTemplate.vue';
-import SpshAlert from '@/components/alert/SpshAlert.vue';
-import LayoutCard from '@/components/cards/LayoutCard.vue';
-import {
-  OrganisationsTyp,
-  useOrganisationStore,
-  type Organisation,
-  type OrganisationStore,
-} from '@/stores/OrganisationStore';
-import { computed, onMounted, onUnmounted, ref, type ComputedRef, type Ref } from 'vue';
-import { NavigationGuardNext, onBeforeRouteLeave, RouteLocationNormalized, useRouter, type Router } from 'vue-router';
+  import SchuleSuccessTemplate from '@/components/admin/schulen/SchuleSuccessTemplate.vue';
+  import SpshAlert from '@/components/alert/SpshAlert.vue';
+  import LayoutCard from '@/components/cards/LayoutCard.vue';
+  import {
+    OrganisationsTyp,
+    useOrganisationStore,
+    type Organisation,
+    type OrganisationStore,
+  } from '@/stores/OrganisationStore';
+  import { computed, onMounted, onUnmounted, ref, type ComputedRef, type Ref } from 'vue';
+  import { NavigationGuardNext, onBeforeRouteLeave, RouteLocationNormalized, useRouter, type Router } from 'vue-router';
 
   const isDirty: Ref<boolean> = ref(false);
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
@@ -18,13 +18,18 @@ import { NavigationGuardNext, onBeforeRouteLeave, RouteLocationNormalized, useRo
   const router: Router = useRouter();
   const organisationStore: OrganisationStore = useOrganisationStore();
 
-
   const defaultSchulform: ComputedRef<string | undefined> = computed(() => {
     if (organisationStore.schultraeger && organisationStore.schultraeger.length > 0) {
       return organisationStore?.schultraeger[0]?.id;
     }
     return undefined;
-  }); 
+  });
+
+  const cachedValues: Ref<SchuleDetailsForm | undefined> = ref(undefined);
+
+  function cacheSubmittedValues(values: SchuleDetailsForm): void {
+    cachedValues.value = values;
+  }
 
   const initialFormValues: Ref<Partial<SchuleDetailsForm>> = ref({
     selectedSchulform: defaultSchulform.value,
@@ -40,7 +45,10 @@ import { NavigationGuardNext, onBeforeRouteLeave, RouteLocationNormalized, useRo
     /* empty */
   };
 
-  const onSubmit = async ({ selectedSchulform, selectedDienststellennummer, selectedSchulname, selectedEmailAdress }: SchuleDetailsForm): Promise<void> => {
+  const onSubmit = async (params: SchuleDetailsForm): Promise<void> => {
+    // eslint-disable-next-line @typescript-eslint/typedef, @typescript-eslint/no-unsafe-assignment
+    const { selectedSchulform, selectedDienststellennummer, selectedSchulname, selectedEmailAdress } = params;
+    cacheSubmittedValues(params);
     await organisationStore.createOrganisation(
       selectedSchulform as string,
       selectedSchulform as string,
@@ -50,21 +58,13 @@ import { NavigationGuardNext, onBeforeRouteLeave, RouteLocationNormalized, useRo
       undefined,
       OrganisationsTyp.Schule,
       undefined,
-      selectedEmailAdress as string
+      selectedEmailAdress as string,
     );
+    console.log('Organisation created:', organisationStore.createdSchule, 'Error code:', organisationStore.errorCode);
     if (!organisationStore.errorCode) {
       isDirty.value = false;
     }
   };
-
-  onBeforeRouteLeave((_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
-    if (isDirty.value) {
-      showUnsavedChangesDialog.value = true;
-      blockedNext = next;
-    } else {
-      next();
-    }
-  });
 
   const handleCreateAnotherSchule = (): void => {
     organisationStore.createdSchule = null;
@@ -163,6 +163,7 @@ import { NavigationGuardNext, onBeforeRouteLeave, RouteLocationNormalized, useRo
           :error-code="organisationStore.errorCode"
           :is-loading="organisationStore.loading"
           :initialValues="initialFormValues"
+          :cached-values="cachedValues"
           :schultraeger-list="schultraegerList"
           @update:dirty="(value: boolean) => (isDirty = value)"
           @click:submit="onSubmit"
@@ -178,7 +179,7 @@ import { NavigationGuardNext, onBeforeRouteLeave, RouteLocationNormalized, useRo
           :followingDataChanged="organisationStore?.createdSchule"
           :schultraeger-list="schultraegerList"
           @onNavigateBackToSchuleManagement="navigateToSchuleManagement"
-          @onCreateAnotherSchule="handleCreateAnotherSchule"
+          @onNavigateToSchuleForm="handleCreateAnotherSchule"
         />
       </template>
     </LayoutCard>
