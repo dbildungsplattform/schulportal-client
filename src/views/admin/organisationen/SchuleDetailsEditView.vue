@@ -26,7 +26,7 @@
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
   const showSuccess: Ref<boolean> = ref(false);
 
-  const cachedValues: Ref<SchuleDetailsForm | undefined> = ref(undefined);
+  const cachedValues: Ref<Partial<SchuleDetailsForm>> = ref(undefined);
   function cacheSubmittedValues(values: SchuleDetailsForm): void {
     cachedValues.value = {
       selectedSchulform: values.selectedSchulform,
@@ -36,7 +36,7 @@
     };
   }
 
-  const initialValues: ComputedRef<SchuleDetailsForm | undefined> = computed(() => {
+  const initialValues: ComputedRef<SchuleDetailsForm> = computed(() => {
     if (organisationStore.currentSchule) {
       return {
         selectedSchulform: organisationStore.currentSchule?.administriertVon ?? '',
@@ -107,8 +107,6 @@
   onMounted(async () => {
     await organisationStore.fetchSchulDetails(currentSchuleId.value);
     await organisationStore.getRootKinderSchultraeger();
-    console.log('onMounted', organisationStore.currentSchule);
-
     /* listen for browser changes and prevent them when form is dirty */
     window.addEventListener('beforeunload', preventNavigation);
   });

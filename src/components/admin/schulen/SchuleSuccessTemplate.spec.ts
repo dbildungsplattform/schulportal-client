@@ -1,6 +1,6 @@
-import { Organisation } from '@/stores/OrganisationStore';
+import { Organisation, OrganisationsTyp } from '@/stores/OrganisationStore';
 import { createTestingPinia } from '@pinia/testing';
-import { mount, VueWrapper } from '@vue/test-utils';
+import { DOMWrapper, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createI18n } from 'vue-i18n';
 import SchuleSuccessTemplate from './SchuleSuccessTemplate.vue';
@@ -62,9 +62,9 @@ const mockFollowingDataNoEmail: Organisation = {
 };
 
 // Test wrapper helper
-let wrapper: VueWrapper<any> | null = null;
+let wrapper: VueWrapper<unknown> | null = null;
 
-const createWrapper = (props = {}) => {
+const createWrapper = (props: Record<string, unknown> = {}): VueWrapper<unknown> => {
   wrapper = mount(SchuleSuccessTemplate, {
     props: {
       successMessage: 'Schule erfolgreich erstellt!',
@@ -328,7 +328,7 @@ describe('SchuleSuccessTemplate', () => {
     it('should handle component updates', async () => {
       createWrapper();
 
-      const newData = {
+      const newData: Organisation = {
         ...mockFollowingData,
         name: 'Updated School Name',
       };
@@ -363,7 +363,7 @@ describe('SchuleSuccessTemplate', () => {
 
     it('should update schultraeger list reactively', async () => {
       createWrapper({ schultraegerList: mockSchultraeger });
-      let schulform = wrapper?.find('[data-testid="created-schule-form"]');
+      let schulform: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="created-schule-form"]');
       expect(schulform?.text()).toBe('Schulträger 1');
 
       const newSchultraegerList: Organisation[] = [
@@ -371,8 +371,8 @@ describe('SchuleSuccessTemplate', () => {
           id: 'schultraeger-1',
           name: 'Updated Schulträger 1',
           kennung: 'ST1',
-          typ: 'SCHULTRAEGER',
-        } as Organisation,
+          typ: OrganisationsTyp.Schule,
+        },
       ];
 
       await wrapper?.setProps({ schultraegerList: newSchultraegerList });
@@ -389,13 +389,13 @@ describe('SchuleSuccessTemplate', () => {
 
     it('should render v-row components', () => {
       createWrapper();
-      const rows = wrapper?.findAllComponents({ name: 'VRow' });
+      const rows: VueWrapper<Element>[] | undefined = wrapper?.findAllComponents({ name: 'VRow' });
       expect(rows?.length).toBeGreaterThan(0);
     });
 
     it('should render v-col components', () => {
       createWrapper();
-      const cols = wrapper?.findAllComponents({ name: 'VCol' });
+      const cols: VueWrapper<Element>[] | undefined = wrapper?.findAllComponents({ name: 'VCol' });
       expect(cols?.length).toBeGreaterThan(0);
     });
 
@@ -420,15 +420,15 @@ describe('SchuleSuccessTemplate', () => {
     it('should render all label fields', () => {
       createWrapper();
 
-      const labels = [
+      const labels: string[] = [
         'created-schule-form-label',
         'created-schule-dienststellennummer-label',
         'created-schule-name-label',
         'created-schule-email-label',
       ];
 
-      labels.forEach((label) => {
-        const element = wrapper?.find(`[data-testid="${label}"]`);
+      labels.forEach((label: string) => {
+        const element: DOMWrapper<Element> | undefined = wrapper?.find(`[data-testid="${label}"]`);
         expect(element?.exists()).toBe(true);
       });
     });
@@ -475,10 +475,11 @@ describe('SchuleSuccessTemplate', () => {
     });
 
     it('should render even with minimal data', () => {
-      const minimalData = {
+      const minimalData: Organisation = {
         id: 'test',
         typ: 'SCHULE',
-      } as Organisation;
+        name: '',
+      };
 
       createWrapper({
         followingDataChanged: minimalData,

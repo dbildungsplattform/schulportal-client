@@ -1,4 +1,4 @@
-import { useOrganisationStore, type Organisation } from '@/stores/OrganisationStore';
+import { OrganisationsTyp, useOrganisationStore, type Organisation } from '@/stores/OrganisationStore';
 import { createTestingPinia } from '@pinia/testing';
 import { mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -16,8 +16,8 @@ const mockOrganisation: Organisation = {
 };
 
 const mockSchultraeger: Organisation[] = [
-  { id: 'schultraeger-1', name: 'Schulträger 1', kennung: 'ST1', typ: 'SCHULTRAEGER' },
-  { id: 'schultraeger-2', name: 'Schulträger 2', kennung: 'ST2', typ: 'SCHULTRAEGER' },
+  { id: 'schultraeger-1', name: 'Schulträger 1', kennung: 'ST1', typ: OrganisationsTyp.Schule },
+  { id: 'schultraeger-2', name: 'Schulträger 2', kennung: 'ST2', typ: OrganisationsTyp.Schule },
 ];
 
 const i18n = createI18n({
@@ -51,9 +51,9 @@ const router = createRouter({
   ],
 });
 
-let wrapper: VueWrapper | undefined;
+let wrapper: VueWrapper<InstanceType<typeof SchuleCreationView>> | undefined;
 
-const createWrapper = async (props = {}) => {
+const createWrapper = async (props = {}): Promise<VueWrapper<InstanceType<typeof SchuleCreationView>> | undefined> => {
   await router.push({ name: 'create-schule' });
   const pinia = createTestingPinia({ createSpy: vi.fn });
   wrapper = mount(SchuleCreationView, {
@@ -192,18 +192,20 @@ describe('SchuleCreationView', () => {
 
       await wrapper?.vm.$nextTick();
 
-      expect(wrapper?.vm.initialFormValues).toBeDefined();
-      expect(wrapper?.vm.initialFormValues).toHaveProperty('selectedSchulform');
-      expect(wrapper?.vm.initialFormValues).toHaveProperty('selectedDienststellennummer');
-      expect(wrapper?.vm.initialFormValues).toHaveProperty('selectedSchulname');
+      const vm = wrapper?.vm;
+      expect(vm?.initialFormValues).toBeDefined();
+      expect(vm?.initialFormValues).toHaveProperty('selectedSchulform');
+      expect(vm?.initialFormValues).toHaveProperty('selectedDienststellennummer');
+      expect(vm?.initialFormValues).toHaveProperty('selectedSchulname');
     });
 
     it('should compute default schulform from schultraeger list', async () => {
       await createWrapper();
 
       await wrapper?.vm.$nextTick();
+      const vm = wrapper?.vm as any;
       // defaultSchulform is computed from store.schultraeger at component init time
-      expect(wrapper?.vm.defaultSchulform).toBeDefined();
+      expect(vm.defaultSchulform).toBeDefined();
     });
 
     it('should handle empty schultraeger list for default schulform', async () => {
@@ -220,7 +222,8 @@ describe('SchuleCreationView', () => {
       });
 
       await wrapper?.vm.$nextTick();
-      expect(wrapper?.vm.defaultSchulform).toBeUndefined();
+      const vm = wrapper?.vm as any;
+      expect(vm.defaultSchulform).toBeUndefined();
     });
   });
 
