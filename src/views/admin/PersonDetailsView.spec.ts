@@ -1,4 +1,4 @@
-import { EmailAddressStatus, ServiceProviderTarget, type SystemRechtResponse } from '@/api-client/generated';
+import { EmailAddressStatus, ServiceProviderSystem, type SystemRechtResponse } from '@/api-client/generated';
 import type { TranslatedRolleWithAttrs } from '@/composables/useRollen';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore, type PersonenkontextRolleFields, type UserInfo } from '@/stores/AuthStore';
@@ -661,7 +661,7 @@ describe('PersonDetailsView', () => {
   test('it shows device password template for rollenart lehr', async () => {
     personStore.personenuebersicht = mockPersonenuebersichtLehr;
     serviceProviderStore.assignedServiceProviders = [
-      DoFactory.getServiceProviderResponse({ target: ServiceProviderTarget.None }),
+      DoFactory.getServiceProviderResponse({ externalSystem: ServiceProviderSystem.Uem }),
     ];
     setCurrentPerson(EmailAddressStatus.Enabled);
     await nextTick();

@@ -1,4 +1,4 @@
-import { EmailAddressStatus, RollenArt, ServiceProviderTarget } from '@/api-client/generated';
+import { EmailAddressStatus, RollenArt, ServiceProviderSystem } from '@/api-client/generated';
 import { useAuthStore, type AuthStore, type UserInfo } from '@/stores/AuthStore';
 import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
 import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
@@ -353,7 +353,7 @@ describe('ProfileView', () => {
       personInfoStore.personInfo = mockPersonInfoResponse;
       personStore.personenuebersicht = mockLehrerUebersicht;
       serviceProviderStore.assignedServiceProviders = [
-        DoFactory.getServiceProviderResponse({ target: ServiceProviderTarget.None }),
+        DoFactory.getServiceProviderResponse({ externalSystem: ServiceProviderSystem.Uem }),
       ];
       configStore.configData = {
         befristungBearbeitenEnabled: true,
