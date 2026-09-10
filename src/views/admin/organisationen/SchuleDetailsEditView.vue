@@ -21,7 +21,7 @@
   const router: Router = useRouter();
   const route: RouteLocationNormalizedLoaded = useRoute();
   const { t }: Composer = useI18n({ useScope: 'global' });
-  const currentSchuleId: string = route.params['id'] as string;
+  const currentSchuleId: ComputedRef<string> = computed(() => route.params['id'] as string);
   const isDirty: Ref<boolean> = ref(false);
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
   const showSuccess: Ref<boolean> = ref(false);
@@ -52,7 +52,7 @@
     const { selectedSchulform, selectedSchulname, selectedEmailAdress } = params;
     cacheSubmittedValues(params);
     await organisationStore.updateSchuleDetails({
-      organisationId: currentSchuleId,
+      organisationId: currentSchuleId.value,
       schultraegerform: selectedSchulform as string,
       name: selectedSchulname as string,
       emailAdress: selectedEmailAdress as string,
@@ -78,7 +78,7 @@
   const navigateToSchuleBearbeiten = (): void => {
     showSuccess.value = false;
     organisationStore.errorCode = '';
-    router.push({ name: 'schule-edit', params: { id: currentSchuleId } });
+    router.push({ name: 'schule-edit', params: { id: currentSchuleId.value } });
   };
 
   function handleConfirmUnsavedChanges(): void {
@@ -105,15 +105,9 @@
   });
 
   onMounted(async () => {
-    await organisationStore.getOrganisationById(currentSchuleId);
+    await organisationStore.fetchSchulDetails(currentSchuleId.value);
     await organisationStore.getRootKinderSchultraeger();
-
-    cacheSubmittedValues({
-      selectedSchulform: organisationStore.currentSchule?.administriertVon ?? '',
-      selectedDienststellennummer: organisationStore.currentSchule?.kennung ?? '',
-      selectedSchulname: organisationStore.currentSchule?.name ?? '',
-      selectedEmailAdress: organisationStore.currentSchule?.emailAdress ?? '',
-    });
+    console.log('onMounted', organisationStore.currentSchule);
 
     /* listen for browser changes and prevent them when form is dirty */
     window.addEventListener('beforeunload', preventNavigation);
@@ -153,9 +147,9 @@
           button-class="primary"
         />
         <SchuleForm
-          v-if="!organisationStore.errorCode"
+          v-if="organisationStore.currentSchule"
           :show-unsaved-changes-dialog="showUnsavedChangesDialog"
-          :initial-values="initialValues"
+          :initialValues="initialValues ?? {}"
           :cached-values="cachedValues"
           :is-edit-mode="true"
           :error-code="organisationStore.errorCode"

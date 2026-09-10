@@ -17,7 +17,7 @@
   };
 
   type Props = {
-    initialValues?: Partial<SchuleDetailsForm>;
+    initialValues: Partial<SchuleDetailsForm>;
     cachedValues?: Partial<SchuleDetailsForm>;
     isEditMode: boolean;
     schultraegerList: Organisation[] | undefined;
