@@ -93,11 +93,10 @@
                 </div>
               </v-col>
             </v-row>
-            <v-row>
+            <v-row class="justify-end">
               <v-col
                 cols="12"
-                col-md="4"
-                offset-md="8"
+                md="auto"
               >
                 <v-btn
                   class="primary"
