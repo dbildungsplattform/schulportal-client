@@ -732,6 +732,7 @@ describe('PersonDetailsView', () => {
     organisationStore.fetchSchuleDetailsForKlassen = vi.fn().mockResolvedValue(undefined);
     personenkontextStore.processWorkflowStep = vi.fn().mockResolvedValue(undefined);
     personenkontextStore.updatePersonenkontexte = vi.fn().mockResolvedValue(undefined);
+    serviceProviderStore.getServiceProvidersByPersonId = vi.fn().mockResolvedValue(undefined);
 
     // No existing Zuordnungen for the user for easier testing
     const mockPersonenuebersichtForAddZuordnung: PersonenUebersicht = DoFactory.getPersonenUebersicht(undefined, []);
@@ -820,6 +821,8 @@ describe('PersonDetailsView', () => {
     }
     await flushPromises();
 
+    // Assigned providers are derived from the person's contexts, so they must be refetched after a create.
+    expect(serviceProviderStore.getServiceProvidersByPersonId).toHaveBeenCalled();
     expect(wrapper?.find('[data-testid="zuordnung-edit-button"]').isVisible()).toBe(true);
   });
 
@@ -995,6 +998,8 @@ describe('PersonDetailsView', () => {
   });
 
   test('renders form to delete Zuordnung and triggers submit', async () => {
+    serviceProviderStore.getServiceProvidersByPersonId = vi.fn().mockResolvedValue(undefined);
+
     await wrapper?.find('[data-testid="zuordnung-edit-button"]').trigger('click');
     await nextTick();
 
@@ -1038,6 +1043,8 @@ describe('PersonDetailsView', () => {
     }
     await flushPromises();
 
+    // Assigned providers are derived from the person's contexts, so they must be refetched after a delete.
+    expect(serviceProviderStore.getServiceProvidersByPersonId).toHaveBeenCalled();
     expect(wrapper?.find('[data-testid="zuordnung-edit-button"]').isVisible()).toBe(true);
   });
 
