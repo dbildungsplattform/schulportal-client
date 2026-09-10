@@ -2052,6 +2052,12 @@ export interface OrganisationResponse {
      * @memberof OrganisationResponse
      */
     'version': number;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganisationResponse
+     */
+    'emailAdress': string;
 }
 
 
