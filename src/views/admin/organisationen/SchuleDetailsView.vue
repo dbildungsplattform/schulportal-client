@@ -2,10 +2,12 @@
   import LabeledField from '@/components/admin/LabeledField.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import { OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
-  import { onMounted } from 'vue';
+  import { onMounted, Ref } from 'vue';
   import { Composer, useI18n } from 'vue-i18n';
   import { useRoute, useRouter, type RouteLocationNormalizedLoaded, type Router } from 'vue-router';
+  import { useDisplay } from 'vuetify';
 
+  const { mdAndDown }: { mdAndDown: Ref<boolean> } = useDisplay();
   const organisationStore: OrganisationStore = useOrganisationStore();
 
   const router: Router = useRouter();
@@ -15,6 +17,10 @@
 
   const navigateToSchulenÜbersicht = (): void => {
     router.push({ name: 'schule-management' });
+  };
+
+  const goToEditSchule = (): void => {
+    router.push({ name: 'schule-edit', params: { id: currentSchuleId } });
   };
 
   onMounted(async () => {
@@ -85,6 +91,21 @@
                     test-id="schule-itslearning-enabled"
                   />
                 </div>
+              </v-col>
+            </v-row>
+            <v-row class="justify-end">
+              <v-col
+                cols="12"
+                md="auto"
+              >
+                <v-btn
+                  class="primary"
+                  data-testid="schule-edit-button"
+                  :block="mdAndDown"
+                  @click="goToEditSchule"
+                >
+                  {{ $t('edit') }}
+                </v-btn>
               </v-col>
             </v-row>
           </div>
