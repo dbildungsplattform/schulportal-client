@@ -252,6 +252,17 @@ const routes: readonly RouteRecordRaw[] = [
     },
   },
   {
+    path: '/admin/schulen/:id',
+    name: 'schule-details',
+    component: () => import('../views/admin/organisationen/SchuleDetailsView.vue'),
+    meta: {
+      layout: 'AdminLayout',
+      requiresAuth: true,
+      requiredStepUpLevel: StepUpLevel.GOLD,
+      requiresPermission: 'schulverwaltung',
+    },
+  },
+  {
     path: '/admin/schultraeger',
     name: 'schultraeger-management',
     component: () => import('../views/admin/organisationen/SchultraegerManagementView.vue'),

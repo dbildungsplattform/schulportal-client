@@ -756,6 +756,8 @@
       "deleteSchuleNotice": "Die Schule kann nicht gelöscht werden, da folgende Bedingung nicht erfüllt ist:",
       "discard": "Schule verwerfen",
       "dienststellennummer": "Dienststellennummer",
+      "edit": "Schule bearbeiten",
+      "emailAdresse": "E-Mail-Adresse",
       "enterDienststellennummer": "Dienststellennummer eingeben",
       "enterSchulname": "Schulname eingeben",
       "title": {
@@ -790,6 +792,7 @@
       "loadingErrorText": "Es konnten keine Schuldaten geladen werden.",
       "loadingErrorTitle": "Fehler beim Laden der Schulen",
       "itsLearningStatus": "itslearning-Status",
+      "itsLearningActive": "itslearning freigeschaltet",
       "retransmit": "Erneut übertragen",
       "retransmitSchuleConfirmationMessage": "Wollen Sie die Daten der Schule {schulname} erneut an itslearning übertragen?",
       "management": "Schulverwaltung",
