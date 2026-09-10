@@ -19,7 +19,7 @@ let rolleStore: RolleStore;
 let searchFilterStore: SearchFilterStore;
 let serviceProviderStore: ServiceProviderStore;
 
-beforeEach(() => {
+beforeEach(async (): Promise<void> => {
   document.body.innerHTML = `
     <div>
       <div id="app"></div>
@@ -30,6 +30,8 @@ beforeEach(() => {
     history: createWebHistory(),
     routes,
   });
+  router.push('/admin/rollen');
+  await router.isReady();
 
   authStore = useAuthStore();
   authStore.hasAngeboteVerwaltenPermission = true;
@@ -56,7 +58,7 @@ beforeEach(() => {
       rollenart: 'LEHR',
       name: 'Lehrer',
       // TODO: remove type casting when generator is fixed
-      merkmale: ['KOPERS_PFLICHT'] as unknown as Set<RollenMerkmal>,
+      merkmale: ['KOPERS_PFLICHT'],
       systemrechte: [
         { name: RollenSystemRechtEnum.RollenVerwalten, isTechnical: false },
       ] as unknown as Set<SystemRechtResponse>,
@@ -82,7 +84,7 @@ beforeEach(() => {
       rollenart: 'LERN',
       name: 'SuS',
       // TODO: remove type casting when generator is fixed
-      merkmale: [] as unknown as Set<RollenMerkmal>,
+      merkmale: [],
       systemrechte: [] as unknown as Set<SystemRechtResponse>,
       createdAt: '2022',
       updatedAt: '2022',
@@ -102,7 +104,7 @@ beforeEach(() => {
       rollenart: 'LERN',
       name: 'Rolle ohne Namen',
       // TODO: remove type casting when generator is fixed
-      merkmale: [] as unknown as Set<RollenMerkmal>,
+      merkmale: [],
       systemrechte: [] as unknown as Set<SystemRechtResponse>,
       createdAt: '2022',
       updatedAt: '2022',
@@ -255,6 +257,7 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
+      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
       merkmale: [RollenMerkmal.KopersPflicht],
       rollenarten: undefined,
       organisationenForFilter: undefined,
@@ -273,6 +276,7 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
+      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
       merkmale: undefined,
       rollenarten: [RollenArt.Lehr],
       organisationenForFilter: undefined,
@@ -295,6 +299,7 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
+      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
       merkmale: undefined,
       rollenarten: undefined,
       organisationenForFilter: orgs,
@@ -347,6 +352,7 @@ describe('RolleManagementView', () => {
         offset: 0,
         limit: 30,
         searchString: '',
+        systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
         merkmale: undefined,
         rollenarten: undefined,
         organisationenForFilter: undefined,
@@ -453,6 +459,7 @@ describe('RolleManagementView', () => {
       merkmale: undefined,
       rollenarten: undefined,
       organisationenForFilter: undefined,
+      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
     });
   });
 

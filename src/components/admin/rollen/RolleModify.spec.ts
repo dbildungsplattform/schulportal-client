@@ -31,7 +31,7 @@ const rolleLern: RolleResponse = DoFactory.getRolleResponse({
 
 const kopersRolle: RolleResponse = DoFactory.getRolleResponse({
   administeredBySchulstrukturknoten: organisation.id,
-  merkmale: new Set<RollenMerkmal>([RollenMerkmal.KopersPflicht]),
+  merkmale: [RollenMerkmal.KopersPflicht],
   systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
   rollenart: RollenArt.Lern,
 });

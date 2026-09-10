@@ -5,7 +5,7 @@
   import { useDisplay } from 'vuetify';
 
   import {
-    DbiamApplyRollenerweiterungMultiErrorRolleIdsWithI18nKeysInnerI18nKeyEnum,
+    DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum,
     RollenSystemRechtEnum,
   } from '@/api-client/generated';
   import SchulPortalLogo from '@/assets/logos/Schulportal_SH_Bildmarke_RGB_Anwendung_HG_Blau.svg';
@@ -21,6 +21,7 @@
   import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
   import {
     RollenArt,
+    RollenMerkmal,
     useRolleStore,
     type RolleStore,
     type RolleWithServiceProvidersResponse,
@@ -118,7 +119,7 @@
       rolleStore.allRollen.map((r: RolleWithServiceProvidersResponse) => [r.id, r]),
     );
     return Array.from(serviceProviderStore.errors.entries()).map(
-      ([rolleId, code]: [string, DbiamApplyRollenerweiterungMultiErrorRolleIdsWithI18nKeysInnerI18nKeyEnum]) => {
+      ([rolleId, code]: [string, DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum]) => {
         const rolle: RolleWithServiceProvidersResponse | undefined = mappedRollen.get(rolleId);
         return {
           rolle: rolle?.name ?? rolleId,
@@ -142,10 +143,17 @@
 
   const availableRollen: ComputedRef<RolleForSelection[]> = computed(() =>
     (rolleStore.allRollen ?? [])
-      .filter((r: RolleWithServiceProvidersResponse) =>
-        ([RollenArt.Lehr, RollenArt.Lern, RollenArt.Leit] as RollenArt[]).includes(r.rollenart),
+      .filter(
+        (r: RolleWithServiceProvidersResponse) =>
+          ([RollenArt.Lehr, RollenArt.Lern, RollenArt.Leit] as RollenArt[]).includes(r.rollenart) ||
+          r.merkmale.includes(RollenMerkmal.MptRolle),
       )
-      .map((r: RolleWithServiceProvidersResponse) => ({ id: r.id, name: r.name, rollenart: r.rollenart })),
+      .map(({ id, name, rollenart, merkmale }: RolleWithServiceProvidersResponse) => ({
+        id,
+        name,
+        rollenart,
+        merkmale,
+      })),
   );
 
   const hasEditPermissions: ComputedRef<boolean> = computed(() => {
@@ -198,7 +206,7 @@
     if (organisationIdFromQuery.value) {
       await rolleStore.getAllRollen({
         organisationContextForOperation: organisationIdFromQuery.value,
-        systemrechte: [RollenSystemRechtEnum.RollenErweitern],
+        systemrechte: [RollenSystemRechtEnum.RollenErweitern, RollenSystemRechtEnum.MptRollenVerwalten],
       });
     }
     selectedRolleIds.value = [...existingRolleIds.value];

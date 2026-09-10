@@ -145,7 +145,7 @@
     const personId: string | null | undefined = authStore.currentUser?.personId;
 
     // Load all service providers first
-    await serviceProviderStore.getAvailableServiceProviders();
+    await serviceProviderStore.getMyServiceProviders();
 
     // Load all logos in parallel and assign them to the respective service providers
     const logoPromises: Promise<void>[] = serviceProviderStore.availableServiceProviders.map(

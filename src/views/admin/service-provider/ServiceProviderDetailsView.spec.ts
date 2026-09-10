@@ -107,6 +107,7 @@ afterEach(() => {
   vi.clearAllTimers();
   vi.useRealTimers();
   wrapper?.unmount();
+  wrapper = null;
 });
 
 describe('ServiceProviderDetailsView', () => {

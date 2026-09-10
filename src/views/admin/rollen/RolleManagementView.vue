@@ -119,6 +119,7 @@
       offset: (searchFilterStore.rollenPage - 1) * searchFilterStore.rollenPerPage,
       limit: searchFilterStore.rollenPerPage,
       searchString: searchFilterStore.searchStringForRollen ?? undefined,
+      systemrechte: [RollenSystemRecht.RollenVerwalten, RollenSystemRecht.MptRollenVerwalten],
       organisationenForFilter: searchFilterStore.selectedOrganisationenForRollen?.length
         ? searchFilterStore.selectedOrganisationenForRollen
         : undefined,

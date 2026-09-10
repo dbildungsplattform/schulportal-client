@@ -3,6 +3,11 @@
 # src/api-client/generated
 src/api-client/storageDir
 
+# Environment variables
+.env
+.env.local
+.env.mcp
+
 # Logs
 logs
 *.log

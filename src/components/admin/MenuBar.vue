@@ -249,6 +249,15 @@
         to="/admin/rollen/new"
         @click="closeMenuOnMobile"
       />
+      <v-list-item
+        v-if="authStore.hasMptRollenVerwaltenPermission"
+        class="menu-bar-sub-item caption"
+        data-testid="mpt-rolle-management-menu-item"
+        prepend-icon="mdi-format-list-bulleted"
+        :title="$t('admin.rolle.mptManagement.menuItem')"
+        to="/admin/rollen/mpt"
+        @click="handleMenuItemClick('/admin/rollen/mpt')"
+      />
     </div>
 
     <!-- Angebotsverwaltung -->
@@ -294,6 +303,23 @@
         to="/admin/angebote/new"
         @click="closeMenuOnMobile"
       ></v-list-item>
+    </div>
+
+    <!-- Rollenverwaltung (MPT only) -->
+    <div v-if="authStore.hasMptRollenVerwaltenPermission && !authStore.hasRollenverwaltungPermission">
+      <v-list-item
+        class="menu-bar-main-item headline-2"
+        data-testid="mpt-rolle-section-title"
+        :title="$t('admin.rolle.management')"
+      />
+      <v-list-item
+        class="menu-bar-sub-item caption"
+        data-testid="mpt-rolle-management-only-menu-item"
+        prepend-icon="mdi-format-list-bulleted"
+        :title="$t('admin.rolle.mptManagement.menuItem')"
+        to="/admin/rollen/mpt"
+        @click="handleMenuItemClick('/admin/rollen/mpt')"
+      />
     </div>
 
     <!-- Schulverwaltung -->

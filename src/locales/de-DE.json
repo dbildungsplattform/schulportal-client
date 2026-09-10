@@ -25,6 +25,7 @@
     "groupLehr": "Lehrkräfte",
     "groupLern": "Schüler",
     "groupLeit": "Administratoren",
+    "groupMPT": "MPT-Rollen",
     "name": "Name",
     "nameOfAngebotInTheStartPage": "Name des Angebots auf der Startseite der Anwender",
     "url": "URL",
@@ -652,26 +653,41 @@
       "loadingErrorText": "Es konnten keine Rollendaten geladen werden.",
       "loadingErrorTitle": "Fehler beim Laden der Rolle",
       "management": "Rollenverwaltung",
+      "mptManagement": {
+        "title": "Rollen für multiprofessionelle Teams verwalten",
+        "menuItem": "Rollen für multiprofessionelle Teams verwalten",
+        "noSchuleSelected": "Bitte wählen Sie zunächst im Filter eine Schule aus"
+      },
+      "mptDetails": {
+        "title": "Rolle bearbeiten",
+        "editOffers": "Angebotsauswahl bearbeiten",
+        "saveSuccess": "Die Angebotsauswahl wurde erfolgreich gespeichert.",
+        "loadErrorTitle": "Fehler beim Laden der Rolle und ihrer Angebotsauswahl",
+        "loadErrorText": "Die Rolle und ihre Angebotsauswahl konnten nicht geladen werden.",
+        "saveErrorTitle": "Angebotsauswahl konnte nicht gespeichert werden",
+        "saveErrorText": "Beim Speichern der Angebotsauswahl ist ein Fehler aufgetreten."
+      },
       "mappingFrontBackEnd": {
         "systemrechte": {
+          "ANGEBOTE_EINGESCHRAENKT_VERWALTEN": "Darf Angebote eingeschränkt verwalten",
+          "ANGEBOTE_VERWALTEN": "Darf Angebote verwalten",
+          "BULK_VERWALTEN": "Darf Mehrfachbearbeitung ausführen",
+          "EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN": "Darf eingeschränkt neue Benutzer erstellen",
+          "HINWEISE_BEARBEITEN": "Darf Hinweise bearbeiten",
           "IMPORT_DURCHFUEHREN": "Darf Import durchführen",
-          "ROLLEN_VERWALTEN": "Darf Rollen verwalten",
+          "KLASSEN_VERWALTEN": "Darf Klassen verwalten",
+          "LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN": "Darf Landesbedienstete suchen und hinzufügen",
+          "MPT_ROLLEN_VERWALTEN": "Darf Rollen für multiprofessionelle Teams verwalten",
+          "PERSONEN_ANLEGEN": "Darf Benutzer anlegen",
           "PERSONEN_SOFORT_LOESCHEN": "Darf Benutzer sofort löschen",
           "PERSONEN_VERWALTEN": "Darf Benutzer verwalten",
-          "SCHULEN_VERWALTEN": "Darf Schulen verwalten",
-          "KLASSEN_VERWALTEN": "Darf Klassen verwalten",
-          "SCHULTRAEGER_VERWALTEN": "Darf Schulträger verwalten",
           "PERSON_SYNCHRONISIEREN": "Darf Benutzer synchronisieren",
-          "PERSONEN_ANLEGEN": "Darf Benutzer anlegen",
-          "BULK_VERWALTEN": "Darf Mehrfachbearbeitung ausführen",
-          "SCHULPORTAL_VERWALTEN": "Darf Portal verwalten",
-          "HINWEISE_BEARBEITEN": "Darf Hinweise bearbeiten",
-          "LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN": "Darf Landesbedienstete suchen und hinzufügen",
-          "EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN": "Darf eingeschränkt neue Benutzer erstellen",
           "ROLLEN_ERWEITERN": "Darf Rollen schulspezifisch erweitern",
-          "ANGEBOTE_VERWALTEN": "Darf Angebote verwalten",
-          "ANGEBOTE_EINGESCHRAENKT_VERWALTEN": "Darf Angebote eingeschränkt verwalten",
-          "SCHULISCHE_VIDIS_ANGEBOTE_ABRUFEN": "Darf schulische VIDIS-Angebote abrufen"
+          "ROLLEN_VERWALTEN": "Darf Rollen verwalten",
+          "SCHULEN_VERWALTEN": "Darf Schulen verwalten",
+          "SCHULISCHE_VIDIS_ANGEBOTE_ABRUFEN": "Darf schulische VIDIS-Angebote abrufen",
+          "SCHULPORTAL_VERWALTEN": "Darf Portal verwalten",
+          "SCHULTRAEGER_VERWALTEN": "Darf Schulträger verwalten"
         },
         "rollenarten": {
           "LERN": "Lern",
@@ -686,7 +702,8 @@
         },
         "merkmale": {
           "BEFRISTUNG_PFLICHT": "Befristung ist Pflichtangabe",
-          "KOPERS_PFLICHT": "KoPers.-Nr. ist Pflichtangabe"
+          "KOPERS_PFLICHT": "KoPers.-Nr. ist Pflichtangabe",
+          "MPT_ROLLE": "Ist MPT-Rolle"
         }
       },
       "merkmale": "Merkmale",
