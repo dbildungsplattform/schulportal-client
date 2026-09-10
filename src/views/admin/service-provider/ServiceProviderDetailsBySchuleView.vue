@@ -207,6 +207,7 @@
       await rolleStore.getAllRollen({
         organisationContextForOperation: organisationIdFromQuery.value,
         systemrechte: [RollenSystemRechtEnum.RollenErweitern, RollenSystemRechtEnum.MptRollenVerwalten],
+        rollenarten: serviceProviderStore.currentServiceProvider?.rollenartenWhitelist ?? [],
       });
     }
     selectedRolleIds.value = [...existingRolleIds.value];

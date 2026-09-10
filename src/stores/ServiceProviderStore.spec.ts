@@ -151,7 +151,8 @@ describe('serviceProviderStore', () => {
 
   describe('getAssignableServiceProvidersForRolleByOrganisationId', () => {
     const schulstrukturknotenOfRolle: string = faker.string.uuid();
-    const url: string = `/api/provider/assignable-for-rolle?schulstrukturknotenOfRolle=${schulstrukturknotenOfRolle}`;
+    const rollenArt: RollenArt = RollenArt.Lehr;
+    const url: string = `/api/provider/assignable-for-rolle?schulstrukturknotenOfRolle=${schulstrukturknotenOfRolle}&rollenArt=${rollenArt}`;
 
     it('should load service providers and update state', async () => {
       const mockResponse: StartPageServiceProvider[] = [
@@ -160,7 +161,10 @@ describe('serviceProviderStore', () => {
       ];
       mockadapter.onGet(url).replyOnce(200, mockResponse);
       const getAllServiceProvidersPromise: Promise<void> =
-        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(schulstrukturknotenOfRolle);
+        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
+          schulstrukturknotenOfRolle,
+          rollenArt,
+        );
       expect(serviceProviderStore.loading).toBe(true);
       await getAllServiceProvidersPromise;
       expect(serviceProviderStore.allServiceProviders).toEqual([...mockResponse]);
@@ -170,7 +174,10 @@ describe('serviceProviderStore', () => {
     it('should handle string error', async () => {
       mockadapter.onGet(url).replyOnce(500, 'some mock server error');
       const getAllServiceProvidersPromise: Promise<void> =
-        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(schulstrukturknotenOfRolle);
+        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
+          schulstrukturknotenOfRolle,
+          rollenArt,
+        );
       expect(serviceProviderStore.loading).toBe(true);
       await getAllServiceProvidersPromise;
       expect(serviceProviderStore.allServiceProviders).toEqual([]);
@@ -181,7 +188,10 @@ describe('serviceProviderStore', () => {
     it('should handle error code', async () => {
       mockadapter.onGet(url).replyOnce(500, { code: 'some mock server error' });
       const getAllServiceProvidersPromise: Promise<void> =
-        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(schulstrukturknotenOfRolle);
+        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
+          schulstrukturknotenOfRolle,
+          rollenArt,
+        );
       expect(serviceProviderStore.loading).toBe(true);
       await getAllServiceProvidersPromise;
       expect(serviceProviderStore.allServiceProviders).toEqual([]);
