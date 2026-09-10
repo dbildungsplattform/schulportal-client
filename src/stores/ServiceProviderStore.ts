@@ -47,6 +47,7 @@ export type StartPageServiceProvider = BaseServiceProvider & {
   url?: string;
   hasLogo: boolean;
   target: string;
+  externalSystem: string;
   // Could be undefined if the logo is not provided by the backend
   logoUrl?: string;
   logoId?: number;
@@ -156,7 +157,7 @@ export type UpdatedServiceProvider = BaseServiceProvider & {
 
 type ServiceProviderState = {
   allServiceProviders: StartPageServiceProvider[];
-  availableServiceProviders: StartPageServiceProvider[];
+  assignedServiceProviders: StartPageServiceProvider[];
   manageableServiceProviders: ManageableServiceProviderSimpleListEntryResponse[];
   manageableServiceProvidersForOrganisation: ManageableServiceProviderListEntry[];
   serviceProvidersForRollenVerwaltung: ServiceProviderIdNameResponse[];
@@ -203,7 +204,7 @@ function containsMultiError(error: unknown): error is AxiosError<DbiamApplyRolle
 type ServiceProviderGetters = object;
 type ServiceProviderActions = {
   getAssignableServiceProvidersForRolleByOrganisationId: (administeredBySchulstrukturknoten: string) => Promise<void>;
-  getAvailableServiceProviders: () => Promise<void>;
+  getServiceProvidersByPersonId: (personId: string) => Promise<void>;
   getManageableServiceProviders: (filter: ManageableServiceProviderFilter) => Promise<void>;
   getManageableServiceProvidersForOrganisation: (
     organisationId: string,
@@ -239,7 +240,7 @@ export const useServiceProviderStore: StoreDefinition<
   state: (): ServiceProviderState => {
     return {
       allServiceProviders: [],
-      availableServiceProviders: [],
+      assignedServiceProviders: [],
       manageableServiceProviders: [],
       manageableServiceProvidersForOrganisation: [],
       serviceProvidersForRollenVerwaltung: [],
@@ -274,12 +275,13 @@ export const useServiceProviderStore: StoreDefinition<
       }
     },
 
-    async getAvailableServiceProviders() {
+    async getServiceProvidersByPersonId(personId: string) {
       this.loading = true;
+      this.assignedServiceProviders = [];
       try {
         const { data }: { data: StartPageServiceProvider[] } =
-          await serviceProviderApi.providerControllerGetAvailableServiceProviders();
-        this.availableServiceProviders = data;
+          await serviceProviderApi.providerControllerGetServiceProvidersByPersonId(personId);
+        this.assignedServiceProviders = data;
       } catch (error: unknown) {
         this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
       } finally {

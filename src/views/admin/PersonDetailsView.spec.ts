@@ -1,4 +1,4 @@
-import { EmailAddressStatus, type SystemRechtResponse } from '@/api-client/generated';
+import { EmailAddressStatus, ServiceProviderSystem, type SystemRechtResponse } from '@/api-client/generated';
 import type { TranslatedRolleWithAttrs } from '@/composables/useRollen';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore, type PersonenkontextRolleFields, type UserInfo } from '@/stores/AuthStore';
@@ -12,10 +12,12 @@ import {
 import { usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
 import { usePersonStore, type Personendatensatz, type PersonStore } from '@/stores/PersonStore';
 import { RollenArt, RollenMerkmal, useRolleStore, type Rolle, type RolleStore } from '@/stores/RolleStore';
+import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
 import {
   useTwoFactorAuthentificationStore,
   type TwoFactorAuthentificationStore,
 } from '@/stores/TwoFactorAuthentificationStore';
+import type { Person } from '@/stores/types/Person';
 import { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
 import { adjustDateForTimezoneAndFormat } from '@/utils/date';
 import { parseUserLock, PersonLockOccasion, type UserLock } from '@/utils/lock';
@@ -25,7 +27,6 @@ import { expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component, type ComputedRef, type DefineComponent } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import PersonDetailsView from './PersonDetailsView.vue';
-import type { Person } from '@/stores/types/Person';
 
 let wrapper: VueWrapper | null = null;
 let router: Router;
@@ -37,6 +38,7 @@ const personStore: PersonStore = usePersonStore();
 const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
 const twoFactorAuthenticationStore: TwoFactorAuthentificationStore = useTwoFactorAuthentificationStore();
 const rolleStore: RolleStore = useRolleStore();
+const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
 
 const mockPerson: Personendatensatz = {
   person: DoFactory.getPerson(),
@@ -156,6 +158,7 @@ describe('PersonDetailsView', () => {
     twoFactorAuthenticationStore.$reset();
     configStore.$reset();
     rolleStore.$reset();
+    serviceProviderStore.$reset();
 
     personenkontextStore.workflowStepResponse = {
       organisations: [
@@ -657,6 +660,9 @@ describe('PersonDetailsView', () => {
 
   test('it shows device password template for rollenart lehr', async () => {
     personStore.personenuebersicht = mockPersonenuebersichtLehr;
+    serviceProviderStore.assignedServiceProviders = [
+      DoFactory.getServiceProviderResponse({ externalSystem: ServiceProviderSystem.Uem }),
+    ];
     setCurrentPerson(EmailAddressStatus.Enabled);
     await nextTick();
     if (!wrapper) {
@@ -726,6 +732,7 @@ describe('PersonDetailsView', () => {
     organisationStore.fetchSchuleDetailsForKlassen = vi.fn().mockResolvedValue(undefined);
     personenkontextStore.processWorkflowStep = vi.fn().mockResolvedValue(undefined);
     personenkontextStore.updatePersonenkontexte = vi.fn().mockResolvedValue(undefined);
+    serviceProviderStore.getServiceProvidersByPersonId = vi.fn().mockResolvedValue(undefined);
 
     // No existing Zuordnungen for the user for easier testing
     const mockPersonenuebersichtForAddZuordnung: PersonenUebersicht = DoFactory.getPersonenUebersicht(undefined, []);
@@ -814,6 +821,8 @@ describe('PersonDetailsView', () => {
     }
     await flushPromises();
 
+    // Assigned providers are derived from the person's contexts, so they must be refetched after a create.
+    expect(serviceProviderStore.getServiceProvidersByPersonId).toHaveBeenCalled();
     expect(wrapper?.find('[data-testid="zuordnung-edit-button"]').isVisible()).toBe(true);
   });
 
@@ -989,6 +998,8 @@ describe('PersonDetailsView', () => {
   });
 
   test('renders form to delete Zuordnung and triggers submit', async () => {
+    serviceProviderStore.getServiceProvidersByPersonId = vi.fn().mockResolvedValue(undefined);
+
     await wrapper?.find('[data-testid="zuordnung-edit-button"]').trigger('click');
     await nextTick();
 
@@ -1032,6 +1043,8 @@ describe('PersonDetailsView', () => {
     }
     await flushPromises();
 
+    // Assigned providers are derived from the person's contexts, so they must be refetched after a delete.
+    expect(serviceProviderStore.getServiceProvidersByPersonId).toHaveBeenCalled();
     expect(wrapper?.find('[data-testid="zuordnung-edit-button"]').isVisible()).toBe(true);
   });
 

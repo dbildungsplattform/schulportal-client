@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import type { PersonTimeLimitInfoResponse } from '@/api-client/generated';
+  import { ServiceProviderTarget, type PersonTimeLimitInfoResponse } from '@/api-client/generated';
   import SpshBanner from '@/components/alert/SpshBanner.vue';
   import ServiceProviderCategory from '@/components/layout/ServiceProviderCategory.vue';
   import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
@@ -10,8 +10,8 @@
   import {
     ServiceProviderKategorie,
     useServiceProviderStore,
-    type StartPageServiceProvider,
     type ServiceProviderStore,
+    type StartPageServiceProvider,
   } from '@/stores/ServiceProviderStore';
   import {
     useTwoFactorAuthentificationStore,
@@ -44,29 +44,32 @@
     kategorie: ServiceProviderKategorie,
   ): StartPageServiceProvider[] {
     return providers
-      .filter((provider: StartPageServiceProvider) => provider.kategorie === kategorie)
+      .filter(
+        (provider: StartPageServiceProvider) =>
+          provider.kategorie === kategorie && provider.target !== ServiceProviderTarget.None,
+      )
       .sort((a: StartPageServiceProvider, b: StartPageServiceProvider) => a.name.localeCompare(b.name));
   }
 
   // Filter service providers by category "EMAIL"
   const emailServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.availableServiceProviders, ServiceProviderKategorie.Email),
+    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Email),
   );
   // Filter service providers by category "UNTERRICHT"
   const classServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.availableServiceProviders, ServiceProviderKategorie.Unterricht),
+    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Unterricht),
   );
   // Filter service providers by category "VERWALTUNG"
   const administrationServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.availableServiceProviders, ServiceProviderKategorie.Verwaltung),
+    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Verwaltung),
   );
   // Filter service providers by category "SCHULISCH"
   const schulischServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.availableServiceProviders, ServiceProviderKategorie.Schulisch),
+    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Schulisch),
   );
   // Filter service providers by category "HINWEISE"
   const hintsServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.availableServiceProviders, ServiceProviderKategorie.Hinweise),
+    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Hinweise),
   );
 
   function getHasToken(): boolean {
@@ -145,10 +148,10 @@
     const personId: string | null | undefined = authStore.currentUser?.personId;
 
     // Load all service providers first
-    await serviceProviderStore.getAvailableServiceProviders();
+    await serviceProviderStore.getServiceProvidersByPersonId(personId!);
 
     // Load all logos in parallel and assign them to the respective service providers
-    const logoPromises: Promise<void>[] = serviceProviderStore.availableServiceProviders.map(
+    const logoPromises: Promise<void>[] = serviceProviderStore.assignedServiceProviders.map(
       async (p: StartPageServiceProvider) => {
         if (p.logoId) {
           p.logoUrl = getLogoPath(p.logoId);

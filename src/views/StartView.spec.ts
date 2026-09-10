@@ -94,11 +94,11 @@ beforeEach(() => {
 
   authStore = useAuthStore();
   serviceProviderStore = useServiceProviderStore();
-  serviceProviderStore.getAvailableServiceProviders = vi.fn(() => Promise.resolve());
+  serviceProviderStore.getServiceProvidersByPersonId = vi.fn(() => Promise.resolve());
   personStore = usePersonStore();
   personInfoStore = usePersonInfoStore();
   meldungStore = useMeldungStore();
-  serviceProviderStore.availableServiceProviders = mockProviders;
+  serviceProviderStore.assignedServiceProviders = mockProviders;
 
   authStore.hasPersonenverwaltungPermission = false;
   authStore.hasSchulverwaltungPermission = false;
@@ -229,7 +229,7 @@ describe('StartView', () => {
   });
 
   test('filterSortProviders sorts service providers alphabetically', () => {
-    serviceProviderStore.availableServiceProviders = mockProviders;
+    serviceProviderStore.assignedServiceProviders = mockProviders;
 
     interface StartViewComponent {
       filterSortProviders: (
@@ -248,8 +248,58 @@ describe('StartView', () => {
     ]);
   });
 
+  test('filterSortProviders filters out service providers with target NONE', () => {
+    const providersWithNone: StartPageServiceProvider[] = [
+      ...mockProviders,
+      {
+        id: '99',
+        name: 'Hidden Provider',
+        target: 'NONE',
+        url: '',
+        kategorie: ServiceProviderKategorie.Email,
+        hasLogo: false,
+        requires2fa: false,
+      },
+    ];
+
+    interface StartViewComponent {
+      filterSortProviders: (
+        providers: StartPageServiceProvider[],
+        kategorie: ServiceProviderKategorie,
+      ) => StartPageServiceProvider[];
+    }
+
+    const filteredSortProviders: StartPageServiceProvider[] = (
+      wrapper?.vm as unknown as StartViewComponent
+    ).filterSortProviders(providersWithNone, ServiceProviderKategorie.Email);
+
+    expect(filteredSortProviders.map((p: StartPageServiceProvider) => p.name)).toEqual([
+      'Not Squarepants',
+      'Spongebob Squarepants',
+    ]);
+  });
+
+  test('it does not render tiles for service providers with target NONE', async () => {
+    serviceProviderStore.assignedServiceProviders = [
+      ...mockProviders,
+      {
+        id: '99',
+        name: 'Hidden Provider',
+        target: 'NONE',
+        url: '',
+        kategorie: ServiceProviderKategorie.Email,
+        hasLogo: false,
+        requires2fa: false,
+      },
+    ];
+    await nextTick();
+
+    expect(wrapper?.find('[data-testid="service-provider-card-99"]').exists()).toBe(false);
+    expect(wrapper?.find('[data-testid="service-provider-card-2"]').exists()).toBe(true);
+  });
+
   test('it renders category title for class service providers when providers exist', async () => {
-    serviceProviderStore.availableServiceProviders = [
+    serviceProviderStore.assignedServiceProviders = [
       {
         id: '4',
         name: 'Moodle',
@@ -267,7 +317,7 @@ describe('StartView', () => {
   });
 
   test('it renders empty category title for class service providers when no providers exist', async () => {
-    serviceProviderStore.availableServiceProviders = mockProviders.filter(
+    serviceProviderStore.assignedServiceProviders = mockProviders.filter(
       (p: StartPageServiceProvider) => p.kategorie !== 'UNTERRICHT',
     );
     await nextTick();
@@ -278,7 +328,7 @@ describe('StartView', () => {
   });
 
   test('it renders category titles for all categories when providers exist', async () => {
-    serviceProviderStore.availableServiceProviders = [
+    serviceProviderStore.assignedServiceProviders = [
       ...mockProviders,
       {
         id: '5',

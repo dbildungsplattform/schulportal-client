@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import type { LockUserBodyParams } from '@/api-client/generated';
+  import { ServiceProviderSystem, type LockUserBodyParams } from '@/api-client/generated';
   import SpshTooltip from '@/components/admin/SpshTooltip.vue';
   import KlasseChange from '@/components/admin/klassen/KlasseChange.vue';
   import BefristungInput from '@/components/admin/personen/BefristungInput.vue';
@@ -39,6 +39,11 @@
     type RolleResponse,
   } from '@/stores/PersonenkontextStore';
   import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
+  import {
+    StartPageServiceProvider,
+    useServiceProviderStore,
+    type ServiceProviderStore,
+  } from '@/stores/ServiceProviderStore';
   import {
     TokenKind,
     useTwoFactorAuthentificationStore,
@@ -104,6 +109,7 @@
   const organisationStore: OrganisationStore = useOrganisationStore();
   const twoFactorAuthentificationStore: TwoFactorAuthentificationStore = useTwoFactorAuthentificationStore();
   const configStore: ConfigStore = useConfigStore();
+  const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
 
   const devicePassword: Ref<string> = ref('');
   const password: Ref<string> = ref('');
@@ -342,6 +348,7 @@
 
   let closeCreateSuccessDialog = (): void => {
     personStore.getPersonenuebersichtById(currentPersonId);
+    serviceProviderStore.getServiceProvidersByPersonId(currentPersonId);
     createSuccessDialogVisible.value = false;
     isEditActive.value = false;
     pendingCreation.value = false;
@@ -349,6 +356,7 @@
 
   let closeDeleteSuccessDialog = (): void => {
     personStore.getPersonenuebersichtById(currentPersonId);
+    serviceProviderStore.getServiceProvidersByPersonId(currentPersonId);
     deleteSuccessDialogVisible.value = false;
     isEditActive.value = false;
     pendingDeletion.value = false;
@@ -610,12 +618,10 @@
     );
   });
 
-  // Used to show device password block
-  const hasLehrRolle: ComputedRef<boolean> = computed(() => {
-    return (
-      !!zuordnungenWithPendingChanges.value?.find((zuordnung: Zuordnung) => {
-        return zuordnung.rollenArt === RollenArt.Lehr;
-      }) || false
+  // Used to show device password block; the UEM Angebot is modelled as a service provider with target NONE
+  const hasUEMServiceProvider: ComputedRef<boolean> = computed(() => {
+    return serviceProviderStore.assignedServiceProviders.some(
+      (serviceProvider: StartPageServiceProvider) => serviceProvider.externalSystem === ServiceProviderSystem.Uem,
     );
   });
 
@@ -1614,6 +1620,8 @@
     const twoFARequirementPromise: Promise<void> = twoFactorAuthentificationStore.get2FARequirement(currentPersonId);
     const personByIdPromise: Promise<void> = personStore.getPersonById(currentPersonId);
     const personUebersichtPromise: Promise<void> = personStore.getPersonenuebersichtById(currentPersonId);
+    const assignedServiceProvidersPromise: Promise<void> =
+      serviceProviderStore.getServiceProvidersByPersonId(currentPersonId);
     const workflowStepPromise: Promise<void> = personenkontextStore.processWorkflowStep({
       personId: currentPersonId,
       operationContext: OperationContext.PERSON_BEARBEITEN,
@@ -1624,6 +1632,7 @@
       twoFARequirementPromise,
       personByIdPromise,
       personUebersichtPromise,
+      assignedServiceProvidersPromise,
       workflowStepPromise,
       get2FAStatePromise,
     ]);
@@ -2894,14 +2903,14 @@
             <v-col v-else-if="personStore.loading"> <v-progress-circular indeterminate /> </v-col>
           </v-row> </v-container
         ><v-divider
-          v-if="hasLehrRolle"
+          v-if="hasUEMServiceProvider"
           class="border-opacity-100 rounded my-6 mx-4"
           color="#E5EAEF"
           thickness="6"
         />
         <!-- reset device password -->
         <v-container
-          v-if="hasLehrRolle"
+          v-if="hasUEMServiceProvider"
           data-testid="device-password"
         >
           <v-row class="ml-md-16">
