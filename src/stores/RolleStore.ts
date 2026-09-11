@@ -242,9 +242,9 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
         try {
           const response: AxiosResponse<RolleControllerFindRollenAvailableForPersonAdministration200Response> =
             await rolleApi.rolleControllerFindRollenAvailableForPersonAdministration(
-              params.searchStr,
-              params.limit,
               params.offset,
+              params.limit,
+              params.searchStr,
               params.organisationIds,
               params.systemrechte,
             );
