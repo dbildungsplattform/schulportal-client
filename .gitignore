@@ -3,8 +3,9 @@
 # src/api-client/generated
 src/api-client/storageDir
 
-# exclude skills directory to allow custom configuration
+# exclude directories to allow custom configuration
 .github/skills
+.github/prompts
 
 # Logs
 logs
