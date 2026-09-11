@@ -3,6 +3,10 @@
 # src/api-client/generated
 src/api-client/storageDir
 
+# exclude directories to allow custom configuration
+.github/skills
+.github/prompts
+
 # Logs
 logs
 *.log
