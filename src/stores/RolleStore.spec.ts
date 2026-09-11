@@ -17,6 +17,11 @@ import { DoFactory } from 'test/DoFactory';
 
 const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
 
+// The generated client bakes query params into the request URL, so they have to be parsed back out.
+function getRequestQuery(index: number): URLSearchParams {
+  return new URL(mockadapter.history.get[index]!.url!, 'http://localhost').searchParams;
+}
+
 describe('rolleStore', () => {
   let rolleStore: RolleStore;
   beforeEach(() => {
@@ -231,11 +236,7 @@ describe('rolleStore', () => {
         items: [DoFactory.getRolleResponse()],
       };
 
-      mockadapter
-        .onGet(
-          '/api/rolle/for-person-administration?searchStr=Lehr&limit=25&offset=0&organisationIds=schule-1&systemrechte=PERSONEN_VERWALTEN',
-        )
-        .replyOnce(200, mockResponse);
+      mockadapter.onGet(/^\/api\/rolle\/for-person-administration/).replyOnce(200, mockResponse);
 
       const getRollenForPersonAdministrationPromise: Promise<void> = rolleStore.getRollenForPersonAdministration({
         searchStr: 'Lehr',
@@ -247,12 +248,18 @@ describe('rolleStore', () => {
       expect(rolleStore.loading).toBe(true);
       await getRollenForPersonAdministrationPromise;
 
+      const query: URLSearchParams = getRequestQuery(0);
+      expect(query.get('searchStr')).toBe('Lehr');
+      expect(query.get('limit')).toBe('25');
+      expect(query.get('offset')).toBe('0');
+      expect(query.getAll('organisationIds')).toEqual(['schule-1']);
+      expect(query.getAll('systemrechte')).toEqual([RollenSystemRechtEnum.PersonenVerwalten]);
       expect(rolleStore.rollenForPersonAdministration).toEqual(mockResponse.items);
       expect(rolleStore.loading).toBe(false);
     });
 
     it('should pass all filter params to the person administration endpoint', async () => {
-      mockadapter.onGet(/\/api\/rolle\/for-person-administration/).replyOnce(200, [], {});
+      mockadapter.onGet(/^\/api\/rolle\/for-person-administration/).replyOnce(200, [], {});
 
       await rolleStore.getRollenForPersonAdministration({
         searchStr: 'SuS',
@@ -262,18 +269,19 @@ describe('rolleStore', () => {
         systemrechte: [RollenSystemRechtEnum.PersonenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
       });
 
-      const requestedUrl: string = mockadapter.history.get[0]!.url!;
-      expect(requestedUrl).toContain('searchStr=SuS');
-      expect(requestedUrl).toContain('limit=30');
-      expect(requestedUrl).toContain('offset=30');
-      expect(requestedUrl).toContain('organisationIds=org-1');
-      expect(requestedUrl).toContain('organisationIds=org-2');
-      expect(requestedUrl).toContain(`systemrechte=${RollenSystemRechtEnum.PersonenVerwalten}`);
-      expect(requestedUrl).toContain(`systemrechte=${RollenSystemRechtEnum.MptRollenVerwalten}`);
+      const query: URLSearchParams = getRequestQuery(0);
+      expect(query.get('searchStr')).toBe('SuS');
+      expect(query.get('limit')).toBe('30');
+      expect(query.get('offset')).toBe('30');
+      expect(query.getAll('organisationIds')).toEqual(['org-1', 'org-2']);
+      expect(query.getAll('systemrechte')).toEqual([
+        RollenSystemRechtEnum.PersonenVerwalten,
+        RollenSystemRechtEnum.MptRollenVerwalten,
+      ]);
     });
 
     it('should handle error when loading rollen for person administration', async () => {
-      mockadapter.onGet(/\/api\/rolle\/for-person-administration/).replyOnce(500, 'some mock server error');
+      mockadapter.onGet(/^\/api\/rolle\/for-person-administration/).replyOnce(500, 'some mock server error');
 
       const getRollenForPersonAdministrationPromise: Promise<void> = rolleStore.getRollenForPersonAdministration({
         searchStr: '',
