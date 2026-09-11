@@ -23,6 +23,7 @@
     type RolleResponse,
     type RolleStore,
     RollenArt,
+    RollenMerkmal,
     RollenSystemRecht,
     useRolleStore,
   } from '@/stores/RolleStore';
@@ -138,6 +139,23 @@
 
   const authStore: AuthStore = useAuthStore();
 
+  const rollenSystemrechteForPersonAdministration: ComputedRef<RollenSystemRecht[]> = computed(() => {
+    const systemrechte: RollenSystemRecht[] = [RollenSystemRecht.PersonenVerwalten];
+    if (authStore.hasMptRollenVerwaltenPermission) {
+      systemrechte.push(RollenSystemRecht.MptRollenVerwalten);
+    }
+    return systemrechte;
+  });
+
+  async function loadRollenForPersonAdministration(searchStr: string): Promise<void> {
+    await rolleStore.getRollenForPersonAdministration({
+      searchStr,
+      limit: 25,
+      organisationIds: selectedOrganisationIds.value,
+      systemrechte: rollenSystemrechteForPersonAdministration.value,
+    });
+  }
+
   // Computed property for generating options dynamically for v-selects
   const actions: ComputedRef<TranslatedObject[]> = computed(() => {
     const actionTypeTitles: Map<OperationType, string> = new Map();
@@ -180,7 +198,7 @@
   });
 
   const rollen: ComputedRef<TranslatedObject[] | undefined> = computed(() => {
-    const filteredRollen: RolleResponse[] = personenkontextStore.filteredRollen?.moeglicheRollen || [];
+    const filteredRollen: RolleResponse[] = rolleStore.rollenForPersonAdministration;
     const uniqueRollenMap: Map<string, RolleResponse> = new Map();
 
     [...filteredRollen, ...selectedRollenObjects.value].forEach((rolle: RolleResponse) => {
@@ -200,9 +218,13 @@
   const rollenForForm: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = useRollen();
 
   // Only Rollen from type LEHR and LERN
-  const lehrAndLernRollen: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = computed(() => {
+  const rollenForRolleModify: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = computed(() => {
     return rollenForForm.value?.filter(
-      (rolle: TranslatedRolleWithAttrs) => rolle.rollenart === RollenArt.Lehr || rolle.rollenart === RollenArt.Lern,
+      (rolle: TranslatedRolleWithAttrs) =>
+        rolle.rollenart === RollenArt.Lehr ||
+        rolle.rollenart === RollenArt.Lern ||
+        // this assumes the incoming rollen have checked MPT-permission
+        rolle.merkmale?.includes(RollenMerkmal.MptRolle),
     );
   });
 
@@ -256,7 +278,7 @@
     // Update selectedRollenObjects based on the new selection
     selectedRollenObjects.value = newValue
       .map((rolleId: string) => {
-        const existingRolle: RolleResponse | undefined = personenkontextStore.filteredRollen?.moeglicheRollen.find(
+        const existingRolle: RolleResponse | undefined = rolleStore.rollenForPersonAdministration.find(
           (r: RolleResponse) => r.id === rolleId,
         );
         return existingRolle;
@@ -284,10 +306,7 @@
     searchFilterStore.setOrganisationFilterForPersonen(newValue ?? []);
     searchFilterStore.setKlasseFilterForPersonen([]);
     selectedKlassen.value = [];
-    await Promise.all([
-      applySearchAndFilters(),
-      personenkontextStore.getPersonenkontextRolleWithFilter('', 25, selectedOrganisationIds.value),
-    ]);
+    await Promise.all([applySearchAndFilters(), loadRollenForPersonAdministration('')]);
   }
 
   function navigateToPersonDetails(_$event: PointerEvent, { item }: { item: PersonRow }): void {
@@ -325,7 +344,7 @@
         sortField: SortField.Familienname,
         sortOrder: SortOrder.Asc,
       }),
-      personenkontextStore.getPersonenkontextRolleWithFilter('', 25, selectedOrganisationIds.value),
+      loadRollenForPersonAdministration(''),
     ]);
   }
 
@@ -339,21 +358,20 @@
     clearTimeout(timerId);
 
     timerId = setTimeout(async () => {
-      await personenkontextStore.getPersonenkontextRolleWithFilter(searchValue, 25, selectedOrganisationIds.value);
+      await loadRollenForPersonAdministration(searchValue);
 
-      // If there are selected rollen not in the search results, add them to filteredRollen
-      const moeglicheRollen: RolleResponse[] = personenkontextStore.filteredRollen?.moeglicheRollen || [];
+      // If there are selected rollen not in the search results, add them to the in-memory list.
+      const moeglicheRollen: RolleResponse[] = rolleStore.rollenForPersonAdministration;
       const missingRollen: RolleResponse[] = searchFilterStore.selectedRollenObjects.filter(
         (rolle: RolleResponse) => !moeglicheRollen.some((r: RolleResponse) => r.id === rolle.id),
       );
 
-      if (missingRollen.length > 0 && personenkontextStore.filteredRollen) {
-        personenkontextStore.filteredRollen = {
-          moeglicheRollen: [...moeglicheRollen, ...missingRollen],
-          total: personenkontextStore.filteredRollen.total + missingRollen.length,
-        };
-        // Update the total count of found Rollen.
-        personenkontextStore.totalFilteredRollen = personenkontextStore.totalFilteredRollen + missingRollen.length;
+      if (missingRollen.length > 0) {
+        rolleStore.rollenForPersonAdministration = [...moeglicheRollen, ...missingRollen];
+        rolleStore.totalRollenForPersonAdministration = Math.max(
+          rolleStore.totalRollenForPersonAdministration,
+          rolleStore.rollenForPersonAdministration.length,
+        );
       }
     }, 500);
   }
@@ -601,7 +619,7 @@
     }
 
     await getPaginatedPersonen(searchFilterStore.personenPage);
-    await personenkontextStore.getPersonenkontextRolleWithFilter('', 25, selectedOrganisationIds.value);
+    await loadRollenForPersonAdministration('');
   });
 </script>
 
@@ -720,9 +738,9 @@
                     $t(
                       'admin.rolle.rollenFound',
                       {
-                        count: personenkontextStore.totalFilteredRollen,
+                        count: rolleStore.totalRollenForPersonAdministration,
                       },
-                      personenkontextStore.totalFilteredRollen,
+                      rolleStore.totalRollenForPersonAdministration,
                     )
                   }}</span
                 >
@@ -883,7 +901,7 @@
             v-if="rolleModifiyDialogVisible"
             ref="person-bulk-rolle-modify"
             :organisationen="organisationenForForm"
-            :rollen="lehrAndLernRollen"
+            :rollen="rollenForRolleModify"
             :is-loading="personenkontextStore.loading"
             :is-dialog-visible="rolleModifiyDialogVisible"
             :error-code="personenkontextStore.errorCode"

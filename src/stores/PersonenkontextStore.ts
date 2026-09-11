@@ -2,7 +2,6 @@ import axiosApiInstance from '@/services/ApiService';
 import { getResponseErrorCode } from '@/utils/errorHandlers';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import {
-  PersonAdministrationApiFactory,
   PersonenkontextApiFactory,
   type DbiamCreatePersonenkontextBodyParams,
   type DbiamCreatePersonWithPersonenkontexteBodyParams,
@@ -10,8 +9,6 @@ import {
   type DBiamPersonenkontextResponse,
   type DBiamPersonResponse,
   type DbiamUpdatePersonenkontexteBodyParams,
-  type FindRollenResponse,
-  type PersonAdministrationApiInterface,
   type PersonenkontextApiInterface,
   type PersonenkontexteUpdateResponse,
   type PersonenkontextWorkflowResponse,
@@ -26,11 +23,6 @@ import { usePersonStore, type PersonStore } from './PersonStore';
 import type { Zuordnung } from './types/Zuordnung';
 
 const personenKontextApi: PersonenkontextApiInterface = PersonenkontextApiFactory(undefined, '', axiosApiInstance);
-const personAdministrationApi: PersonAdministrationApiInterface = PersonAdministrationApiFactory(
-  undefined,
-  '',
-  axiosApiInstance,
-);
 
 const landesbediensteterApi: LandesbediensteterApiInterface = LandesbediensteterApiFactory(
   undefined,
@@ -97,7 +89,6 @@ type PersonenkontextState = {
   updatedPersonenkontexte: PersonenkontexteUpdateResponse | null;
   workflowStepResponse: PersonenkontextWorkflowResponse | null;
   landesbediensteteCommitResponse: PersonenkontexteUpdateResponse | null;
-  filteredRollen: FindRollenResponse | null;
   createdPersonWithKontext: DBiamPersonResponse | null;
   errorCode: string;
   loading: boolean;
@@ -114,7 +105,6 @@ type PersonenkontextActions = {
     updatedPersonenkontexte: PersonenkontextUpdate[] | undefined,
     personalnummer: string,
   ) => Promise<void>;
-  getPersonenkontextRolleWithFilter: (rolleName: string, limit?: number, organisationIds?: string[]) => Promise<void>;
   updatePersonenkontexte: (
     updatedPersonenkontexte: PersonenkontextUpdate[] | undefined,
     personId: string,
@@ -160,7 +150,6 @@ export const usePersonenkontextStore: StoreDefinition<
       workflowStepResponse: null,
       landesbediensteteCommitResponse: null,
       updatedPersonenkontexte: null,
-      filteredRollen: null,
       createdPersonWithKontext: null,
       errorCode: '',
       loading: false,
@@ -234,24 +223,6 @@ export const usePersonenkontextStore: StoreDefinition<
           await landesbediensteterApi.landesbediensteterControllerCommit(personId, body);
 
         this.landesbediensteteCommitResponse = data;
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async getPersonenkontextRolleWithFilter(
-      rolleName: string,
-      limit?: number,
-      organisationIds?: string[],
-    ): Promise<void> {
-      this.loading = true;
-      try {
-        const { data }: { data: FindRollenResponse } =
-          await personAdministrationApi.personAdministrationControllerFindRollen(rolleName, limit, organisationIds);
-        this.filteredRollen = data;
-        this.totalFilteredRollen = this.filteredRollen.total;
       } catch (error: unknown) {
         this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
       } finally {

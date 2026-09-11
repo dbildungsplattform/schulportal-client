@@ -4,6 +4,7 @@ import { type AxiosResponse } from 'axios';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import {
   RolleApiFactory,
+  RolleControllerFindRollenAvailableForPersonAdministration200Response,
   RollenArt,
   RollenMerkmal,
   RollenSystemRechtEnum,
@@ -28,6 +29,8 @@ type RolleState = {
   currentRolle: Rolle | null;
   currentMptRolle: Rolle | null;
   allRollen: Array<RolleWithServiceProvidersResponse>;
+  rollenForPersonAdministration: Array<RolleResponse>;
+  totalRollenForPersonAdministration: number;
   rollenerweiterungServiceProviders: Array<ServiceProviderResponse>;
   errorCode: string;
   loading: boolean;
@@ -36,6 +39,14 @@ type RolleState = {
 };
 
 type RolleGetters = object;
+type RollenForPersonAdministrationParams = {
+  searchStr?: string;
+  limit?: number;
+  offset?: number;
+  organisationIds?: string[];
+  systemrechte?: RollenSystemRechtEnum[];
+};
+
 type RolleActions = {
   createRolle: (
     rollenName: string,
@@ -47,6 +58,7 @@ type RolleActions = {
   ) => Promise<void>;
   getAllRollen: (filter: RolleFilter) => Promise<void>;
   getRolleById: (rolleId: string) => Promise<void>;
+  getRollenForPersonAdministration: (params: RollenForPersonAdministrationParams) => Promise<void>;
   getMptRolleById: (rolleId: string, organisationId: string) => Promise<void>;
   getRollenerweiterungenForRolle: (rolleId: string, organisationId: string) => Promise<void>;
   persistRollenerweiterungenForRolle: (filter: PersistRollenerweiterungForRolle) => Promise<void>;
@@ -75,15 +87,21 @@ export type Rolle = {
   version: number;
 };
 
-function mapRolleResponseToRolle(response: RolleWithServiceProvidersResponse): Rolle {
+function mapRolleResponseToRolle(response: RolleResponse): Rolle {
   return {
     administeredBySchulstrukturknoten: response.administeredBySchulstrukturknoten,
     id: response.id,
     merkmale: response.merkmale,
     name: response.name,
     rollenart: response.rollenart,
-    systemrechte: new Set(Array.from(response.systemrechte).map((recht: SystemRechtResponse) => recht.name)),
+    systemrechte: new Set(response.systemrechte.map((recht: SystemRechtResponse) => recht.name)),
     version: response.version,
+  };
+}
+
+function mapRolleWithServiceProvidersResponseToRolle(response: RolleWithServiceProvidersResponse): Rolle {
+  return {
+    ...mapRolleResponseToRolle(response),
     serviceProviders: response.serviceProviders,
   };
 }
@@ -139,6 +157,8 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
         currentRolle: null,
         currentMptRolle: null,
         allRollen: [],
+        rollenForPersonAdministration: [],
+        totalRollenForPersonAdministration: 0,
         rollenerweiterungServiceProviders: [],
         errorCode: '',
         loading: false,
@@ -168,10 +188,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
             serviceProviderIds: serviceProvider as unknown as Set<string>,
           };
           const { data }: { data: RolleResponse } = await rolleApi.rolleControllerCreateRolle(createRolleBodyParams);
-          const receivedSystemrechte: Set<RollenSystemRechtEnum> = new Set(
-            Array.from(data.systemrechte).map((recht: SystemRechtResponse) => recht.name),
-          );
-          this.createdRolle = { ...data, systemrechte: receivedSystemrechte };
+          this.createdRolle = mapRolleResponseToRolle(data);
           this.currentRolle = this.createdRolle;
         } catch (error: unknown) {
           this.errorCode = getResponseErrorCode(error, 'ROLLE_ERROR');
@@ -211,7 +228,28 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
         try {
           const { data }: { data: RolleWithServiceProvidersResponse } =
             await rolleApi.rolleControllerFindRolleByIdWithServiceProviders(rolleId);
-          this.currentRolle = mapRolleResponseToRolle(data);
+          this.currentRolle = mapRolleWithServiceProvidersResponseToRolle(data);
+        } catch (error) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async getRollenForPersonAdministration(params: RollenForPersonAdministrationParams): Promise<void> {
+        this.loading = true;
+        this.errorCode = '';
+        try {
+          const response: AxiosResponse<RolleControllerFindRollenAvailableForPersonAdministration200Response> =
+            await rolleApi.rolleControllerFindRollenAvailableForPersonAdministration(
+              params.offset,
+              params.limit,
+              params.searchStr,
+              params.organisationIds,
+              params.systemrechte,
+            );
+          this.rollenForPersonAdministration = response.data.items;
+          this.totalRollenForPersonAdministration = response.data.total;
         } catch (error) {
           this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
         } finally {
