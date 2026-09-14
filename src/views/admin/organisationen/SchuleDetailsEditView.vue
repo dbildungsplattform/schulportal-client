@@ -1,6 +1,7 @@
 <script setup lang="ts">
-  import SchuleForm, { type SchuleDetailsForm } from '@/components/admin/schulen/SchuleForm.vue';
+  import SchuleForm from '@/components/admin/schulen/SchuleForm.vue';
   import SchuleSuccessTemplate from '@/components/admin/schulen/SchuleSuccessTemplate.vue';
+  import { SchuleDetailsForm } from '@/components/admin/service-provider/types';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import { Organisation, OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
@@ -26,7 +27,7 @@
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
   const showSuccess: Ref<boolean> = ref(false);
 
-  const cachedValues: Ref<Partial<SchuleDetailsForm>> = ref(undefined);
+  const cachedValues: Ref<Partial<SchuleDetailsForm | undefined>> = ref(undefined);
   function cacheSubmittedValues(values: SchuleDetailsForm): void {
     cachedValues.value = {
       selectedSchulform: values.selectedSchulform,
@@ -36,7 +37,7 @@
     };
   }
 
-  const initialValues: ComputedRef<SchuleDetailsForm> = computed(() => {
+  const initialFormValues: ComputedRef<SchuleDetailsForm | undefined> = computed(() => {
     if (organisationStore.currentSchule) {
       return {
         selectedSchulform: organisationStore.currentSchule?.administriertVon ?? '',
@@ -49,7 +50,7 @@
   });
 
   const onSubmit = async (params: SchuleDetailsForm): Promise<void> => {
-    const { selectedSchulform, selectedSchulname, selectedEmailAdress } = params;
+    const { selectedSchulform, selectedSchulname, selectedEmailAdress }: SchuleDetailsForm = params;
     cacheSubmittedValues(params);
     await organisationStore.updateSchuleDetails({
       organisationId: currentSchuleId.value,
@@ -147,7 +148,7 @@
         <SchuleForm
           v-if="organisationStore.currentSchule"
           :show-unsaved-changes-dialog="showUnsavedChangesDialog"
-          :initialValues="initialValues ?? {}"
+          :initialValues="initialFormValues ?? {}"
           :cached-values="cachedValues"
           :is-edit-mode="true"
           :error-code="organisationStore.errorCode"

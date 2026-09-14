@@ -92,7 +92,7 @@ type OrganisationState = {
   klassenFilters: Map<string, AutoCompleteStore<Organisation>>;
   organisationenFilters: Map<string, AutoCompleteStore<Organisation>>;
   currentOrganisation: Organisation | null;
-  currentSchule: CurrentSchulDetails | null;
+  currentSchule?: CurrentSchulDetails | null;
   currentKlasse: Organisation | null;
   updatedOrganisation: Organisation | null;
   createdKlasse: Organisation | null;
@@ -184,12 +184,12 @@ type OrganisationActions = {
   resetKlasseFilter(storeKey?: string): void;
   clearKlasseFilter(storeKey?: string): void;
   fetchSchulDetails: (organisationId: string) => Promise<void>;
-  updateSchuleDetails(params: {
+  updateSchuleDetails: (params: {
     organisationId: string;
     schultraegerform: string;
     name: string;
     emailAdress: string;
-  }): Promise<void>;
+  }) => Promise<void>;
 };
 
 export { OrganisationsTyp };

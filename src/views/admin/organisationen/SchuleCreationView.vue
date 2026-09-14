@@ -1,6 +1,7 @@
 <script setup lang="ts">
-  import SchuleForm, { type SchuleDetailsForm } from '@/components/admin/schulen/SchuleForm.vue';
+  import SchuleForm from '@/components/admin/schulen/SchuleForm.vue';
   import SchuleSuccessTemplate from '@/components/admin/schulen/SchuleSuccessTemplate.vue';
+  import { SchuleDetailsForm } from '@/components/admin/service-provider/types';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import {
@@ -50,19 +51,19 @@
   };
 
   const onSubmit = async (params: SchuleDetailsForm): Promise<void> => {
-    // eslint-disable-next-line @typescript-eslint/typedef, @typescript-eslint/no-unsafe-assignment
+    // eslint-disable-next-line @typescript-eslint/typedef
     const { selectedSchulform, selectedDienststellennummer, selectedSchulname, selectedEmailAdress } = params;
     cacheSubmittedValues(params);
     await organisationStore.createOrganisation(
       selectedSchulform as string,
       selectedSchulform as string,
-      selectedDienststellennummer as string,
+      selectedDienststellennummer,
       selectedSchulname as string,
       undefined,
       undefined,
       OrganisationsTyp.Schule,
       undefined,
-      selectedEmailAdress as string,
+      selectedEmailAdress,
     );
 
     if (!organisationStore.errorCode) {

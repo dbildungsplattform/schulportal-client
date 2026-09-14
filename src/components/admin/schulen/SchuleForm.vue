@@ -8,13 +8,7 @@
   import { computed, ComputedRef, onMounted, Ref, watch, watchEffect } from 'vue';
   import { Composer, useI18n } from 'vue-i18n';
   import { object, string } from 'yup';
-
-  export type SchuleDetailsForm = {
-    selectedSchulform: string | undefined;
-    selectedDienststellennummer: string | undefined;
-    selectedSchulname: string | undefined;
-    selectedEmailAdress: string | undefined;
-  };
+  import { SchuleDetailsForm } from '../service-provider/types';
 
   type Props = {
     initialValues: Partial<SchuleDetailsForm>;

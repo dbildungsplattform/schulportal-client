@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/typedef */
-import type { Organisation } from '@/stores/OrganisationStore';
+import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
 import { VueWrapper, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Component } from 'vue';
-import type { SchuleDetailsForm } from './SchuleForm.vue';
+import { SchuleDetailsForm } from '../service-provider/types.js';
 import SchuleForm from './SchuleForm.vue';
 
 let wrapper: VueWrapper | null = null;
@@ -13,14 +13,14 @@ const mockSchultraeger: Organisation[] = [
     id: 'schultraeger-1',
     name: 'Schulträger 1',
     kennung: 'ST1',
-    typ: 'SCHULTRAEGER',
-  } as Organisation,
+    typ: OrganisationsTyp.Land,
+  },
   {
     id: 'schultraeger-2',
     name: 'Schulträger 2',
     kennung: 'ST2',
-    typ: 'SCHULTRAEGER',
-  } as Organisation,
+    typ: OrganisationsTyp.Land,
+  },
 ];
 
 const mockInitialValues: Partial<SchuleDetailsForm> = {
@@ -50,7 +50,7 @@ afterEach(() => {
   wrapper = null;
 });
 
-const createWrapper = (props = {}) => {
+const createWrapper = (props = {}): VueWrapper | null => {
   const defaultProps = {
     initialValues: mockInitialValues,
     cachedValues: undefined,
@@ -259,8 +259,8 @@ describe('SchuleForm', () => {
           id: 'schultraeger-3',
           name: 'Schulträger 3',
           kennung: 'ST3',
-          typ: 'SCHULTRAEGER',
-        } as Organisation,
+          typ: OrganisationsTyp.Land,
+        },
       ];
 
       await wrapper?.setProps({ schultraegerList: newList });

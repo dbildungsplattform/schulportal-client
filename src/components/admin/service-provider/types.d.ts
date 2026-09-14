@@ -2,6 +2,13 @@ import type { Organisation } from '@/stores/OrganisationStore';
 import type { RollenArt } from '@/stores/RolleStore';
 import type { ServiceProviderKategorie, ServiceProviderMerkmal } from '@/stores/ServiceProviderStore';
 
+export type SchuleDetailsForm = {
+  selectedSchulform: string | undefined;
+  selectedDienststellennummer: string | undefined;
+  selectedSchulname: string | undefined;
+  selectedEmailAdress: string | undefined;
+};
+
 export type RollenerweiterungAssignErrorDialogProps = {
   isDialogVisible: boolean;
   filename?: string;
