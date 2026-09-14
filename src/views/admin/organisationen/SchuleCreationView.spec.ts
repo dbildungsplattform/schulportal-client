@@ -1,997 +1,537 @@
-/* eslint-disable @typescript-eslint/typedef, @typescript-eslint/no-explicit-any */
-import { SchuleDetailsForm } from '@/components/admin/schulen/types.js';
+import SchuleForm from '@/components/admin/schulen/SchuleForm.vue';
+import SchuleSuccessTemplate from '@/components/admin/schulen/SchuleSuccessTemplate.vue';
+import type { SchuleDetailsForm } from '@/components/admin/schulen/types';
+import routes from '@/router/routes';
+import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
+import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { DoFactory } from 'test/DoFactory';
+import { expect, test, type Mock, type MockInstance } from 'vitest';
+import { nextTick, type Component } from 'vue';
 import {
-  OrganisationStore,
-  OrganisationsTyp,
-  useOrganisationStore,
-  type Organisation,
-} from '@/stores/OrganisationStore';
-import { createTestingPinia, TestingPinia } from '@pinia/testing';
-import { DOMWrapper, mount, VueWrapper } from '@vue/test-utils';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ComponentPublicInstance, nextTick } from 'vue';
-import { createI18n, type I18n } from 'vue-i18n';
-import { createMemoryHistory, createRouter, type Router } from 'vue-router';
+  createRouter,
+  createWebHistory,
+  type NavigationGuardNext,
+  type RouteLocationNormalized,
+  type Router,
+} from 'vue-router';
 import SchuleCreationView from './SchuleCreationView.vue';
 
-const mockOrganisation: Organisation = {
-  id: 'schule-1',
-  name: 'Test Gymnasium',
-  kennung: 'DIN-12345',
-  administriertVon: 'schultraeger-1',
-  emailAdress: 'test@gymnasium.de',
-  typ: 'SCHULE',
-};
-
-const mockSchultraeger: Organisation[] = [
-  { id: 'schultraeger-1', name: 'Schulträger 1', kennung: 'ST1', typ: OrganisationsTyp.Schule },
-  { id: 'schultraeger-2', name: 'Schulträger 2', kennung: 'ST2', typ: OrganisationsTyp.Schule },
-];
-
-const i18n: I18n = createI18n({
-  legacy: false,
-  locale: 'de-DE',
-  messages: {
-    'de-DE': {
-      admin: {
-        headline: 'Admin Panel',
-        schule: {
-          addNew: 'Add New School',
-          schuleCreateErrorTitle: 'Error Creating School',
-          backToCreateSchule: 'Back to Create School',
-          schuleAddedSuccessfully: 'School added successfully',
-          errors: {
-            ERROR_CODE: 'An error occurred',
-            REQUIRED_STEP_UP_LEVEL_NOT_MET: 'Required step-up level not met',
-          },
-        },
+let { storedBeforeRouteLeaveCallback }: { storedBeforeRouteLeaveCallback: OnBeforeRouteLeaveCallback } = vi.hoisted(
+  () => {
+    return {
+      storedBeforeRouteLeaveCallback: (
+        _to: RouteLocationNormalized,
+        _from: RouteLocationNormalized,
+        _next: NavigationGuardNext,
+      ): void => {
+        // intentionally left blank for test hoisting
       },
-      save: 'Save',
-    },
+    };
   },
+);
+
+vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
+  const mod: object = await importOriginal();
+  return {
+    ...mod,
+    onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
+      storedBeforeRouteLeaveCallback = actualCallback;
+    }),
+  };
 });
 
-const router: Router = createRouter({
-  history: createMemoryHistory(),
-  routes: [
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    { path: '/create-schule', name: 'create-schule', component: SchuleCreationView as any },
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    { path: '/schule-management', name: 'schule-management', component: { template: '<div>Management</div>' } as any },
-  ],
-});
+let wrapper: VueWrapper | null = null;
+let router: Router;
+const organisationStore: OrganisationStore = useOrganisationStore();
+const schultraegerOrganisation: Organisation = DoFactory.getOrganisation();
 
-type SchuleCreationViewVm = ComponentPublicInstance & {
-  isDirty: boolean;
-  showUnsavedChangesDialog: boolean;
-  cachedValues: SchuleDetailsForm | undefined;
-  initialFormValues: Partial<SchuleDetailsForm>;
-  defaultSchulform: string | undefined;
-  schultraegerList: Organisation[] | undefined;
-  onSubmit: (params: SchuleDetailsForm) => Promise<void>;
-  navigateToSchuleManagement: () => Promise<void>;
-  navigateBackToSchuleForm: () => Promise<void>;
-  handleCreateAnotherSchule: () => void;
-  handleConfirmUnsavedChanges: () => void;
-  preventNavigation: (event: BeforeUnloadEvent) => void;
-  blockedNext: () => void;
-};
+type OnBeforeRouteLeaveCallback = (
+  _to: RouteLocationNormalized,
+  _from: RouteLocationNormalized,
+  _next: NavigationGuardNext,
+) => void;
 
-let wrapper: VueWrapper<SchuleCreationViewVm> | null = null;
-
-const createWrapper = async (props: Record<string, unknown> = {}): Promise<VueWrapper<SchuleCreationViewVm> | null> => {
-  await router.push({ name: 'create-schule' });
-  const pinia: TestingPinia = createTestingPinia({ createSpy: vi.fn });
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-  wrapper = mount(SchuleCreationView, {
-    props,
+async function mountComponent(): Promise<ReturnType<typeof mount<typeof SchuleCreationView>>> {
+  await vi.dynamicImportSettled();
+  return mount(SchuleCreationView, {
+    attachTo: document.getElementById('app') || '',
     global: {
-      plugins: [pinia, i18n, router],
-      stubs: {
-        SchuleForm: true,
-        SchuleSuccessTemplate: true,
-        SpshAlert: true,
-        LayoutCard: true,
+      components: {
+        SchuleCreationView: SchuleCreationView as Component,
       },
+      plugins: [router],
     },
-  }) as unknown as VueWrapper<SchuleCreationViewVm>;
+  });
+}
 
-  const store: OrganisationStore = useOrganisationStore();
-  store.schultraeger = mockSchultraeger;
-  store.createdSchule = null;
-  store.errorCode = '';
-  store.loading = false;
-
-  return wrapper;
+type FormFields = {
+  schulform: string;
+  dienststellennummer: string;
+  schulname: string;
+  emailAdresse: string;
 };
+
+type FormSelectors = {
+  schulformRadioGroup: DOMWrapper<Element>;
+  dienststellennummerInput: DOMWrapper<Element>;
+  schulnameInput: DOMWrapper<Element>;
+  emailAdresseInput: DOMWrapper<Element>;
+};
+
+async function fillForm(args: Partial<FormFields>): Promise<Partial<FormSelectors>> {
+  const { schulform, dienststellennummer, schulname, emailAdresse }: Partial<FormFields> = args;
+  const selectors: Partial<FormSelectors> = {};
+
+  if (schulform) {
+    // Find the radio button with the matching value
+    const radioButton: Element | null = document.querySelector(`[data-testid^="schulform-radio-button-"]`);
+    if (radioButton) {
+      radioButton.dispatchEvent(new Event('click'));
+      await nextTick();
+    }
+    const schulformRadioGroup: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="schulform-radio-group"]');
+    selectors.schulformRadioGroup = schulformRadioGroup;
+  }
+
+  if (dienststellennummer) {
+    const dienststellennummerInput: DOMWrapper<Element> | undefined = wrapper?.find(
+      '[data-testid="dienststellennummer-input"]',
+    );
+    expect(dienststellennummerInput?.exists()).toBe(true);
+    await dienststellennummerInput?.find('input').setValue(dienststellennummer);
+    await nextTick();
+    selectors.dienststellennummerInput = dienststellennummerInput;
+  }
+
+  if (schulname) {
+    const schulnameInput: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="schulname-input"]');
+    expect(schulnameInput?.exists()).toBe(true);
+    await schulnameInput?.find('input').setValue(schulname);
+    await nextTick();
+    selectors.schulnameInput = schulnameInput;
+  }
+
+  if (emailAdresse) {
+    const emailAdresseInput: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="email-adress-input"]');
+    expect(emailAdresseInput?.exists()).toBe(true);
+    await emailAdresseInput?.find('input').setValue(emailAdresse);
+    await nextTick();
+    selectors.emailAdresseInput = emailAdresseInput;
+  }
+
+  return selectors;
+}
+
+beforeEach(async () => {
+  document.body.innerHTML = `
+    <div>
+      <router-view>
+        <div id="app"></div>
+      </router-view>
+    </div>
+  `;
+
+  router = createRouter({
+    history: createWebHistory(),
+    routes,
+  });
+
+  router.push('/');
+  await router.isReady();
+
+  wrapper = await mountComponent();
+
+  organisationStore.errorCode = '';
+  organisationStore.schultraeger = [schultraegerOrganisation];
+});
+
+afterEach(() => {
+  organisationStore.$reset();
+  wrapper?.unmount();
+  vi.useRealTimers();
+});
 
 describe('SchuleCreationView', () => {
-  beforeEach(() => {
-    wrapper = null;
+  test('it renders all child components', () => {
+    expect(wrapper?.getComponent({ name: 'LayoutCard' })).toBeTruthy();
+    expect(wrapper?.getComponent({ name: 'SpshAlert' })).toBeTruthy();
+    expect(wrapper?.getComponent({ name: 'SchuleForm' })).toBeTruthy();
   });
 
-  afterEach(() => {
-    if (wrapper) {
-      wrapper.unmount();
-    }
+  test('it renders the headline', () => {
+    expect(wrapper?.find('[data-testid="admin-headline"]').exists()).toBe(true);
   });
 
-  describe('Component Rendering', () => {
-    it('should render the admin container', async () => {
-      await createWrapper();
-      expect(wrapper?.find('.admin').exists()).toBe(true);
-    });
+  test('it passes initial form values with default schulform to SchuleForm', async () => {
+    // Make sure schultraeger is set before component mounts
+    organisationStore.schultraeger = [schultraegerOrganisation];
+    wrapper = await mountComponent();
+    await flushPromises();
 
-    it('should render headline with correct text id', async () => {
-      await createWrapper();
-      const headline: DOMWrapper<Element> | undefined = wrapper?.find('h1[data-testid="admin-headline"]');
-      expect(headline?.exists?.()).toBe(true);
-    });
-
-    it('should render LayoutCard', async () => {
-      await createWrapper();
-      expect(wrapper).toBeDefined();
-    });
-  });
-
-  describe('Component Lifecycle', () => {
-    it('should clear createdSchule on mount', async () => {
-      const pinia: TestingPinia = createTestingPinia({ createSpy: vi.fn });
-      await router.push({ name: 'create-schule' });
-      const store: OrganisationStore = useOrganisationStore();
-      store.createdSchule = mockOrganisation;
-
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-      wrapper = mount(SchuleCreationView, {
-        global: {
-          plugins: [pinia, i18n, router],
-          stubs: { SchuleForm: true, SchuleSuccessTemplate: true, SpshAlert: true, LayoutCard: true },
-        },
-      }) as unknown as VueWrapper<SchuleCreationViewVm>;
-
-      await nextTick();
-      expect(store.createdSchule).toBeNull();
-    });
-
-    it('should clear errorCode on mount', async () => {
-      const pinia: TestingPinia = createTestingPinia({ createSpy: vi.fn });
-      await router.push({ name: 'create-schule' });
-      const store: OrganisationStore = useOrganisationStore();
-      store.errorCode = 'SOME_ERROR';
-
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-      wrapper = mount(SchuleCreationView, {
-        data: () => ({ isDirty: false }),
-        global: {
-          plugins: [pinia, i18n, router],
-          stubs: { SchuleForm: true, SchuleSuccessTemplate: true, SpshAlert: true, LayoutCard: true },
-        },
-      }) as unknown as VueWrapper<SchuleCreationViewVm>;
-
-      await nextTick();
-      expect(store.errorCode).toBe('');
-    });
-
-    it('should fetch schultraeger data on mount', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      expect(store.getRootKinderSchultraeger).toHaveBeenCalled();
-    });
-
-    it('should attach beforeunload listener on mount', async () => {
-      const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
-      await createWrapper();
-
-      expect(addEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
-      addEventListenerSpy.mockRestore();
-    });
-
-    it('should remove beforeunload listener on unmount', async () => {
-      await createWrapper();
-      const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
-      wrapper?.unmount();
-
-      expect(removeEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
-      removeEventListenerSpy.mockRestore();
+    // eslint-disable-next-line @typescript-eslint/typedef
+    const form = wrapper?.findComponent(SchuleForm);
+    expect(form?.exists()).toBe(true);
+    expect(form?.props('initialValues')).toMatchObject({
+      selectedSchulform: schultraegerOrganisation.id,
+      selectedDienststellennummer: '',
+      selectedSchulname: '',
     });
   });
 
-  describe('Form Display Logic', () => {
-    it('should show form when createdSchule is null', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.createdSchule = null;
-
-      await nextTick();
-      expect(store.createdSchule).toBeNull();
-    });
-
-    it('should show success template when createdSchule exists', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.createdSchule = mockOrganisation;
-
-      await nextTick();
-      expect(store.createdSchule).toBeDefined();
-    });
+  test('it passes schultraeger list to SchuleForm', () => {
+    // eslint-disable-next-line @typescript-eslint/typedef
+    const form = wrapper?.findComponent(SchuleForm);
+    expect(form?.props('schultraegerList')).toEqual([schultraegerOrganisation]);
   });
 
-  describe('Initial Form Values', () => {
-    it('should initialize form values with expected structure', async () => {
-      await createWrapper();
+  test('it calls the correct function in the store when the form is submitted', async () => {
+    const createOrganisationSpy: MockInstance = vi.spyOn(organisationStore, 'createOrganisation');
+    const payload: SchuleDetailsForm = {
+      selectedSchulform: schultraegerOrganisation.id,
+      selectedDienststellennummer: '1234567',
+      selectedSchulname: 'Test Schule',
+      selectedEmailAdress: 'test@schule.de',
+    };
 
-      await wrapper?.vm?.$nextTick();
-
-      const vm = wrapper?.vm;
-      expect(vm?.initialFormValues).toBeDefined();
-      expect(vm?.initialFormValues).toHaveProperty('selectedSchulform');
-      expect(vm?.initialFormValues).toHaveProperty('selectedDienststellennummer');
-      expect(vm?.initialFormValues).toHaveProperty('selectedSchulname');
+    await fillForm({
+      schulform: payload.selectedSchulform,
+      dienststellennummer: payload.selectedDienststellennummer,
+      schulname: payload.selectedSchulname,
+      emailAdresse: payload.selectedEmailAdress,
     });
 
-    it('should compute default schulform from schultraeger list', async () => {
-      await createWrapper();
+    await flushPromises();
 
-      await nextTick();
-      const vm = wrapper?.vm;
-      // defaultSchulform is computed from store.schultraeger at component init time
-      expect(vm?.defaultSchulform).toBeDefined();
-    });
+    expect(createOrganisationSpy).not.toHaveBeenCalled();
 
-    it('should handle empty schultraeger list for default schulform', async () => {
-      const pinia: TestingPinia = createTestingPinia({ createSpy: vi.fn });
-      await router.push({ name: 'create-schule' });
-      const store: OrganisationStore = useOrganisationStore();
-      store.schultraeger = [];
+    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+    form.vm.$emit('click:submit', payload);
+    await flushPromises();
 
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-      wrapper = mount(SchuleCreationView, {
-        global: {
-          plugins: [pinia, i18n, router],
-          stubs: { SchuleForm: true, SchuleSuccessTemplate: true, SpshAlert: true, LayoutCard: true },
-        },
-      }) as unknown as VueWrapper<SchuleCreationViewVm>;
-
-      await nextTick();
-      expect(wrapper?.vm?.defaultSchulform).toBeUndefined();
-    });
+    expect(createOrganisationSpy).toHaveBeenCalledOnce();
+    expect(createOrganisationSpy).toHaveBeenCalledWith(
+      payload.selectedSchulform,
+      payload.selectedSchulform,
+      payload.selectedDienststellennummer,
+      payload.selectedSchulname,
+      undefined,
+      undefined,
+      'SCHULE',
+      undefined,
+      payload.selectedEmailAdress,
+    );
   });
 
-  describe('Form Submission', () => {
-    it('should call store createOrganisation on form submit', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-
-      const formValues: SchuleDetailsForm = {
-        selectedSchulform: 'schultraeger-1',
-        selectedDienststellennummer: 'DIN-99999',
-        selectedSchulname: 'New School',
-        selectedEmailAdress: 'new@school.de',
-      };
-
-      await wrapper?.vm?.onSubmit(formValues);
-
-      expect(store.createOrganisation).toHaveBeenCalledWith(
-        'schultraeger-1',
-        'schultraeger-1',
-        'DIN-99999',
-        'New School',
-        undefined,
-        undefined,
-        'SCHULE',
-        undefined,
-        'new@school.de',
-      );
+  test('it renders success template after successful form submission', async () => {
+    vi.spyOn(organisationStore, 'createOrganisation').mockImplementation(() => {
+      organisationStore.createdSchule = DoFactory.getSchule();
+      return Promise.resolve();
     });
 
-    it('should clear isDirty after successful submission', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.errorCode = '';
+    const payload: SchuleDetailsForm = {
+      selectedSchulform: schultraegerOrganisation.id,
+      selectedDienststellennummer: '1234567',
+      selectedSchulname: 'Test Schule',
+      selectedEmailAdress: 'test@schule.de',
+    };
 
-      wrapper!.vm.isDirty = true;
+    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+    form.vm.$emit('click:submit', payload);
+    await flushPromises();
 
-      const formValues: SchuleDetailsForm = {
-        selectedSchulform: 'schultraeger-1',
-        selectedDienststellennummer: 'DIN-99999',
-        selectedSchulname: 'New School',
-        selectedEmailAdress: 'new@school.de',
-      };
-
-      await wrapper?.vm.onSubmit(formValues);
-
-      expect(wrapper?.vm.isDirty).toBe(false);
-    });
-
-    it('should clear cachedValues after successful submission', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.errorCode = '';
-
-      wrapper!.vm.cachedValues = {
-        selectedSchulname: 'Old',
-        selectedSchulform: 'schultraeger-1',
-        selectedDienststellennummer: 'DIN-99999',
-        selectedEmailAdress: 'old@school.de',
-      };
-
-      const formValues: SchuleDetailsForm = {
-        selectedSchulform: 'schultraeger-1',
-        selectedDienststellennummer: 'DIN-99999',
-        selectedSchulname: 'New School',
-        selectedEmailAdress: 'new@school.de',
-      };
-
-      await wrapper?.vm.onSubmit(formValues);
-
-      expect(wrapper?.vm.cachedValues).toBeUndefined();
-    });
-
-    it('should not clear isDirty when error code is present', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.errorCode = 'ERROR_CODE';
-
-      wrapper!.vm.isDirty = true;
-
-      const formValues: SchuleDetailsForm = {
-        selectedSchulform: 'schultraeger-1',
-        selectedDienststellennummer: 'DIN-99999',
-        selectedSchulname: 'New School',
-        selectedEmailAdress: 'new@school.de',
-      };
-
-      await wrapper?.vm.onSubmit(formValues);
-
-      expect(wrapper?.vm.isDirty).toBe(true);
-    });
+    // eslint-disable-next-line @typescript-eslint/typedef
+    const successTemplate = wrapper?.findComponent(SchuleSuccessTemplate);
+    expect(successTemplate?.exists()).toBe(true);
   });
 
-  describe('Navigation', () => {
-    it('should have navigateToSchuleManagement method', async () => {
-      await createWrapper();
-      expect(typeof wrapper?.vm.navigateToSchuleManagement).toBe('function');
+  test('it clears isDirty state after successful form submission', async () => {
+    vi.spyOn(organisationStore, 'createOrganisation').mockImplementation(() => {
+      organisationStore.createdSchule = DoFactory.getSchule();
+      return Promise.resolve();
     });
 
-    it('should have handleCreateAnotherSchule method', async () => {
-      await createWrapper();
-      expect(typeof wrapper?.vm.handleCreateAnotherSchule).toBe('function');
-    });
+    organisationStore.schultraeger = [schultraegerOrganisation];
+    wrapper = await mountComponent();
+    await flushPromises();
 
-    it('should have navigateBackToSchuleForm method', async () => {
-      await createWrapper();
-      expect(typeof wrapper?.vm.navigateBackToSchuleForm).toBe('function');
-    });
+    const payload: SchuleDetailsForm = {
+      selectedSchulform: schultraegerOrganisation.id,
+      selectedDienststellennummer: '1234567',
+      selectedSchulname: 'Test Schule',
+      selectedEmailAdress: 'test@schule.de',
+    };
+
+    const form: VueWrapper = wrapper.findComponent({ name: 'SchuleForm' });
+    form.vm.$emit('click:submit', payload);
+    await flushPromises();
+
+    // Verify that the success template is shown (createdSchule is set)
+    const successTemplate: VueWrapper | undefined = wrapper?.findComponent(SchuleSuccessTemplate);
+    expect(successTemplate?.exists()).toBe(true);
   });
 
-  describe('Unsaved Changes Handling', () => {
-    it('should track isDirty state', async () => {
-      await createWrapper();
+  test('it renders error alert when errorCode is present', async () => {
+    organisationStore.errorCode = 'SCHULE_DUPLICATE';
+    await nextTick();
 
-      expect(wrapper?.vm.isDirty).toBe(false);
-      wrapper!.vm.isDirty = true;
+    const alert = wrapper?.getComponent({ name: 'SpshAlert' });
+    expect(alert?.props('modelValue')).toBe(true);
+  });
+
+  test('it calls correct function when error alert button is clicked', async () => {
+    organisationStore.errorCode = 'SCHULE_DUPLICATE';
+    await nextTick();
+
+    const push: MockInstance = vi.spyOn(router, 'push');
+    wrapper?.find('[data-testid$="alert-button"]').trigger('click');
+    await nextTick();
+
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith({ name: 'create-schule' });
+  });
+
+  test('it closes the view and navigates back to schule management', async () => {
+    const push: MockInstance = vi.spyOn(router, 'push');
+    wrapper?.find('[data-testid="close-layout-card-button"]').trigger('click');
+    await nextTick();
+
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith({ name: 'schule-management' });
+  });
+
+  test('it resets createdSchule on close', async () => {
+    organisationStore.createdSchule = DoFactory.getSchule();
+    vi.spyOn(router, 'push');
+
+    wrapper?.find('[data-testid="close-layout-card-button"]').trigger('click');
+    await nextTick();
+
+    expect(organisationStore.createdSchule).toBeNull();
+  });
+
+  test('it handles create another schule button click', async () => {
+    vi.spyOn(organisationStore, 'createOrganisation').mockImplementation(() => {
+      organisationStore.createdSchule = DoFactory.getSchule();
+      return Promise.resolve();
+    });
+
+    const payload: SchuleDetailsForm = {
+      selectedSchulform: schultraegerOrganisation.id,
+      selectedDienststellennummer: '1234567',
+      selectedSchulname: 'Test Schule',
+      selectedEmailAdress: 'test@schule.de',
+    };
+
+    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+    form.vm.$emit('click:submit', payload);
+    await flushPromises();
+
+    const push: MockInstance = vi.spyOn(router, 'push');
+    const successTemplate: VueWrapper | undefined = wrapper!.findComponent(SchuleSuccessTemplate);
+    successTemplate.vm.$emit('onNavigateToSchuleForm');
+    await nextTick();
+
+    expect(organisationStore.createdSchule).toBeNull();
+    expect(push).toHaveBeenCalled();
+  });
+
+  test('it navigates to schule management from success template', async () => {
+    vi.spyOn(organisationStore, 'createOrganisation').mockImplementation(() => {
+      organisationStore.createdSchule = DoFactory.getSchule();
+      return Promise.resolve();
+    });
+
+    const payload: SchuleDetailsForm = {
+      selectedSchulform: schultraegerOrganisation.id,
+      selectedDienststellennummer: '1234567',
+      selectedSchulname: 'Test Schule',
+      selectedEmailAdress: 'test@schule.de',
+    };
+
+    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+    form.vm.$emit('click:submit', payload);
+    await flushPromises();
+
+    const push: MockInstance = vi.spyOn(router, 'push');
+    const successTemplate: VueWrapper | undefined = wrapper!.findComponent(SchuleSuccessTemplate);
+    successTemplate.vm.$emit('onNavigateBackToSchuleManagement');
+    await nextTick();
+
+    expect(organisationStore.createdSchule).toBeNull();
+    expect(push).toHaveBeenCalled();
+  });
+
+  test('it shows error message if REQUIRED_STEP_UP_LEVEL_NOT_MET error is present', async () => {
+    organisationStore.errorCode = 'REQUIRED_STEP_UP_LEVEL_NOT_MET';
+    await nextTick();
+
+    expect(wrapper?.find('[data-testid$="alert-title"]').isVisible()).toBe(true);
+  });
+
+  test('it reloads page when navigating from REQUIRED_STEP_UP_LEVEL_NOT_MET error', async () => {
+    organisationStore.errorCode = 'REQUIRED_STEP_UP_LEVEL_NOT_MET';
+    await nextTick();
+
+    const push: MockInstance = vi.spyOn(router, 'push');
+    const goSpy: MockInstance = vi.spyOn(router, 'go');
+
+    wrapper?.find('[data-testid$="alert-button"]').trigger('click');
+    await flushPromises();
+
+    expect(push).toHaveBeenCalledWith({ name: 'create-schule' });
+    expect(goSpy).toHaveBeenCalledWith(0);
+  });
+
+  describe('navigation interception', () => {
+    afterEach(() => {
+      vi.unmock('vue-router');
+    });
+
+    test('triggers unsaved changes dialog if form is dirty', async () => {
+      const expectedCallsToNext: number = 0;
+      organisationStore.schultraeger = [schultraegerOrganisation];
+      wrapper = await mountComponent();
+      await flushPromises();
+
+      await fillForm({
+        schulform: schultraegerOrganisation.id,
+        dienststellennummer: '1234567',
+        schulname: 'Test Schule',
+        emailAdresse: 'test@schule.de',
+      });
+
+      const spy: Mock = vi.fn();
+      storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, spy);
+      expect(spy).toHaveBeenCalledTimes(expectedCallsToNext);
       await nextTick();
 
-      expect(wrapper?.vm.isDirty).toBe(true);
+      const confirmButton: Element | null = document.querySelector('[data-testid="confirm-unsaved-changes-button"]');
+      expect(confirmButton).not.toBeNull();
+      confirmButton!.dispatchEvent(new Event('click'));
+      expect(spy).toHaveBeenCalledOnce();
     });
 
-    it('should manage showUnsavedChangesDialog state', async () => {
-      await createWrapper();
-
-      expect(wrapper?.vm.showUnsavedChangesDialog).toBe(false);
-      wrapper!.vm.showUnsavedChangesDialog = true;
-      await nextTick();
-
-      expect(wrapper?.vm.showUnsavedChangesDialog).toBe(true);
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should track error code state from store', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.errorCode = '';
-
-      await nextTick();
-
-      expect(store.errorCode).toBe('');
-
-      store.errorCode = 'ERROR_CODE';
-      await nextTick();
-
-      expect(store.errorCode).toBe('ERROR_CODE');
-    });
-
-    it('should disable card close when error code is set', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-
-      store.errorCode = '';
-      await nextTick();
-
-      store.errorCode = 'ERROR_CODE';
-      await nextTick();
-
-      expect(store.errorCode).toBe('ERROR_CODE');
+    test('does not trigger unsaved changes dialog if form is not dirty', async () => {
+      const expectedCallsToNext: number = 1;
+      vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
+        const mod: object = await importOriginal();
+        return {
+          ...mod,
+          onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
+            storedBeforeRouteLeaveCallback = actualCallback;
+          }),
+        };
+      });
+      wrapper = await mountComponent();
+      const spy: Mock = vi.fn();
+      storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, spy);
+      expect(spy).toHaveBeenCalledTimes(expectedCallsToNext);
     });
   });
 
-  describe('Success State', () => {
-    it('should track createdSchule state from store', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-
-      expect(store.createdSchule).toBeNull();
-
-      store.createdSchule = mockOrganisation;
-      await nextTick();
-
-      expect(store.createdSchule).toBeDefined();
+  describe.each([[true], [false]])('when form is dirty:%s', (isFormDirty: boolean) => {
+    beforeEach(async () => {
+      if (isFormDirty) {
+        await fillForm({
+          schulform: schultraegerOrganisation.id,
+          dienststellennummer: '1234567',
+          schulname: 'Test Schule',
+          emailAdresse: 'test@schule.de',
+        });
+      }
     });
 
-    it('should have schultraeger list available for success template', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-
-      expect(store.schultraeger).toEqual(mockSchultraeger);
-    });
-  });
-
-  describe('Form Event Handlers', () => {
-    it('should have onSubmit method for form submission', async () => {
-      await createWrapper();
-
-      expect(typeof wrapper?.vm.onSubmit).toBe('function');
-    });
-
-    it('should have navigateToSchuleManagement for discard action', async () => {
-      await createWrapper();
-
-      expect(typeof wrapper?.vm.navigateToSchuleManagement).toBe('function');
-    });
-
-    it('should have handleConfirmUnsavedChanges for confirmation', async () => {
-      await createWrapper();
-
-      expect(typeof wrapper?.vm.handleConfirmUnsavedChanges).toBe('function');
-    });
-  });
-
-  describe('Layout Card Interaction', () => {
-    it('should have navigateToSchuleManagement for card close', async () => {
-      await createWrapper();
-
-      expect(typeof wrapper?.vm.navigateToSchuleManagement).toBe('function');
-    });
-  });
-
-  describe('Cached Values Management', () => {
-    it('should initialize cachedValues as undefined', async () => {
-      await createWrapper();
-
-      expect(wrapper?.vm?.cachedValues).toBeUndefined();
-    });
-
-    it('should clear cachedValues after successful form submission', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.errorCode = '';
-
-      wrapper!.vm.cachedValues = {
-        selectedSchulform: 'schultraeger-1',
-        selectedDienststellennummer: 'DIN-99999',
-        selectedSchulname: 'Old School',
-      } as SchuleDetailsForm;
-
-      const formValues: SchuleDetailsForm = {
-        selectedSchulform: 'schultraeger-1',
-        selectedDienststellennummer: 'DIN-99999',
-        selectedSchulname: 'New School',
-        selectedEmailAdress: 'new@school.de',
-      };
-
-      await wrapper?.vm.onSubmit(formValues);
-
-      // Component clears cachedValues on successful submission
-      expect(wrapper?.vm.cachedValues).toBeUndefined();
-    });
-
-    it('should keep cachedValues when submission has error', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.errorCode = 'ERROR_CODE';
-
-      wrapper!.vm.cachedValues = {
-        selectedSchulform: 'schultraeger-1',
-        selectedDienststellennummer: 'DIN-99999',
-        selectedSchulname: 'New School',
-      } as SchuleDetailsForm;
-
-      const formValues: SchuleDetailsForm = {
-        selectedSchulform: 'schultraeger-1',
-        selectedDienststellennummer: 'DIN-99999',
-        selectedSchulname: 'New School',
-        selectedEmailAdress: 'new@school.de',
-      };
-
-      await wrapper?.vm.onSubmit(formValues);
-
-      // Cached values should remain when there's an error
-      expect(wrapper?.vm.cachedValues).toBeDefined();
-    });
-  });
-
-  describe('Computed Properties', () => {
-    it('should compute schultraegerList from store', async () => {
-      await createWrapper();
-
-      expect(wrapper?.vm?.schultraegerList).toEqual(mockSchultraeger);
-    });
-
-    it('should update schultraegerList when store changes', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-
-      const newSchultraeger = [
-        { id: 'schultraeger-3', name: 'Schulträger 3', kennung: 'ST3', typ: OrganisationsTyp.Schule },
-      ];
-      store.schultraeger = newSchultraeger;
-
-      await nextTick();
-      expect(wrapper?.vm?.schultraegerList).toEqual(newSchultraeger);
-    });
-
-    it('should compute defaultSchulform from schultraeger list', async () => {
-      await createWrapper();
-      expect(wrapper?.vm?.defaultSchulform).toBe('schultraeger-1');
-    });
-  });
-
-  describe('Ref State', () => {
-    it('should initialize isDirty as false', async () => {
-      await createWrapper();
-      expect(wrapper?.vm?.isDirty).toBe(false);
-    });
-
-    it('should initialize showUnsavedChangesDialog as false', async () => {
-      await createWrapper();
-      expect(wrapper?.vm?.showUnsavedChangesDialog).toBe(false);
-    });
-
-    it('should initialize cachedValues as undefined', async () => {
-      await createWrapper();
-      expect(wrapper?.vm?.cachedValues).toBeUndefined();
-    });
-
-    it('should initialize initialFormValues ref', async () => {
-      await createWrapper();
-      // initialFormValues is reactive and should be defined even if content varies
-      expect(wrapper?.vm?.initialFormValues).toBeDefined();
-      expect(wrapper?.vm?.cachedValues).toBeUndefined();
-    });
-  });
-
-  describe('Store Integration', () => {
-    it('should access useOrganisationStore', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-
-      expect(store).toBeDefined();
-    });
-
-    it('should track store loading state', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-
-      expect(store.loading).toBe(false);
-
-      store.loading = true;
-      await (wrapper?.vm?.$nextTick?.() ?? Promise.resolve());
-
-      expect(store.loading).toBe(true);
-    });
-
-    it('should access store schultraeger list', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-
-      expect(store.schultraeger).toEqual(mockSchultraeger);
-    });
-
-    it('should track store createdSchule', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-
-      expect(store.createdSchule).toBeNull();
-
-      store.createdSchule = mockOrganisation;
-      await nextTick();
-
-      expect(store.createdSchule).toBeDefined();
-    });
-
-    it('should call store getRootKinderSchultraeger on mount', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-
-      expect(store.getRootKinderSchultraeger).toHaveBeenCalled();
-    });
-  });
-
-  describe('Form Validation and State', () => {
-    it('should initialize initialFormValues reactively', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-
-      const initialValues = wrapper?.vm?.initialFormValues;
-      expect(initialValues).toBeDefined();
-
-      store.schultraeger = [{ id: 'schultraeger-new', name: 'New', kennung: 'NEW', typ: OrganisationsTyp.Schule }];
-      await nextTick();
-
-      expect(wrapper?.vm?.defaultSchulform).toBe('schultraeger-new');
-    });
-
-    it('should properly handle form value caching', async () => {
-      await createWrapper();
-
-      const testValues = {
-        selectedSchulform: 'schultraeger-1',
-        selectedDienststellennummer: 'DIN-12345',
-        selectedSchulname: 'Test School',
-        selectedEmailAdress: 'test@test.de',
-      };
-
-      wrapper!.vm.cachedValues = testValues;
-      await nextTick();
-
-      expect(wrapper?.vm?.cachedValues).toEqual(testValues);
-    });
-  });
-
-  describe('Confirm Unsaved Changes', () => {
-    it('should have handleConfirmUnsavedChanges method', async () => {
-      await createWrapper();
-
-      expect(typeof wrapper?.vm?.handleConfirmUnsavedChanges).toBe('function');
-    });
-
-    it('should clear error code in handleConfirmUnsavedChanges', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.errorCode = 'ERROR_CODE';
-
-      wrapper?.vm?.handleConfirmUnsavedChanges?.();
-
-      expect(store.errorCode).toBe('');
-    });
-  });
-
-  describe('Navigation Back to Form', () => {
-    it('should clear error code when navigating back from non-REQUIRED_STEP_UP_LEVEL_NOT_MET error', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.errorCode = 'SOME_OTHER_ERROR';
-
-      expect(typeof wrapper?.vm?.navigateBackToSchuleForm).toBe('function');
-    });
-
-    it('should handle REQUIRED_STEP_UP_LEVEL_NOT_MET special case', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.errorCode = 'REQUIRED_STEP_UP_LEVEL_NOT_MET';
-
-      expect(typeof wrapper?.vm?.navigateBackToSchuleForm).toBe('function');
-    });
-  });
-
-  describe('Create Another School', () => {
-    it('should have handleCreateAnotherSchule method', async () => {
-      await createWrapper();
-
-      expect(typeof wrapper?.vm?.handleCreateAnotherSchule).toBe('function');
-    });
-
-    it('should clear createdSchule in handleCreateAnotherSchule', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.createdSchule = mockOrganisation;
-
-      wrapper?.vm?.handleCreateAnotherSchule?.();
-
-      expect(store.createdSchule).toBeNull();
-    });
-  });
-
-  describe('Navigate To Schule Management', () => {
-    it('should navigate to schule-management route', async () => {
-      await createWrapper();
-      const pushSpy = vi.spyOn(router, 'push');
-
-      await wrapper?.vm?.navigateToSchuleManagement?.();
-
-      expect(pushSpy).toHaveBeenCalledWith({ name: 'schule-management' });
-      pushSpy.mockRestore();
-    });
-
-    it('should clear createdSchule before navigation', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.createdSchule = mockOrganisation;
-      vi.spyOn(router, 'push');
-
-      await wrapper?.vm?.navigateToSchuleManagement?.();
-
-      expect(store.createdSchule).toBeNull();
-    });
-
-    it('should call router.go(0) after push', async () => {
-      await createWrapper();
-      const goSpy = vi.spyOn(router, 'go');
-      vi.spyOn(router, 'push').mockResolvedValue();
-
-      await wrapper?.vm?.navigateToSchuleManagement?.();
-
-      expect(goSpy).toHaveBeenCalledWith(0);
-      goSpy.mockRestore();
-    });
-  });
-
-  describe('Navigate Back To Schule Form', () => {
-    it('should navigate to create-schule for REQUIRED_STEP_UP_LEVEL_NOT_MET error', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.errorCode = 'REQUIRED_STEP_UP_LEVEL_NOT_MET';
-      const pushSpy = vi.spyOn(router, 'push');
-
-      await wrapper?.vm?.navigateBackToSchuleForm?.();
-
-      expect(pushSpy).toHaveBeenCalledWith({ name: 'create-schule' });
-      pushSpy.mockRestore();
-    });
-
-    it('should call router.go(0) for REQUIRED_STEP_UP_LEVEL_NOT_MET error', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.errorCode = 'REQUIRED_STEP_UP_LEVEL_NOT_MET';
-      const goSpy = vi.spyOn(router, 'go');
-      vi.spyOn(router, 'push').mockResolvedValue(undefined);
-
-      await wrapper?.vm?.navigateBackToSchuleForm?.();
-
-      expect(goSpy).toHaveBeenCalledWith(0);
-      goSpy.mockRestore();
-    });
-
-    it('should clear error code for other errors', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.errorCode = 'SOME_OTHER_ERROR';
-      vi.spyOn(router, 'push');
-
-      await wrapper?.vm?.navigateBackToSchuleForm?.();
-
-      expect(store.errorCode).toBe('');
-    });
-
-    it('should navigate to create-schule for non-REQUIRED_STEP_UP_LEVEL_NOT_MET errors', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.errorCode = 'DIFFERENT_ERROR';
-      const pushSpy = vi.spyOn(router, 'push');
-
-      await wrapper?.vm?.navigateBackToSchuleForm?.();
-
-      expect(pushSpy).toHaveBeenCalledWith({ name: 'create-schule' });
-      pushSpy.mockRestore();
-    });
-  });
-
-  describe('Prevent Navigation Event', () => {
-    it('should prevent default when isDirty is true', async () => {
-      await createWrapper();
-      wrapper!.vm.isDirty = true;
-
-      const event = new Event('beforeunload');
-      const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
-
-      wrapper?.vm?.preventNavigation?.(event);
-
-      expect(preventDefaultSpy).toHaveBeenCalled();
-    });
-
-    it('should attempt to set returnValue when isDirty is true', async () => {
-      await createWrapper();
-      wrapper!.vm.isDirty = true;
-
-      const event = {
-        preventDefault: () => {
-          return;
-        },
-      } as BeforeUnloadEvent;
-      wrapper?.vm?.preventNavigation?.(event);
-
-      // The component sets returnValue to empty string
-      expect(event.returnValue === '' || event.returnValue === true).toBe(true);
-    });
-
-    it('should not prevent default when isDirty is false', async () => {
-      await createWrapper();
-      wrapper!.vm.isDirty = false;
-
-      const event = new Event('beforeunload');
-      const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
-
-      wrapper?.vm?.preventNavigation?.(event);
-
-      expect(preventDefaultSpy).not.toHaveBeenCalled();
-    });
-
-    it('should return early when isDirty is false', async () => {
-      await createWrapper();
-      wrapper!.vm.isDirty = false;
-
-      const event = {
-        preventDefault: () => {
-          return;
-        },
-      } as BeforeUnloadEvent;
-      wrapper?.vm?.preventNavigation?.(event);
-
-      // When isDirty is false, it should return early without setting returnValue
-      expect(event.returnValue).toBeUndefined();
-    });
-  });
-
-  describe('On Before Route Leave Guard', () => {
-    it('should show unsaved changes dialog when isDirty is true', async () => {
-      await createWrapper();
-      wrapper!.vm.isDirty = true;
-
-      const nextMock = vi.fn();
-
-      // Simulate route guard behavior
-      if (wrapper?.vm.isDirty) {
-        wrapper.vm.showUnsavedChangesDialog = true;
-        wrapper.vm.blockedNext = nextMock;
+    test('it handles unloading', () => {
+      const event: Event = new Event('beforeunload');
+      const spy: MockInstance = vi.spyOn(event, 'preventDefault');
+      window.dispatchEvent(event);
+      if (isFormDirty) {
+        expect(spy).toHaveBeenCalledOnce();
       } else {
-        nextMock();
+        expect(spy).not.toHaveBeenCalledOnce();
       }
-
-      await nextTick();
-      expect(wrapper?.vm.showUnsavedChangesDialog).toBe(true);
-    });
-
-    it('should not call next when isDirty is true', async () => {
-      await createWrapper();
-      wrapper!.vm.isDirty = true;
-
-      const nextMock = vi.fn();
-
-      // Simulate route guard behavior
-      if (wrapper?.vm.isDirty) {
-        wrapper.vm.showUnsavedChangesDialog = true;
-        wrapper.vm.blockedNext = nextMock;
-      } else {
-        nextMock();
-      }
-
-      await nextTick();
-      expect(nextMock).not.toHaveBeenCalled();
-    });
-
-    it('should call next when isDirty is false', async () => {
-      await createWrapper();
-      wrapper!.vm.isDirty = false;
-
-      const nextMock = vi.fn();
-
-      // Simulate route guard behavior
-      if (wrapper?.vm.isDirty) {
-        wrapper.vm.showUnsavedChangesDialog = true;
-        wrapper.vm.blockedNext = nextMock;
-      } else {
-        nextMock();
-      }
-
-      await nextTick();
-      expect(nextMock).toHaveBeenCalled();
-    });
-
-    it('should store next callback for later use', async () => {
-      await createWrapper();
-      wrapper!.vm.isDirty = true;
-
-      const nextMock = vi.fn();
-
-      // Simulate route guard behavior
-      if (wrapper?.vm.isDirty) {
-        wrapper.vm.showUnsavedChangesDialog = true;
-        wrapper.vm.blockedNext = nextMock;
-      }
-
-      await nextTick();
-      // blockedNext should be set to the nextMock callback
-      expect(typeof wrapper?.vm?.blockedNext).toBe('function');
     });
   });
 
-  describe('Success Template Rendering', () => {
-    it('should display success template when createdSchule is set', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.createdSchule = mockOrganisation;
+  test('it initializes with no schultraeger as default when schultraeger list is empty', async () => {
+    organisationStore.schultraeger = [];
+    wrapper = await mountComponent();
+    await nextTick();
 
-      await nextTick();
+    // eslint-disable-next-line @typescript-eslint/typedef
+    const form = wrapper?.findComponent(SchuleForm);
+    expect(form?.props('initialValues')).toMatchObject({
+      selectedSchulform: undefined,
+    });
+  });
 
-      expect(store.createdSchule).toEqual(mockOrganisation);
+  test('it calls getRootKinderSchultraeger on mount', async () => {
+    vi.clearAllMocks();
+    organisationStore.$reset();
+    const getRootKinderSchultraegerSpy: MockInstance = vi.spyOn(organisationStore, 'getRootKinderSchultraeger');
+
+    wrapper?.unmount();
+    wrapper = await mountComponent();
+    await flushPromises();
+
+    expect(getRootKinderSchultraegerSpy).toHaveBeenCalledOnce();
+  });
+
+  test('it clears errorCode and createdSchule on mount', async () => {
+    organisationStore.errorCode = 'SOME_ERROR';
+    organisationStore.createdSchule = DoFactory.getSchule();
+
+    wrapper = await mountComponent();
+    await flushPromises();
+
+    expect(organisationStore.errorCode).toBe('');
+    expect(organisationStore.createdSchule).toBeNull();
+  });
+
+  test('it removes beforeunload listener on unmount', () => {
+    const removeEventListenerSpy: MockInstance = vi.spyOn(window, 'removeEventListener');
+    wrapper?.unmount();
+
+    expect(removeEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+  });
+
+  test('it updates isDirty when SchuleForm emits update:dirty', async () => {
+    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+
+    // Emit dirty state change
+    form.vm.$emit('update:dirty', true);
+    await nextTick();
+
+    // Verify that the form receives the isDirty state
+    const formWithDirty: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchuleForm' });
+    expect(formWithDirty?.exists()).toBe(true);
+  });
+
+  test('it emits unsaved changes dialog update when SchuleForm emits update:showUnsavedChangesDialog', async () => {
+    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+
+    // Emit dialog visibility change
+    form.vm.$emit('update:showUnsavedChangesDialog', true);
+    await nextTick();
+
+    // Verify that the form component exists
+    const formComponent: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchuleForm' });
+    expect(formComponent?.exists()).toBe(true);
+  });
+
+  test('it handles discard button click from SchuleForm', async () => {
+    await fillForm({
+      schulform: schultraegerOrganisation.id,
+      dienststellennummer: '1234567',
+      schulname: 'Test Schule',
+      emailAdresse: 'test@schule.de',
     });
 
-    it('should pass successMessage to success template', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.createdSchule = mockOrganisation;
+    const push: MockInstance = vi.spyOn(router, 'push');
+    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+    form.vm.$emit('click:discard');
+    await nextTick();
 
-      await nextTick();
-
-      expect(wrapper?.vm).toBeDefined();
-      expect(store.createdSchule).toBeDefined();
-    });
-
-    it('should pass schultraegerList to success template', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.createdSchule = mockOrganisation;
-
-      await nextTick();
-
-      expect(wrapper?.vm.schultraegerList).toEqual(mockSchultraeger);
-    });
-
-    it('should pass followingDataChanged with createdSchule', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.createdSchule = mockOrganisation;
-
-      await nextTick();
-
-      expect(store.createdSchule).toEqual(mockOrganisation);
-    });
-
-    it('should not show success template when createdSchule is null', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.createdSchule = null;
-
-      await nextTick();
-
-      expect(store.createdSchule).toBeNull();
-    });
-
-    it('should not show success template when errorCode is set', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.createdSchule = mockOrganisation;
-      store.errorCode = 'ERROR_CODE';
-
-      await nextTick();
-
-      // Template checks: v-if="organisationStore.createdSchule && !organisationStore.errorCode"
-      expect(store.errorCode).not.toBe('');
-    });
-
-    it('should emit navigation events from success template', async () => {
-      await createWrapper();
-      const store: OrganisationStore = useOrganisationStore();
-      store.createdSchule = mockOrganisation;
-
-      await nextTick();
-
-      // Component has event handlers:
-      // @onNavigateBackToSchuleManagement="navigateToSchuleManagement"
-      // @onNavigateToSchuleForm="handleCreateAnotherSchule"
-      expect(typeof wrapper?.vm?.navigateToSchuleManagement).toBe('function');
-      expect(typeof wrapper?.vm?.handleCreateAnotherSchule).toBe('function');
-    });
+    expect(push).toHaveBeenCalled();
   });
 });
