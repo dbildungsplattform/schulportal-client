@@ -33,6 +33,7 @@ export type Organisation = {
   schuleDetails?: string;
   version?: number;
   itslearningEnabled?: boolean;
+  emailAdress?: string;
   /* isNotPersisted is optional and currently only used for SchultraegerDetailsView */
   isNotPersisted?: boolean;
 };
@@ -59,6 +60,7 @@ export type SchuleTableItem = {
   administriertVon?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  emailAdress?: string;
 };
 
 export type SchultraegerTableItem = {
@@ -80,6 +82,8 @@ export type AutoCompleteStore<T> = {
   loading: boolean;
 };
 
+export type CurrentSchulDetails = Organisation & { schultraegerform?: Organisation | null };
+
 type OrganisationState = {
   allOrganisationen: Array<Organisation>;
   allKlassen: Array<Organisation>;
@@ -88,6 +92,7 @@ type OrganisationState = {
   klassenFilters: Map<string, AutoCompleteStore<Organisation>>;
   organisationenFilters: Map<string, AutoCompleteStore<Organisation>>;
   currentOrganisation: Organisation | null;
+  currentSchule: CurrentSchulDetails | null;
   currentKlasse: Organisation | null;
   updatedOrganisation: Organisation | null;
   createdKlasse: Organisation | null;
@@ -177,6 +182,7 @@ type OrganisationActions = {
   loadKlassenForFilter(filter?: OrganisationenFilter, storeKey?: string): Promise<void>;
   resetKlasseFilter(storeKey?: string): void;
   clearKlasseFilter(storeKey?: string): void;
+  fetchSchulDetails: (organisationId: string) => Promise<void>;
 };
 
 export { OrganisationsTyp };
@@ -198,6 +204,7 @@ export const useOrganisationStore: StoreDefinition<
       allSchultraeger: [],
       currentOrganisation: null,
       currentKlasse: null,
+      currentSchule: null,
       updatedOrganisation: null,
       createdKlasse: null,
       createdSchule: null,
@@ -574,6 +581,31 @@ export const useOrganisationStore: StoreDefinition<
       this.loading = true;
       try {
         await organisationApi.organisationControllerDeleteOrganisation(organisationId);
+      } catch (error: unknown) {
+        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchSchulDetails(organisationId: string): Promise<void> {
+      this.errorCode = '';
+      this.loading = true;
+      try {
+        const [organisationResponse, parentsResponse]: [
+          AxiosResponse<Organisation>,
+          AxiosResponse<{ parents: OrganisationResponse[] }>,
+        ] = await Promise.all([
+          organisationApi.organisationControllerFindOrganisationById(organisationId),
+          organisationApi.organisationControllerGetParentsByIds({ organisationIds: [organisationId] }),
+        ]);
+
+        if (organisationResponse.data.typ === OrganisationsTyp.Schule && parentsResponse.data.parents?.length > 0) {
+          const schultraegerform: OrganisationResponse | undefined = parentsResponse.data.parents.find(
+            (parent: OrganisationResponse) => parent.id === organisationResponse.data?.administriertVon,
+          );
+          this.currentSchule = { ...organisationResponse.data, schultraegerform };
+        }
       } catch (error: unknown) {
         this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
       } finally {

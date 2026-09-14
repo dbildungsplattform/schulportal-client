@@ -1,5 +1,7 @@
-import { OrganisationsTyp, type OrganisationRootChildrenResponse } from '@/api-client/generated';
+import { OrganisationResponse, OrganisationsTyp, type OrganisationRootChildrenResponse } from '@/api-client/generated';
 import axiosApiInstance from '@/services/ApiService';
+import { faker } from '@faker-js/faker';
+import { flushPromises } from '@vue/test-utils';
 import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
 import { DoFactory } from 'test/DoFactory';
@@ -11,8 +13,6 @@ import {
   type OrganisationenFilter,
   type OrganisationStore,
 } from './OrganisationStore';
-import { flushPromises } from '@vue/test-utils';
-import { faker } from '@faker-js/faker';
 
 const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
 
@@ -629,6 +629,74 @@ describe('OrganisationStore', () => {
     });
   });
 
+  describe('fetchSchulDetails', () => {
+    it('should load schule details with its schultraegerform', async () => {
+      const mockSchule: Organisation = {
+        id: 'schule-1',
+        kennung: '1234567',
+        name: 'Testschule',
+        typ: OrganisationsTyp.Schule,
+        administriertVon: 'schultraeger-1',
+      };
+      const mockParentsTree: { parents: OrganisationResponse[] } = {
+        parents: [
+          {
+            id: 'schultraeger-1',
+            name: 'Test Schultraeger',
+            typ: OrganisationsTyp.Land,
+            administriertVon: 'root',
+            kennung: '1',
+            zugehoerigZu: null,
+            namensergaenzung: null,
+            kuerzel: '',
+            traegerschaft: '01',
+            itslearningEnabled: false,
+            version: 0,
+            emailAdress: '',
+          },
+        ],
+      };
+
+      mockadapter.onGet('/api/organisationen/schule-1').replyOnce(200, mockSchule);
+      mockadapter.onPost('/api/organisationen/parents-by-ids').replyOnce(200, mockParentsTree);
+
+      const promise: Promise<void> = organisationStore.fetchSchulDetails('schule-1');
+
+      expect(organisationStore.loading).toBe(true);
+      await promise;
+
+      expect(organisationStore.currentSchule).toEqual({
+        ...mockSchule,
+        schultraegerform: mockParentsTree.parents[0],
+      });
+      expect(organisationStore.errorCode).toBe('');
+      expect(organisationStore.loading).toBe(false);
+    });
+
+    it('should preserve the error code from a failed organisation request', async () => {
+      organisationStore.errorCode = 'PREVIOUS_ERROR';
+      const mockParentsTree: { parents: OrganisationResponse[] } = { parents: [] };
+
+      mockadapter.onGet('/api/organisationen/schule-1').replyOnce(500, { code: 'SCHULE_NOT_FOUND' });
+      mockadapter.onPost('/api/organisationen/parents-by-ids').replyOnce(200, mockParentsTree);
+
+      await organisationStore.fetchSchulDetails('schule-1');
+
+      expect(organisationStore.currentSchule).toBeNull();
+      expect(organisationStore.errorCode).toBe('SCHULE_NOT_FOUND');
+      expect(organisationStore.loading).toBe(false);
+    });
+
+    it('should handle string error', async () => {
+      mockadapter.onGet('/api/organisationen/1').replyOnce(500, 'some mock server error');
+      const getOrganisationByIdPromise: Promise<void> = organisationStore.fetchSchulDetails('schule-1');
+      await getOrganisationByIdPromise;
+      expect(organisationStore.currentSchule).toEqual(null);
+      expect(organisationStore.errorCode).toEqual('UNSPECIFIED_ERROR');
+      expect(organisationStore.loading).toBe(false);
+    });
+  });
+
   describe('loadSchultraeger', () => {
     it('should update the schultraeger', async () => {
       const mockResponse: OrganisationRootChildrenResponse = {
@@ -644,6 +712,7 @@ describe('OrganisationStore', () => {
           zugehoerigZu: '1',
           version: 1,
           itslearningEnabled: true,
+          emailAdress: 'oeffentlich@example.com',
         },
         ersatz: {
           id: '3',
@@ -657,6 +726,7 @@ describe('OrganisationStore', () => {
           zugehoerigZu: '1',
           version: 1,
           itslearningEnabled: true,
+          emailAdress: 'ersatz@example.com',
         },
       };
 
