@@ -77,6 +77,7 @@ export const useImportStore: StoreDefinition<'importStore', ImportState, ImportG
 
           this.importResponse = data;
         } catch (error: unknown) {
+          this.importResponse = null;
           this.errorCode = getResponseErrorCode(error, 'ERROR_IMPORTING_FILE');
         } finally {
           this.retrievalIsLoading = false;

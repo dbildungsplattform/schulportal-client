@@ -18,7 +18,7 @@ let rolleStore: RolleStore;
 let searchFilterStore: SearchFilterStore;
 let serviceProviderStore: ServiceProviderStore;
 
-beforeEach(() => {
+beforeEach(async (): Promise<void> => {
   document.body.innerHTML = `
     <div>
       <div id="app"></div>
@@ -29,6 +29,8 @@ beforeEach(() => {
     history: createWebHistory(),
     routes,
   });
+  router.push('/admin/rollen');
+  await router.isReady();
 
   authStore = useAuthStore();
   authStore.hasAngeboteVerwaltenPermission = true;
