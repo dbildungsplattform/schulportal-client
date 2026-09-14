@@ -11,7 +11,7 @@ import {
   type ServiceProviderStore,
 } from '@/stores/ServiceProviderStore';
 import { getLogoPath } from '@/utils/logosConfig';
-import { DOMWrapper, VueWrapper, flushPromises, mount } from '@vue/test-utils';
+import { DOMWrapper, VueWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { DoFactory } from 'test/DoFactory';
 import type { MockInstance } from 'vitest';
@@ -25,6 +25,8 @@ const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
 const authStore: AuthStore = useAuthStore();
 const rolleStore: RolleStore = useRolleStore();
 const configStore: ConfigStore = useConfigStore();
+
+enableAutoUnmount(afterEach);
 
 const mockServiceProvider: ManageableServiceProviderDetail = DoFactory.getManageableServiceProviderDetail({
   kategorie: ServiceProviderKategorie.Schulisch,
