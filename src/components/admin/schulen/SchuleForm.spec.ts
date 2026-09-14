@@ -3,8 +3,8 @@ import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore'
 import { VueWrapper, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Component } from 'vue';
-import { SchuleDetailsForm } from '../service-provider/types.js';
 import SchuleForm from './SchuleForm.vue';
+import { SchuleDetailsForm } from './types.js';
 
 let wrapper: VueWrapper | null = null;
 

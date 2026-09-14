@@ -1,34 +1,13 @@
 <script setup lang="ts">
   import FormRow from '@/components/form/FormRow.vue';
   import FormWrapper from '@/components/form/FormWrapper.vue';
-  import { Organisation } from '@/stores/OrganisationStore';
   import { DIN_91379A_EXT, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
   import { toTypedSchema } from '@vee-validate/yup';
   import { FormMeta, TypedSchema, useForm, type BaseFieldProps } from 'vee-validate';
   import { computed, ComputedRef, onMounted, Ref, watch, watchEffect } from 'vue';
   import { Composer, useI18n } from 'vue-i18n';
   import { object, string } from 'yup';
-  import { SchuleDetailsForm } from '../service-provider/types';
-
-  type Props = {
-    initialValues: Partial<SchuleDetailsForm>;
-    cachedValues?: Partial<SchuleDetailsForm>;
-    isEditMode: boolean;
-    schultraegerList: Organisation[] | undefined;
-    showUnsavedChangesDialog: boolean;
-    isLoading: boolean;
-    errorCode?: string;
-    selectedSchultraegerId?: string;
-  };
-
-  type Emits = {
-    (e: 'click:confirmUnsaved'): void;
-    (e: 'click:discard'): void;
-    (e: 'click:submit', values: SchuleDetailsForm): void;
-    (e: 'update:canSubmit', value: boolean): void;
-    (e: 'update:dirty', value: boolean): void;
-    (e: 'update:showUnsavedChangesDialog', visible: boolean): void;
-  };
+  import { Emits, Props, SchuleDetailsForm } from './types';
 
   const props: Props = defineProps<Props>();
   const emit: Emits = defineEmits<Emits>();

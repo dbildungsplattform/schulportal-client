@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import SchuleForm from '@/components/admin/schulen/SchuleForm.vue';
   import SchuleSuccessTemplate from '@/components/admin/schulen/SchuleSuccessTemplate.vue';
-  import { SchuleDetailsForm } from '@/components/admin/service-provider/types';
+  import { SchuleDetailsForm } from '@/components/admin/schulen/types';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import { Organisation, OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';

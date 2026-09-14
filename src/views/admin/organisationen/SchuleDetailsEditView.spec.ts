@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/typedef */
-import { SchuleDetailsForm } from '@/components/admin/service-provider/types.js';
+import { SchuleDetailsForm } from '@/components/admin/schulen/types.js';
 import { Organisation, OrganisationStore, OrganisationsTyp, useOrganisationStore } from '@/stores/OrganisationStore';
 import { createTestingPinia, TestingPinia } from '@pinia/testing';
 import { DOMWrapper, mount, VueWrapper } from '@vue/test-utils';

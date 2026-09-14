@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/typedef, @typescript-eslint/no-explicit-any */
-import { SchuleDetailsForm } from '@/components/admin/service-provider/types.js';
+import { SchuleDetailsForm } from '@/components/admin/schulen/types.js';
 import {
   OrganisationStore,
   OrganisationsTyp,
