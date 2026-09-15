@@ -1,6 +1,7 @@
 import {
   OrganisationResponseLegacy,
   PersonenkontexteUpdateResponse,
+  type RolleResponse,
   type DBiamPersonResponse,
   type PersonLandesbediensteterSearchResponse,
 } from '@/api-client/generated';
@@ -54,23 +55,21 @@ const mockCreatedPersonWithKontext: DBiamPersonResponse = DoFactory.getDBiamPers
     }),
   ],
 });
-
 const workflowOrganisation: OrganisationResponseLegacy = DoFactory.getOrganisationenResponseLegacy({
   id: ORGANISATION_ID,
 });
 
+const mockRolleForPersonenkontextCreation: RolleResponse = DoFactory.getRolleResponse({
+  id: ROLLE_ID,
+  rollenart: 'LERN',
+  administeredBySchulstrukturknoten: workflowOrganisation.id,
+  administeredBySchulstrukturknotenName: workflowOrganisation.name,
+  administeredBySchulstrukturknotenKennung: workflowOrganisation.kennung,
+  merkmale: [RollenMerkmal.KopersPflicht],
+});
+
 const mockWorkflowStepResponse: PersonenkontextWorkflowResponse = DoFactory.getPersonenkontextWorkflowResponse({
   organisations: [workflowOrganisation],
-  rollen: [
-    DoFactory.getRolleResponse({
-      id: ROLLE_ID,
-      rollenart: 'LERN',
-      administeredBySchulstrukturknoten: workflowOrganisation.id,
-      administeredBySchulstrukturknotenName: workflowOrganisation.name,
-      administeredBySchulstrukturknotenKennung: workflowOrganisation.kennung,
-      merkmale: [RollenMerkmal.KopersPflicht],
-    }),
-  ],
   canCommit: true,
 });
 
@@ -113,6 +112,16 @@ let { storedBeforeRouteLeaveCallback }: { storedBeforeRouteLeaveCallback: OnBefo
     };
   },
 );
+
+vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
+  const mod: object = await importOriginal();
+  return {
+    ...mod,
+    onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
+      storedBeforeRouteLeaveCallback = actualCallback;
+    }),
+  };
+});
 
 async function mountComponent(): Promise<ReturnType<typeof mount<typeof PersonCreationView>>> {
   await vi.dynamicImportSettled();
@@ -233,6 +242,7 @@ beforeEach(async () => {
   router.push('/');
   await router.isReady();
 
+  rolleStore.rollenForPersonenkontextCreation = [mockRolleForPersonenkontextCreation];
   wrapper = await mountComponent();
   personStore.errorCode = '';
   personenkontextStore.errorCode = '';
@@ -510,7 +520,6 @@ describe('PersonCreationView', () => {
           id: organisationId,
         }),
       ],
-      rollen: [DoFactory.getRolleResponse({ id: rolleId })],
       canCommit: true,
     });
 
@@ -578,21 +587,8 @@ describe('PersonCreationView', () => {
   });
 
   describe('navigation interception', () => {
-    afterEach(() => {
-      vi.unmock('vue-router');
-    });
-
     test('it triggers if form is dirty', async () => {
       const expectedCallsToNext: number = 0;
-      vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
-        const mod: object = await importOriginal();
-        return {
-          ...mod,
-          onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
-            storedBeforeRouteLeaveCallback = actualCallback;
-          }),
-        };
-      });
 
       wrapper = await mountComponent();
       await fillForm({
@@ -619,15 +615,6 @@ describe('PersonCreationView', () => {
     test('it does not trigger if form is not dirty', async () => {
       // autoselected orgnisation doesnt count as dirty
       const expectedCallsToNext: number = 1;
-      vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
-        const mod: object = await importOriginal();
-        return {
-          ...mod,
-          onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
-            storedBeforeRouteLeaveCallback = actualCallback;
-          }),
-        };
-      });
       wrapper = await mountComponent();
       const spy: Mock = vi.fn();
       storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, spy);

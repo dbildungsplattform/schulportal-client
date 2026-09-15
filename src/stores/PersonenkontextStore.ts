@@ -167,7 +167,6 @@ export const usePersonenkontextStore: StoreDefinition<
             filter.personId,
             filter.organisationId,
             filter.rollenIds,
-            filter.rolleName,
             filter.organisationName,
             filter.limit,
             filter.requestedWithSystemrecht,

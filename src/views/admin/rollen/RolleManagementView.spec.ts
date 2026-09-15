@@ -65,6 +65,7 @@ beforeEach(async (): Promise<void> => {
       ],
       administeredBySchulstrukturknotenName: 'Land SH',
       administeredBySchulstrukturknotenKennung: '',
+      version: 1,
     }),
     DoFactory.getRolleWithServiceProviders({
       name: 'SuS',

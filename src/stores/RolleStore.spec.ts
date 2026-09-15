@@ -1,19 +1,19 @@
 import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
+import { DoFactory } from 'test/DoFactory';
 import {
   RolleControllerFindRollenAvailableForPersonAdministration200Response,
   RollenArt,
   RollenMerkmal,
   RollenSystemRechtEnum,
+  type ApplyRollenerweiterungChangesBodyParams,
   type RolleResponse,
   type RolleWithServiceProvidersResponse,
-  type ApplyRollenerweiterungChangesBodyParams,
   type ServiceProviderResponse,
 } from '../api-client/generated/api';
 import { useRolleStore, type RolleStore } from './RolleStore';
 
 import axiosApiInstance from '@/services/ApiService';
-import { DoFactory } from 'test/DoFactory';
 
 const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
 
@@ -108,19 +108,16 @@ describe('rolleStore', () => {
   describe('getAllRollen', () => {
     it('should load rollen and update state', async () => {
       const mockResponse: RolleResponse[] = [
-        {
+        DoFactory.getRolleResponse({
           administeredBySchulstrukturknoten: '1234',
-          rollenart: 'LEHR',
+          rollenart: RollenArt.Lehr,
           name: 'Lehrer',
           merkmale: [RollenMerkmal.KopersPflicht],
           systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
-          createdAt: '2022',
-          updatedAt: '2022',
           id: '1',
           administeredBySchulstrukturknotenName: 'Testschule-15',
           administeredBySchulstrukturknotenKennung: '1111115',
-          version: 1,
-        },
+        }),
       ];
 
       mockadapter.onGet('/api/rolle?offset=0&limit=30&searchStr=').replyOnce(200, mockResponse, {});
@@ -176,19 +173,16 @@ describe('rolleStore', () => {
 
   describe('getRolleById', () => {
     it('should load Rolle and update state', async () => {
-      const mockResponse: RolleResponse = {
+      const mockResponse: RolleResponse = DoFactory.getRolleResponse({
         administeredBySchulstrukturknoten: '1234',
-        rollenart: 'LEHR',
+        rollenart: RollenArt.Lehr,
         name: 'Lehrer',
         merkmale: [RollenMerkmal.KopersPflicht],
         systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
-        createdAt: '2022',
-        updatedAt: '2022',
         id: '1',
         administeredBySchulstrukturknotenName: null,
         administeredBySchulstrukturknotenKennung: null,
-        version: 1,
-      };
+      });
 
       mockadapter.onGet('/api/rolle/1').replyOnce(200, mockResponse, {});
       const getRolleByIdPromise: Promise<void> = rolleStore.getRolleById('1');
@@ -470,20 +464,18 @@ describe('rolleStore', () => {
 
   describe('updateRolle', () => {
     it('should update Rolle and update state', async () => {
-      const mockResponse: RolleWithServiceProvidersResponse = {
+      const mockResponse: RolleWithServiceProvidersResponse = DoFactory.getRolleWithServiceProviders({
         administeredBySchulstrukturknoten: '1234',
-        rollenart: 'LEHR',
+        rollenart: RollenArt.Lehr,
         name: 'Updated Lehrer',
-        merkmale: ['KOPERS_PFLICHT'],
-        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
-        createdAt: '2022',
-        updatedAt: '2023',
+        merkmale: [RollenMerkmal.KopersPflicht],
+        systemrechte: [{ name: RollenSystemRechtEnum.RollenVerwalten, isTechnical: false }],
         id: '1',
         serviceProviders: [{ id: 'sp1', name: 'ServiceProvider1' }],
         administeredBySchulstrukturknotenName: null,
         administeredBySchulstrukturknotenKennung: null,
-        version: 1,
-      };
+        updatedAt: '2023',
+      });
 
       mockadapter.onPut('/api/rolle/1').replyOnce(200, mockResponse);
       const updateRollePromise: Promise<void> = rolleStore.updateRolle(
@@ -560,6 +552,51 @@ describe('rolleStore', () => {
         expect(rolleStore.errorCode).toEqual('some mock server error');
         expect(rolleStore.loading).toBe(false);
       });
+    });
+  });
+
+  describe('getRollenForPersonenkontextCreation', () => {
+    it('should load available Rollen and update state', async () => {
+      const mockResponse: RolleResponse[] = [DoFactory.getRolleResponse(), DoFactory.getRolleResponse()];
+      mockadapter.onGet(/\/api\/rolle\/for-personenkontext-creation/).replyOnce(200, mockResponse);
+
+      const promise: Promise<void> = rolleStore.getRollenForPersonenkontextCreation({
+        organisationId: 'organisation-1',
+        offset: 0,
+        limit: 20,
+        rollenartOfUser: RollenArt.Lehr,
+        rolleName: 'Lehrer',
+        rollenIds: ['rolle-1', 'rolle-2'],
+        systemrecht: RollenSystemRechtEnum.RollenVerwalten,
+      });
+
+      expect(rolleStore.loading).toBe(true);
+      await promise;
+
+      expect(rolleStore.rollenForPersonenkontextCreation).toEqual(mockResponse);
+      expect(mockadapter.history.get[0]?.url).toContain('organisationId=organisation-1');
+      expect(mockadapter.history.get[0]?.url).toContain('rollenIds=rolle-1');
+      expect(mockadapter.history.get[0]?.url).toContain('rollenIds=rolle-2');
+      expect(rolleStore.errorCode).toBe('');
+      expect(rolleStore.loading).toBe(false);
+    });
+
+    it('should handle a structured error', async () => {
+      mockadapter.onGet(/\/api\/rolle\/for-personenkontext-creation/).replyOnce(500, { code: 'ROLLE_ERROR_CODE' });
+
+      await rolleStore.getRollenForPersonenkontextCreation({ organisationId: 'organisation-1' });
+
+      expect(rolleStore.errorCode).toBe('ROLLE_ERROR_CODE');
+      expect(rolleStore.loading).toBe(false);
+    });
+
+    it('should handle an unstructured error', async () => {
+      mockadapter.onGet(/\/api\/rolle\/for-personenkontext-creation/).replyOnce(500, 'server error');
+
+      await rolleStore.getRollenForPersonenkontextCreation({ organisationId: 'organisation-1' });
+
+      expect(rolleStore.errorCode).toBe('ROLLE_ERROR');
+      expect(rolleStore.loading).toBe(false);
     });
   });
 });
