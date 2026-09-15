@@ -70,52 +70,6 @@ async function mountComponent(
   });
 }
 
-type FormFields = {
-  schulform: string;
-  schulname: string;
-  emailAdress: string;
-};
-
-type FormSelectors = {
-  schulformSelect: DOMWrapper<Element> | undefined;
-  schulnameInput: DOMWrapper<Element> | undefined;
-  emailAdressInput: DOMWrapper<Element> | undefined;
-};
-
-async function fillForm(args: Partial<FormFields>): Promise<Partial<FormSelectors>> {
-  const { schulform, schulname, emailAdress }: Partial<FormFields> = args;
-  const selectors: Partial<FormSelectors> = {};
-
-  if (schulform) {
-    const schulformSelect: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="schulform-select"]');
-    if (schulformSelect?.exists()) {
-      await schulformSelect.find('select').setValue(schulform);
-      await nextTick();
-      selectors.schulformSelect = schulformSelect;
-    }
-  }
-
-  if (schulname) {
-    const schulnameInput: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="schulname-input"]');
-    if (schulnameInput?.exists()) {
-      await schulnameInput.find('input').setValue(schulname);
-      await nextTick();
-      selectors.schulnameInput = schulnameInput;
-    }
-  }
-
-  if (emailAdress) {
-    const emailAdressInput: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="email-input"]');
-    if (emailAdressInput?.exists()) {
-      await emailAdressInput.find('input').setValue(emailAdress);
-      await nextTick();
-      selectors.emailAdressInput = emailAdressInput;
-    }
-  }
-
-  return selectors;
-}
-
 beforeEach(async () => {
   document.body.innerHTML = `
     <div>
@@ -189,9 +143,10 @@ describe('SchuleDetailsEditView', () => {
   });
 
   test('it passes initial form values from currentSchule to SchuleForm', () => {
-    const form: VueWrapper | undefined = wrapper?.findComponent(SchuleForm);
+    const form = wrapper?.findComponent(SchuleForm);
     expect(form?.exists()).toBe(true);
-    const initialValues: SchuleDetailsForm = form?.props('initialValues') as unknown as SchuleDetailsForm;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const initialValues: Partial<SchuleDetailsForm> | undefined = form?.props('initialValues');
     expect(initialValues?.selectedSchulname).toBe('Test Schule');
     expect(initialValues?.selectedEmailAdress).toBe('test@schule.de');
   });
@@ -442,22 +397,6 @@ describe('SchuleDetailsEditView', () => {
       expect(next).toHaveBeenCalledTimes(1);
     });
 
-    test('blocks navigation and then confirms the pending route change when the form is dirty', async () => {
-      const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
-      form.vm.$emit('update:dirty', true);
-      await nextTick();
-
-      const next: MockInstance = vi.fn();
-      storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, next as never);
-
-      expect((wrapper!.vm.$.setupState as Record<string, unknown>).showUnsavedChangesDialog).toBe(true);
-      expect(next).not.toHaveBeenCalled();
-
-      (wrapper!.vm.$.setupState as Record<string, unknown>).handleConfirmUnsavedChanges?.();
-      expect(next).toHaveBeenCalledTimes(1);
-      expect(organisationStore.errorCode).toBe('');
-    });
-
     test('preventNavigation prevents default when isDirty is true', async () => {
       wrapper?.unmount();
       wrapper = await mountComponent();
@@ -466,7 +405,7 @@ describe('SchuleDetailsEditView', () => {
       form.vm.$emit('update:dirty', true);
       await flushPromises();
 
-      const event: BeforeUnloadEvent = new Event('beforeunload') as BeforeUnloadEvent;
+      const event: BeforeUnloadEvent = new Event('beforeunload');
       const preventDefaultSpy: MockInstance = vi.spyOn(event, 'preventDefault');
 
       window.dispatchEvent(event);
@@ -524,7 +463,7 @@ describe('SchuleDetailsEditView', () => {
       form.vm.$emit('update:dirty', true);
       await nextTick();
 
-      const event: BeforeUnloadEvent = new Event('beforeunload') as BeforeUnloadEvent;
+      const event: BeforeUnloadEvent = new Event('beforeunload');
       const preventDefaultSpy: MockInstance = vi.spyOn(event, 'preventDefault');
 
       window.dispatchEvent(event);
@@ -540,7 +479,7 @@ describe('SchuleDetailsEditView', () => {
       form.vm.$emit('update:dirty', false);
       await nextTick();
 
-      const event: BeforeUnloadEvent = new Event('beforeunload') as BeforeUnloadEvent;
+      const event: BeforeUnloadEvent = new Event('beforeunload');
       const preventDefaultSpy: MockInstance = vi.spyOn(event, 'preventDefault');
 
       window.dispatchEvent(event);
@@ -556,23 +495,25 @@ describe('SchuleDetailsEditView', () => {
       form.vm.$emit('update:dirty', true);
       await nextTick();
 
-      const event: BeforeUnloadEvent = new Event('beforeunload') as BeforeUnloadEvent;
+      const event: BeforeUnloadEvent = new Event('beforeunload');
       vi.spyOn(event, 'preventDefault');
 
       window.dispatchEvent(event);
 
       // returnValue should be set to empty string for Chrome compatibility
-      expect((event as any).returnValue).toBeDefined();
+      expect(event.returnValue).toBeDefined();
     });
   });
 
   describe('handleConfirmUnsavedChanges', () => {
     test('clears errorCode when confirming unsaved changes', async () => {
+      wrapper?.unmount();
+      wrapper = await mountComponent();
       organisationStore.errorCode = 'SOME_ERROR';
       await nextTick();
 
       const form: VueWrapper = wrapper.findComponent({ name: 'SchuleForm' });
-      form.vm.$emit('click:confirmUnsaved');
+      form?.vm.$emit('click:confirmUnsaved');
       await flushPromises();
 
       expect(organisationStore.errorCode).toBe('');

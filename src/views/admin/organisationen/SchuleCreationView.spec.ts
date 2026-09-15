@@ -181,16 +181,19 @@ describe('SchuleCreationView', () => {
   });
 
   test('it initializes SchuleForm with the first schultraeger fetched after mounting', async () => {
-    organisationStore.schultraeger = undefined;
+    organisationStore.schultraeger = [];
     vi.spyOn(organisationStore, 'getRootKinderSchultraeger').mockImplementation(async () => {
       organisationStore.schultraeger = [schultraegerOrganisation];
+      await flushPromises();
     });
 
     wrapper?.unmount();
     wrapper = await mountComponent();
 
-    const form: VueWrapper = wrapper.findComponent(SchuleForm);
-    expect(form.props('initialValues')).toMatchObject({
+    // eslint-disable-next-line @typescript-eslint/typedef
+    const form = wrapper.findComponent(SchuleForm);
+
+    expect(form?.props('initialValues')).toMatchObject({
       selectedSchulform: schultraegerOrganisation.id,
     });
   });
@@ -474,6 +477,7 @@ describe('SchuleCreationView', () => {
     organisationStore.schultraeger = [];
     vi.spyOn(organisationStore, 'getRootKinderSchultraeger').mockImplementation(async () => {
       organisationStore.schultraeger = [];
+      await flushPromises();
     });
     wrapper = await mountComponent();
     await nextTick();
