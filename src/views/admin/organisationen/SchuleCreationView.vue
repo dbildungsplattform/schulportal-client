@@ -15,6 +15,7 @@
 
   const isDirty: Ref<boolean> = ref(false);
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
+  const isSchultraegerLoaded: Ref<boolean> = ref(false);
 
   const router: Router = useRouter();
   const organisationStore: OrganisationStore = useOrganisationStore();
@@ -122,6 +123,8 @@
     organisationStore.createdSchule = null;
     organisationStore.errorCode = '';
     await organisationStore.getRootKinderSchultraeger();
+    initialFormValues.value.selectedSchulform = defaultSchulform.value;
+    isSchultraegerLoaded.value = true;
 
     /* listen for browser changes and prevent them when form is dirty */
     window.addEventListener('beforeunload', preventNavigation);
@@ -163,7 +166,7 @@
           button-class="primary"
         />
         <SchuleForm
-          v-if="!organisationStore.errorCode"
+          v-if="isSchultraegerLoaded && !organisationStore.errorCode"
           :show-unsaved-changes-dialog="showUnsavedChangesDialog"
           :is-edit-mode="false"
           :error-code="organisationStore.errorCode"

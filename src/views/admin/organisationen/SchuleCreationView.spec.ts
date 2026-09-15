@@ -53,7 +53,7 @@ type OnBeforeRouteLeaveCallback = (
 
 async function mountComponent(): Promise<ReturnType<typeof mount<typeof SchuleCreationView>>> {
   await vi.dynamicImportSettled();
-  return mount(SchuleCreationView, {
+  const mountedComponent: ReturnType<typeof mount<typeof SchuleCreationView>> = mount(SchuleCreationView, {
     attachTo: document.getElementById('app') || '',
     global: {
       components: {
@@ -62,6 +62,8 @@ async function mountComponent(): Promise<ReturnType<typeof mount<typeof SchuleCr
       plugins: [router],
     },
   });
+  await flushPromises();
+  return mountedComponent;
 }
 
 type FormFields = {
@@ -175,6 +177,21 @@ describe('SchuleCreationView', () => {
       selectedSchulform: schultraegerOrganisation.id,
       selectedDienststellennummer: '',
       selectedSchulname: '',
+    });
+  });
+
+  test('it initializes SchuleForm with the first schultraeger fetched after mounting', async () => {
+    organisationStore.schultraeger = undefined;
+    vi.spyOn(organisationStore, 'getRootKinderSchultraeger').mockImplementation(async () => {
+      organisationStore.schultraeger = [schultraegerOrganisation];
+    });
+
+    wrapper?.unmount();
+    wrapper = await mountComponent();
+
+    const form: VueWrapper = wrapper.findComponent(SchuleForm);
+    expect(form.props('initialValues')).toMatchObject({
+      selectedSchulform: schultraegerOrganisation.id,
     });
   });
 
@@ -455,6 +472,9 @@ describe('SchuleCreationView', () => {
 
   test('it initializes with no schultraeger as default when schultraeger list is empty', async () => {
     organisationStore.schultraeger = [];
+    vi.spyOn(organisationStore, 'getRootKinderSchultraeger').mockImplementation(async () => {
+      organisationStore.schultraeger = [];
+    });
     wrapper = await mountComponent();
     await nextTick();
 
