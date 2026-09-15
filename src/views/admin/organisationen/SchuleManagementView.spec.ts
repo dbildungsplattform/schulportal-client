@@ -105,7 +105,7 @@ describe('SchuleManagementView', () => {
 
       expect(rows).toHaveLength(expectedRows.length);
 
-      expectedRows.forEach((expectedRow, index) => {
+      expectedRows.forEach((expectedRow: Partial<SchuleTableItem>, index: number) => {
         const cells: ReturnType<VueWrapper['findAll']> = rows[index]?.findAll('td') as ReturnType<
           VueWrapper['findAll']
         >;

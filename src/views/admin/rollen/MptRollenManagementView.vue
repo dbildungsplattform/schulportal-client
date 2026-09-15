@@ -210,5 +210,3 @@
     />
   </LayoutCard>
 </template>
-
-<style></style>

@@ -1,6 +1,6 @@
 import SchulenFilter from '@/components/filter/SchulenFilter.vue';
 import routes from '@/router/routes';
-import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
+import { AuthStore, useAuthStore } from '@/stores/AuthStore';
 import { RollenArt, RollenMerkmal, useRolleStore, type RolleStore } from '@/stores/RolleStore';
 import { rollenPerPageDefault, useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
 import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
@@ -9,6 +9,7 @@ import { expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import { RollenSystemRechtEnum } from '../../../api-client/generated/api';
+import { DoFactory } from '../../../../test/DoFactory';
 import RolleManagementView from './RolleManagementView.vue';
 
 let wrapper: VueWrapper | null = null;
@@ -38,6 +39,8 @@ beforeEach(async (): Promise<void> => {
   searchFilterStore = useSearchFilterStore();
   serviceProviderStore = useServiceProviderStore();
 
+  authStore.hasMptRollenVerwaltenPermission = true;
+
   searchFilterStore.selectedMerkmaleForRollen = [];
   searchFilterStore.selectedRollenartenForRollen = [];
   searchFilterStore.selectedOrganisationenForRollen = [];
@@ -52,67 +55,32 @@ beforeEach(async (): Promise<void> => {
   searchFilterStore.searchStringForRollen = '';
 
   rolleStore.allRollen = [
-    {
-      administeredBySchulstrukturknoten: '1234',
-      rollenart: RollenArt.Lehr,
+    DoFactory.getRolleWithServiceProviders({
       name: 'Lehrer',
       merkmale: [RollenMerkmal.KopersPflicht],
       systemrechte: [{ name: RollenSystemRechtEnum.RollenVerwalten, isTechnical: false }],
-      createdAt: '2022',
-      updatedAt: '2022',
-      id: '1',
       serviceProviders: [
-        {
-          id: '1',
-          name: 'itslearning',
-        },
-        {
-          id: '2',
-          name: 'E-Mail',
-        },
+        { id: '1', name: 'itslearning' },
+        { id: '2', name: 'E-Mail' },
       ],
       administeredBySchulstrukturknotenName: 'Land SH',
       administeredBySchulstrukturknotenKennung: '',
       version: 1,
-    },
-    {
-      administeredBySchulstrukturknoten: '1234',
-      rollenart: RollenArt.Lern,
+    }),
+    DoFactory.getRolleWithServiceProviders({
       name: 'SuS',
-      merkmale: [],
-      systemrechte: [],
-      createdAt: '2022',
-      updatedAt: '2022',
-      id: '2',
-      serviceProviders: [
-        {
-          id: '1',
-          name: 'itslearning',
-        },
-      ],
+      rollenart: RollenArt.Lern,
+      serviceProviders: [{ id: '1', name: 'itslearning' }],
       administeredBySchulstrukturknotenName: 'Land SH',
       administeredBySchulstrukturknotenKennung: '1234567',
-      version: 1,
-    },
-    {
-      administeredBySchulstrukturknoten: '42',
-      rollenart: RollenArt.Lern,
+    }),
+    DoFactory.getRolleWithServiceProviders({
       name: 'Rolle ohne Namen',
-      merkmale: [],
-      systemrechte: [],
-      createdAt: '2022',
-      updatedAt: '2022',
-      id: '2',
-      serviceProviders: [
-        {
-          id: '1',
-          name: 'itslearning',
-        },
-      ],
+      rollenart: RollenArt.Lern,
+      serviceProviders: [{ id: '1', name: 'itslearning' }],
       administeredBySchulstrukturknotenName: '',
       administeredBySchulstrukturknotenKennung: '1234567',
-      version: 1,
-    },
+    }),
   ];
 
   rolleStore.totalRollen = 3;
@@ -271,6 +239,26 @@ describe('RolleManagementView', () => {
       limit: 30,
       searchString: '',
       systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
+      merkmale: undefined,
+      rollenarten: [RollenArt.Lehr],
+      organisationenForFilter: undefined,
+      serviceProviderIds: undefined,
+    });
+  });
+
+  test('requests only RollenVerwalten when user lacks MPT permission', async () => {
+    authStore.hasMptRollenVerwaltenPermission = false;
+
+    const rollenartenSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+      '[data-testid="rollenarten-filter-select"]',
+    );
+    await rollenartenSelect?.setValue([RollenArt.Lehr]);
+
+    expect(rolleStore.getAllRollen).toHaveBeenLastCalledWith({
+      offset: 0,
+      limit: 30,
+      searchString: '',
+      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
       merkmale: undefined,
       rollenarten: [RollenArt.Lehr],
       organisationenForFilter: undefined,
