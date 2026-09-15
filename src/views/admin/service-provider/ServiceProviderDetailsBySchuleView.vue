@@ -17,6 +17,7 @@
   import VidisInfoDialog from '@/components/admin/service-provider/VidisInfoDialog.vue';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
+  import { AuthStore, useAuthStore } from '@/stores/AuthStore';
   import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
   import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
   import {
@@ -48,6 +49,7 @@
   const organisationStore: OrganisationStore = useOrganisationStore();
   const rolleStore: RolleStore = useRolleStore();
   const configStore: ConfigStore = useConfigStore();
+  const authStore: AuthStore = useAuthStore();
 
   const isEditModeAvailable: ComputedRef<boolean> = computed(() => {
     return configStore.configData?.schulischeAngeboteErstellen ?? false;
@@ -204,9 +206,13 @@
   async function openRollenerweiterungEditMode(): Promise<void> {
     // Load available rollen for this organisation if not yet loaded
     if (organisationIdFromQuery.value) {
+      const systemrechte: RollenSystemRechtEnum[] = [RollenSystemRechtEnum.RollenErweitern];
+      if (authStore.hasMptRollenVerwaltenPermission) {
+        systemrechte.push(RollenSystemRechtEnum.MptRollenVerwalten);
+      }
       await rolleStore.getAllRollen({
         organisationContextForOperation: organisationIdFromQuery.value,
-        systemrechte: [RollenSystemRechtEnum.RollenErweitern, RollenSystemRechtEnum.MptRollenVerwalten],
+        systemrechte,
       });
     }
     selectedRolleIds.value = [...existingRolleIds.value];

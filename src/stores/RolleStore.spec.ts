@@ -1,12 +1,14 @@
 import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
 import {
+  RolleControllerFindRollenAvailableForPersonAdministration200Response,
+  RollenArt,
   RollenMerkmal,
-  type ApplyRollenerweiterungChangesBodyParams,
+  RollenSystemRechtEnum,
   type RolleResponse,
   type RolleWithServiceProvidersResponse,
+  type ApplyRollenerweiterungChangesBodyParams,
   type ServiceProviderResponse,
-  type SystemRechtResponse,
 } from '../api-client/generated/api';
 import { useRolleStore, type RolleStore } from './RolleStore';
 
@@ -14,6 +16,11 @@ import axiosApiInstance from '@/services/ApiService';
 import { DoFactory } from 'test/DoFactory';
 
 const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
+
+// The generated client bakes query params into the request URL, so they have to be parsed back out.
+function getRequestQuery(index: number): URLSearchParams {
+  return new URL(mockadapter.history.get[index]!.url!, 'http://localhost').searchParams;
+}
 
 describe('rolleStore', () => {
   let rolleStore: RolleStore;
@@ -36,34 +43,31 @@ describe('rolleStore', () => {
 
   describe('createRolle', () => {
     it('should create rolle and update state', async () => {
-      const mockResponse: RolleResponse = {
+      const mockResponse: RolleResponse = DoFactory.getRolleResponse({
         administeredBySchulstrukturknoten: '1234',
-        rollenart: 'LEHR',
+        rollenart: RollenArt.Lehr,
         name: 'Lehrer',
-        // TODO remove type casting when generator is fixed
         merkmale: [RollenMerkmal.KopersPflicht],
-        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
-        createdAt: '2022',
-        updatedAt: '2022',
-        id: '1',
-        administeredBySchulstrukturknotenName: null,
-        administeredBySchulstrukturknotenKennung: null,
-        version: 1,
-      };
+        systemrechte: [{ name: RollenSystemRechtEnum.RollenVerwalten, isTechnical: false }],
+      });
 
       mockadapter.onPost('/api/rolle').replyOnce(200, mockResponse);
       const createRollePromise: Promise<void> = rolleStore.createRolle(
         'Lehrer',
         '1234',
-        'LEHR',
-        ['KOPERS_PFLICHT'],
-        ['ROLLEN_VERWALTEN'],
+        RollenArt.Lehr,
+        [RollenMerkmal.KopersPflicht],
+        [RollenSystemRechtEnum.RollenVerwalten],
         ['5678'],
       );
       expect(rolleStore.loading).toBe(true);
       await createRollePromise;
-      expect(rolleStore.createdRolle).toEqual({ ...mockResponse, systemrechte: new Set(['ROLLEN_VERWALTEN']) });
-      expect(rolleStore.currentRolle).toEqual({ ...mockResponse, systemrechte: new Set(['ROLLEN_VERWALTEN']) });
+      expect(rolleStore.createdRolle!.name).toEqual('Lehrer');
+      expect(rolleStore.createdRolle!.administeredBySchulstrukturknoten).toEqual('1234');
+      expect(rolleStore.createdRolle!.rollenart).toEqual(RollenArt.Lehr);
+      expect(rolleStore.createdRolle!.merkmale).toEqual([RollenMerkmal.KopersPflicht]);
+      expect(rolleStore.createdRolle!.systemrechte).toEqual(new Set([RollenSystemRechtEnum.RollenVerwalten]));
+      expect(rolleStore.createdRolle).toEqual(rolleStore.currentRolle);
       expect(rolleStore.loading).toBe(false);
     });
 
@@ -109,7 +113,7 @@ describe('rolleStore', () => {
           rollenart: 'LEHR',
           name: 'Lehrer',
           merkmale: [RollenMerkmal.KopersPflicht],
-          systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
+          systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
           createdAt: '2022',
           updatedAt: '2022',
           id: '1',
@@ -176,9 +180,8 @@ describe('rolleStore', () => {
         administeredBySchulstrukturknoten: '1234',
         rollenart: 'LEHR',
         name: 'Lehrer',
-        // TODO: remove type casting when generator is fixed
         merkmale: [RollenMerkmal.KopersPflicht],
-        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
+        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
         createdAt: '2022',
         updatedAt: '2022',
         id: '1',
@@ -221,6 +224,77 @@ describe('rolleStore', () => {
       expect(rolleStore.errorCode).toEqual('some mock server error');
       expect(rolleStore.currentRolle).toEqual(null);
       expect(rolleStore.loading).toBe(false);
+    });
+  });
+
+  describe('getRollenForPersonAdministration', () => {
+    it('should load rollen for person administration and update state', async () => {
+      const mockResponse: RolleControllerFindRollenAvailableForPersonAdministration200Response = {
+        total: 1,
+        offset: 0,
+        limit: 25,
+        items: [DoFactory.getRolleResponse()],
+      };
+
+      mockadapter.onGet(/^\/api\/rolle\/for-person-administration/).replyOnce(200, mockResponse);
+
+      const getRollenForPersonAdministrationPromise: Promise<void> = rolleStore.getRollenForPersonAdministration({
+        searchStr: 'Lehr',
+        limit: 25,
+        offset: 0,
+        organisationIds: ['schule-1'],
+        systemrechte: [RollenSystemRechtEnum.PersonenVerwalten],
+      });
+      expect(rolleStore.loading).toBe(true);
+      await getRollenForPersonAdministrationPromise;
+
+      const query: URLSearchParams = getRequestQuery(0);
+      expect(query.get('searchStr')).toBe('Lehr');
+      expect(query.get('limit')).toBe('25');
+      expect(query.get('offset')).toBe('0');
+      expect(query.getAll('organisationIds')).toEqual(['schule-1']);
+      expect(query.getAll('systemrechte')).toEqual([RollenSystemRechtEnum.PersonenVerwalten]);
+      expect(rolleStore.rollenForPersonAdministration).toEqual(mockResponse.items);
+      expect(rolleStore.loading).toBe(false);
+    });
+
+    it('should pass all filter params to the person administration endpoint', async () => {
+      mockadapter.onGet(/^\/api\/rolle\/for-person-administration/).replyOnce(200, [], {});
+
+      await rolleStore.getRollenForPersonAdministration({
+        searchStr: 'SuS',
+        limit: 30,
+        offset: 30,
+        organisationIds: ['org-1', 'org-2'],
+        systemrechte: [RollenSystemRechtEnum.PersonenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
+      });
+
+      const query: URLSearchParams = getRequestQuery(0);
+      expect(query.get('searchStr')).toBe('SuS');
+      expect(query.get('limit')).toBe('30');
+      expect(query.get('offset')).toBe('30');
+      expect(query.getAll('organisationIds')).toEqual(['org-1', 'org-2']);
+      expect(query.getAll('systemrechte')).toEqual([
+        RollenSystemRechtEnum.PersonenVerwalten,
+        RollenSystemRechtEnum.MptRollenVerwalten,
+      ]);
+    });
+
+    it('should handle error when loading rollen for person administration', async () => {
+      mockadapter.onGet(/^\/api\/rolle\/for-person-administration/).replyOnce(500, 'some mock server error');
+
+      const getRollenForPersonAdministrationPromise: Promise<void> = rolleStore.getRollenForPersonAdministration({
+        searchStr: '',
+        limit: 25,
+        offset: 0,
+        organisationIds: [],
+        systemrechte: [RollenSystemRechtEnum.PersonenVerwalten],
+      });
+      expect(rolleStore.loading).toBe(true);
+      await getRollenForPersonAdministrationPromise;
+
+      expect(rolleStore.errorCode).toEqual('UNSPECIFIED_ERROR');
+      expect(rolleStore.rollenForPersonAdministration).toEqual([]);
     });
   });
 
@@ -401,7 +475,7 @@ describe('rolleStore', () => {
         rollenart: 'LEHR',
         name: 'Updated Lehrer',
         merkmale: ['KOPERS_PFLICHT'],
-        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
+        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
         createdAt: '2022',
         updatedAt: '2023',
         id: '1',
