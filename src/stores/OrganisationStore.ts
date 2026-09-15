@@ -644,7 +644,7 @@ export const useOrganisationStore: StoreDefinition<
 
         this.updatedOrganisation = data;
       } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'SCHULE_ERROR');
+        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
       } finally {
         this.loading = false;
       }

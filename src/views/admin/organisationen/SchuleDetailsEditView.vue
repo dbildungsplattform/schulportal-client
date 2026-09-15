@@ -141,7 +141,7 @@
           :closable="false"
           :text="organisationStore.errorCode ? $t(`admin.schule.errors.${organisationStore.errorCode}`) : ''"
           :show-button="true"
-          :button-text="$t('admin.schule.backToCreateSchule')"
+          :button-text="$t('admin.schule.edit')"
           :button-action="navigateToSchuleBearbeiten"
           button-class="primary"
         />

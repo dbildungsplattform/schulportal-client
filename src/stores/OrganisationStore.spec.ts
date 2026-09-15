@@ -697,6 +697,49 @@ describe('OrganisationStore', () => {
     });
   });
 
+  describe('updateSchuleDetails', () => {
+    it('should update school details and set the updated organisation', async () => {
+      const mockUpdatedSchool: Organisation = {
+        id: 'schule-1',
+        kennung: '1234567',
+        name: 'Updated Testschule',
+        typ: OrganisationsTyp.Schule,
+        administriertVon: 'schultraeger-1',
+        zugehoerigZu: 'schultraeger-1',
+        emailAdress: 'updated@schule.de',
+        version: 2,
+      };
+
+      mockadapter.onPut('/api/organisationen/schule-1').replyOnce(200, mockUpdatedSchool);
+
+      await organisationStore.updateSchuleDetails({
+        organisationId: 'schule-1',
+        schultraegerform: 'schultraeger-1',
+        name: 'Updated Testschule',
+        emailAdress: 'updated@schule.de',
+      });
+
+      expect(organisationStore.updatedOrganisation).toEqual(mockUpdatedSchool);
+      expect(organisationStore.errorCode).toBe('');
+      expect(organisationStore.loading).toBe(false);
+    });
+
+    it('should set an error code when the school update request fails', async () => {
+      mockadapter.onPut('/api/organisationen/schule-1').replyOnce(500, { i18nKey: 'SCHULE_UPDATE_FAILED' });
+
+      await organisationStore.updateSchuleDetails({
+        organisationId: 'schule-1',
+        schultraegerform: 'schultraeger-1',
+        name: 'Updated Testschule',
+        emailAdress: 'updated@schule.de',
+      });
+
+      expect(organisationStore.updatedOrganisation).toBeNull();
+      expect(organisationStore.errorCode).toBe('SCHULE_UPDATE_FAILED');
+      expect(organisationStore.loading).toBe(false);
+    });
+  });
+
   describe('loadSchultraeger', () => {
     it('should update the schultraeger', async () => {
       const mockResponse: OrganisationRootChildrenResponse = {

@@ -197,7 +197,6 @@ describe('SchuleDetailsEditView', () => {
   });
 
   test('it returns undefined form values when currentSchule is not loaded', async () => {
-    // Clear the current school to test the else branch
     organisationStore.currentSchule = undefined;
     await nextTick();
 
@@ -205,13 +204,8 @@ describe('SchuleDetailsEditView', () => {
     wrapper = await mountComponent();
     await flushPromises();
 
-    // When currentSchule is undefined, initialValues should be undefined
-    // This is tested by checking if form component still renders but with undefined props
-    const form: VueWrapper | undefined = wrapper?.findComponent(SchuleForm);
-    if (form?.exists()) {
-      const initialValues: SchuleDetailsForm = form?.props('initialValues') as unknown as SchuleDetailsForm;
-      expect(initialValues).toEqual({});
-    }
+    expect(wrapper?.findComponent(SchuleForm).exists()).toBe(false);
+    expect((wrapper?.vm as unknown as { initialFormValues?: SchuleDetailsForm }).initialFormValues).toBeUndefined();
   });
 
   test('it passes schultraeger list to SchuleForm', () => {
@@ -433,14 +427,35 @@ describe('SchuleDetailsEditView', () => {
   });
 
   describe('navigation interception - onBeforeRouteLeave', () => {
-    afterEach(() => {
-      vi.unmock('vue-router');
+    test('onBeforeRouteLeave hook is called during mount', () => {
+      expect(typeof storedBeforeRouteLeaveCallback).toBe('function');
     });
 
-    test('onBeforeRouteLeave hook is called during mount', () => {
-      // The onBeforeRouteLeave should be called when the component is mounted
-      // We verify this by checking that a callback was stored
-      expect(typeof storedBeforeRouteLeaveCallback).toBe('function');
+    test('does not block navigation when the form is not dirty', async () => {
+      const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+      form.vm.$emit('update:dirty', false);
+      await nextTick();
+
+      const next: MockInstance = vi.fn();
+      storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, next as never);
+
+      expect(next).toHaveBeenCalledTimes(1);
+    });
+
+    test('blocks navigation and then confirms the pending route change when the form is dirty', async () => {
+      const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+      form.vm.$emit('update:dirty', true);
+      await nextTick();
+
+      const next: MockInstance = vi.fn();
+      storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, next as never);
+
+      expect((wrapper!.vm.$.setupState as Record<string, unknown>).showUnsavedChangesDialog).toBe(true);
+      expect(next).not.toHaveBeenCalled();
+
+      (wrapper!.vm.$.setupState as Record<string, unknown>).handleConfirmUnsavedChanges?.();
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(organisationStore.errorCode).toBe('');
     });
 
     test('preventNavigation prevents default when isDirty is true', async () => {
@@ -454,10 +469,8 @@ describe('SchuleDetailsEditView', () => {
       const event: BeforeUnloadEvent = new Event('beforeunload') as BeforeUnloadEvent;
       const preventDefaultSpy: MockInstance = vi.spyOn(event, 'preventDefault');
 
-      // Dispatch the beforeunload event
       window.dispatchEvent(event);
 
-      // Since form is dirty, preventDefault should have been called
       expect(preventDefaultSpy).toHaveBeenCalled();
     });
   });
