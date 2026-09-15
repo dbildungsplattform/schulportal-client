@@ -573,6 +573,12 @@
   };
 
   const isOwnSchule: ComputedRef<boolean> = computed(() => createType.value === CreationType.AddPersonToOwnSchule);
+  const showKopersInput: ComputedRef<boolean> = computed(
+    (): boolean =>
+      !!selectedOrganisation.value &&
+      !!selectedRollen.value &&
+      isKopersRolle(selectedRollen.value, filteredRollen.value),
+  );
 
   // Section numbers based on whether the createType is AddPersonToOwnSchule or not.
   const sectionNumberOrg: ComputedRef<string> = computed(() => (isOwnSchule.value ? '2.' : '1.'));
@@ -652,6 +658,13 @@
   watch(hasNoKopersNr, (newValue: boolean | undefined) => {
     if (newValue) {
       showNoKopersNrConfirmationDialog.value = true;
+    }
+  });
+
+  watch(showKopersInput, (newShowKopersInput: boolean): void => {
+    if (createType.value !== CreationType.AddPersonToOwnSchule && !newShowKopersInput) {
+      selectedKopersNr.value = undefined;
+      hasNoKopersNr.value = false;
     }
   });
 
@@ -979,7 +992,7 @@
                   />
                 </FormRow>
                 <KopersInput
-                  v-if="isKopersRolle(selectedRollen, filteredRollen) && selectedOrganisation"
+                  v-if="showKopersInput"
                   ref="kopers-input"
                   v-model:selected-kopers-nr="selectedKopersNr"
                   :has-no-kopers-nr="hasNoKopersNr"
