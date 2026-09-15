@@ -23,14 +23,14 @@ const mockSchultraeger: Organisation[] = [
   },
 ];
 
-const mockInitialValues: Partial<SchuleDetailsForm> = {
+const mockInitialValues: SchuleDetailsForm = {
   selectedSchulform: 'schultraeger-1',
   selectedDienststellennummer: '12345',
   selectedSchulname: 'Test Schule',
   selectedEmailAdress: 'test@example.com',
 };
 
-const mockCachedValues: Partial<SchuleDetailsForm> = {
+const mockCachedValues: SchuleDetailsForm = {
   selectedSchulform: 'schultraeger-2',
   selectedDienststellennummer: '67890',
   selectedSchulname: 'Cached Schule',
@@ -78,20 +78,17 @@ const createWrapper = (props = {}): VueWrapper | null => {
 
 describe('SchuleForm', () => {
   describe('Rendering', () => {
-    it.skip('should render the form wrapper with correct id in create mode', () => {
-      // Skipped: FormWrapper may not render with expected ID in test environment
+    it('should render the form wrapper with correct id in create mode', () => {
       createWrapper({ isEditMode: false });
-      expect(wrapper?.find('[id="schule-create-form"]').exists()).toBe(true);
+      expect(wrapper?.find('[data-testid="schule-create-form"]').exists()).toBe(true);
     });
 
-    it.skip('should render the form wrapper with correct id in edit mode', () => {
-      // Skipped: FormWrapper may not render with expected ID in test environment
+    it('should render the form wrapper with correct id in edit mode', () => {
       createWrapper({ isEditMode: true });
-      expect(wrapper?.find('[id="schule-edit-form"]').exists()).toBe(true);
+      expect(wrapper?.find('[data-testid="schule-edit-form"]').exists()).toBe(true);
     });
 
-    it.skip('should render all form fields when errorCode is not set', () => {
-      // Skipped: Vuetify components may not render specific data-testid elements in test environment
+    it('should render all form fields when errorCode is not set', () => {
       createWrapper({ errorCode: undefined });
       expect(wrapper?.find('[data-testid="schulform-radio-group"]').exists()).toBe(true);
       expect(wrapper?.find('[data-testid="dienststellennummer-input"]').exists()).toBe(true);
@@ -99,8 +96,7 @@ describe('SchuleForm', () => {
       expect(wrapper?.find('[data-testid="email-adress-input"]').exists()).toBe(true);
     });
 
-    it.skip('should not render form fields when errorCode is set', () => {
-      // Skipped: Vuetify conditional rendering may not work as expected in test environment
+    it('should not render form fields when errorCode is set', () => {
       createWrapper({ errorCode: 'ERROR_CODE' });
       // When errorCode is set, template conditional v-if should hide fields
       expect(wrapper?.vm).toBeDefined();
@@ -108,8 +104,7 @@ describe('SchuleForm', () => {
   });
 
   describe('Schultraeger List', () => {
-    it.skip('should render all schultraeger options', async () => {
-      // Skipped: Vuetify radio-button components may not have expected data-testid structure in test env
+    it('should render all schultraeger options', async () => {
       createWrapper({ schultraegerList: mockSchultraeger });
       await wrapper?.vm.$nextTick();
 
@@ -157,40 +152,6 @@ describe('SchuleForm', () => {
       await wrapper?.vm.$nextTick();
 
       expect(wrapper?.vm).toBeDefined();
-    });
-  });
-
-  describe('Edit Mode Specific Behavior', () => {
-    it('should render component in edit mode', async () => {
-      createWrapper({
-        isEditMode: true,
-        initialValues: mockInitialValues,
-      });
-      await wrapper?.vm.$nextTick();
-
-      expect(wrapper?.vm).toBeDefined();
-    });
-
-    it('should render component in create mode', async () => {
-      createWrapper({
-        isEditMode: false,
-        initialValues: mockInitialValues,
-      });
-      await wrapper?.vm.$nextTick();
-
-      expect(wrapper?.vm).toBeDefined();
-    });
-
-    it.skip('should use correct form ID in edit mode', () => {
-      // Skipped: FormWrapper component may not render ID in test environment
-      createWrapper({ isEditMode: true });
-      expect(wrapper?.find('[id="schule-edit-form"]').exists()).toBe(true);
-    });
-
-    it.skip('should use correct form ID in create mode', () => {
-      // Skipped: FormWrapper component may not render ID in test environment
-      createWrapper({ isEditMode: false });
-      expect(wrapper?.find('[id="schule-create-form"]').exists()).toBe(true);
     });
   });
 
@@ -248,8 +209,7 @@ describe('SchuleForm', () => {
   });
 
   describe('Props Reactivity', () => {
-    it.skip('should update when schultraegerList prop changes', async () => {
-      // Skipped: Data-testid elements may not render in test environment
+    it('should update when schultraegerList prop changes', async () => {
       const initialList = mockSchultraeger;
       createWrapper({ schultraegerList: initialList });
       await wrapper?.vm.$nextTick();
@@ -267,17 +227,6 @@ describe('SchuleForm', () => {
       await wrapper?.vm.$nextTick();
 
       expect(wrapper?.find('[data-testid="schulform-radio-group"]').exists()).toBe(true);
-    });
-
-    it.skip('should update when isEditMode prop changes', async () => {
-      // Skipped: Form ID elements may not render in test environment
-      createWrapper({ isEditMode: false });
-      expect(wrapper?.find('[id="schule-create-form"]').exists()).toBe(true);
-
-      await wrapper?.setProps({ isEditMode: true });
-      await wrapper?.vm.$nextTick();
-
-      expect(wrapper?.find('[id="schule-edit-form"]').exists()).toBe(true);
     });
 
     it('should update when isLoading prop changes', async () => {
@@ -306,12 +255,6 @@ describe('SchuleForm', () => {
       createWrapper({ errorCode: undefined });
       await wrapper?.vm.$nextTick();
 
-      const formWrapper = wrapper?.findComponent({ name: 'FormWrapper' });
-      expect(formWrapper?.exists()).toBe(true);
-    });
-
-    it('should have FormWrapper component wrapping the form', () => {
-      createWrapper();
       const formWrapper = wrapper?.findComponent({ name: 'FormWrapper' });
       expect(formWrapper?.exists()).toBe(true);
     });
@@ -352,11 +295,6 @@ describe('SchuleForm', () => {
   });
 
   describe('Component Lifecycle', () => {
-    it('should mount and initialize without errors', () => {
-      createWrapper({ cachedValues: mockCachedValues });
-      expect(wrapper).toBeDefined();
-    });
-
     it('should properly cleanup on unmount', () => {
       createWrapper();
       expect(() => wrapper?.unmount()).not.toThrow();
