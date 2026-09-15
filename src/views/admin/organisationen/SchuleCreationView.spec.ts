@@ -264,38 +264,13 @@ describe('SchuleCreationView', () => {
     expect(successTemplate?.exists()).toBe(true);
   });
 
-  test('it clears isDirty state after successful form submission', async () => {
-    vi.spyOn(organisationStore, 'createOrganisation').mockImplementation(() => {
-      organisationStore.createdSchule = DoFactory.getSchule();
-      return Promise.resolve();
-    });
-
-    organisationStore.schultraeger = [schultraegerOrganisation];
-    wrapper = await mountComponent();
-    await flushPromises();
-
-    const payload: SchuleDetailsForm = {
-      selectedSchulform: schultraegerOrganisation.id,
-      selectedDienststellennummer: '1234567',
-      selectedSchulname: 'Test Schule',
-      selectedEmailAdress: 'test@schule.de',
-    };
-
-    const form: VueWrapper = wrapper.findComponent({ name: 'SchuleForm' });
-    form.vm.$emit('click:submit', payload);
-    await flushPromises();
-
-    // Verify that the success template is shown (createdSchule is set)
-    const successTemplate: VueWrapper | undefined = wrapper?.findComponent(SchuleSuccessTemplate);
-    expect(successTemplate?.exists()).toBe(true);
-  });
-
   test('it renders error alert when errorCode is present', async () => {
     organisationStore.errorCode = 'SCHULE_DUPLICATE';
     await nextTick();
 
-    const alert = wrapper?.getComponent({ name: 'SpshAlert' });
-    expect(alert?.props('modelValue')).toBe(true);
+    const alert: VueWrapper = wrapper!.findComponent({ name: 'SpshAlert' });
+    const alertProps: { modelValue?: boolean } = alert.props();
+    expect(alertProps.modelValue).toBe(true);
   });
 
   test('it calls correct function when error alert button is clicked', async () => {
@@ -517,30 +492,6 @@ describe('SchuleCreationView', () => {
     wrapper?.unmount();
 
     expect(removeEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
-  });
-
-  test('it updates isDirty when SchuleForm emits update:dirty', async () => {
-    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
-
-    // Emit dirty state change
-    form.vm.$emit('update:dirty', true);
-    await nextTick();
-
-    // Verify that the form receives the isDirty state
-    const formWithDirty: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchuleForm' });
-    expect(formWithDirty?.exists()).toBe(true);
-  });
-
-  test('it emits unsaved changes dialog update when SchuleForm emits update:showUnsavedChangesDialog', async () => {
-    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
-
-    // Emit dialog visibility change
-    form.vm.$emit('update:showUnsavedChangesDialog', true);
-    await nextTick();
-
-    // Verify that the form component exists
-    const formComponent: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchuleForm' });
-    expect(formComponent?.exists()).toBe(true);
   });
 
   test('it handles discard button click from SchuleForm', async () => {

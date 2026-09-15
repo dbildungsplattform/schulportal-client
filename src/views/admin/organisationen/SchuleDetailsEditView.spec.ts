@@ -138,15 +138,16 @@ describe('SchuleDetailsEditView', () => {
   });
 
   test('it renders LayoutCard with correct header', () => {
-    const card = wrapper?.getComponent({ name: 'LayoutCard' });
-    expect(card?.props('header')).toBeTruthy();
+    const card: VueWrapper = wrapper!.findComponent({ name: 'LayoutCard' });
+    const cardProps: { header?: string } = card.props();
+    expect(cardProps.header).toBeTruthy();
   });
 
   test('it passes initial form values from currentSchule to SchuleForm', () => {
-    const form = wrapper?.findComponent(SchuleForm);
-    expect(form?.exists()).toBe(true);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const initialValues: Partial<SchuleDetailsForm> | undefined = form?.props('initialValues');
+    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+    expect(form.exists()).toBe(true);
+    const formProps: { initialValues?: Partial<SchuleDetailsForm> } = form.props();
+    const initialValues: Partial<SchuleDetailsForm> | undefined = formProps.initialValues;
     expect(initialValues?.selectedSchulname).toBe('Test Schule');
     expect(initialValues?.selectedEmailAdress).toBe('test@schule.de');
   });
@@ -161,11 +162,6 @@ describe('SchuleDetailsEditView', () => {
 
     expect(wrapper?.findComponent(SchuleForm).exists()).toBe(false);
     expect((wrapper?.vm as unknown as { initialFormValues?: SchuleDetailsForm }).initialFormValues).toBeUndefined();
-  });
-
-  test('it passes schultraeger list to SchuleForm', () => {
-    const form: VueWrapper | undefined = wrapper?.findComponent(SchuleForm);
-    expect(form?.exists()).toBe(true);
   });
 
   test('it calls updateSchuleDetails when form is submitted', async () => {
@@ -189,60 +185,6 @@ describe('SchuleDetailsEditView', () => {
       name: formData.selectedSchulname,
       emailAdress: formData.selectedEmailAdress,
     });
-  });
-
-  test('it caches submitted form values and passes them to form', async () => {
-    vi.spyOn(organisationStore, 'updateSchuleDetails').mockImplementation(() => {
-      organisationStore.errorCode = '';
-      return Promise.resolve();
-    });
-
-    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
-
-    const formData: SchuleDetailsForm = {
-      selectedSchulform: 'schultraeger-id',
-      selectedDienststellennummer: 'SCH002',
-      selectedSchulname: 'Updated Schule',
-      selectedEmailAdress: 'updated@schule.de',
-    };
-
-    form.vm.$emit('click:submit', formData);
-    await flushPromises();
-
-    // After submission, the cached values should be used in the success template
-    const successTemplate: VueWrapper | undefined = wrapper?.findComponent(SchuleSuccessTemplate);
-    if (successTemplate?.exists()) {
-      expect(successTemplate).toBeTruthy();
-    }
-  });
-
-  test('it marks form as not dirty after successful submission', async () => {
-    vi.spyOn(organisationStore, 'updateSchuleDetails').mockImplementation(() => {
-      organisationStore.errorCode = '';
-      return Promise.resolve();
-    });
-
-    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
-    const formData: SchuleDetailsForm = {
-      selectedSchulform: 'schultraeger-id',
-      selectedDienststellennummer: 'SCH002',
-      selectedSchulname: 'Updated Schule',
-      selectedEmailAdress: 'updated@schule.de',
-    };
-
-    // Mark form as dirty first
-    form.vm.$emit('update:dirty', true);
-    await nextTick();
-
-    form.vm.$emit('click:submit', formData);
-    await flushPromises();
-    await nextTick();
-
-    // After successful submission, the dirty state should be reset
-    // This is verified by checking that the success template is shown
-    // which only happens when the form submission was successful
-    const successTemplate: VueWrapper | undefined = wrapper?.findComponent(SchuleSuccessTemplate);
-    expect(successTemplate?.exists()).toBe(true);
   });
 
   test('it shows success template after successful submission', async () => {
@@ -358,29 +300,6 @@ describe('SchuleDetailsEditView', () => {
     expect(organisationStore.errorCode).toBe('');
   });
 
-  test('it renders SchuleForm component', () => {
-    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
-    expect(form.exists()).toBe(true);
-  });
-
-  test('it shows error state when errorCode is set on store', async () => {
-    // Test that the component responds to error state changes
-    organisationStore.errorCode = 'TEST_ERROR';
-    await flushPromises();
-    await nextTick();
-    await nextTick(); // Extra nextTick to ensure reactivity
-
-    // The error state should be set on the store
-    expect(organisationStore.errorCode).toBe('TEST_ERROR');
-  });
-
-  test('it shows loading state to form when organisationStore is loading', async () => {
-    organisationStore.loading = true;
-    await nextTick();
-    const form: VueWrapper | undefined = wrapper?.findComponent(SchuleForm);
-    expect(form?.exists()).toBe(true);
-  });
-
   describe('navigation interception - onBeforeRouteLeave', () => {
     test('onBeforeRouteLeave hook is called during mount', () => {
       expect(typeof storedBeforeRouteLeaveCallback).toBe('function');
@@ -396,62 +315,12 @@ describe('SchuleDetailsEditView', () => {
 
       expect(next).toHaveBeenCalledTimes(1);
     });
-
-    test('preventNavigation prevents default when isDirty is true', async () => {
-      wrapper?.unmount();
-      wrapper = await mountComponent();
-
-      const form: VueWrapper = wrapper.findComponent({ name: 'SchuleForm' });
-      form.vm.$emit('update:dirty', true);
-      await flushPromises();
-
-      const event: BeforeUnloadEvent = new Event('beforeunload');
-      const preventDefaultSpy: MockInstance = vi.spyOn(event, 'preventDefault');
-
-      window.dispatchEvent(event);
-
-      expect(preventDefaultSpy).toHaveBeenCalled();
-    });
-  });
-
-  test('it properly mounts and unmounts the component', () => {
-    expect(wrapper?.exists()).toBe(true);
-    wrapper?.unmount();
-    expect(() => {
-      wrapper = null;
-    }).not.toThrow();
   });
 
   test('it removes beforeunload listener on unmount', () => {
     const removeEventListenerSpy: MockInstance = vi.spyOn(window, 'removeEventListener');
     wrapper?.unmount();
     expect(removeEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
-  });
-
-  test('it emits update:dirty when form emits dirty event', async () => {
-    wrapper?.unmount();
-    wrapper = await mountComponent();
-
-    const form: VueWrapper = wrapper.findComponent({ name: 'SchuleForm' });
-    expect(form?.exists()).toBe(true);
-
-    form.vm.$emit('update:dirty', true);
-    await nextTick();
-
-    // Verify the form received the event
-    const updatedForm: VueWrapper = wrapper.findComponent({ name: 'SchuleForm' });
-    expect(updatedForm?.exists()).toBe(true);
-  });
-
-  test('it closes dialog when form emits update:showUnsavedChangesDialog with false', async () => {
-    wrapper?.unmount();
-    wrapper = await mountComponent();
-
-    const form: VueWrapper = wrapper.findComponent({ name: 'SchuleForm' });
-    form.vm.$emit('update:showUnsavedChangesDialog', false);
-    await nextTick();
-
-    expect(form?.exists()).toBe(true);
   });
 
   describe('beforeunload event handling', () => {

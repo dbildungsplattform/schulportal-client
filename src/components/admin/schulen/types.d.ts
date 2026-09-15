@@ -1,3 +1,5 @@
+import { Organisation } from '@/stores/OrganisationStore';
+
 export type SchuleDetailsForm = {
   selectedSchulform: string | undefined;
   selectedDienststellennummer: string | undefined;
@@ -5,7 +7,7 @@ export type SchuleDetailsForm = {
   selectedEmailAdress: string | undefined;
 };
 
-export type Props = {
+export type SchoolDetailsFormProps = {
   initialValues: Partial<SchuleDetailsForm>;
   cachedValues?: Partial<SchuleDetailsForm>;
   isEditMode: boolean;
@@ -16,11 +18,18 @@ export type Props = {
   selectedSchultraegerId?: string;
 };
 
-export type Emits = {
+export type SchoolFormEvents = {
   (e: 'click:confirmUnsaved'): void;
   (e: 'click:discard'): void;
   (e: 'click:submit', values: SchuleDetailsForm): void;
   (e: 'update:canSubmit', value: boolean): void;
   (e: 'update:dirty', value: boolean): void;
   (e: 'update:showUnsavedChangesDialog', visible: boolean): void;
+};
+
+export type SchuleSuccessTemplateProps = {
+  successMessage: string;
+  followingDataChanged: Organisation | undefined | null;
+  schultraegerList: Organisation[] | undefined;
+  isEditMode: boolean;
 };

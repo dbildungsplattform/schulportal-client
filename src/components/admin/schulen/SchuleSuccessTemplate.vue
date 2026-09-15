@@ -3,15 +3,9 @@
   import { type Ref } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useDisplay } from 'vuetify';
+  import { SchuleSuccessTemplateProps } from './types';
 
-  type Props = {
-    successMessage: string;
-    followingDataChanged: Organisation | undefined | null;
-    schultraegerList: Organisation[] | undefined;
-    isEditMode: boolean;
-  };
-
-  const props: Props = defineProps<Props>();
+  const props: SchuleSuccessTemplateProps = defineProps<SchuleSuccessTemplateProps>();
 
   type Emits = {
     (event: 'onNavigateBackToSchuleManagement'): void;
@@ -30,7 +24,7 @@
     if (!id || !props.schultraegerList) {
       return '';
     }
-    const schultraeger: Organisation | undefined = props.schultraegerList.find((s) => s.id === id);
+    const schultraeger: Organisation | undefined = props.schultraegerList.find((s: Organisation) => s.id === id);
 
     return schultraeger ? schultraeger.name : '';
   };

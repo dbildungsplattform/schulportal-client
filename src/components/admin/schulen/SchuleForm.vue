@@ -7,10 +7,10 @@
   import { computed, ComputedRef, onMounted, Ref, watch, watchEffect } from 'vue';
   import { Composer, useI18n } from 'vue-i18n';
   import { object, string } from 'yup';
-  import { Emits, Props, SchuleDetailsForm } from './types';
+  import { SchoolDetailsFormProps, SchoolFormEvents, SchuleDetailsForm } from './types';
 
-  const props: Props = defineProps<Props>();
-  const emit: Emits = defineEmits<Emits>();
+  const props: SchoolDetailsFormProps = defineProps<SchoolDetailsFormProps>();
+  const emit: SchoolFormEvents = defineEmits<SchoolFormEvents>();
   const { t }: Composer = useI18n({ useScope: 'global' });
 
   const validationSchema: TypedSchema = toTypedSchema(

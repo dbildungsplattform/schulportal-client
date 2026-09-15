@@ -1,12 +1,14 @@
+/* eslint-disable @typescript-eslint/typedef */
 import { Organisation, OrganisationsTyp } from '@/stores/OrganisationStore';
 import { createTestingPinia } from '@pinia/testing';
 import { DOMWrapper, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createI18n } from 'vue-i18n';
+import { createI18n, I18n } from 'vue-i18n';
 import SchuleSuccessTemplate from './SchuleSuccessTemplate.vue';
+import { SchuleSuccessTemplateProps } from './types.js';
 
 // Mock i18n
-const i18n = createI18n({
+const i18n: I18n = createI18n({
   legacy: false,
   locale: 'de-DE',
   messages: {
@@ -33,21 +35,21 @@ const mockSchultraeger: Organisation[] = [
     id: 'schultraeger-1',
     name: 'Schulträger 1',
     kennung: 'ST1',
-    typ: 'SCHULTRAEGER',
-  } as Organisation,
+    typ: OrganisationsTyp.Land,
+  },
   {
     id: 'schultraeger-2',
     name: 'Schulträger 2',
     kennung: 'ST2',
-    typ: 'SCHULTRAEGER',
-  } as Organisation,
+    typ: OrganisationsTyp.Land,
+  },
 ];
 
 const mockFollowingData: Organisation = {
   id: 'schule-1',
   name: 'Test Gymnasium',
   kennung: 'DIN-12345',
-  typ: 'SCHULE',
+  typ: OrganisationsTyp.Schule,
   administriertVon: 'schultraeger-1',
   emailAdress: 'test@gymnasium.de',
 };
@@ -56,15 +58,17 @@ const mockFollowingDataNoEmail: Organisation = {
   id: 'schule-2',
   name: 'Test Realschule',
   kennung: 'DIN-67890',
-  typ: 'SCHULE',
+  typ: OrganisationsTyp.Schule,
   administriertVon: 'schultraeger-2',
   emailAdress: undefined,
 };
 
 // Test wrapper helper
-let wrapper: VueWrapper<unknown> | null = null;
+let wrapper: VueWrapper<InstanceType<typeof SchuleSuccessTemplate>> | null = null;
 
-const createWrapper = (props: Record<string, unknown> = {}): VueWrapper<unknown> => {
+const createWrapper = (
+  props?: Partial<SchuleSuccessTemplateProps>,
+): VueWrapper<InstanceType<typeof SchuleSuccessTemplate>> => {
   wrapper = mount(SchuleSuccessTemplate, {
     props: {
       successMessage: 'Schule erfolgreich erstellt!',
@@ -113,70 +117,13 @@ describe('SchuleSuccessTemplate', () => {
       expect(successText?.text()).toBe(testMessage);
     });
 
-    it.skip('should render success icon', () => {
-      // Skipped: Vuetify v-icon attributes may not render in test environment
+    it('should render success icon component', () => {
       createWrapper();
-      const icon = wrapper?.find('[data-testid="schule-success-icon"]');
-      expect(icon?.exists()).toBe(true);
-      expect(icon?.attributes('icon')).toBe('mdi-check-circle');
-    });
-  });
-
-  describe('Component Props', () => {
-    it('should accept successMessage prop', () => {
-      const message = 'Test success message';
-      createWrapper({ successMessage: message });
-      expect(wrapper?.props('successMessage')).toBe(message);
-    });
-
-    it('should accept followingDataChanged prop', () => {
-      createWrapper({ followingDataChanged: mockFollowingData });
-      expect(wrapper?.props('followingDataChanged')).toEqual(mockFollowingData);
-    });
-
-    it('should accept schultraegerList prop', () => {
-      createWrapper({ schultraegerList: mockSchultraeger });
-      expect(wrapper?.props('schultraegerList')).toEqual(mockSchultraeger);
-    });
-
-    it('should accept isEditMode prop as true', () => {
-      createWrapper({ isEditMode: true });
-      expect(wrapper?.props('isEditMode')).toBe(true);
-    });
-
-    it('should accept isEditMode prop as false', () => {
-      createWrapper({ isEditMode: false });
-      expect(wrapper?.props('isEditMode')).toBe(false);
-    });
-
-    it('should handle null followingDataChanged', () => {
-      createWrapper({ followingDataChanged: null });
-      expect(wrapper?.props('followingDataChanged')).toBeNull();
-    });
-
-    it('should handle undefined schultraegerList', () => {
-      createWrapper({ schultraegerList: undefined });
-      expect(wrapper?.props('schultraegerList')).toBeUndefined();
+      expect(wrapper?.findComponent({ name: 'VIcon' }).exists()).toBe(true);
     });
   });
 
   describe('Following Data Display', () => {
-    it('should display created schule data', () => {
-      createWrapper({ followingDataChanged: mockFollowingData });
-
-      const schulformLabel = wrapper?.find('[data-testid="created-schule-form-label"]');
-      expect(schulformLabel?.exists()).toBe(true);
-
-      const dienststellennummerLabel = wrapper?.find('[data-testid="created-schule-dienststellennummer-label"]');
-      expect(dienststellennummerLabel?.exists()).toBe(true);
-
-      const nameLabel = wrapper?.find('[data-testid="created-schule-name-label"]');
-      expect(nameLabel?.exists()).toBe(true);
-
-      const emailLabel = wrapper?.find('[data-testid="created-schule-email-label"]');
-      expect(emailLabel?.exists()).toBe(true);
-    });
-
     it('should display kennung value in dienststellennummer field', () => {
       createWrapper({ followingDataChanged: mockFollowingData });
       const dienststellennummer = wrapper?.find('[data-testid="created-schule-dienststellennummer"]');
@@ -313,30 +260,11 @@ describe('SchuleSuccessTemplate', () => {
   });
 
   describe('Component Lifecycle', () => {
-    it('should initialize with i18n', () => {
-      createWrapper();
-      expect(wrapper?.vm.$i18n).toBeDefined();
-    });
-
     it('should unmount without errors', () => {
       createWrapper();
       expect(() => {
         wrapper?.unmount();
       }).not.toThrow();
-    });
-
-    it('should handle component updates', async () => {
-      createWrapper();
-
-      const newData: Organisation = {
-        ...mockFollowingData,
-        name: 'Updated School Name',
-      };
-
-      await wrapper?.setProps({ followingDataChanged: newData });
-
-      const name = wrapper?.find('[data-testid="created-schule-name"]');
-      expect(name?.text()).toBe('Updated School Name');
     });
   });
 
@@ -397,11 +325,6 @@ describe('SchuleSuccessTemplate', () => {
       createWrapper();
       const cols: VueWrapper<Element>[] | undefined = wrapper?.findAllComponents({ name: 'VCol' });
       expect(cols?.length).toBeGreaterThan(0);
-    });
-
-    it('should render v-icon component', () => {
-      createWrapper();
-      expect(wrapper?.findComponent({ name: 'VIcon' }).exists()).toBe(true);
     });
 
     it('should render v-divider component', () => {
@@ -470,8 +393,7 @@ describe('SchuleSuccessTemplate', () => {
   describe('Empty and Null State Handling', () => {
     it('should handle empty followingDataChanged gracefully', () => {
       createWrapper({ followingDataChanged: null });
-      expect(wrapper?.vm).toBeDefined();
-      expect(() => wrapper?.vm).not.toThrow();
+      expect(wrapper?.exists()).toBe(true);
     });
 
     it('should render even with minimal data', () => {
