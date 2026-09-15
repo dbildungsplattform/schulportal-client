@@ -26,19 +26,19 @@ import {
   type StartPageServiceProvider,
 } from './ServiceProviderStore';
 
-interface MultiErrorRolleIdWithI18nKey {
-  rolleId: string;
+interface MultiErrorIdWithI18nKey {
+  id: string;
   i18nKey: string;
 }
 
 interface MultiError {
   code: number;
-  rolleIdsWithI18nKeys: MultiErrorRolleIdWithI18nKey[];
+  idsWithI18nKeys: MultiErrorIdWithI18nKey[];
 }
 
 interface MalformedMultiError {
   code?: unknown;
-  rolleIdsWithI18nKeys?: unknown;
+  idsWithI18nKeys?: unknown;
 }
 
 const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
@@ -48,7 +48,9 @@ describe('serviceProviderStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     serviceProviderStore = useServiceProviderStore();
+    serviceProviderStore.$reset();
     mockadapter.reset();
+    vi.restoreAllMocks();
   });
 
   it('should initalize state correctly', () => {
@@ -188,7 +190,52 @@ describe('serviceProviderStore', () => {
     });
   });
 
-  describe('getAvailableServiceProviders', () => {
+  describe('getServiceProvidersForRollenerweiterung', () => {
+    const organisationId: string = faker.string.uuid();
+
+    it('should load service providers allowed for role extensions', async () => {
+      const serviceProvider: ServiceProviderResponse = DoFactory.getServiceProviderResponse();
+      serviceProviderStore.allServiceProviders = [DoFactory.getStartPageServiceProvider()];
+      mockadapter.onGet().replyOnce(200, {
+        total: 1,
+        offset: 0,
+        limit: 1,
+        items: [serviceProvider],
+      });
+
+      const promise: Promise<void> = serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId);
+      expect(serviceProviderStore.loading).toBe(true);
+      expect(serviceProviderStore.allServiceProviders).toEqual([]);
+      await promise;
+
+      const requestUrl: string = mockadapter.history.get[0]?.url ?? '';
+      expect(requestUrl).toContain(`organisationId=${organisationId}`);
+      expect(requestUrl).toContain('ROLLEN_ERWEITERN');
+      expect(serviceProviderStore.allServiceProviders).toEqual([serviceProvider]);
+      expect(serviceProviderStore.errorCode).toBe('');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle an unstructured error', async () => {
+      mockadapter.onGet().replyOnce(500, 'server error');
+
+      await serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId);
+
+      expect(serviceProviderStore.errorCode).toBe('UNSPECIFIED_ERROR');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle a structured error', async () => {
+      mockadapter.onGet().replyOnce(500, { code: 'SERVICE_PROVIDER_LOADING_ERROR' });
+
+      await serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId);
+
+      expect(serviceProviderStore.errorCode).toBe('SERVICE_PROVIDER_LOADING_ERROR');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+  });
+
+  describe('getMyServiceProviders', () => {
     it("should load user's available service providers and update state", async () => {
       const mockResponse: StartPageServiceProvider[] = [
         {
@@ -211,29 +258,29 @@ describe('serviceProviderStore', () => {
         },
       ];
 
-      mockadapter.onGet('/api/provider').replyOnce(200, mockResponse);
-      const getAvailableServiceProvidersPromise: Promise<void> = serviceProviderStore.getAvailableServiceProviders();
+      mockadapter.onGet('/api/provider/my-providers').replyOnce(200, mockResponse);
+      const getMyServiceProvidersPromise: Promise<void> = serviceProviderStore.getMyServiceProviders();
       expect(serviceProviderStore.loading).toBe(true);
-      await getAvailableServiceProvidersPromise;
+      await getMyServiceProvidersPromise;
       expect(serviceProviderStore.availableServiceProviders).toEqual([...mockResponse]);
       expect(serviceProviderStore.loading).toBe(false);
     });
 
     it('should handle string error', async () => {
-      mockadapter.onGet('/api/provider').replyOnce(500, 'some mock server error');
-      const getAvailableServiceProvidersPromise: Promise<void> = serviceProviderStore.getAvailableServiceProviders();
+      mockadapter.onGet('/api/provider/my-providers').replyOnce(500, 'some mock server error');
+      const getMyServiceProvidersPromise: Promise<void> = serviceProviderStore.getMyServiceProviders();
       expect(serviceProviderStore.loading).toBe(true);
-      await getAvailableServiceProvidersPromise;
+      await getMyServiceProvidersPromise;
       expect(serviceProviderStore.availableServiceProviders).toEqual([]);
       expect(serviceProviderStore.errorCode).toEqual('UNSPECIFIED_ERROR');
       expect(serviceProviderStore.loading).toBe(false);
     });
 
     it('should handle error code', async () => {
-      mockadapter.onGet('/api/provider').replyOnce(500, { code: 'some mock server error' });
-      const getAvailableServiceProvidersPromise: Promise<void> = serviceProviderStore.getAvailableServiceProviders();
+      mockadapter.onGet('/api/provider/my-providers').replyOnce(500, { code: 'some mock server error' });
+      const getMyServiceProvidersPromise: Promise<void> = serviceProviderStore.getMyServiceProviders();
       expect(serviceProviderStore.loading).toBe(true);
-      await getAvailableServiceProvidersPromise;
+      await getMyServiceProvidersPromise;
       expect(serviceProviderStore.availableServiceProviders).toEqual([]);
       expect(serviceProviderStore.errorCode).toEqual('some mock server error');
       expect(serviceProviderStore.loading).toBe(false);
@@ -641,9 +688,9 @@ describe('serviceProviderStore', () => {
       const code: number = 400;
       const multiError: MultiError = {
         code,
-        rolleIdsWithI18nKeys: [
-          { rolleId: 'role-1', i18nKey: 'ROLLENERWEITERUNG_TECHNICAL_ERROR' },
-          { rolleId: 'role-2', i18nKey: 'NOT_FOUND' },
+        idsWithI18nKeys: [
+          { id: 'role-1', i18nKey: 'ROLLENERWEITERUNG_TECHNICAL_ERROR' },
+          { id: 'role-2', i18nKey: 'NOT_FOUND' },
         ],
       };
       mockadapter.onPost(url).replyOnce(code, multiError);
@@ -662,7 +709,7 @@ describe('serviceProviderStore', () => {
       const code: number = 400;
       const multiError: MultiError = {
         code,
-        rolleIdsWithI18nKeys: [],
+        idsWithI18nKeys: [],
       };
       mockadapter.onPost(url).replyOnce(code, multiError);
 
@@ -676,7 +723,7 @@ describe('serviceProviderStore', () => {
 
     it('should handle MultiError with missing code property', async () => {
       const multiError: MalformedMultiError = {
-        rolleIdsWithI18nKeys: [{ rolleId: 'role-1', i18nKey: 'ROLLENERWEITERUNG_TECHNICAL_ERROR' }],
+        idsWithI18nKeys: [{ id: 'role-1', i18nKey: 'ROLLENERWEITERUNG_TECHNICAL_ERROR' }],
       };
       mockadapter.onPost(url).replyOnce(500, multiError);
 
@@ -691,7 +738,7 @@ describe('serviceProviderStore', () => {
     it('should handle MultiError with wrong code type', async () => {
       const multiError: MalformedMultiError = {
         code: null,
-        rolleIdsWithI18nKeys: 'not-an-array',
+        idsWithI18nKeys: 'not-an-array',
       };
       mockadapter.onPost(url).replyOnce(400, multiError);
 
@@ -707,7 +754,7 @@ describe('serviceProviderStore', () => {
       const code: number = 400;
       const multiError: MalformedMultiError = {
         code,
-        rolleIdsWithI18nKeys: 'not-an-array',
+        idsWithI18nKeys: 'not-an-array',
       };
       mockadapter.onPost(url).replyOnce(code, multiError);
 
@@ -754,7 +801,7 @@ describe('serviceProviderStore', () => {
         kategorie: filter.kategorie,
         requires2fa: filter.requires2fa,
         merkmale: filter.merkmale,
-        rollenartenWhitelist: filter.rollenartenWhitelist,
+        rollenartenWhitelist: filter.rollenartenWhitelist ?? [],
       };
 
       mockadapter.onPost(url).replyOnce(200, mockResponse);

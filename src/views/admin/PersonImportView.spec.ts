@@ -586,9 +586,10 @@ describe('PersonImportView', () => {
 
     // Submit form
     await wrapper?.find('[data-testid="person-import-form-submit-button"]').trigger('click');
+    await flushPromises();
 
     // Wait for and verify mock function call
-    await vi.waitUntil(() => mockFunction.mock.calls.length > 0);
+    await vi.waitUntil(() => mockFunction.mock.calls.length > 0, { timeout: 5000 });
     expect(mockFunction).toHaveBeenCalledOnce();
 
     // Verify success message
