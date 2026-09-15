@@ -478,6 +478,74 @@ describe('PersonCreationView', () => {
     expect(wrapper?.find('[data-testid="person-success-text"]').isVisible()).toBe(true);
   });
 
+  test('it fills form for role with Koperspflicht, then clears Kopersnummer when role is removed', async () => {
+    personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
+
+    const organisationSelect: VueWrapper | undefined = wrapper
+      ?.findComponent({ ref: 'personenkontext-create' })
+      .findComponent({ ref: 'schulenFilter' })
+      .findComponent({ ref: 'personenkontext-create-organisation-select' });
+    await organisationSelect?.setValue(ORGANISATION_ID);
+    await nextTick();
+
+    const rollenSelect: VueWrapper | undefined = wrapper
+      ?.findComponent({ ref: 'personenkontext-create' })
+      .findComponent({ ref: 'rollen-select' });
+    await rollenSelect?.setValue([ROLLE_ID]);
+    await nextTick();
+
+    const klasseSelect: VueWrapper | undefined = wrapper
+      ?.findComponent({ ref: 'personenkontext-create' })
+      .findComponent({ ref: 'klasse-select' });
+    await klasseSelect?.setValue('9a');
+    await nextTick();
+
+    const befristungInput: VueWrapper | undefined = wrapper
+      ?.findComponent({ ref: 'personenkontext-create' })
+      .findComponent({ ref: 'befristung-input-wrapper' })
+      .findComponent({ ref: 'befristung-input' });
+    await befristungInput?.setValue('12.08.2099');
+    await nextTick();
+
+    const vornameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'vorname-input' });
+    await vornameInput?.setValue('Randy');
+    await nextTick();
+
+    const nachnameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'familienname-input' });
+    await nachnameInput?.setValue('Cena');
+    await nextTick();
+
+    const kopersInput: VueWrapper | undefined = wrapper
+      ?.findComponent({ ref: 'kopers-input' })
+      .findComponent({ ref: 'kopersnr-input' });
+    await kopersInput?.setValue('23234');
+    await nextTick();
+
+    const kopersValue: string = (kopersInput?.find('input').element as HTMLInputElement).value;
+    expect(kopersValue).toBe('23234');
+
+    await rollenSelect?.setValue([]);
+    await nextTick();
+
+    const removedKopersInput = wrapper?.find('[data-testid="kopersnr-input"]');
+    expect(removedKopersInput?.exists()).toBe(false);
+
+    const vm = wrapper?.vm as { selectedKopersNr?: string; hasNoKopersNr?: boolean } | undefined;
+    expect(vm?.selectedKopersNr).toBeUndefined();
+    expect(vm?.hasNoKopersNr).toBe(false);
+
+    await rollenSelect?.setValue([ROLLE_ID]);
+    await nextTick();
+    await flushPromises();
+
+    const readdedKopersInput = wrapper?.find('[data-testid="kopersnr-input"]');
+    expect(readdedKopersInput?.exists()).toBe(true);
+
+    const readdedKopersValue: string = (readdedKopersInput?.find('input').element as HTMLInputElement).value;
+    expect(readdedKopersValue).toBe('');
+
+  });
+
   test('it renders success template for created user and navigates back to form', async () => {
     personenkontextStore.createdPersonWithKontext = mockCreatedPersonWithKontext;
     await nextTick();
