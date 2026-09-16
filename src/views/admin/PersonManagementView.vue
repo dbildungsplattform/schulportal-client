@@ -141,8 +141,8 @@
 
   const rollenSystemrechteForPersonAdministration: ComputedRef<RollenSystemRecht[]> = computed(() => {
     const systemrechte: RollenSystemRecht[] = [RollenSystemRecht.PersonenVerwalten];
-    if (authStore.hasMptRollenVerwaltenPermission) {
-      systemrechte.push(RollenSystemRecht.MptRollenVerwalten);
+    if (authStore.hasMptRollenZuordnenPermission) {
+      systemrechte.push(RollenSystemRecht.MptRollenZuordnen);
     }
     return systemrechte;
   });
