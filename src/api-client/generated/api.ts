@@ -486,6 +486,12 @@ export interface CreateServiceProviderResponse {
      * @memberof CreateServiceProviderResponse
      */
     'rollenartenWhitelist': Array<RollenArt>;
+    /**
+     * 
+     * @type {ServiceProviderSystem}
+     * @memberof CreateServiceProviderResponse
+     */
+    'externalSystem': ServiceProviderSystem;
 }
 
 
@@ -4067,6 +4073,12 @@ export interface ServiceProviderResponse {
      * @memberof ServiceProviderResponse
      */
     'rollenartenWhitelist': Array<RollenArt>;
+    /**
+     * 
+     * @type {ServiceProviderSystem}
+     * @memberof ServiceProviderResponse
+     */
+    'externalSystem': ServiceProviderSystem;
 }
 
 
@@ -4076,7 +4088,24 @@ export interface ServiceProviderResponse {
  * @enum {string}
  */
 
+export const ServiceProviderSystem = {
+    None: 'NONE',
+    Email: 'EMAIL',
+    Itslearning: 'ITSLEARNING',
+    Uem: 'UEM'
+} as const;
+
+export type ServiceProviderSystem = typeof ServiceProviderSystem[keyof typeof ServiceProviderSystem];
+
+
+/**
+ * 
+ * @export
+ * @enum {string}
+ */
+
 export const ServiceProviderTarget = {
+    None: 'NONE',
     Url: 'URL',
     Email: 'EMAIL',
     SchulportalAdministration: 'SCHULPORTAL_ADMINISTRATION'
@@ -12237,13 +12266,16 @@ export const ProviderApiAxiosParamCreator = function (configuration?: Configurat
             };
         },
         /**
-         * Get service-providers available for logged-in user.
-         * @summary 
+         * 
+         * @param {string} angebotId The id of the service provider
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        providerControllerGetMyServiceProviders: async (options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/api/provider/my-providers`;
+        providerControllerGetServiceProviderLogo: async (angebotId: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'angebotId' is not null or undefined
+            assertParamExists('providerControllerGetServiceProviderLogo', 'angebotId', angebotId)
+            const localVarPath = `/api/provider/{angebotId}/logo`
+                .replace(`{${"angebotId"}}`, encodeURIComponent(String(angebotId)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -12275,16 +12307,17 @@ export const ProviderApiAxiosParamCreator = function (configuration?: Configurat
             };
         },
         /**
-         * 
-         * @param {string} angebotId The id of the service provider
+         * Get service-providers for a person. Returns the available service-providers when the logged-in user requests their own, otherwise the assigned service-providers of another person (admin).
+         * @summary 
+         * @param {string} personId The id of the person.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        providerControllerGetServiceProviderLogo: async (angebotId: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'angebotId' is not null or undefined
-            assertParamExists('providerControllerGetServiceProviderLogo', 'angebotId', angebotId)
-            const localVarPath = `/api/provider/{angebotId}/logo`
-                .replace(`{${"angebotId"}}`, encodeURIComponent(String(angebotId)));
+        providerControllerGetServiceProvidersByPersonId: async (personId: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'personId' is not null or undefined
+            assertParamExists('providerControllerGetServiceProvidersByPersonId', 'personId', personId)
+            const localVarPath = `/api/provider/{personId}`
+                .replace(`{${"personId"}}`, encodeURIComponent(String(personId)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -12488,16 +12521,6 @@ export const ProviderApiFp = function(configuration?: Configuration) {
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
-         * Get service-providers available for logged-in user.
-         * @summary 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async providerControllerGetMyServiceProviders(options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<ServiceProviderResponse>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.providerControllerGetMyServiceProviders(options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-        /**
          * 
          * @param {string} angebotId The id of the service provider
          * @param {*} [options] Override http request option.
@@ -12505,6 +12528,17 @@ export const ProviderApiFp = function(configuration?: Configuration) {
          */
         async providerControllerGetServiceProviderLogo(angebotId: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<any>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.providerControllerGetServiceProviderLogo(angebotId, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * Get service-providers for a person. Returns the available service-providers when the logged-in user requests their own, otherwise the assigned service-providers of another person (admin).
+         * @summary 
+         * @param {string} personId The id of the person.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async providerControllerGetServiceProvidersByPersonId(personId: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<ServiceProviderResponse>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.providerControllerGetServiceProvidersByPersonId(personId, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -12635,15 +12669,6 @@ export const ProviderApiFactory = function (configuration?: Configuration, baseP
             return localVarFp.providerControllerGetManageableServiceProvidersForOrganisationId(organisationId, offset, limit, options).then((request) => request(axios, basePath));
         },
         /**
-         * Get service-providers available for logged-in user.
-         * @summary 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        providerControllerGetMyServiceProviders(options?: any): AxiosPromise<Array<ServiceProviderResponse>> {
-            return localVarFp.providerControllerGetMyServiceProviders(options).then((request) => request(axios, basePath));
-        },
-        /**
          * 
          * @param {string} angebotId The id of the service provider
          * @param {*} [options] Override http request option.
@@ -12651,6 +12676,16 @@ export const ProviderApiFactory = function (configuration?: Configuration, baseP
          */
         providerControllerGetServiceProviderLogo(angebotId: string, options?: any): AxiosPromise<any> {
             return localVarFp.providerControllerGetServiceProviderLogo(angebotId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Get service-providers for a person. Returns the available service-providers when the logged-in user requests their own, otherwise the assigned service-providers of another person (admin).
+         * @summary 
+         * @param {string} personId The id of the person.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        providerControllerGetServiceProvidersByPersonId(personId: string, options?: any): AxiosPromise<Array<ServiceProviderResponse>> {
+            return localVarFp.providerControllerGetServiceProvidersByPersonId(personId, options).then((request) => request(axios, basePath));
         },
         /**
          * Update a service-provider (Angebot).
@@ -12778,15 +12813,6 @@ export interface ProviderApiInterface {
     providerControllerGetManageableServiceProvidersForOrganisationId(organisationId: string, offset?: number, limit?: number, options?: AxiosRequestConfig): AxiosPromise<ProviderControllerGetManageableServiceProvidersForOrganisationId200Response>;
 
     /**
-     * Get service-providers available for logged-in user.
-     * @summary 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof ProviderApiInterface
-     */
-    providerControllerGetMyServiceProviders(options?: AxiosRequestConfig): AxiosPromise<Array<ServiceProviderResponse>>;
-
-    /**
      * 
      * @param {string} angebotId The id of the service provider
      * @param {*} [options] Override http request option.
@@ -12794,6 +12820,16 @@ export interface ProviderApiInterface {
      * @memberof ProviderApiInterface
      */
     providerControllerGetServiceProviderLogo(angebotId: string, options?: AxiosRequestConfig): AxiosPromise<any>;
+
+    /**
+     * Get service-providers for a person. Returns the available service-providers when the logged-in user requests their own, otherwise the assigned service-providers of another person (admin).
+     * @summary 
+     * @param {string} personId The id of the person.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProviderApiInterface
+     */
+    providerControllerGetServiceProvidersByPersonId(personId: string, options?: AxiosRequestConfig): AxiosPromise<Array<ServiceProviderResponse>>;
 
     /**
      * Update a service-provider (Angebot).
@@ -12939,17 +12975,6 @@ export class ProviderApi extends BaseAPI implements ProviderApiInterface {
     }
 
     /**
-     * Get service-providers available for logged-in user.
-     * @summary 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof ProviderApi
-     */
-    public providerControllerGetMyServiceProviders(options?: AxiosRequestConfig) {
-        return ProviderApiFp(this.configuration).providerControllerGetMyServiceProviders(options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
      * 
      * @param {string} angebotId The id of the service provider
      * @param {*} [options] Override http request option.
@@ -12958,6 +12983,18 @@ export class ProviderApi extends BaseAPI implements ProviderApiInterface {
      */
     public providerControllerGetServiceProviderLogo(angebotId: string, options?: AxiosRequestConfig) {
         return ProviderApiFp(this.configuration).providerControllerGetServiceProviderLogo(angebotId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Get service-providers for a person. Returns the available service-providers when the logged-in user requests their own, otherwise the assigned service-providers of another person (admin).
+     * @summary 
+     * @param {string} personId The id of the person.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProviderApi
+     */
+    public providerControllerGetServiceProvidersByPersonId(personId: string, options?: AxiosRequestConfig) {
+        return ProviderApiFp(this.configuration).providerControllerGetServiceProvidersByPersonId(personId, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

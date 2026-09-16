@@ -1,9 +1,11 @@
-import { EmailAddressStatus, RollenArt } from '@/api-client/generated';
+import { EmailAddressStatus, RollenArt, ServiceProviderSystem } from '@/api-client/generated';
 import { useAuthStore, type AuthStore, type UserInfo } from '@/stores/AuthStore';
+import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
 import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
 import { usePersonInfoStore, type PersonInfoResponse, type PersonInfoStore } from '@/stores/PersonInfoStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import { RollenMerkmal } from '@/stores/RolleStore';
+import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
 import {
   useTwoFactorAuthentificationStore,
   type TwoFactorAuthentificationStore,
@@ -17,7 +19,6 @@ import { beforeEach, describe, expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import { createMemoryHistory, createRouter, useRoute, type Router } from 'vue-router';
 import ProfileView from './ProfileView.vue';
-import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
 
 let wrapper: VueWrapper | null = null;
 let personInfoStore: PersonInfoStore;
@@ -25,6 +26,7 @@ let personStore: PersonStore;
 let authStore: AuthStore;
 let configStore: ConfigStore;
 let twoFactorAuthenticationStore: TwoFactorAuthentificationStore;
+let serviceProviderStore: ServiceProviderStore;
 let router: Router;
 
 const mockPersonInfoResponse: PersonInfoResponse = DoFactory.getPersonInfoResponse();
@@ -148,6 +150,7 @@ describe('ProfileView', () => {
     authStore = useAuthStore();
     twoFactorAuthenticationStore = useTwoFactorAuthentificationStore();
     configStore = useConfigStore();
+    serviceProviderStore = useServiceProviderStore();
 
     router = createRouter({
       history: createMemoryHistory(),
@@ -349,6 +352,9 @@ describe('ProfileView', () => {
     test('it opens device password change dialog', async () => {
       personInfoStore.personInfo = mockPersonInfoResponse;
       personStore.personenuebersicht = mockLehrerUebersicht;
+      serviceProviderStore.assignedServiceProviders = [
+        DoFactory.getServiceProviderResponse({ externalSystem: ServiceProviderSystem.Uem }),
+      ];
       configStore.configData = {
         befristungBearbeitenEnabled: true,
         rolleBearbeitenEnabled: true,
