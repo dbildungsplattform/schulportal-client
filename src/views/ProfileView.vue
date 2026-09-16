@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { OrganisationsTyp, RollenArt, RollenMerkmal } from '@/api-client/generated/api';
+  import { OrganisationsTyp, RollenMerkmal, ServiceProviderSystem } from '@/api-client/generated/api';
   import PasswordReset from '@/components/admin/personen/PasswordReset.vue';
   import SpshTooltip from '@/components/admin/SpshTooltip.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
@@ -9,6 +9,11 @@
   import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
   import { usePersonInfoStore, type PersonInfoStore } from '@/stores/PersonInfoStore';
   import { EmailStatus, usePersonStore, type PersonStore } from '@/stores/PersonStore';
+  import {
+    useServiceProviderStore,
+    type ServiceProviderStore,
+    type StartPageServiceProvider,
+  } from '@/stores/ServiceProviderStore';
   import {
     TokenKind,
     useTwoFactorAuthentificationStore,
@@ -32,6 +37,7 @@
   const personInfoStore: PersonInfoStore = usePersonInfoStore();
   const personStore: PersonStore = usePersonStore();
   const configStore: ConfigStore = useConfigStore();
+  const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
   const twoFactorAuthenticationStore: TwoFactorAuthentificationStore = useTwoFactorAuthentificationStore();
 
   const windowOrigin: string = window.location.origin;
@@ -60,15 +66,16 @@
     return personStore.personenuebersicht?.hasRollenMerkmale([RollenMerkmal.KopersPflicht]) || false;
   });
 
+  // The UEM Angebot is modelled as a service provider with target NONE
+  const hasUEMServiceProvider: ComputedRef<boolean> = computed(() => {
+    return serviceProviderStore.assignedServiceProviders.some(
+      (serviceProvider: StartPageServiceProvider) => serviceProvider.externalSystem === ServiceProviderSystem.Uem,
+    );
+  });
+
   // Used to show device password block
   const showResetDevicePassword: ComputedRef<boolean> = computed(() => {
-    return (
-      (configStore.configData?.setUemPasswordEnabled &&
-        !!personStore.personenuebersicht?.zuordnungen.find((zuordnung: Zuordnung) => {
-          return zuordnung.rollenArt === RollenArt.Lehr;
-        })) ||
-      false
-    );
+    return (configStore.configData?.setUemPasswordEnabled && hasUEMServiceProvider.value) || false;
   });
 
   // Computed property to get the device password dialog text
@@ -197,9 +204,16 @@
 
       const twoFARequirementPromise: Promise<void> = twoFactorAuthenticationStore.get2FARequirement(personId);
       const personUebersichtPromise: Promise<void> = personStore.getPersonenuebersichtById(personId);
+      const availableServiceProvidersPromise: Promise<void> =
+        serviceProviderStore.getServiceProvidersByPersonId(personId);
       const twoFAStatePromise: Promise<void> = twoFactorAuthenticationStore.get2FAState(personId);
 
-      await Promise.all([twoFARequirementPromise, personUebersichtPromise, twoFAStatePromise]);
+      await Promise.all([
+        twoFARequirementPromise,
+        personUebersichtPromise,
+        availableServiceProvidersPromise,
+        twoFAStatePromise,
+      ]);
       loading2FA.value = false;
     },
     { immediate: true },
