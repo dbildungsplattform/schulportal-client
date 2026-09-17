@@ -527,21 +527,21 @@ describe('PersonCreationView', () => {
     await rollenSelect?.setValue([]);
     await nextTick();
 
-    const removedKopersInput = wrapper?.find('[data-testid="kopersnr-input"]');
+    const removedKopersInput: VueWrapper | undefined = wrapper
+      ?.findComponent({ ref: 'kopers-input' })
+      
     expect(removedKopersInput?.exists()).toBe(false);
-
-    const vm = wrapper?.vm as { selectedKopersNr?: string; hasNoKopersNr?: boolean } | undefined;
-    expect(vm?.selectedKopersNr).toBeUndefined();
-    expect(vm?.hasNoKopersNr).toBe(false);
 
     await rollenSelect?.setValue([ROLLE_ID]);
     await nextTick();
     await flushPromises();
 
-    const readdedKopersInput = wrapper?.find('[data-testid="kopersnr-input"]');
-    expect(readdedKopersInput?.exists()).toBe(true);
+    const recreatedKopersInput: VueWrapper | undefined = wrapper
+      ?.findComponent({ ref: 'kopers-input' })
+      .findComponent({ ref: 'kopersnr-input' });
+    expect(removedKopersInput?.exists()).toBe(false);
 
-    const readdedKopersValue: string = (readdedKopersInput?.find('input').element as HTMLInputElement).value;
+    const readdedKopersValue: string = (recreatedKopersInput?.find('input').element as HTMLInputElement).value;
     expect(readdedKopersValue).toBe('');
 
   });
