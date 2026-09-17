@@ -5,7 +5,7 @@ import { computed, type ComputedRef } from 'vue';
 export type TranslatedRolleWithAttrs = {
   value: string;
   title: string;
-  merkmale?: Set<RollenMerkmal>;
+  merkmale?: Array<RollenMerkmal>;
   rollenart: RollenArt;
 };
 export function useRollen(): ComputedRef<TranslatedRolleWithAttrs[] | undefined> {
@@ -16,7 +16,7 @@ export function useRollen(): ComputedRef<TranslatedRolleWithAttrs[] | undefined>
       .map((rolle: RolleResponse) => ({
         value: rolle.id,
         title: rolle.name,
-        merkmale: new Set(rolle.merkmale),
+        merkmale: rolle.merkmale,
         rollenart: rolle.rollenart, // Include Rollenart in the object
       }))
       .sort((a: TranslatedRolleWithAttrs, b: TranslatedRolleWithAttrs) => a.title.localeCompare(b.title));

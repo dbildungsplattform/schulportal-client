@@ -31,6 +31,9 @@ describe('PersonenUebersicht', () => {
           DoFactory.getZuordnung({
             merkmale: [RollenMerkmal.KopersPflicht],
           }),
+          DoFactory.getZuordnung({
+            merkmale: [RollenMerkmal.MptRolle],
+          }),
         ],
         true,
       ],
