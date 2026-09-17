@@ -19,7 +19,7 @@
     router.push({ name: 'schule-management' });
   };
 
-  const goToEditSchule = (): void => {
+  const navigateToEditSchule = (): void => {
     router.push({ name: 'schule-edit', params: { id: currentSchuleId } });
   };
 
@@ -102,7 +102,7 @@
                   class="primary"
                   data-testid="schule-edit-button"
                   :block="mdAndDown"
-                  @click="goToEditSchule"
+                  @click="navigateToEditSchule"
                 >
                   {{ $t('edit') }}
                 </v-btn>

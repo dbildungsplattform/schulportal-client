@@ -15,7 +15,7 @@
 
   const validationSchema: TypedSchema = toTypedSchema(
     object({
-      selectedSchulform: string().required(t('admin.schule.rules.schulform.required')),
+      selectedSchulform: string(),
       selectedDienststellennummer: string()
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.schule.rules.dienststellennummer.noLeadingTrailingSpaces'))
         .required(t('admin.schule.rules.dienststellennummer.required')),

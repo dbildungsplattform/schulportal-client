@@ -185,11 +185,11 @@
       <template v-if="organisationStore.createdSchule && !organisationStore.errorCode">
         <SchuleSuccessTemplate
           :is-edit-mode="false"
-          :successMessage="$t('admin.schule.schuleAddedSuccessfully')"
-          :followingDataChanged="organisationStore?.createdSchule"
+          :success-message="$t('admin.schule.schuleAddedSuccessfully')"
+          :following-data-changed="organisationStore?.createdSchule"
           :schultraeger-list="schultraegerList"
-          @onNavigateBackToSchuleManagement="navigateToSchuleManagement"
-          @onNavigateToSchuleForm="handleCreateAnotherSchule"
+          @on-navigate-back-to-schule-management="navigateToSchuleManagement"
+          @on-navigate-to-schule-form="handleCreateAnotherSchule"
         />
       </template>
     </LayoutCard>

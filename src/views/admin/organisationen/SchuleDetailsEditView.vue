@@ -148,7 +148,7 @@
         <SchuleForm
           v-if="organisationStore.currentSchule"
           :show-unsaved-changes-dialog="showUnsavedChangesDialog"
-          :initialValues="initialFormValues ?? {}"
+          :initial-values="initialFormValues ?? {}"
           :cached-values="cachedValues"
           :is-edit-mode="true"
           :error-code="organisationStore.errorCode"
@@ -165,11 +165,11 @@
       <template v-if="showSuccess && !organisationStore.errorCode">
         <SchuleSuccessTemplate
           :is-edit-mode="true"
-          :successMessage="$t('admin.schule.schuleChangedSuccessfully')"
-          :followingDataChanged="organisationStore?.updatedOrganisation"
+          :success-message="$t('admin.schule.schuleChangedSuccessfully')"
+          :following-data-changed="organisationStore?.updatedOrganisation"
           :schultraeger-list="schultraegerList"
-          @onNavigateBackToSchuleManagement="navigateToSchuleManagement"
-          @onNavigateToSchuleForm="navigateToSchuleBearbeiten"
+          @on-navigate-back-to-schule-management="navigateToSchuleManagement"
+          @on-navigate-to-schule-form="navigateToSchuleBearbeiten"
         />
       </template>
     </LayoutCard>
