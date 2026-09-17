@@ -180,7 +180,7 @@ describe('PersonDetailsView', () => {
           name: 'string',
           administeredBySchulstrukturknoten: 'string',
           rollenart: 'LERN',
-          merkmale: new Set<RollenMerkmal>(['BEFRISTUNG_PFLICHT']),
+          merkmale: [RollenMerkmal.KopersPflicht],
           systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
           administeredBySchulstrukturknotenName: 'Land SH',
           administeredBySchulstrukturknotenKennung: '',
@@ -193,7 +193,7 @@ describe('PersonDetailsView', () => {
           name: 'SuS',
           administeredBySchulstrukturknoten: '1',
           rollenart: 'LERN',
-          merkmale: new Set<RollenMerkmal>(['BEFRISTUNG_PFLICHT']),
+          merkmale: [RollenMerkmal.BefristungPflicht],
           systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
           administeredBySchulstrukturknotenName: 'Land SH',
           administeredBySchulstrukturknotenKennung: '',
@@ -472,13 +472,13 @@ describe('PersonDetailsView', () => {
         value: '54321',
         title: 'string',
         rollenart: RollenArt.Lern,
-        merkmale: new Set<RollenMerkmal>(['BEFRISTUNG_PFLICHT']),
+        merkmale: [RollenMerkmal.KopersPflicht],
       },
       {
         value: '1',
         title: 'SuS',
         rollenart: RollenArt.Lern,
-        merkmale: new Set<RollenMerkmal>(['BEFRISTUNG_PFLICHT']),
+        merkmale: [RollenMerkmal.BefristungPflicht],
       },
     ]);
   });

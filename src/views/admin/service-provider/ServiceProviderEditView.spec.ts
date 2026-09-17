@@ -1,3 +1,5 @@
+import SuccessTemplate from '@/components/admin/service-provider/SuccessTemplate.vue';
+import { ServiceProviderFormProps } from '@/components/admin/service-provider/types';
 import routes from '@/router/routes';
 import { RollenArt, RollenSystemRecht } from '@/stores/RolleStore';
 import {
@@ -8,7 +10,7 @@ import {
   type ServiceProviderStore,
 } from '@/stores/ServiceProviderStore';
 import ServiceProviderEditView from '@/views/admin/service-provider/ServiceProviderEditView.vue';
-import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import type { Mock, MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
@@ -19,8 +21,8 @@ import {
   type RouteLocationNormalized,
   type Router,
 } from 'vue-router';
-import SuccessTemplate from '@/components/admin/service-provider/SuccessTemplate.vue';
-import { ServiceProviderFormProps } from '@/components/admin/service-provider/types';
+
+enableAutoUnmount(afterEach);
 
 type OnBeforeRouteLeaveCallback = (
   _to: RouteLocationNormalized,

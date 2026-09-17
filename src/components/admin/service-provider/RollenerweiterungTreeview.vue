@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { RollenArt } from '@/stores/RolleStore';
+  import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
   import { computed, ref, watch, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
 
@@ -9,13 +9,14 @@
     id: string;
     name: string;
     rollenart: RollenArt;
+    merkmale?: RollenMerkmal[];
   };
 
   type TreeNode = {
     id: string;
     title: string;
     isGroup: boolean;
-    rollenart?: RollenArt;
+    rollenart?: RollenArt | 'MPT';
     scrollable?: boolean;
     children?: TreeNode[];
   };
@@ -43,10 +44,40 @@
 
   const emit: Emits = defineEmits<Emits>();
 
-  const GROUP_DEFINITIONS: { key: RollenArt; labelKey: string }[] = [
-    { key: RollenArt.Lehr, labelKey: 'angebot.groupLehr' },
-    { key: RollenArt.Lern, labelKey: 'angebot.groupLern' },
-    { key: RollenArt.Leit, labelKey: 'angebot.groupLeit' },
+  // A "group key" is either a real RollenArt, or the synthetic MPT bucket
+  type GroupKey = RollenArt | 'MPT';
+
+  type GroupDefinition = {
+    key: GroupKey;
+    labelKey: string;
+    match: (r: RolleForSelection) => boolean;
+  };
+
+  const isMptRolle = (r: RolleForSelection): boolean =>
+    Array.isArray(r.merkmale) && r.merkmale.includes(RollenMerkmal.MptRolle);
+
+  const GROUP_DEFINITIONS: GroupDefinition[] = [
+    {
+      key: RollenArt.Lehr,
+      labelKey: 'angebot.groupLehr',
+      match: (r: RolleForSelection) => r.rollenart === RollenArt.Lehr && !isMptRolle(r),
+    },
+    {
+      key: RollenArt.Lern,
+      labelKey: 'angebot.groupLern',
+      match: (r: RolleForSelection) => r.rollenart === RollenArt.Lern && !isMptRolle(r),
+    },
+    {
+      key: RollenArt.Leit,
+      labelKey: 'angebot.groupLeit',
+      match: (r: RolleForSelection) => r.rollenart === RollenArt.Leit && !isMptRolle(r),
+    },
+    // Group all MPT Rollen together, regardless of their RollenArt (e.g. Lehr, Nlehr, Schb)
+    {
+      key: 'MPT',
+      labelKey: 'angebot.groupMPT',
+      match: (r: RolleForSelection) => isMptRolle(r),
+    },
   ];
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -66,16 +97,16 @@
   );
 
   const fullGroups: ComputedRef<RolleSelection[]> = computed(() =>
-    GROUP_DEFINITIONS.map((def: { key: RollenArt; labelKey: string }) => ({
+    GROUP_DEFINITIONS.map((def: GroupDefinition) => ({
       key: def.key,
-      rollen: props.availableRollen.filter((r: RolleForSelection) => r.rollenart === def.key),
+      rollen: props.availableRollen.filter((r: RolleForSelection) => def.match(r)),
     })).filter((g: RolleSelection) => g.rollen.length > 0),
   );
 
   const treeItems: ComputedRef<TreeNode[]> = computed(() => {
-    return GROUP_DEFINITIONS.flatMap((def: { key: RollenArt; labelKey: string }) => {
+    return GROUP_DEFINITIONS.flatMap((def: GroupDefinition) => {
       const allChildren: RolleForSelection[] = props.availableRollen
-        .filter((r: RolleForSelection) => r.rollenart === def.key)
+        .filter((r: RolleForSelection) => def.match(r))
         .sort((a: RolleForSelection, b: RolleForSelection) => a.name.localeCompare(b.name));
 
       if (allChildren.length === 0) {
@@ -99,9 +130,8 @@
     });
   });
 
-  // ── Selection helpers ──────────────────────────────────────────────────────
-  function getGroupRolleIds(rollenart: string): string[] {
-    const group: RolleSelection | undefined = fullGroups.value.find((g: RolleSelection) => g.key === rollenart);
+  function getGroupRolleIds(groupKey: string): string[] {
+    const group: RolleSelection | undefined = fullGroups.value.find((g: RolleSelection) => g.key === groupKey);
     return group?.rollen.map((r: RolleForSelection) => r.id) ?? [];
   }
 

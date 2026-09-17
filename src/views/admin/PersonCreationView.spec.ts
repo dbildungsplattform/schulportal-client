@@ -68,7 +68,7 @@ const mockWorkflowStepResponse: PersonenkontextWorkflowResponse = DoFactory.getP
       administeredBySchulstrukturknoten: workflowOrganisation.id,
       administeredBySchulstrukturknotenName: workflowOrganisation.name,
       administeredBySchulstrukturknotenKennung: workflowOrganisation.kennung,
-      merkmale: new Set<RollenMerkmal>([RollenMerkmal.KopersPflicht]),
+      merkmale: [RollenMerkmal.KopersPflicht],
     }),
   ],
   canCommit: true,
@@ -86,7 +86,7 @@ rolleStore.allRollen = [
   DoFactory.getRolleWithServiceProviders({
     id: ROLLE_ID,
     rollenart: 'LERN',
-    merkmale: new Set<RollenMerkmal>([RollenMerkmal.KopersPflicht]),
+    merkmale: [RollenMerkmal.KopersPflicht],
   }),
   DoFactory.getRolleWithServiceProviders(),
 ] as RolleWithServiceProvidersResponse[];
