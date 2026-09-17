@@ -265,6 +265,7 @@ describe('ServiceProviderDetailsBySchuleView', () => {
 
       expect(getAllRollenSpy).toHaveBeenCalledWith({
         organisationContextForOperation: 'some-org-id',
+        rollenarten: mockServiceProvider.rollenartenWhitelist,
         systemrechte: [RollenSystemRechtEnum.RollenErweitern],
       });
     });
@@ -279,6 +280,7 @@ describe('ServiceProviderDetailsBySchuleView', () => {
 
       expect(getAllRollenSpy).toHaveBeenCalledWith({
         organisationContextForOperation: 'some-org-id',
+        rollenarten: mockServiceProvider.rollenartenWhitelist,
         systemrechte: [RollenSystemRechtEnum.RollenErweitern, RollenSystemRechtEnum.MptRollenVerwalten],
       });
     });

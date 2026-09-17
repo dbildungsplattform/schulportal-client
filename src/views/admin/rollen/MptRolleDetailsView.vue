@@ -117,7 +117,7 @@
     }
 
     await Promise.all([
-      serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId),
+      serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId, rolleStore.currentMptRolle.rollenart),
       organisationStore.currentOrganisation?.id === organisationId
         ? Promise.resolve()
         : organisationStore.getOrganisationById(organisationId),

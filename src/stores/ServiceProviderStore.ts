@@ -178,6 +178,7 @@ type ServiceProviderState = {
 type AvailableServiceProviderFilter = {
   organisationId: string;
   systemrechte: Array<RollenSystemRechtEnum>;
+  rollenArt: RollenArt;
 };
 
 function fetchAvailableServiceProviders(
@@ -189,6 +190,7 @@ function fetchAvailableServiceProviders(
     undefined,
     filter.organisationId,
     filter.systemrechte,
+    [filter.rollenArt],
   );
 }
 
@@ -198,7 +200,7 @@ type ServiceProviderActions = {
     administeredBySchulstrukturknoten: string,
     rollenArt: RollenArt,
   ) => Promise<void>;
-  getServiceProvidersForRollenerweiterung: (organisationId: string) => Promise<void>;
+  getServiceProvidersForRollenerweiterung: (organisationId: string, rollenArt: RollenArt) => Promise<void>;
   getServiceProvidersByPersonId: (personId: string) => Promise<void>;
   getManageableServiceProviders: (filter: ManageableServiceProviderFilter) => Promise<void>;
   getManageableServiceProvidersForOrganisation: (
@@ -274,7 +276,7 @@ export const useServiceProviderStore: StoreDefinition<
       }
     },
 
-    async getServiceProvidersForRollenerweiterung(organisationId: string): Promise<void> {
+    async getServiceProvidersForRollenerweiterung(organisationId: string, rollenArt: RollenArt): Promise<void> {
       this.loading = true;
       this.errorCode = '';
       this.allServiceProviders = [];
@@ -283,6 +285,7 @@ export const useServiceProviderStore: StoreDefinition<
           await fetchAvailableServiceProviders({
             organisationId,
             systemrechte: [RollenSystemRechtEnum.RollenErweitern],
+            rollenArt,
           });
         this.allServiceProviders = response.data.items;
       } catch (error: unknown) {

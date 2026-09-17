@@ -202,6 +202,7 @@ describe('serviceProviderStore', () => {
 
   describe('getServiceProvidersForRollenerweiterung', () => {
     const organisationId: string = faker.string.uuid();
+    const rollenArt: RollenArt = RollenArt.Lehr;
 
     it('should load service providers allowed for role extensions', async () => {
       const serviceProvider: ServiceProviderResponse = DoFactory.getServiceProviderResponse();
@@ -213,7 +214,10 @@ describe('serviceProviderStore', () => {
         items: [serviceProvider],
       });
 
-      const promise: Promise<void> = serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId);
+      const promise: Promise<void> = serviceProviderStore.getServiceProvidersForRollenerweiterung(
+        organisationId,
+        rollenArt,
+      );
       expect(serviceProviderStore.loading).toBe(true);
       expect(serviceProviderStore.allServiceProviders).toEqual([]);
       await promise;
@@ -221,6 +225,7 @@ describe('serviceProviderStore', () => {
       const requestUrl: string = mockadapter.history.get[0]?.url ?? '';
       expect(requestUrl).toContain(`organisationId=${organisationId}`);
       expect(requestUrl).toContain('ROLLEN_ERWEITERN');
+      expect(requestUrl).toContain(`rollenArten=${rollenArt}`);
       expect(serviceProviderStore.allServiceProviders).toEqual([serviceProvider]);
       expect(serviceProviderStore.errorCode).toBe('');
       expect(serviceProviderStore.loading).toBe(false);
@@ -229,7 +234,7 @@ describe('serviceProviderStore', () => {
     it('should handle an unstructured error', async () => {
       mockadapter.onGet().replyOnce(500, 'server error');
 
-      await serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId);
+      await serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId, rollenArt);
 
       expect(serviceProviderStore.errorCode).toBe('UNSPECIFIED_ERROR');
       expect(serviceProviderStore.loading).toBe(false);
@@ -238,7 +243,7 @@ describe('serviceProviderStore', () => {
     it('should handle a structured error', async () => {
       mockadapter.onGet().replyOnce(500, { code: 'SERVICE_PROVIDER_LOADING_ERROR' });
 
-      await serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId);
+      await serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId, rollenArt);
 
       expect(serviceProviderStore.errorCode).toBe('SERVICE_PROVIDER_LOADING_ERROR');
       expect(serviceProviderStore.loading).toBe(false);
@@ -788,18 +793,15 @@ describe('serviceProviderStore', () => {
     const url: string = '/api/provider';
 
     it('should create a service provider and update state', async () => {
-      const mockResponse: ServiceProviderResponse = {
-        id: faker.string.uuid(),
+      const mockResponse: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
         name: filter.name,
         url: filter.url,
-        target: ServiceProviderTarget.Url,
-        hasLogo: false,
         logoId: 1,
         kategorie: filter.kategorie,
         requires2fa: filter.requires2fa,
         merkmale: filter.merkmale,
         rollenartenWhitelist: filter.rollenartenWhitelist ?? [],
-      };
+      });
 
       mockadapter.onPost(url).replyOnce(200, mockResponse);
       const promise: Promise<void> = serviceProviderStore.createServiceProvider(filter);
@@ -850,7 +852,7 @@ describe('serviceProviderStore', () => {
     };
 
     it('should update a service provider and update state', async () => {
-      const mockResponse: ServiceProviderResponse = {
+      const mockResponse: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
         id: providerId,
         name: update.name!,
         url: update.url!,
@@ -861,7 +863,7 @@ describe('serviceProviderStore', () => {
         kategorie: update.kategorie!,
         requires2fa: false,
         merkmale: [],
-      };
+      });
 
       mockadapter.onPatch(apiUrl).replyOnce(200, mockResponse);
       const promise: Promise<void> = serviceProviderStore.updateServiceProvider(providerId, update);
@@ -879,7 +881,7 @@ describe('serviceProviderStore', () => {
           ServiceProviderMerkmal.AnbietenInSchulischerRollenverwaltung,
         ],
       };
-      const mockResponse: ServiceProviderResponse = {
+      const mockResponse: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
         id: providerId,
         name: 'Updated Service Provider',
         url: 'https://updated-url.com',
@@ -890,7 +892,7 @@ describe('serviceProviderStore', () => {
         requires2fa: false,
         merkmale: updateWithMerkmale.merkmale,
         rollenartenWhitelist: [],
-      };
+      });
 
       mockadapter.onPatch(apiUrl).replyOnce(200, mockResponse);
       await serviceProviderStore.updateServiceProvider(providerId, updateWithMerkmale);
