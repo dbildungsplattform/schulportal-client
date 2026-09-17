@@ -133,7 +133,7 @@ describe('SchuleDetailsView', () => {
     const pushSpy: ReturnType<typeof vi.spyOn> = vi.spyOn(router, 'push');
 
     // Find the layout card component and trigger the onCloseClicked event
-    const layoutCard = wrapper?.findComponent(LayoutCard);
+    const layoutCard: VueWrapper | undefined = wrapper?.findComponent(LayoutCard);
     if (layoutCard) {
       layoutCard.vm.$emit('onCloseClicked');
     }
