@@ -529,7 +529,7 @@ describe('PersonCreationView', () => {
 
     const removedKopersInput: VueWrapper | undefined = wrapper
       ?.findComponent({ ref: 'kopers-input' })
-      
+
     expect(removedKopersInput?.exists()).toBe(false);
 
     await rollenSelect?.setValue([ROLLE_ID]);
