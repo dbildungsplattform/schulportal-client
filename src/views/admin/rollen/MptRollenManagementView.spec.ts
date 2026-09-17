@@ -242,7 +242,7 @@ describe('MptRollenManagementView', () => {
 
     expect(rolleStore.allRollen).toEqual([]);
     expect(rolleStore.totalRollen).toBe(0);
-    expect(searchFilterStore.selectedSchuleForMptRollen).toBe(null);
+    expect(searchFilterStore.selectedSchuleForMptRollen).toBeNull();
   });
 
   it('restores selected school from search filter store on mount', async () => {
