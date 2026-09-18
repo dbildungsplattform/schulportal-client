@@ -62,7 +62,7 @@ function setPermissions(hasPermission: boolean): void {
   authStore.hasEingeschränktNeueBenutzerErstellenPermission = hasPermission;
   authStore.hasAngeboteVerwaltenPermission = hasPermission;
   authStore.hasRollenerweiternPermission = hasPermission;
-  authStore.hasMptRollenVerwaltenPermission = hasPermission;
+  authStore.hasMptRollenZuordnenPermission = hasPermission;
 }
 
 beforeEach(() => {
@@ -130,7 +130,7 @@ describe('MenuBar', () => {
   test('hides elements when permissions are false', async () => {
     // Reset permissions to false
     authStore.hasPersonenAnlegenPermission = false;
-    authStore.hasMptRollenVerwaltenPermission = false;
+    authStore.hasMptRollenZuordnenPermission = false;
     await nextTick();
 
     expect(wrapper?.find('[data-testid="person-creation-menu-item"]').exists()).toBe(false);
@@ -140,7 +140,7 @@ describe('MenuBar', () => {
 
   test('renders standalone mpt role section for users without rollenverwaltung permission', async () => {
     setPermissions(false);
-    authStore.hasMptRollenVerwaltenPermission = true;
+    authStore.hasMptRollenZuordnenPermission = true;
     await nextTick();
 
     expect(wrapper?.find('[data-testid="rolle-management-title"]').exists()).toBe(false);

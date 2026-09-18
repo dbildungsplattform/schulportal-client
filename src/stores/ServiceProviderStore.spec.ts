@@ -235,53 +235,40 @@ describe('serviceProviderStore', () => {
     });
   });
 
-  describe('getMyServiceProviders', () => {
-    it("should load user's available service providers and update state", async () => {
-      const mockResponse: StartPageServiceProvider[] = [
-        {
-          id: '1234',
-          name: 'itslearning mock',
-          url: 'example.org/itslearning',
-          kategorie: 'EMAIL',
-          hasLogo: true,
-          target: 'URL',
-          requires2fa: true,
-        },
-        {
-          id: '5678',
-          name: 'administration mock',
-          url: '/admin',
-          kategorie: 'VERWALTUNG',
-          hasLogo: true,
-          target: 'URL',
-          requires2fa: false,
-        },
+  describe('getServiceProvidersByPersonId', () => {
+    it("should load a person's assigned service providers and update state", async () => {
+      const personId: string = 'abc-123';
+      const mockResponse: ServiceProviderResponse[] = [
+        DoFactory.getServiceProviderResponse({ id: '1', target: ServiceProviderTarget.None }),
+        DoFactory.getServiceProviderResponse({ id: '2', target: ServiceProviderTarget.Url }),
       ];
 
-      mockadapter.onGet('/api/provider/my-providers').replyOnce(200, mockResponse);
-      const getMyServiceProvidersPromise: Promise<void> = serviceProviderStore.getMyServiceProviders();
+      mockadapter.onGet(`/api/provider/${personId}`).replyOnce(200, mockResponse);
+      const promise: Promise<void> = serviceProviderStore.getServiceProvidersByPersonId(personId);
       expect(serviceProviderStore.loading).toBe(true);
-      await getMyServiceProvidersPromise;
-      expect(serviceProviderStore.availableServiceProviders).toEqual([...mockResponse]);
+      await promise;
+      expect(serviceProviderStore.assignedServiceProviders).toEqual(mockResponse);
       expect(serviceProviderStore.loading).toBe(false);
     });
 
     it('should handle string error', async () => {
-      mockadapter.onGet('/api/provider/my-providers').replyOnce(500, 'some mock server error');
-      const getMyServiceProvidersPromise: Promise<void> = serviceProviderStore.getMyServiceProviders();
+      const personId: string = 'abc-123';
+      mockadapter.onGet(`/api/provider/${personId}`).replyOnce(500, 'some mock server error');
+      const promise: Promise<void> = serviceProviderStore.getServiceProvidersByPersonId(personId);
       expect(serviceProviderStore.loading).toBe(true);
-      await getMyServiceProvidersPromise;
-      expect(serviceProviderStore.availableServiceProviders).toEqual([]);
+      await promise;
+      expect(serviceProviderStore.assignedServiceProviders).toEqual([]);
       expect(serviceProviderStore.errorCode).toEqual('UNSPECIFIED_ERROR');
       expect(serviceProviderStore.loading).toBe(false);
     });
 
     it('should handle error code', async () => {
-      mockadapter.onGet('/api/provider/my-providers').replyOnce(500, { code: 'some mock server error' });
-      const getMyServiceProvidersPromise: Promise<void> = serviceProviderStore.getMyServiceProviders();
+      const personId: string = 'abc-123';
+      mockadapter.onGet(`/api/provider/${personId}`).replyOnce(500, { code: 'some mock server error' });
+      const promise: Promise<void> = serviceProviderStore.getServiceProvidersByPersonId(personId);
       expect(serviceProviderStore.loading).toBe(true);
-      await getMyServiceProvidersPromise;
-      expect(serviceProviderStore.availableServiceProviders).toEqual([]);
+      await promise;
+      expect(serviceProviderStore.assignedServiceProviders).toEqual([]);
       expect(serviceProviderStore.errorCode).toEqual('some mock server error');
       expect(serviceProviderStore.loading).toBe(false);
     });
@@ -791,7 +778,7 @@ describe('serviceProviderStore', () => {
     const url: string = '/api/provider';
 
     it('should create a service provider and update state', async () => {
-      const mockResponse: ServiceProviderResponse = {
+      const mockResponse: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
         id: faker.string.uuid(),
         name: filter.name,
         url: filter.url,
@@ -802,7 +789,7 @@ describe('serviceProviderStore', () => {
         requires2fa: filter.requires2fa,
         merkmale: filter.merkmale,
         rollenartenWhitelist: filter.rollenartenWhitelist ?? [],
-      };
+      });
 
       mockadapter.onPost(url).replyOnce(200, mockResponse);
       const promise: Promise<void> = serviceProviderStore.createServiceProvider(filter);
@@ -853,7 +840,7 @@ describe('serviceProviderStore', () => {
     };
 
     it('should update a service provider and update state', async () => {
-      const mockResponse: ServiceProviderResponse = {
+      const mockResponse: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
         id: providerId,
         name: update.name!,
         url: update.url!,
@@ -864,7 +851,7 @@ describe('serviceProviderStore', () => {
         kategorie: update.kategorie!,
         requires2fa: false,
         merkmale: [],
-      };
+      });
 
       mockadapter.onPatch(apiUrl).replyOnce(200, mockResponse);
       const promise: Promise<void> = serviceProviderStore.updateServiceProvider(providerId, update);
@@ -882,7 +869,7 @@ describe('serviceProviderStore', () => {
           ServiceProviderMerkmal.AnbietenInSchulischerRollenverwaltung,
         ],
       };
-      const mockResponse: ServiceProviderResponse = {
+      const mockResponse: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
         id: providerId,
         name: 'Updated Service Provider',
         url: 'https://updated-url.com',
@@ -893,7 +880,7 @@ describe('serviceProviderStore', () => {
         requires2fa: false,
         merkmale: updateWithMerkmale.merkmale,
         rollenartenWhitelist: [],
-      };
+      });
 
       mockadapter.onPatch(apiUrl).replyOnce(200, mockResponse);
       await serviceProviderStore.updateServiceProvider(providerId, updateWithMerkmale);

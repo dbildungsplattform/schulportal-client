@@ -21,10 +21,10 @@ import {
 } from '../api-client/generated/api';
 import type { BaseServiceProvider } from './ServiceProviderStore';
 
-const rolleApi: RolleApiInterface = RolleApiFactory(undefined, '', axiosApiInstance);
-
 export { RollenArt, RollenMerkmal, RollenSystemRechtEnum as RollenSystemRecht };
 export type { RolleResponse, RolleWithServiceProvidersResponse };
+
+const rolleApi: RolleApiInterface = RolleApiFactory(undefined, '', axiosApiInstance);
 
 export type Rolle = {
   administeredBySchulstrukturknoten: string;
@@ -121,6 +121,7 @@ type RolleActions = {
     serviceProvider: string[],
   ) => Promise<void>;
   getAllRollen: (filter: RolleFilter) => Promise<void>;
+  getRollenForPersonenkontextCreation: (params: RollenForPersonenkontextCreationQuery) => Promise<void>;
   getRolleById: (rolleId: string) => Promise<void>;
   getRollenForPersonAdministration: (params: RollenForPersonAdministrationParams) => Promise<void>;
   getMptRolleById: (rolleId: string, organisationId: string) => Promise<void>;
@@ -135,7 +136,6 @@ type RolleActions = {
     version: number,
   ) => Promise<void>;
   deleteRolleById: (rolleId: string) => Promise<void>;
-  getRollenForPersonenkontextCreation: (params: RollenForPersonenkontextCreationQuery) => Promise<void>;
 };
 
 export type RolleStore = Store<'rolleStore', RolleState, RolleGetters, RolleActions>;
@@ -291,7 +291,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               undefined,
               [organisationId],
               [rolleId],
-              [RollenSystemRechtEnum.MptRollenVerwalten],
+              [RollenSystemRechtEnum.MptRollenZuordnen],
             );
           const rolle: RolleWithServiceProvidersResponse | undefined = data[0];
           if (!rolle) {

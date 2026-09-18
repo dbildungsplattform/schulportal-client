@@ -260,7 +260,7 @@ describe('rolleStore', () => {
         limit: 30,
         offset: 30,
         organisationIds: ['org-1', 'org-2'],
-        systemrechte: [RollenSystemRechtEnum.PersonenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
+        systemrechte: [RollenSystemRechtEnum.PersonenVerwalten, RollenSystemRechtEnum.MptRollenZuordnen],
       });
 
       const query: URLSearchParams = getRequestQuery(0);
@@ -270,7 +270,7 @@ describe('rolleStore', () => {
       expect(query.getAll('organisationIds')).toEqual(['org-1', 'org-2']);
       expect(query.getAll('systemrechte')).toEqual([
         RollenSystemRechtEnum.PersonenVerwalten,
-        RollenSystemRechtEnum.MptRollenVerwalten,
+        RollenSystemRechtEnum.MptRollenZuordnen,
       ]);
     });
 
@@ -317,7 +317,7 @@ describe('rolleStore', () => {
       const requestUrl: string = mockadapter.history.get[0]?.url ?? '';
       expect(requestUrl).toContain('organisationenForFilter=organisation-1');
       expect(requestUrl).toContain(`rolleIds=${rolle.id}`);
-      expect(requestUrl).toContain('systemrechte=MPT_ROLLEN_VERWALTEN');
+      expect(requestUrl).toContain('systemrechte=MPT_ROLLEN_ZUORDNEN');
       expect(rolleStore.currentMptRolle?.id).toBe(rolle.id);
       expect(rolleStore.errorCode).toBe('');
       expect(rolleStore.loading).toBe(false);

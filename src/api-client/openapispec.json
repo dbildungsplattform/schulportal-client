@@ -1248,6 +1248,75 @@
         "tags": ["rolle"]
       }
     },
+    "/api/rolle/for-person-administration": {
+      "get": {
+        "description": "List rollen available for person administration.",
+        "operationId": "RolleController_findRollenAvailableForPersonAdministration",
+        "parameters": [
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "description": "The offset of the paginated list.",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "The requested limit for the page size.",
+            "schema": { "type": "number" }
+          },
+          {
+            "name": "searchStr",
+            "required": false,
+            "in": "query",
+            "description": "The name for the role.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "organisationIds",
+            "required": false,
+            "in": "query",
+            "description": "OrganisationIds to filter rollen.",
+            "schema": { "type": "array", "items": { "type": "string" } }
+          },
+          {
+            "name": "systemrechte",
+            "required": false,
+            "in": "query",
+            "description": "The system right for which the roles should be available. Can only be PERSONEN_VERWALTEN and optionally MPT_ROLLEN_ZUORDNEN.",
+            "schema": { "type": "array", "items": { "$ref": "#/components/schemas/RollenSystemRechtEnum" } }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The rollen were successfully returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/RawPagedResponse" },
+                    {
+                      "required": ["items"],
+                      "properties": {
+                        "items": { "type": "array", "items": { "$ref": "#/components/schemas/RolleResponse" } }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "description": "Not authorized to get available rollen for person administration." },
+          "403": { "description": "Insufficient permissions to get available rollen for person administration." },
+          "500": { "description": "Internal server error while getting available rollen for person administration." }
+        },
+        "security": [{ "oauth2": ["openid"] }, { "bearer": [] }],
+        "summary": "",
+        "tags": ["rolle"]
+      }
+    },
     "/api/rolle/systemrechte": {
       "get": {
         "description": "Get all systemrechte for rollen.",
@@ -1748,29 +1817,6 @@
         "tags": ["provider"]
       }
     },
-    "/api/provider/my-providers": {
-      "get": {
-        "description": "Get service-providers available for logged-in user.",
-        "operationId": "ProviderController_getMyServiceProviders",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "The service-providers were successfully returned.",
-            "content": {
-              "application/json": {
-                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ServiceProviderResponse" } }
-              }
-            }
-          },
-          "401": { "description": "Not authorized to get available service providers." },
-          "403": { "description": "Insufficient permissions to get service-providers." },
-          "500": { "description": "Internal server error while getting all service-providers." }
-        },
-        "security": [{ "bearer": [] }, { "oauth2": ["openid"] }],
-        "summary": "",
-        "tags": ["provider"]
-      }
-    },
     "/api/provider/{angebotId}/logo": {
       "get": {
         "operationId": "ProviderController_getServiceProviderLogo",
@@ -2073,6 +2119,37 @@
         "tags": ["provider"]
       }
     },
+    "/api/provider/{personId}": {
+      "get": {
+        "description": "Get service-providers for a person. Returns the available service-providers when the logged-in user requests their own, otherwise the assigned service-providers of another person (admin).",
+        "operationId": "ProviderController_getServiceProvidersByPersonId",
+        "parameters": [
+          {
+            "name": "personId",
+            "required": true,
+            "in": "path",
+            "description": "The id of the person.",
+            "schema": { "nullable": false, "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The service-providers were successfully returned.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ServiceProviderResponse" } }
+              }
+            }
+          },
+          "401": { "description": "Not authorized to get service providers for the person." },
+          "403": { "description": "Insufficient permissions to get service-providers for the person." },
+          "500": { "description": "Internal server error while getting the service-providers." }
+        },
+        "security": [{ "bearer": [] }, { "oauth2": ["openid"] }],
+        "summary": "",
+        "tags": ["provider"]
+      }
+    },
     "/api/provider/{angebotId}": {
       "patch": {
         "description": "Update a service-provider (Angebot).",
@@ -2176,7 +2253,7 @@
             "name": "requestedWithSystemrecht",
             "required": false,
             "in": "query",
-            "description": "The systemrecht used to filter for rollen in personenkontext.",
+            "description": "The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN",
             "schema": { "$ref": "#/components/schemas/RollenSystemRechtEnum" }
           }
         ],
@@ -2267,45 +2344,6 @@
         },
         "security": [{ "oauth2": ["openid"] }, { "bearer": [] }],
         "tags": ["personenkontext"]
-      }
-    },
-    "/api/person-administration/rollen": {
-      "get": {
-        "operationId": "PersonAdministrationController_findRollen",
-        "parameters": [
-          {
-            "name": "rolleName",
-            "required": false,
-            "in": "query",
-            "description": "Rolle name used to filter for rollen in personenkontext.",
-            "schema": { "nullable": false, "type": "string" }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "The limit of items for the request.",
-            "schema": { "nullable": false, "type": "number" }
-          },
-          {
-            "name": "organisationIds",
-            "required": false,
-            "in": "query",
-            "description": "OrganisationIDs to filter rollen",
-            "schema": { "type": "array", "items": { "type": "string" } }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The rollen for the logged-in user were successfully returned.",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FindRollenResponse" } } }
-          },
-          "401": { "description": "Not authorized to get available rollen for the logged-in user." },
-          "403": { "description": "Insufficient permission to get rollen for the logged-in user." },
-          "500": { "description": "Internal server error while getting rollen for the logged-in user." }
-        },
-        "security": [{ "oauth2": ["openid"] }, { "bearer": [] }],
-        "tags": ["person-administration"]
       }
     },
     "/api/2fa-token/init": {
@@ -3204,7 +3242,8 @@
           "typ": { "allOf": [{ "$ref": "#/components/schemas/OrganisationsTyp" }] },
           "traegerschaft": { "allOf": [{ "$ref": "#/components/schemas/TraegerschaftTyp" }] },
           "itslearningEnabled": { "type": "boolean" },
-          "version": { "type": "number" }
+          "version": { "type": "number" },
+          "emailAdress": { "type": "string" }
         },
         "required": [
           "id",
@@ -3217,7 +3256,8 @@
           "typ",
           "traegerschaft",
           "itslearningEnabled",
-          "version"
+          "version",
+          "emailAdress"
         ]
       },
       "RollenSystemRechtServiceProviderIDResponse": {
@@ -3783,7 +3823,7 @@
         "type": "string",
         "enum": [
           "ROLLEN_VERWALTEN",
-          "MPT_ROLLEN_VERWALTEN",
+          "MPT_ROLLEN_ZUORDNEN",
           "PERSONEN_SOFORT_LOESCHEN",
           "PERSONEN_VERWALTEN",
           "LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN",
@@ -4008,7 +4048,7 @@
         },
         "required": ["id", "createdAt", "updatedAt", "organisationId", "rolleId", "serviceProviderId"]
       },
-      "ServiceProviderTarget": { "type": "string", "enum": ["URL", "EMAIL", "SCHULPORTAL_ADMINISTRATION"] },
+      "ServiceProviderTarget": { "type": "string", "enum": ["NONE", "URL", "EMAIL", "SCHULPORTAL_ADMINISTRATION"] },
       "ServiceProviderKategorie": {
         "type": "string",
         "enum": ["EMAIL", "UNTERRICHT", "VERWALTUNG", "SCHULISCH", "HINWEISE"]
@@ -4022,6 +4062,7 @@
           "ANBIETEN_IN_SCHULISCHER_ROLLENVERWALTUNG"
         ]
       },
+      "ServiceProviderSystem": { "type": "string", "enum": ["NONE", "EMAIL", "ITSLEARNING", "UEM"] },
       "ServiceProviderResponse": {
         "type": "object",
         "properties": {
@@ -4034,9 +4075,20 @@
           "hasLogo": { "type": "boolean", "description": "Indicates if a custom logo is available for fetching" },
           "requires2fa": { "type": "boolean", "description": "Indicates if 2FA is required" },
           "merkmale": { "type": "array", "items": { "$ref": "#/components/schemas/ServiceProviderMerkmal" } },
-          "rollenartenWhitelist": { "type": "array", "items": { "$ref": "#/components/schemas/RollenArt" } }
+          "rollenartenWhitelist": { "type": "array", "items": { "$ref": "#/components/schemas/RollenArt" } },
+          "externalSystem": { "allOf": [{ "$ref": "#/components/schemas/ServiceProviderSystem" }] }
         },
-        "required": ["id", "name", "target", "kategorie", "hasLogo", "requires2fa", "merkmale", "rollenartenWhitelist"]
+        "required": [
+          "id",
+          "name",
+          "target",
+          "kategorie",
+          "hasLogo",
+          "requires2fa",
+          "merkmale",
+          "rollenartenWhitelist",
+          "externalSystem"
+        ]
       },
       "ApplyRollenerweiterungChangesBodyParams": {
         "type": "object",
@@ -4221,7 +4273,7 @@
               "type": "string",
               "enum": [
                 "ROLLEN_VERWALTEN",
-                "MPT_ROLLEN_VERWALTEN",
+                "MPT_ROLLEN_ZUORDNEN",
                 "PERSONEN_SOFORT_LOESCHEN",
                 "PERSONEN_VERWALTEN",
                 "LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN",
@@ -4318,7 +4370,8 @@
           "hasLogo": { "type": "boolean", "description": "Indicates if a custom logo is available for fetching" },
           "requires2fa": { "type": "boolean", "description": "Indicates if 2FA is required" },
           "merkmale": { "type": "array", "items": { "$ref": "#/components/schemas/ServiceProviderMerkmal" } },
-          "rollenartenWhitelist": { "type": "array", "items": { "$ref": "#/components/schemas/RollenArt" } }
+          "rollenartenWhitelist": { "type": "array", "items": { "$ref": "#/components/schemas/RollenArt" } },
+          "externalSystem": { "allOf": [{ "$ref": "#/components/schemas/ServiceProviderSystem" }] }
         },
         "required": [
           "id",
@@ -4329,7 +4382,8 @@
           "hasLogo",
           "requires2fa",
           "merkmale",
-          "rollenartenWhitelist"
+          "rollenartenWhitelist",
+          "externalSystem"
         ]
       },
       "UpdateServiceProviderBodyParams": {
@@ -4506,14 +4560,6 @@
           "code": { "type": "number", "description": "Corresponds to HTTP Status code like 200, 404, 500" }
         },
         "required": ["i18nKey", "code"]
-      },
-      "FindRollenResponse": {
-        "type": "object",
-        "properties": {
-          "moeglicheRollen": { "type": "array", "items": { "$ref": "#/components/schemas/RolleResponse" } },
-          "total": { "type": "number" }
-        },
-        "required": ["moeglicheRollen", "total"]
       },
       "TokenInitBodyParams": {
         "type": "object",
