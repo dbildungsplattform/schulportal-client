@@ -164,8 +164,8 @@ describe('SchuleDetailsEditView', () => {
     expect((wrapper?.vm as unknown as { initialFormValues?: SchuleDetailsForm }).initialFormValues).toBeUndefined();
   });
 
-  test('it calls updateSchuleDetails when form is submitted', async () => {
-    const updateSpy: MockInstance = vi.spyOn(organisationStore, 'updateSchuleDetails');
+  test('it calls updateSchuleById when form is submitted', async () => {
+    const updateSpy: MockInstance = vi.spyOn(organisationStore, 'updateSchuleById');
     const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
 
     const formData: SchuleDetailsForm = {
@@ -188,7 +188,7 @@ describe('SchuleDetailsEditView', () => {
   });
 
   test('it shows success template after successful submission', async () => {
-    vi.spyOn(organisationStore, 'updateSchuleDetails').mockImplementation(() => {
+    vi.spyOn(organisationStore, 'updateSchuleById').mockImplementation(() => {
       organisationStore.errorCode = '';
       organisationStore.updatedOrganisation = {
         ...DoFactory.getOrganisation(),
@@ -214,7 +214,7 @@ describe('SchuleDetailsEditView', () => {
   });
 
   test('it hides form when success template is shown', async () => {
-    vi.spyOn(organisationStore, 'updateSchuleDetails').mockImplementation(() => {
+    vi.spyOn(organisationStore, 'updateSchuleById').mockImplementation(() => {
       organisationStore.errorCode = '';
       organisationStore.updatedOrganisation = DoFactory.getOrganisation();
       return Promise.resolve();
@@ -274,7 +274,7 @@ describe('SchuleDetailsEditView', () => {
   });
 
   test('it clears errorCode when navigating back to form after error', async () => {
-    vi.spyOn(organisationStore, 'updateSchuleDetails').mockImplementation(() => {
+    vi.spyOn(organisationStore, 'updateSchuleById').mockImplementation(() => {
       organisationStore.errorCode = 'SCHULE_UPDATE_FAILED';
       return Promise.resolve();
     });

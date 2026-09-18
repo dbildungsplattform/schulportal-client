@@ -52,7 +52,7 @@
   const onSubmit = async (params: SchuleDetailsForm): Promise<void> => {
     const { selectedSchulform, selectedSchulname, selectedEmailAdress }: SchuleDetailsForm = params;
     cacheSubmittedValues(params);
-    await organisationStore.updateSchuleDetails({
+    await organisationStore.updateSchuleById({
       organisationId: currentSchuleId.value,
       schultraegerform: selectedSchulform as string,
       name: selectedSchulname as string,

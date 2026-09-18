@@ -165,7 +165,7 @@ type OrganisationActions = {
     emailAdress?: string,
   ) => Promise<void>;
   deleteOrganisationById: (organisationId: string) => Promise<void>;
-  updateOrganisationById: (organisationId: string, name: string, type: OrganisationsTyp) => Promise<void>;
+  updateOrganisationNameById: (organisationId: string, name: string, type: OrganisationsTyp) => Promise<void>;
   getRootKinderSchultraeger: () => Promise<void>;
   fetchSchulen: (filter: OrganisationenFilter, type: SchuleType) => Promise<void>;
   assignSchuleToTraeger(schultraegerId: string, organisationIdBodyParams: OrganisationByIdBodyParams): Promise<void>;
@@ -184,7 +184,7 @@ type OrganisationActions = {
   resetKlasseFilter(storeKey?: string): void;
   clearKlasseFilter(storeKey?: string): void;
   fetchSchulDetails: (organisationId: string) => Promise<void>;
-  updateSchuleDetails: (params: {
+  updateSchuleById: (params: {
     organisationId: string;
     schultraegerform: string;
     name: string;
@@ -294,7 +294,7 @@ export const useOrganisationStore: StoreDefinition<
         );
       };
 
-      const updateSchuleDetails = (klassen: Organisation[]): Organisation[] => {
+      const updateSchuleById = (klassen: Organisation[]): Organisation[] => {
         return klassen.map((klasse: Organisation) => ({
           ...klasse,
           schuleDetails: this.cachedSchulenMap.get(klasse.administriertVon ?? '') ?? '---',
@@ -310,8 +310,8 @@ export const useOrganisationStore: StoreDefinition<
       );
 
       // Use cached values for schuleDetails
-      this.allKlassen = updateSchuleDetails(this.allKlassen);
-      this.klassen = updateSchuleDetails(this.klassen);
+      this.allKlassen = updateSchuleById(this.allKlassen);
+      this.klassen = updateSchuleById(this.klassen);
 
       if (uncachedIds.length === 0) {
         return;
@@ -343,8 +343,8 @@ export const useOrganisationStore: StoreDefinition<
         });
 
         // Update schuleDetails with newly fetched data
-        this.allKlassen = updateSchuleDetails(this.allKlassen);
-        this.klassen = updateSchuleDetails(this.klassen);
+        this.allKlassen = updateSchuleById(this.allKlassen);
+        this.klassen = updateSchuleById(this.klassen);
       } catch (error: unknown) {
         this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
       } finally {
@@ -550,7 +550,7 @@ export const useOrganisationStore: StoreDefinition<
       }
     },
 
-    async updateOrganisationById(organisationId: string, name: string, type: OrganisationsTyp): Promise<void> {
+    async updateOrganisationNameById(organisationId: string, name: string, type: OrganisationsTyp): Promise<void> {
       this.errorCode = '';
       this.loading = true;
       try {
@@ -622,7 +622,7 @@ export const useOrganisationStore: StoreDefinition<
       }
     },
 
-    async updateSchuleDetails(params: {
+    async updateSchuleById(params: {
       organisationId: string;
       schultraegerform: string;
       name: string;
