@@ -1,27 +1,14 @@
 <script setup lang="ts">
   import SchulPortalLogo from '@/assets/logos/Schulportal_SH_Bildmarke_RGB_Anwendung_HG_Blau.svg';
-  import {
-    formatServiceProviderAnbietenMerkmale,
-    formatServiceProviderRollenartenWhitelist,
-  } from '@/utils/serviceProvider.helper';
   import LabeledField from '@/components/admin/LabeledField.vue';
   import ResultTable, { type Headers } from '@/components/admin/ResultTable.vue';
   import VidisInfoDialog from '@/components/admin/service-provider/VidisInfoDialog.vue';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
+  import SchulenFilter from '@/components/filter/SchulenFilter.vue';
   import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
   import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
-  import {
-    ServiceProviderMerkmal,
-    useServiceProviderStore,
-    type ManageableServiceProviderDetail,
-    type ServiceProviderStore,
-  } from '@/stores/ServiceProviderStore';
-  import { getLogoPath } from '@/utils/logosConfig';
-  import { computed, onMounted, ref, type ComputedRef, type Ref } from 'vue';
-  import { useI18n, type Composer } from 'vue-i18n';
-  import { useRoute, useRouter, type RouteLocationNormalizedLoaded, type Router } from 'vue-router';
-  import SchulenFilter from '@/components/filter/SchulenFilter.vue';
+  import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
   import {
     RollenSystemRecht,
     useRolleStore,
@@ -29,8 +16,21 @@
     type RolleStore,
     type RolleWithServiceProvidersResponse,
   } from '@/stores/RolleStore';
-  import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
+  import {
+    ServiceProviderMerkmal,
+    useServiceProviderStore,
+    type ManageableServiceProviderDetail,
+    type ServiceProviderStore,
+  } from '@/stores/ServiceProviderStore';
   import type { TranslatedObject } from '@/types';
+  import { getLogoPath } from '@/utils/logosConfig';
+  import {
+    formatServiceProviderAnbietenMerkmale,
+    formatServiceProviderRollenartenWhitelist,
+  } from '@/utils/serviceProvider.helper';
+  import { computed, onMounted, ref, type ComputedRef, type Ref } from 'vue';
+  import { useI18n, type Composer } from 'vue-i18n';
+  import { useRoute, useRouter, type RouteLocationNormalizedLoaded, type Router } from 'vue-router';
 
   const router: Router = useRouter();
   const route: RouteLocationNormalizedLoaded = useRoute();
@@ -677,7 +677,10 @@
                     <template v-else>
                       <v-row>
                         <v-col cols="12">
-                          <span class="text-body">
+                          <span
+                            class="text-body"
+                            data-testid="rollenerweiterungen-not-available-hint"
+                          >
                             {{ t('angebot.notForSchulspezifischeRollenerweiterungenAvailable') }}</span
                           >
                         </v-col>
