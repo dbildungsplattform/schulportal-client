@@ -95,7 +95,7 @@
 
 <template>
   <FormWrapper
-    :id="isEditMode ? 'schule-edit-form' : 'schule-create-form'"
+    :id="isEditMode ? 'schule-edit-form' : 'schule-creation-form'"
     :confirm-unsaved-changes-action="() => emit('click:confirmUnsaved')"
     :can-commit="canCommit"
     :create-button-label="isEditMode ? $t('save') : $t('admin.schule.create')"

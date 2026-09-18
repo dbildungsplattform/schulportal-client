@@ -80,7 +80,7 @@ describe('SchuleForm', () => {
   describe('Rendering', () => {
     it('should render the form wrapper with correct id in create mode', () => {
       createWrapper({ isEditMode: false });
-      expect(wrapper?.find('[data-testid="schule-create-form"]').exists()).toBe(true);
+      expect(wrapper?.find('[data-testid="schule-creation-form"]').exists()).toBe(true);
     });
 
     it('should render the form wrapper with correct id in edit mode', () => {
