@@ -1,37 +1,37 @@
 <script setup lang="ts">
-  import { computed, onBeforeMount, onUnmounted, ref, type ComputedRef, type Ref } from 'vue';
-  import { useI18n, type Composer } from 'vue-i18n';
-  import {
-    type Router,
-    useRouter,
-    onBeforeRouteLeave,
-    type RouteLocationNormalized,
-    type NavigationGuardNext,
-    type RouteLocationNormalizedLoaded,
-    useRoute,
-  } from 'vue-router';
-  import { useDisplay } from 'vuetify';
+  import RelationshipAssign from '@/components/admin/RelationshipAssign.vue';
+  import SchultraegerForm from '@/components/admin/schultraeger/SchultraegerForm.vue';
+  import SchultraegerSuccessTemplate from '@/components/admin/schultraeger/SchultraegerSuccessTemplate.vue';
+  import SpshTooltip from '@/components/admin/SpshTooltip.vue';
+  import SpshAlert from '@/components/alert/SpshAlert.vue';
+  import LayoutCard from '@/components/cards/LayoutCard.vue';
   import {
     OrganisationsTyp,
-    type SchultraegerFormType,
+    SchuleType,
     useOrganisationStore,
     type Organisation,
     type OrganisationStore,
-    SchuleType,
+    type SchultraegerFormType,
   } from '@/stores/OrganisationStore';
-  import { useForm, type TypedSchema, type FormContext } from 'vee-validate';
   import {
     getDirtyState,
     getSchultraegerFieldDefinitions,
     getValidationSchema,
     type SchultraegerFieldDefinitions,
   } from '@/utils/validationSchultraeger';
-  import SpshAlert from '@/components/alert/SpshAlert.vue';
-  import LayoutCard from '@/components/cards/LayoutCard.vue';
-  import SchultraegerForm from '@/components/admin/schultraeger/SchultraegerForm.vue';
-  import RelationshipAssign from '@/components/admin/RelationshipAssign.vue';
-  import SchultraegerSuccessTemplate from '@/components/admin/schultraeger/SchultraegerSuccessTemplate.vue';
-  import SpshTooltip from '@/components/admin/SpshTooltip.vue';
+  import { useForm, type FormContext, type TypedSchema } from 'vee-validate';
+  import { computed, onBeforeMount, onUnmounted, ref, type ComputedRef, type Ref } from 'vue';
+  import { useI18n, type Composer } from 'vue-i18n';
+  import {
+    onBeforeRouteLeave,
+    useRoute,
+    useRouter,
+    type NavigationGuardNext,
+    type RouteLocationNormalized,
+    type RouteLocationNormalizedLoaded,
+    type Router,
+  } from 'vue-router';
+  import { useDisplay } from 'vuetify';
 
   const { mdAndDown }: { mdAndDown: Ref<boolean> } = useDisplay();
 
@@ -129,7 +129,7 @@
       selectedSchultraegername.value &&
       selectedSchultraegername.value !== organisationStore.currentOrganisation?.name
     ) {
-      await organisationStore.updateOrganisationById(
+      await organisationStore.updateOrganisationNameById(
         currentSchultraegerId,
         selectedSchultraegername.value,
         OrganisationsTyp.Traeger,
