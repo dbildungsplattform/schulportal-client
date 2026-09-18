@@ -1772,7 +1772,7 @@ export interface ManageableServiceProviderResponse {
 
 export const ManageableServiceProviderResponseRelevantSystemrechteEnum = {
     RollenVerwalten: 'ROLLEN_VERWALTEN',
-    MptRollenVerwalten: 'MPT_ROLLEN_VERWALTEN',
+    MptRollenZuordnen: 'MPT_ROLLEN_ZUORDNEN',
     PersonenSofortLoeschen: 'PERSONEN_SOFORT_LOESCHEN',
     PersonenVerwalten: 'PERSONEN_VERWALTEN',
     LandesbediensteteSuchenUndHinzufuegen: 'LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN',
@@ -3774,7 +3774,7 @@ export type RollenMerkmal = typeof RollenMerkmal[keyof typeof RollenMerkmal];
 
 export const RollenSystemRechtEnum = {
     RollenVerwalten: 'ROLLEN_VERWALTEN',
-    MptRollenVerwalten: 'MPT_ROLLEN_VERWALTEN',
+    MptRollenZuordnen: 'MPT_ROLLEN_ZUORDNEN',
     PersonenSofortLoeschen: 'PERSONEN_SOFORT_LOESCHEN',
     PersonenVerwalten: 'PERSONEN_VERWALTEN',
     LandesbediensteteSuchenUndHinzufuegen: 'LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN',
@@ -13357,7 +13357,7 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
          * @param {Array<string>} [organisationIds] OrganisationIds to filter rollen.
-         * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be PERSONEN_VERWALTEN and optionally MPT_ROLLEN_VERWALTEN.
+         * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be PERSONEN_VERWALTEN and optionally MPT_ROLLEN_ZUORDNEN.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -13736,7 +13736,7 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
          * @param {Array<string>} [organisationIds] OrganisationIds to filter rollen.
-         * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be PERSONEN_VERWALTEN and optionally MPT_ROLLEN_VERWALTEN.
+         * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be PERSONEN_VERWALTEN and optionally MPT_ROLLEN_ZUORDNEN.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -13890,7 +13890,7 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
          * @param {Array<string>} [organisationIds] OrganisationIds to filter rollen.
-         * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be PERSONEN_VERWALTEN and optionally MPT_ROLLEN_VERWALTEN.
+         * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be PERSONEN_VERWALTEN and optionally MPT_ROLLEN_ZUORDNEN.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -14037,7 +14037,7 @@ export interface RolleApiInterface {
      * @param {number} [limit] The requested limit for the page size.
      * @param {string} [searchStr] The name for the role.
      * @param {Array<string>} [organisationIds] OrganisationIds to filter rollen.
-     * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be PERSONEN_VERWALTEN and optionally MPT_ROLLEN_VERWALTEN.
+     * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be PERSONEN_VERWALTEN and optionally MPT_ROLLEN_ZUORDNEN.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof RolleApiInterface
@@ -14196,7 +14196,7 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
      * @param {number} [limit] The requested limit for the page size.
      * @param {string} [searchStr] The name for the role.
      * @param {Array<string>} [organisationIds] OrganisationIds to filter rollen.
-     * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be PERSONEN_VERWALTEN and optionally MPT_ROLLEN_VERWALTEN.
+     * @param {Array<RollenSystemRechtEnum>} [systemrechte] The system right for which the roles should be available. Can only be PERSONEN_VERWALTEN and optionally MPT_ROLLEN_ZUORDNEN.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof RolleApi

@@ -92,7 +92,7 @@ describe('MptRollenManagementView', () => {
     expect(rolleStore.getAllRollen).toHaveBeenCalledWith(
       expect.objectContaining({
         organisationenForFilter: [schuleId],
-        systemrechte: [expect.stringMatching('MPT_ROLLEN_VERWALTEN')],
+        systemrechte: [expect.stringMatching('MPT_ROLLEN_ZUORDNEN')],
       }),
     );
   });

@@ -250,7 +250,7 @@
         @click="closeMenuOnMobile"
       />
       <v-list-item
-        v-if="authStore.hasMptRollenVerwaltenPermission"
+        v-if="authStore.hasMptRollenZuordnenPermission"
         class="menu-bar-sub-item caption"
         data-testid="mpt-rolle-management-menu-item"
         prepend-icon="mdi-format-list-bulleted"
@@ -306,7 +306,7 @@
     </div>
 
     <!-- Rollenverwaltung (MPT only) -->
-    <div v-if="authStore.hasMptRollenVerwaltenPermission && !authStore.hasRollenverwaltungPermission">
+    <div v-if="authStore.hasMptRollenZuordnenPermission && !authStore.hasRollenverwaltungPermission">
       <v-list-item
         class="menu-bar-main-item headline-2"
         data-testid="mpt-rolle-section-title"
