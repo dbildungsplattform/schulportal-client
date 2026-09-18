@@ -213,6 +213,7 @@
       await rolleStore.getAllRollen({
         organisationContextForOperation: organisationIdFromQuery.value,
         systemrechte,
+        rollenarten: serviceProviderStore.currentServiceProvider?.rollenartenWhitelist,
       });
     }
     selectedRolleIds.value = [...existingRolleIds.value];
