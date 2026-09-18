@@ -278,7 +278,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               undefined,
               [organisationId],
               [rolleId],
-              [RollenSystemRechtEnum.MptRollenVerwalten],
+              [RollenSystemRechtEnum.MptRollenZuordnen],
             );
           const rolle: RolleWithServiceProvidersResponse | undefined = data[0];
           if (!rolle) {

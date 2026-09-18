@@ -31,7 +31,7 @@
   }: {
     hasAutoselectedSchule: ComputedRef<boolean>;
     autoselectedSchule: ComputedRef<Organisation | null>;
-  } = useAutoselectedSchule([RollenSystemRechtEnum.MptRollenVerwalten]);
+  } = useAutoselectedSchule([RollenSystemRechtEnum.MptRollenZuordnen]);
 
   const selectedOrganisationId: Ref<string> = ref('');
 
@@ -80,7 +80,7 @@
       limit: searchFilterStore.mptRollenPerPage,
       searchString: '',
       organisationenForFilter: [selectedOrganisationId.value],
-      systemrechte: [RollenSystemRechtEnum.MptRollenVerwalten],
+      systemrechte: [RollenSystemRechtEnum.MptRollenZuordnen],
     });
   }
 
@@ -181,7 +181,7 @@
           includeAll
           highlightSelection
           parentId="mpt-rolle-management"
-          :systemrechteForSearch="[RollenSystemRechtEnum.MptRollenVerwalten]"
+          :systemrechteForSearch="[RollenSystemRechtEnum.MptRollenZuordnen]"
           :selectedSchulen="selectedOrganisationId ? [selectedOrganisationId] : []"
           @update:selected-schulen="setOrganisationFilter"
           :placeholderText="$t('admin.schule.schule')"

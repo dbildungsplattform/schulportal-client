@@ -39,7 +39,7 @@ beforeEach(async (): Promise<void> => {
   searchFilterStore = useSearchFilterStore();
   serviceProviderStore = useServiceProviderStore();
 
-  authStore.hasMptRollenVerwaltenPermission = true;
+  authStore.hasMptRollenZuordnenPermission = true;
 
   searchFilterStore.selectedMerkmaleForRollen = [];
   searchFilterStore.selectedRollenartenForRollen = [];
@@ -218,7 +218,7 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
+      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenZuordnen],
       merkmale: [RollenMerkmal.KopersPflicht],
       rollenarten: undefined,
       organisationenForFilter: undefined,
@@ -237,7 +237,7 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
+      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenZuordnen],
       merkmale: undefined,
       rollenarten: [RollenArt.Lehr],
       organisationenForFilter: undefined,
@@ -246,7 +246,7 @@ describe('RolleManagementView', () => {
   });
 
   test('requests only RollenVerwalten when user lacks MPT permission', async () => {
-    authStore.hasMptRollenVerwaltenPermission = false;
+    authStore.hasMptRollenZuordnenPermission = false;
 
     const rollenartenSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
       '[data-testid="rollenarten-filter-select"]',
@@ -280,7 +280,7 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
+      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenZuordnen],
       merkmale: undefined,
       rollenarten: undefined,
       organisationenForFilter: orgs,
@@ -333,7 +333,7 @@ describe('RolleManagementView', () => {
         offset: 0,
         limit: 30,
         searchString: '',
-        systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
+        systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenZuordnen],
         merkmale: undefined,
         rollenarten: undefined,
         organisationenForFilter: undefined,
@@ -440,7 +440,7 @@ describe('RolleManagementView', () => {
       merkmale: undefined,
       rollenarten: undefined,
       organisationenForFilter: undefined,
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenVerwalten],
+      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenZuordnen],
     });
   });
 

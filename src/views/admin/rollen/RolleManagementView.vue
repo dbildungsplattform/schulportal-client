@@ -111,8 +111,8 @@
   });
 
   const systemrechte: ComputedRef<RollenSystemRecht[]> = computed(() => {
-    if (authStore.hasMptRollenVerwaltenPermission) {
-      return [RollenSystemRecht.RollenVerwalten, RollenSystemRecht.MptRollenVerwalten];
+    if (authStore.hasMptRollenZuordnenPermission) {
+      return [RollenSystemRecht.RollenVerwalten, RollenSystemRecht.MptRollenZuordnen];
     }
     return [RollenSystemRecht.RollenVerwalten];
   });
