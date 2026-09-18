@@ -67,7 +67,7 @@
                   />
                   <LabeledField
                     :label="t('admin.schule.emailAdresse')"
-                    :value="organisationStore.currentSchule.emailAdress ?? ''"
+                    :value="organisationStore.currentSchule.emailAdress ?? $t('none')"
                     test-id="schule-email"
                   />
                 </div>

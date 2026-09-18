@@ -107,7 +107,7 @@ describe('SchuleManagementView', () => {
         {
           kennung: '2745475',
           name: 'Albert-Emil-Hansebrot-Gymnasium',
-          emailAdress: '',
+          emailAdress: '---',
         },
       ];
 
