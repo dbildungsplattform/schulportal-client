@@ -677,7 +677,7 @@
           "IMPORT_DURCHFUEHREN": "Darf Import durchführen",
           "KLASSEN_VERWALTEN": "Darf Klassen verwalten",
           "LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN": "Darf Landesbedienstete suchen und hinzufügen",
-          "MPT_ROLLEN_VERWALTEN": "Darf Rollen für multiprofessionelle Teams verwalten",
+          "MPT_ROLLEN_ZUORDNEN": "Darf Rollen für multiprofessionelle Teams zuordnen",
           "PERSONEN_ANLEGEN": "Darf Benutzer anlegen",
           "PERSONEN_SOFORT_LOESCHEN": "Darf Benutzer sofort löschen",
           "PERSONEN_VERWALTEN": "Darf Benutzer verwalten",

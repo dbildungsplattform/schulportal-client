@@ -65,7 +65,7 @@ type AuthState = {
   hasEingeschränktNeueBenutzerErstellenPermission: boolean;
   hasAngeboteVerwaltenPermission: boolean;
   hasRollenerweiternPermission: boolean;
-  hasMptRollenVerwaltenPermission: boolean;
+  hasMptRollenZuordnenPermission: boolean;
   hasEingeschränktAngeboteVerwaltenPermission: boolean;
   hasVidisPermission: boolean;
   isAuthenticated: boolean;
@@ -107,7 +107,7 @@ export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, 
       hasEingeschränktNeueBenutzerErstellenPermission: false,
       hasAngeboteVerwaltenPermission: false,
       hasRollenerweiternPermission: false,
-      hasMptRollenVerwaltenPermission: false,
+      hasMptRollenZuordnenPermission: false,
       hasEingeschränktAngeboteVerwaltenPermission: false,
       isAuthenticated: false,
       acr: StepUpLevel.NONE,
@@ -164,8 +164,8 @@ export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, 
               RollenSystemRecht.AngeboteVerwalten,
             );
             this.hasRollenerweiternPermission = this.currentUserPermissions.includes(RollenSystemRecht.RollenErweitern);
-            this.hasMptRollenVerwaltenPermission = this.currentUserPermissions.includes(
-              RollenSystemRecht.MptRollenVerwalten,
+            this.hasMptRollenZuordnenPermission = this.currentUserPermissions.includes(
+              RollenSystemRecht.MptRollenZuordnen,
             );
             this.hasEingeschränktAngeboteVerwaltenPermission = this.currentUserPermissions.includes(
               RollenSystemRecht.AngeboteEingeschraenktVerwalten,
@@ -195,7 +195,7 @@ export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, 
           this.hasLandesbediensteteSuchenUndHinzufügenPermission = false;
           this.hasEingeschränktNeueBenutzerErstellenPermission = false;
           this.hasAngeboteVerwaltenPermission = false;
-          this.hasMptRollenVerwaltenPermission = false;
+          this.hasMptRollenZuordnenPermission = false;
           this.hasEingeschränktAngeboteVerwaltenPermission = false;
           this.hasVidisPermission = false;
           this.isAuthenticated = false;

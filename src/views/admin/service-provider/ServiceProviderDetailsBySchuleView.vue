@@ -207,12 +207,13 @@
     // Load available rollen for this organisation if not yet loaded
     if (organisationIdFromQuery.value) {
       const systemrechte: RollenSystemRechtEnum[] = [RollenSystemRechtEnum.RollenErweitern];
-      if (authStore.hasMptRollenVerwaltenPermission) {
-        systemrechte.push(RollenSystemRechtEnum.MptRollenVerwalten);
+      if (authStore.hasMptRollenZuordnenPermission) {
+        systemrechte.push(RollenSystemRechtEnum.MptRollenZuordnen);
       }
       await rolleStore.getAllRollen({
         organisationContextForOperation: organisationIdFromQuery.value,
         systemrechte,
+        rollenarten: serviceProviderStore.currentServiceProvider?.rollenartenWhitelist,
       });
     }
     selectedRolleIds.value = [...existingRolleIds.value];

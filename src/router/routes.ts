@@ -143,7 +143,7 @@ const routes: readonly RouteRecordRaw[] = [
       layout: 'AdminLayout',
       requiresAuth: true,
       requiredStepUpLevel: StepUpLevel.GOLD,
-      requiresPermission: 'mptrollenverwaltung',
+      requiresPermission: 'mptrollenzuordnen',
     },
   },
   {
