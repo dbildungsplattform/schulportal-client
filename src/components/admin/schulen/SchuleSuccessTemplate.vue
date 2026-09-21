@@ -1,15 +1,16 @@
 <script setup lang="ts">
   import { Organisation } from '@/stores/OrganisationStore';
-  import { type Ref } from 'vue';
-  import { useI18n } from 'vue-i18n';
-  import { useDisplay } from 'vuetify';
-  import { SchuleSuccessTemplateProps } from './types';
+import { type Ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useDisplay } from 'vuetify';
+import { SchuleSuccessTemplateProps } from './types';
 
   const props: SchuleSuccessTemplateProps = defineProps<SchuleSuccessTemplateProps>();
 
   type Emits = {
     (event: 'onNavigateBackToSchuleManagement'): void;
     (event: 'onNavigateToSchuleForm'): void;
+    (event: 'onNavigateToSchuleDetails'): void;
   };
 
   const emit: Emits = defineEmits<Emits>();
@@ -19,6 +20,7 @@
 
   const navigateToSchuleManagement = (): void => emit('onNavigateBackToSchuleManagement');
   const handleCreateAnotherSchule = (): void => emit('onNavigateToSchuleForm');
+  const navigateToSchuleDetails = (): void => emit('onNavigateToSchuleDetails');
 
   const findSchultraegerName = (id: string | undefined | null): string => {
     if (!id || !props.schultraegerList) {
@@ -34,7 +36,7 @@
   <v-container class="new-schule-success">
     <v-row class="justify-center">
       <v-col
-        class="subtitle-1"
+        class="subtitle-1 bold"
         cols="auto"
       >
         <span data-testid="schule-success-text">{{ successMessage }}</span>
@@ -112,6 +114,21 @@
     />
     <v-row class="justify-end">
       <v-col
+        v-if="isEditMode"
+        cols="12"
+        sm="6"
+        md="auto"
+      >
+        <v-btn
+          class="secondary"
+          data-testid="back-to-schule-button"
+          :block="mdAndDown"
+          @click="navigateToSchuleDetails"
+        >
+          {{ $t('admin.schule.backToSchule') }}
+        </v-btn>
+      </v-col>
+      <v-col
         cols="12"
         sm="6"
         md="auto"
@@ -122,10 +139,11 @@
           :block="mdAndDown"
           @click="navigateToSchuleManagement"
         >
-          {{ $t('nav.backToList') }}
+          {{ isEditMode ? $t('admin.schule.backToSchuleList') : $t('nav.backToList') }}
         </v-btn>
       </v-col>
       <v-col
+        v-if="!isEditMode"
         cols="12"
         sm="6"
         md="auto"
@@ -136,7 +154,7 @@
           :block="mdAndDown"
           @click="handleCreateAnotherSchule"
         >
-          {{ isEditMode ? $t('edit') : $t('admin.schule.createAnother') }}
+          {{ $t('admin.schule.createAnother') }}
         </v-btn>
       </v-col>
     </v-row>

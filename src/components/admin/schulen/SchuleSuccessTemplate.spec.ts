@@ -25,6 +25,8 @@ const i18n: I18n = createI18n({
       },
       edit: 'Bearbeiten',
       'admin.schule.createAnother': 'Weitere Schule erstellen',
+      'admin.schule.backToSchule': 'Zurück zur Schule',
+      'admin.schule.backToSchuleList': 'Zurück zur Schulliste',
     },
   },
 });
@@ -237,6 +239,17 @@ describe('SchuleSuccessTemplate', () => {
       expect(wrapper?.emitted('onNavigateBackToSchuleManagement')).toHaveLength(2);
       expect(wrapper?.emitted('onNavigateToSchuleForm')).toHaveLength(1);
     });
+
+    it('should emit onNavigateToSchuleDetails when back-to-schule button is clicked in edit mode', async () => {
+      createWrapper({ isEditMode: true });
+      const backToSchuleButton = wrapper?.find('[data-testid="back-to-schule-button"]');
+
+      expect(backToSchuleButton?.exists()).toBe(true);
+      await backToSchuleButton?.trigger('click');
+
+      expect(wrapper?.emitted('onNavigateToSchuleDetails')).toBeTruthy();
+      expect(wrapper?.emitted('onNavigateToSchuleDetails')).toHaveLength(1);
+    });
   });
 
   describe('Button Labels', () => {
@@ -252,10 +265,18 @@ describe('SchuleSuccessTemplate', () => {
       expect(createButton?.text()).toContain('Weitere Schule erstellen');
     });
 
-    it('should show "Bearbeiten" on button in edit mode', () => {
+    it('should show "Zurück zur Schule" and "Zurück zur Schulliste" buttons in edit mode', () => {
+      createWrapper({ isEditMode: true });
+      const backToSchuleButton = wrapper?.find('[data-testid="back-to-schule-button"]');
+      const backToListButton = wrapper?.find('[data-testid="back-to-list-button"]');
+      expect(backToSchuleButton?.text()).toContain('Zurück zur Schule');
+      expect(backToListButton?.text()).toContain('Zurück zur Schulliste');
+    });
+
+    it('should not render the create-another button in edit mode', () => {
       createWrapper({ isEditMode: true });
       const createButton = wrapper?.find('[data-testid="create-another-schule-button"]');
-      expect(createButton?.text()).toContain('Bearbeiten');
+      expect(createButton?.exists()).toBe(false);
     });
   });
 
