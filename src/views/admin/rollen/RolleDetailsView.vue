@@ -244,7 +244,7 @@
     if (rolleStore.currentRolle) {
       await serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
         rolleStore.currentRolle.administeredBySchulstrukturknoten,
-        rolleStore.currentRolle.rollenart
+        rolleStore.currentRolle.rollenart,
       );
     }
 
