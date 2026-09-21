@@ -1,4 +1,4 @@
-import { RollenArt, RollenMerkmal, type SystemRechtResponse } from '@/api-client/generated';
+import { RollenArt, RollenMerkmal } from '@/api-client/generated';
 import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
 import { OperationContext, usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
