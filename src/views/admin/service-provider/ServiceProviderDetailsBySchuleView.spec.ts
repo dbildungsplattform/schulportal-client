@@ -84,7 +84,7 @@ beforeEach(async () => {
     schulischeAngeboteErstellen: true,
   };
   authStore.hasRollenerweiternPermission = true;
-  authStore.hasMptRollenVerwaltenPermission = false;
+  authStore.hasMptRollenZuordnenPermission = false;
   configStore.configData = { schulischeAngeboteErstellen: true } as FeatureFlagResponse;
 
   rolleStore.allRollen = [
@@ -256,7 +256,7 @@ describe('ServiceProviderDetailsBySchuleView', () => {
     });
 
     test('requests rollen without MPT systemrecht when the user lacks the permission', async () => {
-      authStore.hasMptRollenVerwaltenPermission = false;
+      authStore.hasMptRollenZuordnenPermission = false;
       const getAllRollenSpy: MockInstance = vi.spyOn(rolleStore, 'getAllRollen').mockResolvedValue(undefined);
       await nextTick();
 
@@ -265,12 +265,13 @@ describe('ServiceProviderDetailsBySchuleView', () => {
 
       expect(getAllRollenSpy).toHaveBeenCalledWith({
         organisationContextForOperation: 'some-org-id',
+        rollenarten: mockServiceProvider.rollenartenWhitelist,
         systemrechte: [RollenSystemRechtEnum.RollenErweitern],
       });
     });
 
     test('requests rollen including MPT systemrecht when the user has the permission', async () => {
-      authStore.hasMptRollenVerwaltenPermission = true;
+      authStore.hasMptRollenZuordnenPermission = true;
       const getAllRollenSpy: MockInstance = vi.spyOn(rolleStore, 'getAllRollen').mockResolvedValue(undefined);
       await nextTick();
 
@@ -279,7 +280,8 @@ describe('ServiceProviderDetailsBySchuleView', () => {
 
       expect(getAllRollenSpy).toHaveBeenCalledWith({
         organisationContextForOperation: 'some-org-id',
-        systemrechte: [RollenSystemRechtEnum.RollenErweitern, RollenSystemRechtEnum.MptRollenVerwalten],
+        rollenarten: mockServiceProvider.rollenartenWhitelist,
+        systemrechte: [RollenSystemRechtEnum.RollenErweitern, RollenSystemRechtEnum.MptRollenZuordnen],
       });
     });
 
