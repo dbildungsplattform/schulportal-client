@@ -25,8 +25,7 @@
         .required(t('admin.schule.rules.schulname.required')),
       selectedEmailAdress: string()
         .email(t('admin.schule.rules.emailAddress.invalid'))
-        .required(t('admin.schule.rules.emailAddress.required'))
-        .matches(NO_LEADING_TRAILING_SPACES, t('admin.schule.rules.emailAddress.noLeadingTrailingSpaces')),
+        .required(t('admin.schule.rules.emailAddress.required')),
     }),
   );
 

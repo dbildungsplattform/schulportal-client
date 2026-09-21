@@ -1,9 +1,9 @@
 <script setup lang="ts">
   import { Organisation } from '@/stores/OrganisationStore';
-import { type Ref } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { useDisplay } from 'vuetify';
-import { SchuleSuccessTemplateProps } from './types';
+  import { type Ref } from 'vue';
+  import { useI18n } from 'vue-i18n';
+  import { useDisplay } from 'vuetify';
+  import { SchuleSuccessTemplateProps } from './types';
 
   const props: SchuleSuccessTemplateProps = defineProps<SchuleSuccessTemplateProps>();
 
@@ -36,31 +36,34 @@ import { SchuleSuccessTemplateProps } from './types';
   <v-container class="new-schule-success">
     <v-row class="justify-center">
       <v-col
-        class="subtitle-1 bold"
         cols="auto"
+        class="subtitle-1 pre-line text-center"
+        data-testid="schule-success-text"
       >
-        <span data-testid="schule-success-text">{{ successMessage }}</span>
+        {{ successMessage }}
       </v-col>
     </v-row>
+
     <v-row class="justify-center">
       <v-col cols="auto">
         <v-icon
-          small
-          color="#1EAE9C"
+          color="success"
           data-testid="schule-success-icon"
           icon="mdi-check-circle"
         />
       </v-col>
     </v-row>
+
     <v-row class="justify-center">
       <v-col
-        class="subtitle-2"
         cols="auto"
+        class="subtitle-2"
         data-testid="following-data-created-text"
       >
         {{ $t('admin.followingDataCreated') }}
       </v-col>
     </v-row>
+
     <v-row>
       <v-col
         class="text-body bold text-right"
@@ -68,12 +71,15 @@ import { SchuleSuccessTemplateProps } from './types';
       >
         {{ $t('admin.schule.schulform') }}:
       </v-col>
-      <v-col class="text-body">
-        <span data-testid="created-schule-form">
-          {{ findSchultraegerName(followingDataChanged?.administriertVon) }}</span
-        >
+
+      <v-col
+        class="text-body"
+        data-testid="created-schule-form"
+      >
+        {{ findSchultraegerName(followingDataChanged?.administriertVon) }}
       </v-col>
     </v-row>
+
     <v-row>
       <v-col
         class="text-body bold text-right"
@@ -81,10 +87,15 @@ import { SchuleSuccessTemplateProps } from './types';
       >
         {{ $t('admin.schule.dienststellennummer') }}:
       </v-col>
-      <v-col class="text-body">
-        <span data-testid="created-schule-dienststellennummer">{{ followingDataChanged?.kennung }}</span>
+
+      <v-col
+        class="text-body"
+        data-testid="created-schule-dienststellennummer"
+      >
+        {{ followingDataChanged?.kennung }}
       </v-col>
     </v-row>
+
     <v-row>
       <v-col
         class="text-body bold text-right"
@@ -92,10 +103,14 @@ import { SchuleSuccessTemplateProps } from './types';
       >
         {{ $t('admin.schule.schulname') }}:
       </v-col>
-      <v-col class="text-body"
-        ><span data-testid="created-schule-name">{{ followingDataChanged?.name }}</span>
+
+      <v-col
+        class="text-body"
+        data-testid="created-schule-name"
+        >{{ followingDataChanged?.name }}
       </v-col>
     </v-row>
+
     <v-row>
       <v-col
         class="text-body bold text-right"
@@ -103,15 +118,20 @@ import { SchuleSuccessTemplateProps } from './types';
       >
         {{ $t('admin.schule.emailAdresse') }}:
       </v-col>
-      <v-col class="text-body"
-        ><span data-testid="created-schule-email">{{ followingDataChanged?.emailAdress }}</span>
+
+      <v-col
+        class="text-body"
+        data-testid="created-schule-email"
+        >{{ followingDataChanged?.emailAdress }}
       </v-col>
     </v-row>
+
     <v-divider
       class="border-opacity-100 rounded my-6"
       color="#E5EAEF"
       thickness="6"
     />
+
     <v-row class="justify-end">
       <v-col
         v-if="isEditMode"
@@ -128,6 +148,7 @@ import { SchuleSuccessTemplateProps } from './types';
           {{ $t('admin.schule.backToSchule') }}
         </v-btn>
       </v-col>
+
       <v-col
         cols="12"
         sm="6"
@@ -142,6 +163,7 @@ import { SchuleSuccessTemplateProps } from './types';
           {{ isEditMode ? $t('admin.schule.backToSchuleList') : $t('nav.backToList') }}
         </v-btn>
       </v-col>
+
       <v-col
         v-if="!isEditMode"
         cols="12"

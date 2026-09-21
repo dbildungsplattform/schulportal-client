@@ -1,21 +1,21 @@
 <script setup lang="ts">
   import SchuleForm from '@/components/admin/schulen/SchuleForm.vue';
-import SchuleSuccessTemplate from '@/components/admin/schulen/SchuleSuccessTemplate.vue';
-import { SchuleDetailsForm } from '@/components/admin/schulen/types';
-import SpshAlert from '@/components/alert/SpshAlert.vue';
-import LayoutCard from '@/components/cards/LayoutCard.vue';
-import { Organisation, OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
-import { computed, ComputedRef, onMounted, onUnmounted, ref, Ref } from 'vue';
-import { Composer, useI18n } from 'vue-i18n';
-import {
-  NavigationGuardNext,
-  onBeforeRouteLeave,
-  RouteLocationNormalized,
-  useRoute,
-  useRouter,
-  type RouteLocationNormalizedLoaded,
-  type Router,
-} from 'vue-router';
+  import SchuleSuccessTemplate from '@/components/admin/schulen/SchuleSuccessTemplate.vue';
+  import { SchuleDetailsForm } from '@/components/admin/schulen/types';
+  import SpshAlert from '@/components/alert/SpshAlert.vue';
+  import LayoutCard from '@/components/cards/LayoutCard.vue';
+  import { Organisation, OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
+  import { computed, ComputedRef, onMounted, onUnmounted, ref, Ref } from 'vue';
+  import { Composer, useI18n } from 'vue-i18n';
+  import {
+    NavigationGuardNext,
+    onBeforeRouteLeave,
+    RouteLocationNormalized,
+    useRoute,
+    useRouter,
+    type RouteLocationNormalizedLoaded,
+    type Router,
+  } from 'vue-router';
 
   const organisationStore: OrganisationStore = useOrganisationStore();
 

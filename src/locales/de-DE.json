@@ -829,8 +829,7 @@
         },
         "emailAddress": {
           "required": "Die Email-Adresse muss angegeben werden.",
-          "invalid": "Die Email-Adresse ist ungültig.",
-          "noLeadingTrailingSpaces": "Die Email-Adresse darf nicht mit Leerzeichen beginnen oder enden."
+          "invalid": "Die Email-Adresse ist ungültig."
         }
       },
       "selectSchule": "Schule auswählen",
