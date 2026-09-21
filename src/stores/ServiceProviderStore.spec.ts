@@ -26,19 +26,19 @@ import {
   type StartPageServiceProvider,
 } from './ServiceProviderStore';
 
-interface MultiErrorRolleIdWithI18nKey {
-  rolleId: string;
+interface MultiErrorIdWithI18nKey {
+  id: string;
   i18nKey: string;
 }
 
 interface MultiError {
   code: number;
-  rolleIdsWithI18nKeys: MultiErrorRolleIdWithI18nKey[];
+  idsWithI18nKeys: MultiErrorIdWithI18nKey[];
 }
 
 interface MalformedMultiError {
   code?: unknown;
-  rolleIdsWithI18nKeys?: unknown;
+  idsWithI18nKeys?: unknown;
 }
 
 const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
@@ -48,7 +48,9 @@ describe('serviceProviderStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     serviceProviderStore = useServiceProviderStore();
+    serviceProviderStore.$reset();
     mockadapter.reset();
+    vi.restoreAllMocks();
   });
 
   it('should initalize state correctly', () => {
@@ -149,7 +151,8 @@ describe('serviceProviderStore', () => {
 
   describe('getAssignableServiceProvidersForRolleByOrganisationId', () => {
     const schulstrukturknotenOfRolle: string = faker.string.uuid();
-    const url: string = `/api/provider/assignable-for-rolle?schulstrukturknotenOfRolle=${schulstrukturknotenOfRolle}`;
+    const rollenArt: RollenArt = RollenArt.Lehr;
+    const url: string = `/api/provider/assignable-for-rolle?schulstrukturknotenOfRolle=${schulstrukturknotenOfRolle}&rollenArt=${rollenArt}`;
 
     it('should load service providers and update state', async () => {
       const mockResponse: StartPageServiceProvider[] = [
@@ -158,7 +161,10 @@ describe('serviceProviderStore', () => {
       ];
       mockadapter.onGet(url).replyOnce(200, mockResponse);
       const getAllServiceProvidersPromise: Promise<void> =
-        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(schulstrukturknotenOfRolle);
+        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
+          schulstrukturknotenOfRolle,
+          rollenArt,
+        );
       expect(serviceProviderStore.loading).toBe(true);
       await getAllServiceProvidersPromise;
       expect(serviceProviderStore.allServiceProviders).toEqual([...mockResponse]);
@@ -168,7 +174,10 @@ describe('serviceProviderStore', () => {
     it('should handle string error', async () => {
       mockadapter.onGet(url).replyOnce(500, 'some mock server error');
       const getAllServiceProvidersPromise: Promise<void> =
-        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(schulstrukturknotenOfRolle);
+        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
+          schulstrukturknotenOfRolle,
+          rollenArt,
+        );
       expect(serviceProviderStore.loading).toBe(true);
       await getAllServiceProvidersPromise;
       expect(serviceProviderStore.allServiceProviders).toEqual([]);
@@ -179,11 +188,64 @@ describe('serviceProviderStore', () => {
     it('should handle error code', async () => {
       mockadapter.onGet(url).replyOnce(500, { code: 'some mock server error' });
       const getAllServiceProvidersPromise: Promise<void> =
-        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(schulstrukturknotenOfRolle);
+        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
+          schulstrukturknotenOfRolle,
+          rollenArt,
+        );
       expect(serviceProviderStore.loading).toBe(true);
       await getAllServiceProvidersPromise;
       expect(serviceProviderStore.allServiceProviders).toEqual([]);
       expect(serviceProviderStore.errorCode).toEqual('some mock server error');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+  });
+
+  describe('getServiceProvidersForRollenerweiterung', () => {
+    const organisationId: string = faker.string.uuid();
+    const rollenArt: RollenArt = RollenArt.Lehr;
+
+    it('should load service providers allowed for role extensions', async () => {
+      const serviceProvider: ServiceProviderResponse = DoFactory.getServiceProviderResponse();
+      serviceProviderStore.allServiceProviders = [DoFactory.getStartPageServiceProvider()];
+      mockadapter.onGet().replyOnce(200, {
+        total: 1,
+        offset: 0,
+        limit: 1,
+        items: [serviceProvider],
+      });
+
+      const promise: Promise<void> = serviceProviderStore.getServiceProvidersForRollenerweiterung(
+        organisationId,
+        rollenArt,
+      );
+      expect(serviceProviderStore.loading).toBe(true);
+      expect(serviceProviderStore.allServiceProviders).toEqual([]);
+      await promise;
+
+      const requestUrl: string = mockadapter.history.get[0]?.url ?? '';
+      expect(requestUrl).toContain(`organisationId=${organisationId}`);
+      expect(requestUrl).toContain('ROLLEN_ERWEITERN');
+      expect(requestUrl).toContain(`rollenArten=${rollenArt}`);
+      expect(serviceProviderStore.allServiceProviders).toEqual([serviceProvider]);
+      expect(serviceProviderStore.errorCode).toBe('');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle an unstructured error', async () => {
+      mockadapter.onGet().replyOnce(500, 'server error');
+
+      await serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId, rollenArt);
+
+      expect(serviceProviderStore.errorCode).toBe('UNSPECIFIED_ERROR');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle a structured error', async () => {
+      mockadapter.onGet().replyOnce(500, { code: 'SERVICE_PROVIDER_LOADING_ERROR' });
+
+      await serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId, rollenArt);
+
+      expect(serviceProviderStore.errorCode).toBe('SERVICE_PROVIDER_LOADING_ERROR');
       expect(serviceProviderStore.loading).toBe(false);
     });
   });
@@ -628,9 +690,9 @@ describe('serviceProviderStore', () => {
       const code: number = 400;
       const multiError: MultiError = {
         code,
-        rolleIdsWithI18nKeys: [
-          { rolleId: 'role-1', i18nKey: 'ROLLENERWEITERUNG_TECHNICAL_ERROR' },
-          { rolleId: 'role-2', i18nKey: 'NOT_FOUND' },
+        idsWithI18nKeys: [
+          { id: 'role-1', i18nKey: 'ROLLENERWEITERUNG_TECHNICAL_ERROR' },
+          { id: 'role-2', i18nKey: 'NOT_FOUND' },
         ],
       };
       mockadapter.onPost(url).replyOnce(code, multiError);
@@ -649,7 +711,7 @@ describe('serviceProviderStore', () => {
       const code: number = 400;
       const multiError: MultiError = {
         code,
-        rolleIdsWithI18nKeys: [],
+        idsWithI18nKeys: [],
       };
       mockadapter.onPost(url).replyOnce(code, multiError);
 
@@ -663,7 +725,7 @@ describe('serviceProviderStore', () => {
 
     it('should handle MultiError with missing code property', async () => {
       const multiError: MalformedMultiError = {
-        rolleIdsWithI18nKeys: [{ rolleId: 'role-1', i18nKey: 'ROLLENERWEITERUNG_TECHNICAL_ERROR' }],
+        idsWithI18nKeys: [{ id: 'role-1', i18nKey: 'ROLLENERWEITERUNG_TECHNICAL_ERROR' }],
       };
       mockadapter.onPost(url).replyOnce(500, multiError);
 
@@ -678,7 +740,7 @@ describe('serviceProviderStore', () => {
     it('should handle MultiError with wrong code type', async () => {
       const multiError: MalformedMultiError = {
         code: null,
-        rolleIdsWithI18nKeys: 'not-an-array',
+        idsWithI18nKeys: 'not-an-array',
       };
       mockadapter.onPost(url).replyOnce(400, multiError);
 
@@ -694,7 +756,7 @@ describe('serviceProviderStore', () => {
       const code: number = 400;
       const multiError: MalformedMultiError = {
         code,
-        rolleIdsWithI18nKeys: 'not-an-array',
+        idsWithI18nKeys: 'not-an-array',
       };
       mockadapter.onPost(url).replyOnce(code, multiError);
 
@@ -731,18 +793,15 @@ describe('serviceProviderStore', () => {
     const url: string = '/api/provider';
 
     it('should create a service provider and update state', async () => {
-      const mockResponse: ServiceProviderResponse = {
-        id: faker.string.uuid(),
+      const mockResponse: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
         name: filter.name,
         url: filter.url,
-        target: ServiceProviderTarget.Url,
-        hasLogo: false,
         logoId: 1,
         kategorie: filter.kategorie,
         requires2fa: filter.requires2fa,
         merkmale: filter.merkmale,
-        rollenartenWhitelist: filter.rollenartenWhitelist,
-      };
+        rollenartenWhitelist: filter.rollenartenWhitelist ?? [],
+      });
 
       mockadapter.onPost(url).replyOnce(200, mockResponse);
       const promise: Promise<void> = serviceProviderStore.createServiceProvider(filter);
@@ -793,7 +852,7 @@ describe('serviceProviderStore', () => {
     };
 
     it('should update a service provider and update state', async () => {
-      const mockResponse: ServiceProviderResponse = {
+      const mockResponse: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
         id: providerId,
         name: update.name!,
         url: update.url!,
@@ -804,7 +863,7 @@ describe('serviceProviderStore', () => {
         kategorie: update.kategorie!,
         requires2fa: false,
         merkmale: [],
-      };
+      });
 
       mockadapter.onPatch(apiUrl).replyOnce(200, mockResponse);
       const promise: Promise<void> = serviceProviderStore.updateServiceProvider(providerId, update);
@@ -822,7 +881,7 @@ describe('serviceProviderStore', () => {
           ServiceProviderMerkmal.AnbietenInSchulischerRollenverwaltung,
         ],
       };
-      const mockResponse: ServiceProviderResponse = {
+      const mockResponse: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
         id: providerId,
         name: 'Updated Service Provider',
         url: 'https://updated-url.com',
@@ -833,7 +892,7 @@ describe('serviceProviderStore', () => {
         requires2fa: false,
         merkmale: updateWithMerkmale.merkmale,
         rollenartenWhitelist: [],
-      };
+      });
 
       mockadapter.onPatch(apiUrl).replyOnce(200, mockResponse);
       await serviceProviderStore.updateServiceProvider(providerId, updateWithMerkmale);
