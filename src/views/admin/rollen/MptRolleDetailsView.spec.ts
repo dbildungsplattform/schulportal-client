@@ -65,7 +65,10 @@ describe('MptRolleDetailsView', (): void => {
   it('loads school-scoped role data and renders readonly role fields with the assigned offers', (): void => {
     expect(rolleStore.getMptRolleById).toHaveBeenCalledWith(rolle.id, schule.id);
     expect(rolleStore.getRollenerweiterungenForRolle).toHaveBeenCalledWith(rolle.id, schule.id);
-    expect(serviceProviderStore.getServiceProvidersForRollenerweiterung).toHaveBeenCalledWith(schule.id);
+    expect(serviceProviderStore.getServiceProvidersForRollenerweiterung).toHaveBeenCalledWith(
+      schule.id,
+      rolle.rollenart,
+    );
     expect(wrapper?.text()).toContain(`Rolle bearbeiten ${schule.name}`);
     expect(wrapper?.text()).toContain(rolle.name);
     expect(wrapper?.text()).toContain(existingServiceProvider.name);
