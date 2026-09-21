@@ -360,6 +360,9 @@
         await rolleStore.getRollenForPersonenkontextCreation(newFilter);
       }
     },
+    {
+      immediate: true,
+    },
   );
 
   watch(
