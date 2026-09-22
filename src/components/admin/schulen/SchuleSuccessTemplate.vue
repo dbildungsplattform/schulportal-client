@@ -1,9 +1,9 @@
 <script setup lang="ts">
   import { Organisation } from '@/stores/OrganisationStore';
-import { computed, type ComputedRef, type Ref } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { useDisplay } from 'vuetify';
-import { SchuleSuccessTemplateProps } from './types';
+  import { computed, type ComputedRef, type Ref } from 'vue';
+  import { useI18n } from 'vue-i18n';
+  import { useDisplay } from 'vuetify';
+  import { SchuleSuccessTemplateProps } from './types';
 
   const props: SchuleSuccessTemplateProps = defineProps<SchuleSuccessTemplateProps>();
 
@@ -79,12 +79,14 @@ import { SchuleSuccessTemplateProps } from './types';
     onClick: navigateToSchuleDetails,
   };
 
-  const backToListButton: ComputedRef<ContextButtonConfig> = computed((): ContextButtonConfig => ({
-    testId: 'back-to-list-button',
-    variant: 'secondary',
-    labelKey: props.isEditMode ? 'admin.schule.backToSchuleList' : 'nav.backToList',
-    onClick: navigateToSchuleManagement,
-  }));
+  const backToListButton: ComputedRef<ContextButtonConfig> = computed(
+    (): ContextButtonConfig => ({
+      testId: 'back-to-list-button',
+      variant: 'secondary',
+      labelKey: props.isEditMode ? 'admin.schule.backToSchuleList' : 'nav.backToList',
+      onClick: navigateToSchuleManagement,
+    }),
+  );
 
   const createAnotherButton: ContextButtonConfig = {
     testId: 'create-another-schule-button',
@@ -94,9 +96,7 @@ import { SchuleSuccessTemplateProps } from './types';
   };
 
   const buttons: ComputedRef<ContextButtonConfig[]> = computed((): ContextButtonConfig[] =>
-    props.isEditMode
-      ? [backToSchuleButton, backToListButton.value]
-      : [backToListButton.value, createAnotherButton],
+    props.isEditMode ? [backToSchuleButton, backToListButton.value] : [backToListButton.value, createAnotherButton],
   );
 </script>
 
