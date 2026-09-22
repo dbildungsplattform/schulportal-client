@@ -1,9 +1,9 @@
 <script setup lang="ts">
   import { Organisation } from '@/stores/OrganisationStore';
-  import { type Ref } from 'vue';
-  import { useI18n } from 'vue-i18n';
-  import { useDisplay } from 'vuetify';
-  import { SchuleSuccessTemplateProps } from './types';
+import { computed, type ComputedRef, type Ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useDisplay } from 'vuetify';
+import { SchuleSuccessTemplateProps } from './types';
 
   const props: SchuleSuccessTemplateProps = defineProps<SchuleSuccessTemplateProps>();
 
@@ -30,10 +30,79 @@
 
     return schultraeger ? schultraeger.name : '';
   };
+
+  type CreatedDataRow = {
+    labelKey: string;
+    labelTestId: string;
+    valueTestId: string;
+    value: string;
+  };
+
+  const createdDataRows: ComputedRef<CreatedDataRow[]> = computed((): CreatedDataRow[] => [
+    {
+      labelKey: 'admin.schule.schulform',
+      labelTestId: 'created-schule-form-label',
+      valueTestId: 'created-schule-form',
+      value: findSchultraegerName(props.followingDataChanged?.administriertVon),
+    },
+    {
+      labelKey: 'admin.schule.dienststellennummer',
+      labelTestId: 'created-schule-dienststellennummer-label',
+      valueTestId: 'created-schule-dienststellennummer',
+      value: props.followingDataChanged?.kennung ?? '',
+    },
+    {
+      labelKey: 'admin.schule.schulname',
+      labelTestId: 'created-schule-name-label',
+      valueTestId: 'created-schule-name',
+      value: props.followingDataChanged?.name ?? '',
+    },
+    {
+      labelKey: 'admin.schule.emailAdresse',
+      labelTestId: 'created-schule-email-label',
+      valueTestId: 'created-schule-email',
+      value: props.followingDataChanged?.emailAdress ?? '',
+    },
+  ]);
+
+  type ContextButtonConfig = {
+    testId: string;
+    variant: string;
+    labelKey: string;
+    onClick: () => void;
+  };
+
+  const backToSchuleButton: ContextButtonConfig = {
+    testId: 'back-to-schule-button',
+    variant: 'secondary',
+    labelKey: 'admin.schule.backToSchule',
+    onClick: navigateToSchuleDetails,
+  };
+
+  const backToListButton: ComputedRef<ContextButtonConfig> = computed((): ContextButtonConfig => ({
+    testId: 'back-to-list-button',
+    variant: 'secondary',
+    labelKey: props.isEditMode ? 'admin.schule.backToSchuleList' : 'nav.backToList',
+    onClick: navigateToSchuleManagement,
+  }));
+
+  const createAnotherButton: ContextButtonConfig = {
+    testId: 'create-another-schule-button',
+    variant: 'primary button',
+    labelKey: 'admin.schule.createAnother',
+    onClick: handleCreateAnotherSchule,
+  };
+
+  const buttons: ComputedRef<ContextButtonConfig[]> = computed((): ContextButtonConfig[] =>
+    props.isEditMode
+      ? [backToSchuleButton, backToListButton.value]
+      : [backToListButton.value, createAnotherButton],
+  );
 </script>
 
 <template>
   <v-container class="new-schule-success">
+    <!-- Success Message Section -->
     <v-row class="justify-center">
       <v-col
         cols="auto"
@@ -44,6 +113,7 @@
       </v-col>
     </v-row>
 
+    <!-- Success Icon Section -->
     <v-row class="justify-center">
       <v-col cols="auto">
         <v-icon
@@ -54,6 +124,7 @@
       </v-col>
     </v-row>
 
+    <!-- Following Data Created Section -->
     <v-row class="justify-center">
       <v-col
         cols="auto"
@@ -64,119 +135,49 @@
       </v-col>
     </v-row>
 
-    <v-row>
+    <!-- Data Section -->
+    <v-row
+      v-for="(row, index) in createdDataRows"
+      :key="index"
+    >
       <v-col
         class="text-body bold text-right"
-        data-testid="created-schule-form-label"
+        :data-testid="row.labelTestId"
       >
-        {{ $t('admin.schule.schulform') }}:
+        {{ $t(row.labelKey) }}:
       </v-col>
 
       <v-col
         class="text-body"
-        data-testid="created-schule-form"
+        :data-testid="row.valueTestId"
       >
-        {{ findSchultraegerName(followingDataChanged?.administriertVon) }}
+        {{ row.value }}
       </v-col>
     </v-row>
 
-    <v-row>
-      <v-col
-        class="text-body bold text-right"
-        data-testid="created-schule-dienststellennummer-label"
-      >
-        {{ $t('admin.schule.dienststellennummer') }}:
-      </v-col>
-
-      <v-col
-        class="text-body"
-        data-testid="created-schule-dienststellennummer"
-      >
-        {{ followingDataChanged?.kennung }}
-      </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col
-        class="text-body bold text-right"
-        data-testid="created-schule-name-label"
-      >
-        {{ $t('admin.schule.schulname') }}:
-      </v-col>
-
-      <v-col
-        class="text-body"
-        data-testid="created-schule-name"
-        >{{ followingDataChanged?.name }}
-      </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col
-        class="text-body bold text-right"
-        data-testid="created-schule-email-label"
-      >
-        {{ $t('admin.schule.emailAdresse') }}:
-      </v-col>
-
-      <v-col
-        class="text-body"
-        data-testid="created-schule-email"
-        >{{ followingDataChanged?.emailAdress }}
-      </v-col>
-    </v-row>
-
+    <!-- Divider Section -->
     <v-divider
       class="border-opacity-100 rounded my-6"
       color="#E5EAEF"
       thickness="6"
     />
 
+    <!-- Buttons Section -->
     <v-row class="justify-end">
       <v-col
-        v-if="isEditMode"
+        v-for="button in buttons"
+        :key="button.testId"
         cols="12"
         sm="6"
         md="auto"
       >
         <v-btn
-          class="secondary"
-          data-testid="back-to-schule-button"
+          :class="button.variant"
+          :data-testid="button.testId"
           :block="mdAndDown"
-          @click="navigateToSchuleDetails"
+          @click="button.onClick"
         >
-          {{ $t('admin.schule.backToSchule') }}
-        </v-btn>
-      </v-col>
-
-      <v-col
-        cols="12"
-        sm="6"
-        md="auto"
-      >
-        <v-btn
-          class="secondary"
-          data-testid="back-to-list-button"
-          :block="mdAndDown"
-          @click="navigateToSchuleManagement"
-        >
-          {{ isEditMode ? $t('admin.schule.backToSchuleList') : $t('nav.backToList') }}
-        </v-btn>
-      </v-col>
-
-      <v-col
-        v-if="!isEditMode"
-        cols="12"
-        sm="6"
-        md="auto"
-      >
-        <v-btn
-          class="primary button"
-          data-testid="create-another-schule-button"
-          :block="mdAndDown"
-          @click="handleCreateAnotherSchule"
-        >
-          {{ $t('admin.schule.createAnother') }}
+          {{ $t(button.labelKey) }}
         </v-btn>
       </v-col>
     </v-row>
