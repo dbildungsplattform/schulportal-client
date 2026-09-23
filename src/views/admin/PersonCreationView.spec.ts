@@ -527,8 +527,7 @@ describe('PersonCreationView', () => {
     await rollenSelect?.setValue([]);
     await nextTick();
 
-    const removedKopersInput: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'kopers-input' })
+    const removedKopersInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'kopers-input' });
 
     expect(removedKopersInput?.exists()).toBe(false);
 
@@ -543,7 +542,6 @@ describe('PersonCreationView', () => {
 
     const readdedKopersValue: string = (recreatedKopersInput?.find('input').element as HTMLInputElement).value;
     expect(readdedKopersValue).toBe('');
-
   });
 
   test('it renders success template for created user and navigates back to form', async () => {
