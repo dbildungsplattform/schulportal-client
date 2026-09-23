@@ -7,7 +7,6 @@
   import FormWrapper from '@/components/form/FormWrapper.vue';
   import PasswordOutput from '@/components/form/PasswordOutput.vue';
   import { useOrganisationen } from '@/composables/useOrganisationen';
-  import { type TranslatedRolleWithAttrs, useRollen } from '@/composables/useRollen';
   import { type Organisation, type OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
   import {
     type DBiamPersonenkontextResponse,
@@ -22,7 +21,7 @@
     type PersonStore,
     usePersonStore,
   } from '@/stores/PersonStore';
-  import { RollenArt } from '@/stores/RolleStore';
+  import { RollenArt, RolleStore, TranslatedRolleWithAttrs, useRolleStore } from '@/stores/RolleStore';
   import type { Zuordnung } from '@/stores/types/Zuordnung';
   import { type TranslatedObject } from '@/types.d';
   import { type BefristungUtilsType, isBefristungspflichtRolle, useBefristungUtils } from '@/utils/befristung';
@@ -51,6 +50,7 @@
   const router: Router = useRouter();
   const personStore: PersonStore = usePersonStore();
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
+  const rolleStore: RolleStore = useRolleStore();
   const { t }: Composer = useI18n({ useScope: 'global' });
 
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
@@ -293,7 +293,6 @@
   setupWatchers();
   setupRolleWatcher();
 
-  const rollen: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = useRollen();
   const organisationen: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
   const organisationStore: OrganisationStore = useOrganisationStore();
 
@@ -346,7 +345,9 @@
 
     return schuleZuordnungFromCreatedKontext.value.map(
       (kontext: DBiamPersonenkontextResponse) =>
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === kontext.rolleId)?.title || '',
+        rolleStore.rollenForPersonenkontextCreation?.find(
+          (rolle: TranslatedRolleWithAttrs) => rolle.value === kontext.rolleId,
+        )?.title || '',
     );
   });
 
@@ -585,7 +586,9 @@
     (newSelectedRollen: string[] | undefined) => {
       // Decide which rollen list to use based on createType
       const baseRollen: TranslatedRolleWithAttrs[] | undefined =
-        createType.value === CreationType.AddPersonToOwnSchule ? filteredRollen.value : rollen.value;
+        createType.value === CreationType.AddPersonToOwnSchule
+          ? filteredRollen.value
+          : rolleStore.rollenForPersonenkontextCreation;
 
       if (newSelectedRollen && newSelectedRollen.length > 0) {
         const selectedRollenart: RollenArt | undefined = baseRollen?.find((rolle: TranslatedRolleWithAttrs) =>
@@ -607,47 +610,51 @@
   );
 
   // Watch the rollen and update filteredRollen based on selectedRollen... This is necessary to ensure that the filteredRollen are always in sync while the user is searching.
-  watch(rollen, async (newRollen: TranslatedRolleWithAttrs[] | undefined) => {
-    if (!newRollen) {
-      filteredRollen.value = [];
-      return;
-    }
-
-    // AddPersonToOwnSchule: only show Lehr roles for that createType
-    if (createType.value === CreationType.AddPersonToOwnSchule) {
-      const existingPerson: PersonLandesbediensteterSearchResponse | undefined =
-        personStore.allLandesbedienstetePersonen?.[0];
-      const personId: string | undefined = existingPerson?.id;
-
-      if (!personId) {
+  watch(
+    () => rolleStore.rollenForPersonenkontextCreation,
+    async (newRollen: TranslatedRolleWithAttrs[]) => {
+      if (!newRollen) {
+        filteredRollen.value = [];
         return;
       }
-      // Get latest person data
-      await personStore.getPersonenuebersichtById(personId);
-      const assignedRollenIds: Set<string> = new Set(
-        personStore.personenuebersicht?.zuordnungen
-          .filter((z: Zuordnung) => z.sskId === selectedOrganisation.value)
-          .map((z: Zuordnung) => z.rolleId) || [],
-      );
-      filteredRollen.value = newRollen.filter(
-        (rolle: TranslatedRolleWithAttrs) => rolle.rollenart === RollenArt.Lehr && !assignedRollenIds.has(rolle.value),
-      );
-      return;
-    }
 
-    // Regular filtering based on selectedRollen
-    if (!selectedRollen.value || selectedRollen.value.length === 0) {
-      filteredRollen.value = newRollen;
-    } else {
-      const selectedRollenart: RollenArt | undefined = newRollen.find((rolle: TranslatedRolleWithAttrs) =>
-        selectedRollen.value?.includes(rolle.value),
-      )?.rollenart;
+      // AddPersonToOwnSchule: only show Lehr roles for that createType
+      if (createType.value === CreationType.AddPersonToOwnSchule) {
+        const existingPerson: PersonLandesbediensteterSearchResponse | undefined =
+          personStore.allLandesbedienstetePersonen?.[0];
+        const personId: string | undefined = existingPerson?.id;
 
-      filteredRollen.value = newRollen.filter(
-        (rolle: TranslatedRolleWithAttrs) => rolle.rollenart === selectedRollenart,
-      );
-    }
-  });
+        if (!personId) {
+          return;
+        }
+        // Get latest person data
+        await personStore.getPersonenuebersichtById(personId);
+        const assignedRollenIds: Set<string> = new Set(
+          personStore.personenuebersicht?.zuordnungen
+            .filter((z: Zuordnung) => z.sskId === selectedOrganisation.value)
+            .map((z: Zuordnung) => z.rolleId) || [],
+        );
+        filteredRollen.value = newRollen.filter(
+          (rolle: TranslatedRolleWithAttrs) =>
+            rolle.rollenart === RollenArt.Lehr && !assignedRollenIds.has(rolle.value),
+        );
+        return;
+      }
+
+      // Regular filtering based on selectedRollen
+      if (!selectedRollen.value || selectedRollen.value.length === 0) {
+        filteredRollen.value = newRollen;
+      } else {
+        const selectedRollenart: RollenArt | undefined = newRollen.find((rolle: TranslatedRolleWithAttrs) =>
+          selectedRollen.value?.includes(rolle.value),
+        )?.rollenart;
+
+        filteredRollen.value = newRollen.filter(
+          (rolle: TranslatedRolleWithAttrs) => rolle.rollenart === selectedRollenart,
+        );
+      }
+    },
+  );
 
   watch(hasNoKopersNr, (newValue: boolean | undefined) => {
     if (newValue) {
@@ -872,7 +879,7 @@
                 :rollen="
                   createType === CreationType.AddPersonToOwnSchule || (filteredRollen?.length ?? 0) > 0
                     ? filteredRollen
-                    : rollen
+                    : rolleStore.rollenForPersonenkontextCreation
                 "
                 :selected-organisation-props="selectedOrganisationProps"
                 :selected-rollen-props="selectedRollenProps"
@@ -909,7 +916,9 @@
                 :create-type="createType"
                 :show-headline="true"
                 :organisationen="organisationen"
-                :rollen="(filteredRollen?.length ?? 0) > 0 ? filteredRollen : rollen"
+                :rollen="
+                  (filteredRollen?.length ?? 0) > 0 ? filteredRollen : rolleStore.rollenForPersonenkontextCreation
+                "
                 :selected-organisation-props="selectedOrganisationProps"
                 :selected-rollen-props="selectedRollenProps"
                 :selected-klasse-props="selectedKlasseProps"

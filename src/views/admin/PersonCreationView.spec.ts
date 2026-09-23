@@ -17,6 +17,7 @@ import {
   RollenMerkmal,
   useRolleStore,
   type RolleStore,
+  type TranslatedRolleWithAttrs,
   type RolleWithServiceProvidersResponse,
 } from '@/stores/RolleStore';
 import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
@@ -59,7 +60,7 @@ const workflowOrganisation: OrganisationResponseLegacy = DoFactory.getOrganisati
   id: ORGANISATION_ID,
 });
 
-const mockRolleForPersonenkontextCreation: RolleResponse = DoFactory.getRolleResponse({
+const mockRolleResponseForPersonenkontextCreation: RolleResponse = DoFactory.getRolleResponse({
   id: ROLLE_ID,
   rollenart: 'LERN',
   administeredBySchulstrukturknoten: workflowOrganisation.id,
@@ -67,6 +68,12 @@ const mockRolleForPersonenkontextCreation: RolleResponse = DoFactory.getRolleRes
   administeredBySchulstrukturknotenKennung: workflowOrganisation.kennung,
   merkmale: [RollenMerkmal.KopersPflicht],
 });
+const mockRolleForPersonenkontextCreation: TranslatedRolleWithAttrs = {
+  value: mockRolleResponseForPersonenkontextCreation.id,
+  title: mockRolleResponseForPersonenkontextCreation.name,
+  merkmale: mockRolleResponseForPersonenkontextCreation.merkmale,
+  rollenart: mockRolleResponseForPersonenkontextCreation.rollenart,
+};
 
 const mockWorkflowStepResponse: PersonenkontextWorkflowResponse = DoFactory.getPersonenkontextWorkflowResponse({
   organisations: [workflowOrganisation],

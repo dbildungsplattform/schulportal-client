@@ -18,7 +18,6 @@
   import TokenReset from '@/components/two-factor-authentication/TokenReset.vue';
   import TwoFactorAuthenticationSetUp from '@/components/two-factor-authentication/TwoFactorAuthenticationSetUp.vue';
   import { useOrganisationen } from '@/composables/useOrganisationen';
-  import { useRollen, type TranslatedRolleWithAttrs } from '@/composables/useRollen';
   import { useAuthStore, type AuthStore, type PersonenkontextRolleFields } from '@/stores/AuthStore';
   import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
   import {
@@ -36,7 +35,7 @@
     type PersonenkontextStore,
     type PersonenkontextUpdate,
   } from '@/stores/PersonenkontextStore';
-  import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
+  import { RollenArt, RollenMerkmal, RolleStore, TranslatedRolleWithAttrs, useRolleStore } from '@/stores/RolleStore';
   import {
     StartPageServiceProvider,
     useServiceProviderStore,
@@ -108,6 +107,7 @@
   const twoFactorAuthentificationStore: TwoFactorAuthentificationStore = useTwoFactorAuthentificationStore();
   const configStore: ConfigStore = useConfigStore();
   const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
+  const rolleStore: RolleStore = useRolleStore();
 
   const devicePassword: Ref<string> = ref('');
   const password: Ref<string> = ref('');
@@ -536,7 +536,6 @@
     return result;
   }
 
-  const rollen: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = useRollen();
   const organisationen: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
   const klassen: ComputedRef<TranslatedObject[] | undefined> = computed(() => {
     // TODO: accessing the KlassenFilter this way violates encapsulation, should be refactored (see SPSH-2185)
@@ -580,7 +579,7 @@
 
   // Define a method to check if the selected Rolle is of type "Lern"
   function isLernRolle(selectedRolleId: string): boolean {
-    const rolle: TranslatedRolleWithAttrs | undefined = rollen.value?.find(
+    const rolle: TranslatedRolleWithAttrs | undefined = rolleStore.rollenForPersonenkontextCreation?.find(
       (r: TranslatedRolleWithAttrs) => r.value === selectedRolleId,
     );
     return !!rolle && rolle.rollenart === RollenArt.Lern;
@@ -982,7 +981,7 @@
   // Helper function to determine the existing RollenArt
   function getExistingRollenArt(zuordnungen: Zuordnung[]): RollenArt | undefined {
     const rollenIds: string[] = zuordnungen.map((zuordnung: Zuordnung) => zuordnung.rolleId);
-    const existingRollen: TranslatedRolleWithAttrs[] | undefined = rollen.value?.filter(
+    const existingRollen: TranslatedRolleWithAttrs[] | undefined = rolleStore.rollenForPersonenkontextCreation?.filter(
       (rolle: TranslatedRolleWithAttrs) => rollenIds.includes(rolle.value),
     );
 
@@ -999,7 +998,7 @@
 
     // If no existing Zuordnungen then show all roles
     if (!existingZuordnungen || existingZuordnungen.length === 0) {
-      return rollen.value;
+      return rolleStore.rollenForPersonenkontextCreation;
     }
 
     const selectedOrgaId: string | undefined = selectedOrganisation.value;
@@ -1008,7 +1007,7 @@
     const existingRollenArt: RollenArt | undefined = getExistingRollenArt(existingZuordnungen);
 
     // Filter out Rollen that the user already has in the selected organization
-    return rollen.value?.filter((rolle: TranslatedRolleWithAttrs) => {
+    return rolleStore.rollenForPersonenkontextCreation?.filter((rolle: TranslatedRolleWithAttrs) => {
       // Check if the user already has this role in the selected organization
       const alreadyHasRolleInSelectedOrga: boolean = existingZuordnungen.some(
         (zuordnung: Zuordnung) => zuordnung.rolleId === rolle.value && zuordnung.sskId === selectedOrgaId,
@@ -1026,7 +1025,9 @@
 
   // Computed property to get the title of the selected rolle
   const selectedRolleTitle: ComputedRef<string | undefined> = computed(() => {
-    return rollen.value?.find((rolle: TranslatedObject) => rolle.value === selectedRolle.value)?.title;
+    return rolleStore.rollenForPersonenkontextCreation?.find(
+      (rolle: TranslatedObject) => rolle.value === selectedRolle.value,
+    )?.title;
   });
 
   // Computed property to get the title of the selected klasse
@@ -1135,9 +1136,12 @@
         selectedRolle.value ?? '',
         organisation.name,
         organisation.kennung ?? '',
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)?.title || '',
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)
-          ?.rollenart as RollenArt,
+        rolleStore.rollenForPersonenkontextCreation?.find(
+          (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+        )?.title || '',
+        rolleStore.rollenForPersonenkontextCreation?.find(
+          (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+        )?.rollenart as RollenArt,
         organisation.administriertVon ?? '',
         OrganisationsTyp.Schule,
         true,
@@ -1159,9 +1163,12 @@
             selectedRolle.value ?? '',
             klasse.name,
             klasse.kennung ?? '',
-            rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)?.title || '',
-            rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)
-              ?.rollenart as RollenArt,
+            rolleStore.rollenForPersonenkontextCreation?.find(
+              (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+            )?.title || '',
+            rolleStore.rollenForPersonenkontextCreation?.find(
+              (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+            )?.rollenart as RollenArt,
             klasse.administriertVon ?? '',
             OrganisationsTyp.Klasse,
             true,
@@ -1216,10 +1223,12 @@
         selectedZuordnungen.value[0]?.rolleId ?? '',
         organisation.name,
         organisation.kennung ?? '',
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedZuordnungen.value[0]?.rolleId)
-          ?.title || '',
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)
-          ?.rollenart as RollenArt,
+        rolleStore.rollenForPersonenkontextCreation?.find(
+          (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedZuordnungen.value[0]?.rolleId,
+        )?.title || '',
+        rolleStore.rollenForPersonenkontextCreation?.find(
+          (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+        )?.rollenart as RollenArt,
         organisation.administriertVon ?? '',
         OrganisationsTyp.Schule,
         true,
@@ -1271,11 +1280,12 @@
             selectedZuordnungen.value[0]?.rolleId ?? '',
             newKlasse.name,
             newKlasse.kennung ?? '',
-            rollen.value?.find(
+            rolleStore.rollenForPersonenkontextCreation?.find(
               (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedZuordnungen.value[0]?.rolleId,
             )?.title || '',
-            rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)
-              ?.rollenart as RollenArt,
+            rolleStore.rollenForPersonenkontextCreation?.find(
+              (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+            )?.rollenart as RollenArt,
             newKlasse.administriertVon ?? '',
             OrganisationsTyp.Klasse,
             true,

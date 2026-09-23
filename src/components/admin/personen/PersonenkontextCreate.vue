@@ -4,7 +4,6 @@
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
   import FormRow from '@/components/form/FormRow.vue';
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
-  import type { TranslatedRolleWithAttrs } from '@/composables/useRollen';
   import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
   import {
     CreationType,
@@ -21,6 +20,7 @@
     RollenForPersonenkontextCreationQuery,
     RollenSystemRecht,
     RolleStore,
+    TranslatedRolleWithAttrs,
     useRolleStore,
   } from '@/stores/RolleStore';
   import type { Zuordnung } from '@/stores/types/Zuordnung';

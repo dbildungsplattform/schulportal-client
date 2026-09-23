@@ -3,8 +3,7 @@ import { expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component, type ComputedRef, type DefineComponent } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 
-import { EmailAddressStatus, ServiceProviderSystem } from '@/api-client/generated';
-import type { TranslatedRolleWithAttrs } from '@/composables/useRollen';
+import { EmailAddressStatus, ServiceProviderSystem, type RolleResponse } from '@/api-client/generated';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore, type PersonenkontextRolleFields, type UserInfo } from '@/stores/AuthStore';
 import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
@@ -16,7 +15,14 @@ import {
 } from '@/stores/OrganisationStore';
 import { usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
 import { usePersonStore, type Personendatensatz, type PersonStore } from '@/stores/PersonStore';
-import { RollenArt, RollenMerkmal, useRolleStore, type Rolle, type RolleStore } from '@/stores/RolleStore';
+import {
+  RollenArt,
+  RollenMerkmal,
+  useRolleStore,
+  type Rolle,
+  type RolleStore,
+  type TranslatedRolleWithAttrs,
+} from '@/stores/RolleStore';
 import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
 import {
   useTwoFactorAuthentificationStore,
@@ -163,30 +169,16 @@ describe('PersonDetailsView', () => {
 
     rolleStore.rollenForPersonenkontextCreation = [
       {
-        id: '54321',
-        createdAt: '2024-06-25T13:03:53.802Z',
-        updatedAt: '2024-06-25T13:03:53.802Z',
-        name: 'string',
-        administeredBySchulstrukturknoten: 'string',
-        rollenart: 'LERN',
+        value: '54321',
+        title: 'string',
         merkmale: [RollenMerkmal.KopersPflicht],
-        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
-        administeredBySchulstrukturknotenName: 'Land SH',
-        administeredBySchulstrukturknotenKennung: '',
-        version: 1,
+        rollenart: RollenArt.Lehr,
       },
       {
-        id: '1',
-        createdAt: '2024-06-25T13:03:53.802Z',
-        updatedAt: '2024-06-25T13:03:53.802Z',
-        name: 'SuS',
-        administeredBySchulstrukturknoten: '1',
-        rollenart: 'LERN',
+        value: '1',
+        title: 'SuS',
         merkmale: [RollenMerkmal.BefristungPflicht],
-        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
-        administeredBySchulstrukturknotenName: 'Land SH',
-        administeredBySchulstrukturknotenKennung: '',
-        version: 1,
+        rollenart: RollenArt.Lern,
       },
     ];
 

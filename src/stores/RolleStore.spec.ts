@@ -557,7 +557,10 @@ describe('rolleStore', () => {
 
   describe('getRollenForPersonenkontextCreation', () => {
     it('should load available Rollen and update state', async () => {
-      const mockResponse: RolleResponse[] = [DoFactory.getRolleResponse(), DoFactory.getRolleResponse()];
+      const mockResponse: RolleResponse[] = [
+        DoFactory.getRolleResponse({ name: 'b' }),
+        DoFactory.getRolleResponse({ name: 'a' }),
+      ];
       mockadapter.onGet(/\/api\/rolle\/for-personenkontext-creation/).replyOnce(200, mockResponse);
 
       const promise: Promise<void> = rolleStore.getRollenForPersonenkontextCreation({
@@ -573,7 +576,9 @@ describe('rolleStore', () => {
       expect(rolleStore.loading).toBe(true);
       await promise;
 
-      expect(rolleStore.rollenForPersonenkontextCreation).toEqual(mockResponse);
+      expect(rolleStore.rollenForPersonenkontextCreation.length).toBe(2);
+      expect(rolleStore.rollenForPersonenkontextCreation[0]?.title).toBe('a');
+      expect(rolleStore.rollenForPersonenkontextCreation[1]?.title).toBe('b');
       expect(mockadapter.history.get[0]?.url).toContain('organisationId=organisation-1');
       expect(mockadapter.history.get[0]?.url).toContain('rollenIds=rolle-1');
       expect(mockadapter.history.get[0]?.url).toContain('rollenIds=rolle-2');

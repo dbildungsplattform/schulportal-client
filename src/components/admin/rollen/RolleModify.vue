@@ -3,7 +3,6 @@
   import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import { type BulkErrorList, useBulkErrors } from '@/composables/useBulkErrors';
-  import type { TranslatedRolleWithAttrs } from '@/composables/useRollen';
   import { type BulkOperationStore, useBulkOperationStore } from '@/stores/BulkOperationStore';
   import {
     KlassenOption,
@@ -12,6 +11,7 @@
     RolleDialogMode,
     usePersonenkontextStore,
   } from '@/stores/PersonenkontextStore';
+  import { TranslatedRolleWithAttrs } from '@/stores/RolleStore';
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
   import type { TranslatedObject } from '@/types';
   import { type BefristungUtilsType, isBefristungspflichtRolle, useBefristungUtils } from '@/utils/befristung';

@@ -94,6 +94,13 @@ type RollenForPersonAdministrationParams = {
   systemrechte?: RollenSystemRechtEnum[];
 };
 
+export type TranslatedRolleWithAttrs = {
+  value: string;
+  title: string;
+  merkmale?: Array<RollenMerkmal>;
+  rollenart: RollenArt;
+};
+
 type RolleState = {
   createdRolle: Rolle | null;
   updatedRolle: RolleWithServiceProvidersResponse | null;
@@ -102,7 +109,7 @@ type RolleState = {
   allRollen: Array<RolleWithServiceProvidersResponse>;
   rollenForPersonAdministration: Array<RolleResponse>;
   totalRollenForPersonAdministration: number;
-  rollenForPersonenkontextCreation: Array<RolleResponse>;
+  rollenForPersonenkontextCreation: Array<TranslatedRolleWithAttrs>;
   rollenerweiterungServiceProviders: Array<ServiceProviderResponse>;
   errorCode: string;
   loading: boolean;
@@ -411,7 +418,14 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               params.rollenIds,
               params.systemrecht,
             );
-          this.rollenForPersonenkontextCreation = data;
+          this.rollenForPersonenkontextCreation = data
+            .map((rolle: RolleResponse) => ({
+              value: rolle.id,
+              title: rolle.name,
+              merkmale: rolle.merkmale,
+              rollenart: rolle.rollenart,
+            }))
+            .sort((a: TranslatedRolleWithAttrs, b: TranslatedRolleWithAttrs) => a.title.localeCompare(b.title));
         } catch (error) {
           this.errorCode = getResponseErrorCode(error, 'ROLLE_ERROR');
         } finally {
