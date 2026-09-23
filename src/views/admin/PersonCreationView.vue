@@ -27,7 +27,7 @@
   import { type BefristungUtilsType, isBefristungspflichtRolle, useBefristungUtils } from '@/utils/befristung';
   import { formatDateToISO, getNextSchuljahresende, isValidDate, notInPast } from '@/utils/date';
   import { DDMMYYYY, DIN_91379A, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
-  import { isKopersRolle } from '@/utils/validationPersonenkontext';
+  import { isKopersRolle, isLernRolle } from '@/utils/validationPersonenkontext';
   import { toTypedSchema } from '@vee-validate/yup';
   import { type BaseFieldProps, type FormContext, type TypedSchema, useForm } from 'vee-validate';
   import { computed, type ComputedRef, onMounted, onUnmounted, ref, type Ref, watch, watchEffect } from 'vue';
@@ -71,10 +71,8 @@
   const selectedKlasseCache: Ref<TranslatedObject | undefined> = ref(undefined);
   const selectedRolleCache: Ref<string[] | undefined> = ref(undefined);
 
-  const filteredRollen: Ref<TranslatedRolleWithAttrs[] | undefined> = ref<TranslatedRolleWithAttrs[] | undefined>([]);
-  const filteredRollenCache: Ref<TranslatedRolleWithAttrs[] | undefined> = ref<TranslatedRolleWithAttrs[] | undefined>(
-    [],
-  );
+  const filteredRollen: Ref<TranslatedRolleWithAttrs[]> = ref<TranslatedRolleWithAttrs[]>([]);
+  const filteredRollenCache: Ref<TranslatedRolleWithAttrs[]> = ref<TranslatedRolleWithAttrs[]>([]);
 
   const hasPreFilled: Ref<boolean> = ref(false);
 
@@ -131,19 +129,17 @@
   });
 
   // Define a method to check if the selected Rolle is of type "Lern"
-  function isLernRolle(selectedRolleIds?: string[]): boolean | undefined {
-    if (!Array.isArray(selectedRolleIds)) {
-      return false;
-    }
-
+  function hasSelectedLernRolle(selectedRolleIds?: string[]): boolean | undefined {
     const translatedRollenWithAttrs: Array<TranslatedRolleWithAttrs> =
       filteredRollen.value && filteredRollen.value.length > 0
         ? filteredRollen.value
         : (filteredRollenCache.value ?? []);
 
-    return translatedRollenWithAttrs.some(
-      (rolle: TranslatedRolleWithAttrs) => selectedRolleIds.includes(rolle.value) && rolle.rollenart === RollenArt.Lern,
-    );
+    if (Array.isArray(selectedRolleIds)) {
+      return selectedRolleIds.some((id: string) => isLernRolle(id, translatedRollenWithAttrs));
+    } else {
+      return false;
+    }
   }
 
   const headerLabel: Ref<string> = ref(t('admin.person.addNew'));
@@ -203,7 +199,7 @@
         .required(t('admin.person.rules.familienname.required')),
       selectedOrganisation: string().required(t('admin.organisation.rules.organisation.required')),
       selectedKlasse: string().when('selectedRollen', {
-        is: (selectedRolleIds: string[]) => isLernRolle(selectedRolleIds),
+        is: (selectedRolleIds: string[]) => hasSelectedLernRolle(selectedRolleIds),
         then: (schema: StringSchema<string | undefined, AnyObject, undefined, ''>) =>
           schema.required(t('admin.klasse.rules.klasse.required')),
       }),
@@ -446,7 +442,7 @@
       selectedKlasse.value &&
       selectedRollen.value &&
       selectedRollen.value.length > 0 &&
-      isLernRolle(selectedRollen.value)
+      hasSelectedLernRolle(selectedRollen.value)
     ) {
       selectedKlasseCache.value = {
         value: selectedKlasse.value,
@@ -1173,7 +1169,7 @@
           </v-row>
           <v-row
             v-if="
-              isLernRolle(
+              hasSelectedLernRolle(
                 klasseZuordnungFromCreatedKontext.map((kontext: DBiamPersonenkontextResponse) => kontext.rolleId),
               )
             "

@@ -216,7 +216,7 @@
   const organisationenForForm: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
 
   // Only Rollen from type LEHR and LERN
-  const rollenForRolleModify: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = computed(() => {
+  const rollenForRolleModify: ComputedRef<TranslatedRolleWithAttrs[]> = computed(() => {
     return rolleStore.rollenForPersonenkontextCreation.filter(
       (rolle: TranslatedRolleWithAttrs) =>
         rolle.rollenart === RollenArt.Lehr ||

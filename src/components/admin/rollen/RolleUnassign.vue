@@ -11,15 +11,10 @@
     RolleDialogMode,
     usePersonenkontextStore,
   } from '@/stores/PersonenkontextStore';
-  import {
-    RollenArt,
-    RolleStore,
-    TranslatedRolleWithAttrs,
-    useRolleStore,
-    type RolleResponse,
-  } from '@/stores/RolleStore';
+  import { RollenArt, type RolleResponse, RolleStore, useRolleStore } from '@/stores/RolleStore';
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
   import type { TranslatedObject } from '@/types';
+  import { isLernRolle } from '@/utils/validationPersonenkontext';
   import { toTypedSchema } from '@vee-validate/yup';
   import { type BaseFieldProps, type TypedSchema, useForm } from 'vee-validate';
   import { computed, type ComputedRef, ref, type Ref, watch } from 'vue';
@@ -102,23 +97,11 @@
     }
   }
 
-  function isLernRolle(selectedRolleId: string | undefined): boolean {
-    if (!selectedRolleId) {
-      return false;
-    }
-
-    const rolle: TranslatedRolleWithAttrs | undefined = rolleStore.rollenForPersonenkontextCreation?.find(
-      (r: TranslatedRolleWithAttrs) => r.value === selectedRolleId,
-    );
-
-    return rolle?.rollenart === RollenArt.Lern;
-  }
-
   async function handleRolleUnassign(): Promise<void> {
     const rolleId: string = selectedRolle.value ?? props.selectedRolleFromFilter?.id ?? '';
     const isRolleLern: boolean =
       selectedRolle.value != null
-        ? isLernRolle(selectedRolle.value)
+        ? isLernRolle(selectedRolle.value, rolleStore.rollenForPersonenkontextCreation)
         : props.selectedRolleFromFilter?.rollenart === RollenArt.Lern;
 
     await bulkOperationStore.bulkUnassignPersonenFromRolle(

@@ -16,7 +16,6 @@
   } from '@/stores/PersonenkontextStore';
   import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
   import {
-    RollenArt,
     RollenForPersonenkontextCreationQuery,
     RollenSystemRecht,
     RolleStore,
@@ -26,6 +25,7 @@
   import type { Zuordnung } from '@/stores/types/Zuordnung';
   import { type TranslatedObject } from '@/types.d';
   import { blurActiveElement } from '@/utils/focus';
+  import { isLernRolle } from '@/utils/validationPersonenkontext';
   import type { BaseFieldProps } from 'vee-validate';
   import { computed, onMounted, ref, watch, type ComputedRef, type Ref } from 'vue';
   import { useI18n } from 'vue-i18n';
@@ -47,7 +47,7 @@
 
   type Props = {
     organisationen: TranslatedObject[] | undefined;
-    rollen: TranslatedRolleWithAttrs[] | undefined;
+    rollen: TranslatedRolleWithAttrs[];
     selectedOrganisation: string | undefined;
     createType?: CreationType;
     showHeadline: boolean;
@@ -152,19 +152,16 @@
     },
   );
 
-  function isLernRolle(selectedRolleIds: string | string[] | undefined): boolean {
+  function hasSelectedLernRolle(selectedRolleIds: string | string[] | undefined): boolean {
     if (!selectedRolleIds) {
       return false;
     }
 
-    // Ensure we always work with an array
-    const rolleIdsArray: string[] = Array.isArray(selectedRolleIds) ? selectedRolleIds : [selectedRolleIds];
-
-    return rolleIdsArray.some((rolleId: string) =>
-      props.rollen?.some(
-        (rolle: TranslatedRolleWithAttrs) => rolle.value === rolleId && rolle.rollenart === RollenArt.Lern,
-      ),
-    );
+    if (Array.isArray(selectedRolleIds)) {
+      return selectedRolleIds.some((id: string) => isLernRolle(id, props.rollen));
+    } else {
+      return isLernRolle(selectedRolleIds, props.rollen);
+    }
   }
 
   async function handleWorkflowStep(filter: WorkflowFilter): Promise<void> {
@@ -498,8 +495,8 @@
       <FormRow
         v-if="
           allowMultipleRollen
-            ? isLernRolle(selectedRollen) && selectedOrganisation
-            : isLernRolle(selectedRolle) &&
+            ? hasSelectedLernRolle(selectedRollen) && selectedOrganisation
+            : hasSelectedLernRolle(selectedRolle) &&
               selectedOrganisation &&
               rolleDialogMode !== RolleDialogMode.MODIFY &&
               rolleDialogMode !== RolleDialogMode.UNASSIGN
@@ -523,7 +520,7 @@
         />
       </FormRow>
       <FormRow
-        v-if="isLernRolle(selectedRolle) && rolleDialogMode === RolleDialogMode.MODIFY"
+        v-if="hasSelectedLernRolle(selectedRolle) && rolleDialogMode === RolleDialogMode.MODIFY"
         :errorLabel="selectedKlasseProps?.['error'] || false"
         :isRequired="true"
         :isAlignedWithRadio="true"
@@ -554,7 +551,7 @@
       <!-- Klasse zuordnen for RolleModify -->
       <FormRow
         v-if="
-          isLernRolle(selectedRolle) &&
+          hasSelectedLernRolle(selectedRolle) &&
           selectedOrganisation &&
           rolleDialogMode === RolleDialogMode.MODIFY &&
           localKlassenOption === KlassenOption.SELECT_NEW_KLASSE

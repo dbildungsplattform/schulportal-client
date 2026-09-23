@@ -21,13 +21,8 @@ export type ChangeBefristungForm = {
   selectedBefristungOption: string;
 };
 
-// Define a method to check if the selected Rolle is of type "Lern"
-export function isLernRolle(selectedRolleId: string): boolean {
-  const rolleStore: RolleStore = useRolleStore();
-  const rolle: TranslatedRolleWithAttrs | undefined = rolleStore.rollenForPersonenkontextCreation.find(
-    (r: TranslatedRolleWithAttrs) => r.value === selectedRolleId,
-  );
-  return !!rolle && rolle.rollenart === RollenArt.Lern;
+export function isLernRolle(selectedRolleId: string, rollen: TranslatedRolleWithAttrs[]): boolean {
+  return rollen.some((r: TranslatedRolleWithAttrs) => r.value === selectedRolleId && r.rollenart === RollenArt.Lern);
 }
 
 // Define the field properties for Personenkontext
@@ -105,7 +100,7 @@ export const getValidationSchema = (
       selectedRolle: string().required(t('admin.rolle.rules.rolle.required')),
       selectedOrganisation: string().required(t('admin.organisation.rules.organisation.required')),
       selectedKlasse: string().when('selectedRolle', {
-        is: (selectedRolleId: string) => isLernRolle(selectedRolleId), // This helper function will check if it's a learning role
+        is: (selectedRolleId: string) => isLernRolle(selectedRolleId, rolleStore.rollenForPersonenkontextCreation), // This helper function will check if it's a learning role
         then: (schema: Schema) => schema.required(t('admin.klasse.rules.klasse.required')),
       }),
       selectedNewKlasse: string().when('selectedSchule', {
