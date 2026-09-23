@@ -3,7 +3,7 @@ import { expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component, type ComputedRef, type DefineComponent } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 
-import { EmailAddressStatus, ServiceProviderSystem, type RolleResponse } from '@/api-client/generated';
+import { EmailAddressStatus, ServiceProviderSystem } from '@/api-client/generated';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore, type PersonenkontextRolleFields, type UserInfo } from '@/stores/AuthStore';
 import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
@@ -170,7 +170,7 @@ describe('PersonDetailsView', () => {
     rolleStore.rollenForPersonenkontextCreation = [
       {
         value: '54321',
-        title: 'string',
+        title: 'Lehrkraft',
         merkmale: [RollenMerkmal.KopersPflicht],
         rollenart: RollenArt.Lehr,
       },
@@ -464,8 +464,8 @@ describe('PersonDetailsView', () => {
     expect(filteredRollen).toEqual([
       {
         value: '54321',
-        title: 'string',
-        rollenart: RollenArt.Lern,
+        title: 'Lehrkraft',
+        rollenart: RollenArt.Lehr,
         merkmale: [RollenMerkmal.KopersPflicht],
       },
       {
@@ -752,8 +752,8 @@ describe('PersonDetailsView', () => {
     const rolleAutocomplete: VueWrapper | undefined = wrapper
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'rolle-select' });
-    await rolleAutocomplete?.setValue('54321');
-    rolleAutocomplete?.vm.$emit('update:search', '54321');
+    await rolleAutocomplete?.setValue('1');
+    rolleAutocomplete?.vm.$emit('update:search', '1');
     await nextTick();
     // Set klasse value
     const klasseAutocomplete: VueWrapper | undefined = wrapper
@@ -850,8 +850,8 @@ describe('PersonDetailsView', () => {
     const rolleAutocomplete: VueWrapper | undefined = wrapper
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'rolle-select' });
-    await rolleAutocomplete?.setValue('54321');
-    rolleAutocomplete?.vm.$emit('update:search', '54321');
+    await rolleAutocomplete?.setValue('1');
+    rolleAutocomplete?.vm.$emit('update:search', '1');
     await nextTick();
     // Set klasse value
     const klasseAutocomplete: VueWrapper | undefined = wrapper

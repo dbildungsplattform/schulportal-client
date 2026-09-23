@@ -989,8 +989,8 @@
   const filteredRollen: ComputedRef = computed(() => {
     const existingZuordnungen: Zuordnung[] | undefined = personStore.personenuebersicht?.zuordnungen;
 
-    // If no existing Zuordnungen then show all roles
-    if (!existingZuordnungen || existingZuordnungen.length === 0) {
+    // If no existing Zuordnungen or no organisation selected yet, show all roles.
+    if (!existingZuordnungen || existingZuordnungen.length === 0 || !selectedOrganisation.value) {
       return rolleStore.rollenForPersonenkontextCreation;
     }
 
