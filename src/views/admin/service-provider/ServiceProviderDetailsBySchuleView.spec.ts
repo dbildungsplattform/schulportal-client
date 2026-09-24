@@ -1,4 +1,4 @@
-import { DOMWrapper, VueWrapper, mount } from '@vue/test-utils';
+import { DOMWrapper, VueWrapper, enableAutoUnmount, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import type { MockInstance } from 'vitest';
 import { nextTick, type Component, type ComponentPublicInstance } from 'vue';
@@ -29,6 +29,8 @@ const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
 const authStore: AuthStore = useAuthStore();
 const rolleStore: RolleStore = useRolleStore();
 const configStore: ConfigStore = useConfigStore();
+
+enableAutoUnmount(afterAll);
 
 const mockServiceProvider: ManageableServiceProviderDetail = DoFactory.getManageableServiceProviderDetail({
   kategorie: ServiceProviderKategorie.Hinweise,
