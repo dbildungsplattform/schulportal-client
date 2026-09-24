@@ -30,7 +30,7 @@ const authStore: AuthStore = useAuthStore();
 const rolleStore: RolleStore = useRolleStore();
 const configStore: ConfigStore = useConfigStore();
 
-enableAutoUnmount(afterAll);
+enableAutoUnmount(afterEach);
 
 const mockServiceProvider: ManageableServiceProviderDetail = DoFactory.getManageableServiceProviderDetail({
   kategorie: ServiceProviderKategorie.Hinweise,

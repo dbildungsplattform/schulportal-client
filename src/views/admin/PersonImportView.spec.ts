@@ -11,7 +11,7 @@ import { RollenArt, useRolleStore, type RolleStore } from '@/stores/RolleStore';
 import { DoFactory } from 'test/DoFactory';
 import PersonImportView from './PersonImportView.vue';
 
-enableAutoUnmount(afterAll);
+enableAutoUnmount(afterEach);
 
 let wrapper: VueWrapper | null = null;
 let router: Router;

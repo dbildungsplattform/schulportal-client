@@ -37,7 +37,7 @@ let searchFilterStore: SearchFilterStore;
 let authStore: AuthStore;
 
 vi.useFakeTimers();
-enableAutoUnmount(afterAll);
+enableAutoUnmount(afterEach);
 
 function mountComponent(): VueWrapper<InstanceType<typeof PersonManagementView>> {
   return mount(PersonManagementView, {
