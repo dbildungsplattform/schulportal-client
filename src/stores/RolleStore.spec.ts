@@ -557,10 +557,14 @@ describe('rolleStore', () => {
 
   describe('getRollenForPersonenkontextCreation', () => {
     it('should load available Rollen and update state', async () => {
-      const mockResponse: RolleResponse[] = [
-        DoFactory.getRolleResponse({ name: 'b' }),
-        DoFactory.getRolleResponse({ name: 'a' }),
-      ];
+      const rolleA: RolleResponse = DoFactory.getRolleResponse({ name: 'a' });
+      const rolleB: RolleResponse = DoFactory.getRolleResponse({ name: 'b' });
+      const mockResponse: RolleControllerFindRollenAvailableForPersonAdministration200Response = {
+        limit: 2,
+        offset: 0,
+        total: 2,
+        items: [rolleB, rolleA],
+      };
       mockadapter.onGet(/\/api\/rolle\/for-personenkontext-creation/).replyOnce(200, mockResponse);
 
       const promise: Promise<void> = rolleStore.getRollenForPersonenkontextCreation({
@@ -577,8 +581,12 @@ describe('rolleStore', () => {
       await promise;
 
       expect(rolleStore.rollenForPersonenkontextCreation.length).toBe(2);
-      expect(rolleStore.rollenForPersonenkontextCreation[0]?.title).toBe('a');
-      expect(rolleStore.rollenForPersonenkontextCreation[1]?.title).toBe('b');
+      expect(rolleStore.rollenForPersonenkontextCreation[0]?.title).toBe(rolleA.name);
+      expect(rolleStore.rollenForPersonenkontextCreation[0]?.merkmale).toEqual(rolleA.merkmale);
+      expect(rolleStore.rollenForPersonenkontextCreation[0]?.rollenart).toBe(rolleA.rollenart);
+      expect(rolleStore.rollenForPersonenkontextCreation[1]?.title).toBe(rolleB.name);
+      expect(rolleStore.rollenForPersonenkontextCreation[1]?.merkmale).toEqual(rolleB.merkmale);
+      expect(rolleStore.rollenForPersonenkontextCreation[1]?.rollenart).toBe(rolleB.rollenart);
       expect(mockadapter.history.get[0]?.url).toContain('organisationId=organisation-1');
       expect(mockadapter.history.get[0]?.url).toContain('rollenIds=rolle-1');
       expect(mockadapter.history.get[0]?.url).toContain('rollenIds=rolle-2');

@@ -138,7 +138,9 @@
   });
 
   const showKlasseHint: ComputedRef<boolean> = computed(() => {
-    if (!selectedRolle.value) {return false;}
+    if (!selectedRolle.value) {
+      return false;
+    }
     return isLernRolle(selectedRolle.value, props.rollen);
   });
 

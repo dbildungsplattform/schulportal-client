@@ -408,7 +408,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
         this.loading = true;
         this.errorCode = '';
         try {
-          const { data }: { data: Array<RolleResponse> } =
+          const { data }: { data: RolleControllerFindRollenAvailableForPersonAdministration200Response } =
             await rolleApi.rolleControllerFindAvailableRollenForPersonenkontextCreation(
               params.organisationId,
               params.offset,
@@ -418,7 +418,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               params.rollenIds,
               params.systemrecht,
             );
-          this.rollenForPersonenkontextCreation = data
+          this.rollenForPersonenkontextCreation = data.items
             .map((rolle: RolleResponse) => ({
               value: rolle.id,
               title: rolle.name,
