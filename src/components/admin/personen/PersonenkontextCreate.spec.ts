@@ -9,7 +9,7 @@ import {
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import { useRolleStore, type RolleStore } from '@/stores/RolleStore';
 import { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
-import { flushPromises, VueWrapper, mount } from '@vue/test-utils';
+import { flushPromises, VueWrapper, mount, enableAutoUnmount } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
@@ -23,6 +23,7 @@ let rolleStore: RolleStore;
 const personStore: PersonStore = usePersonStore();
 const klassenFilterRef: string = 'personenkontext-create-klasse-select';
 vi.useFakeTimers();
+enableAutoUnmount(afterEach);
 
 const mountComponent = (
   props: Record<string, unknown> = {},
@@ -188,7 +189,6 @@ describe('PersonenkontextCreate', () => {
         });
 
         afterEach(() => {
-          wrapper?.unmount();
           organisationStore.$reset();
         });
 
@@ -459,7 +459,6 @@ describe('PersonenkontextCreate', () => {
         });
 
         test('it loads Rollen for the initially selected organisation without debouncing', async () => {
-          wrapper?.unmount();
           wrapper = mountComponent({
             operationContext,
             allowMultipleRollen,
@@ -487,7 +486,6 @@ describe('PersonenkontextCreate', () => {
             personId: string | undefined,
             includesRollenartOfUser: boolean,
           ) => {
-            wrapper?.unmount();
             wrapper = mountComponent({
               operationContext,
               allowMultipleRollen,
