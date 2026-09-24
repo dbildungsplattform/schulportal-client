@@ -11735,16 +11735,15 @@ export const PersonenkontextApiAxiosParamCreator = function (configuration?: Con
         /**
          * 
          * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-         * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
+         * @param {string} [personId] ID of the person to be modified
          * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
-         * @param {Array<string>} [rollenIds] IDs of the rollen.
+         * @param {Array<string>} [rollenIds] IDs of the selected rollen.
          * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
          * @param {number} [limit] The limit for the returned organisations.
-         * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        dbiamPersonenkontextWorkflowControllerProcessStep: async (operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, requestedWithSystemrecht?: RollenSystemRechtEnum, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        dbiamPersonenkontextWorkflowControllerProcessStep: async (operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'operationContext' is not null or undefined
             assertParamExists('dbiamPersonenkontextWorkflowControllerProcessStep', 'operationContext', operationContext)
             const localVarPath = `/api/personenkontext-workflow/step`;
@@ -11789,10 +11788,6 @@ export const PersonenkontextApiAxiosParamCreator = function (configuration?: Con
 
             if (limit !== undefined) {
                 localVarQueryParameter['limit'] = limit;
-            }
-
-            if (requestedWithSystemrecht !== undefined) {
-                localVarQueryParameter['requestedWithSystemrecht'] = requestedWithSystemrecht;
             }
 
 
@@ -11841,17 +11836,16 @@ export const PersonenkontextApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-         * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
+         * @param {string} [personId] ID of the person to be modified
          * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
-         * @param {Array<string>} [rollenIds] IDs of the rollen.
+         * @param {Array<string>} [rollenIds] IDs of the selected rollen.
          * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
          * @param {number} [limit] The limit for the returned organisations.
-         * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, requestedWithSystemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PersonenkontextWorkflowResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, organisationName, limit, requestedWithSystemrecht, options);
+        async dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PersonenkontextWorkflowResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, organisationName, limit, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -11887,17 +11881,16 @@ export const PersonenkontextApiFactory = function (configuration?: Configuration
         /**
          * 
          * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-         * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
+         * @param {string} [personId] ID of the person to be modified
          * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
-         * @param {Array<string>} [rollenIds] IDs of the rollen.
+         * @param {Array<string>} [rollenIds] IDs of the selected rollen.
          * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
          * @param {number} [limit] The limit for the returned organisations.
-         * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, requestedWithSystemrecht?: RollenSystemRechtEnum, options?: any): AxiosPromise<PersonenkontextWorkflowResponse> {
-            return localVarFp.dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, organisationName, limit, requestedWithSystemrecht, options).then((request) => request(axios, basePath));
+        dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, options?: any): AxiosPromise<PersonenkontextWorkflowResponse> {
+            return localVarFp.dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, organisationName, limit, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -11931,17 +11924,16 @@ export interface PersonenkontextApiInterface {
     /**
      * 
      * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-     * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
+     * @param {string} [personId] ID of the person to be modified
      * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
-     * @param {Array<string>} [rollenIds] IDs of the rollen.
+     * @param {Array<string>} [rollenIds] IDs of the selected rollen.
      * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
      * @param {number} [limit] The limit for the returned organisations.
-     * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof PersonenkontextApiInterface
      */
-    dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, requestedWithSystemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig): AxiosPromise<PersonenkontextWorkflowResponse>;
+    dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, options?: AxiosRequestConfig): AxiosPromise<PersonenkontextWorkflowResponse>;
 
 }
 
@@ -11979,18 +11971,17 @@ export class PersonenkontextApi extends BaseAPI implements PersonenkontextApiInt
     /**
      * 
      * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-     * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
+     * @param {string} [personId] ID of the person to be modified
      * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
-     * @param {Array<string>} [rollenIds] IDs of the rollen.
+     * @param {Array<string>} [rollenIds] IDs of the selected rollen.
      * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
      * @param {number} [limit] The limit for the returned organisations.
-     * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof PersonenkontextApi
      */
-    public dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, requestedWithSystemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig) {
-        return PersonenkontextApiFp(this.configuration).dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, organisationName, limit, requestedWithSystemrecht, options).then((request) => request(this.axios, this.basePath));
+    public dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, options?: AxiosRequestConfig) {
+        return PersonenkontextApiFp(this.configuration).dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, organisationName, limit, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
