@@ -11736,10 +11736,10 @@ export const PersonenkontextApiAxiosParamCreator = function (configuration?: Con
          * 
          * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
          * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
-         * @param {string} [organisationId] ID of the organisation to filter the rollen later
+         * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
          * @param {Array<string>} [rollenIds] IDs of the rollen.
          * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
-         * @param {number} [limit] The limit of items for the request.
+         * @param {number} [limit] The limit for the returned organisations.
          * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -11842,10 +11842,10 @@ export const PersonenkontextApiFp = function(configuration?: Configuration) {
          * 
          * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
          * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
-         * @param {string} [organisationId] ID of the organisation to filter the rollen later
+         * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
          * @param {Array<string>} [rollenIds] IDs of the rollen.
          * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
-         * @param {number} [limit] The limit of items for the request.
+         * @param {number} [limit] The limit for the returned organisations.
          * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -11888,10 +11888,10 @@ export const PersonenkontextApiFactory = function (configuration?: Configuration
          * 
          * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
          * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
-         * @param {string} [organisationId] ID of the organisation to filter the rollen later
+         * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
          * @param {Array<string>} [rollenIds] IDs of the rollen.
          * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
-         * @param {number} [limit] The limit of items for the request.
+         * @param {number} [limit] The limit for the returned organisations.
          * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -11932,10 +11932,10 @@ export interface PersonenkontextApiInterface {
      * 
      * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
      * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
-     * @param {string} [organisationId] ID of the organisation to filter the rollen later
+     * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
      * @param {Array<string>} [rollenIds] IDs of the rollen.
      * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
-     * @param {number} [limit] The limit of items for the request.
+     * @param {number} [limit] The limit for the returned organisations.
      * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -11980,10 +11980,10 @@ export class PersonenkontextApi extends BaseAPI implements PersonenkontextApiInt
      * 
      * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
      * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
-     * @param {string} [organisationId] ID of the organisation to filter the rollen later
+     * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
      * @param {Array<string>} [rollenIds] IDs of the rollen.
      * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
-     * @param {number} [limit] The limit of items for the request.
+     * @param {number} [limit] The limit for the returned organisations.
      * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
