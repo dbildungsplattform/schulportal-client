@@ -10,7 +10,7 @@ import type { Person } from '@/stores/types/Person';
 import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
 import type { Zuordnung } from '@/stores/types/Zuordnung';
 import { OperationType } from '@/stores/types/bulkOperationTypes';
-import { DOMWrapper, VueWrapper, flushPromises, mount } from '@vue/test-utils';
+import { DOMWrapper, VueWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { expect, test, type Mock, type MockInstance } from 'vitest';
 import {
@@ -37,6 +37,7 @@ let searchFilterStore: SearchFilterStore;
 let authStore: AuthStore;
 
 vi.useFakeTimers();
+enableAutoUnmount(afterAll);
 
 function mountComponent(): VueWrapper<InstanceType<typeof PersonManagementView>> {
   return mount(PersonManagementView, {

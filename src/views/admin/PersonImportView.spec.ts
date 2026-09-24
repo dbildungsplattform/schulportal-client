@@ -1,14 +1,17 @@
+import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { expect, test, type Mock, type MockInstance } from 'vitest';
+import { nextTick, type Component } from 'vue';
+import { createRouter, createWebHistory, type Router } from 'vue-router';
+
 import { ImportDataItemStatus, type ImportResultResponse, type ImportUploadResponse } from '@/api-client/generated';
 import routes from '@/router/routes';
 import { useImportStore, type ImportStore } from '@/stores/ImportStore';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
 import { RollenArt, useRolleStore, type RolleStore } from '@/stores/RolleStore';
-import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
-import { expect, test, type Mock, type MockInstance } from 'vitest';
-import { nextTick, type Component } from 'vue';
-import { createRouter, createWebHistory, type Router } from 'vue-router';
 import PersonImportView from './PersonImportView.vue';
+
+enableAutoUnmount(afterAll);
 
 let wrapper: VueWrapper | null = null;
 let router: Router;
