@@ -1,4 +1,4 @@
-import { RollenArt, RollenMerkmal, RollenSystemRechtEnum } from '@/api-client/generated/api';
+import { RollenArt } from '@/api-client/generated/api';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
@@ -119,21 +119,6 @@ beforeEach(async () => {
   ];
 
   personenkontextStore.workflowStepResponse = {
-    rollen: [
-      {
-        administeredBySchulstrukturknoten: '1234',
-        rollenart: RollenArt.Lehr,
-        name: 'SuS',
-        merkmale: [RollenMerkmal.KopersPflicht],
-        systemrechte: [{ name: RollenSystemRechtEnum.RollenVerwalten, isTechnical: false }],
-        createdAt: '2022',
-        updatedAt: '2022',
-        id: '54321',
-        administeredBySchulstrukturknotenName: 'Land SH',
-        administeredBySchulstrukturknotenKennung: '',
-        version: 1,
-      },
-    ],
     organisations: [
       {
         id: '9876',
