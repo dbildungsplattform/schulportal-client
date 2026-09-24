@@ -427,6 +427,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
             }))
             .sort((a: TranslatedRolleWithAttrs, b: TranslatedRolleWithAttrs) => a.title.localeCompare(b.title));
         } catch (error) {
+          this.rollenForPersonenkontextCreation = [];
           this.errorCode = getResponseErrorCode(error, 'ROLLE_ERROR');
         } finally {
           this.loading = false;

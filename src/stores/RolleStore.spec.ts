@@ -600,6 +600,7 @@ describe('rolleStore', () => {
       await rolleStore.getRollenForPersonenkontextCreation({ organisationId: 'organisation-1' });
 
       expect(rolleStore.errorCode).toBe('ROLLE_ERROR_CODE');
+      expect(rolleStore.rollenForPersonenkontextCreation).toEqual([]);
       expect(rolleStore.loading).toBe(false);
     });
 
@@ -609,6 +610,7 @@ describe('rolleStore', () => {
       await rolleStore.getRollenForPersonenkontextCreation({ organisationId: 'organisation-1' });
 
       expect(rolleStore.errorCode).toBe('ROLLE_ERROR');
+      expect(rolleStore.rollenForPersonenkontextCreation).toEqual([]);
       expect(rolleStore.loading).toBe(false);
     });
   });
