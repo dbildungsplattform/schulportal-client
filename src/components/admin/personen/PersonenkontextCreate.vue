@@ -8,6 +8,7 @@
   import {
     CreationType,
     KlassenOption,
+    LandesbediensteterWorkflowFilter,
     OperationContext,
     RolleDialogMode,
     usePersonenkontextStore,
@@ -169,7 +170,7 @@
     }
   }
 
-  async function handleWorkflowStep(filter: WorkflowFilter): Promise<void> {
+  async function handleWorkflowStep(filter: WorkflowFilter | LandesbediensteterWorkflowFilter): Promise<void> {
     const useLandesbediensteteWorkflows: boolean = props.createType === CreationType.AddPersonToOwnSchule;
 
     if (useLandesbediensteteWorkflows) {
@@ -178,8 +179,6 @@
       await personenkontextStore.processWorkflowStep({
         operationContext: props.operationContext,
         ...filter,
-        requestedWithSystemrecht:
-          props.createType === CreationType.Limited ? RollenSystemRecht.EingeschraenktNeueBenutzerErstellen : undefined,
       });
     }
 

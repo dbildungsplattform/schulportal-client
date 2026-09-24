@@ -375,7 +375,6 @@ describe('PersonenkontextCreate', () => {
             organisationId: '1133',
             personId: undefined,
             rollenIds: ['54321'],
-            requestWithSystemrecht: undefined,
             limit: 25,
           });
         });

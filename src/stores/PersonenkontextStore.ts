@@ -16,7 +16,6 @@ import {
   type LandesbediensteterApiInterface,
   type LandesbediensteterWorkflowCommitBodyParams,
   type RolleResponse,
-  type RollenSystemRechtEnum,
   type SystemRechtResponse,
 } from '../api-client/generated/api';
 import { usePersonStore, type PersonStore } from './PersonStore';
@@ -68,10 +67,16 @@ export type WorkflowFilter = {
   personId?: string;
   organisationId?: string;
   rollenIds?: string[];
+  organisationName?: string;
+  limit?: number;
+};
+
+export type LandesbediensteterWorkflowFilter = {
+  organisationId?: string;
+  rollenIds?: string[];
   rolleName?: string;
   organisationName?: string;
   limit?: number;
-  requestedWithSystemrecht?: RollenSystemRechtEnum;
 };
 
 export function mapZuordnungToPersonenkontextUpdate(
@@ -99,7 +104,7 @@ type PersonenkontextState = {
 type PersonenkontextGetters = object;
 type PersonenkontextActions = {
   processWorkflowStep: (filter: WorkflowFilter) => Promise<void>;
-  processWorkflowStepLandesbedienstete: (filter: WorkflowFilter) => Promise<void>;
+  processWorkflowStepLandesbedienstete: (filter: LandesbediensteterWorkflowFilter) => Promise<void>;
   commitLandesbediensteteKontext: (
     personId: string,
     updatedPersonenkontexte: PersonenkontextUpdate[] | undefined,
@@ -169,7 +174,6 @@ export const usePersonenkontextStore: StoreDefinition<
             filter.rollenIds,
             filter.organisationName,
             filter.limit,
-            filter.requestedWithSystemrecht,
           );
         this.workflowStepResponse = data;
       } catch (error: unknown) {
@@ -179,7 +183,7 @@ export const usePersonenkontextStore: StoreDefinition<
       }
     },
 
-    async processWorkflowStepLandesbedienstete(filter: WorkflowFilter): Promise<void> {
+    async processWorkflowStepLandesbedienstete(filter: LandesbediensteterWorkflowFilter): Promise<void> {
       this.loading = true;
       try {
         const { data }: { data: PersonenkontextWorkflowResponse } =
