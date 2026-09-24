@@ -117,11 +117,16 @@
     }
     const filter: RollenForPersonenkontextCreationQuery = {
       organisationId: selectedOrganisation.value,
-      rollenartOfUser: personStore.personenuebersicht?.zuordnungen[0]?.rollenArt,
       limit: 25,
-      systemrecht:
-        props.createType === CreationType.Limited ? RollenSystemRecht.EingeschraenktNeueBenutzerErstellen : undefined,
     };
+
+    if (props.createType === CreationType.Limited) {
+      filter.systemrecht = RollenSystemRecht.EingeschraenktNeueBenutzerErstellen;
+    }
+
+    if (props.createType === CreationType.AddPersonToOwnSchule || props.personId !== undefined) {
+      filter.rollenartOfUser = personStore.personenuebersicht?.zuordnungen[0]?.rollenArt;
+    }
 
     if (props.allowMultipleRollen) {
       filter.rollenIds = selectedRollen.value;

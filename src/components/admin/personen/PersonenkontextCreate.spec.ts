@@ -1,6 +1,11 @@
 import { RollenArt, RollenMerkmal } from '@/api-client/generated';
 import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
-import { OperationContext, usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
+import {
+  CreationType,
+  OperationContext,
+  usePersonenkontextStore,
+  type PersonenkontextStore,
+} from '@/stores/PersonenkontextStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import { useRolleStore, type RolleStore } from '@/stores/RolleStore';
 import { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
@@ -469,6 +474,45 @@ describe('PersonenkontextCreate', () => {
             }),
           );
         });
+
+        test.each([
+          [undefined, undefined, false],
+          [CreationType.Limited, undefined, false],
+          [CreationType.AddPersonToOwnSchule, undefined, true],
+          [undefined, '1', true],
+        ])(
+          'it includes rollenartOfUser for existing-person workflows (%s, personId: %s)',
+          async (
+            createType: CreationType | undefined,
+            personId: string | undefined,
+            includesRollenartOfUser: boolean,
+          ) => {
+            wrapper?.unmount();
+            wrapper = mountComponent({
+              operationContext,
+              allowMultipleRollen,
+              createType,
+              personId,
+              selectedOrganisation: '1133',
+            });
+            await flushPromises();
+
+            const getRollenForPersonenkontextCreationSpy: MockInstance = vi.mocked(
+              rolleStore.getRollenForPersonenkontextCreation,
+            );
+            if (includesRollenartOfUser) {
+              expect(getRollenForPersonenkontextCreationSpy).toHaveBeenLastCalledWith(
+                expect.objectContaining({
+                  rollenartOfUser: personStore.personenuebersicht?.zuordnungen[0]?.rollenArt,
+                }),
+              );
+            } else {
+              expect(getRollenForPersonenkontextCreationSpy).toHaveBeenLastCalledWith(
+                expect.not.objectContaining({ rollenartOfUser: expect.anything() as unknown }),
+              );
+            }
+          },
+        );
 
         test('it debounces the request when the role search input changes', async () => {
           const organisationAutocomplete: VueWrapper | undefined = wrapper
