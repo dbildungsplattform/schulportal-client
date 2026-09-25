@@ -7,7 +7,6 @@
   import FormWrapper from '@/components/form/FormWrapper.vue';
   import PasswordOutput from '@/components/form/PasswordOutput.vue';
   import { useOrganisationen } from '@/composables/useOrganisationen';
-  import { type TranslatedRolleWithAttrs, useRollen } from '@/composables/useRollen';
   import { type Organisation, type OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
   import {
     type DBiamPersonenkontextResponse,
@@ -22,13 +21,13 @@
     type PersonStore,
     usePersonStore,
   } from '@/stores/PersonStore';
-  import { RollenArt } from '@/stores/RolleStore';
+  import { RollenArt, RolleStore, TranslatedRolleWithAttrs, useRolleStore } from '@/stores/RolleStore';
   import type { Zuordnung } from '@/stores/types/Zuordnung';
   import { type TranslatedObject } from '@/types.d';
   import { type BefristungUtilsType, isBefristungspflichtRolle, useBefristungUtils } from '@/utils/befristung';
   import { formatDateToISO, getNextSchuljahresende, isValidDate, notInPast } from '@/utils/date';
   import { DDMMYYYY, DIN_91379A, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
-  import { isKopersRolle } from '@/utils/validationPersonenkontext';
+  import { isKopersRolle, isLernRolle } from '@/utils/validationPersonenkontext';
   import { toTypedSchema } from '@vee-validate/yup';
   import { type BaseFieldProps, type FormContext, type TypedSchema, useForm } from 'vee-validate';
   import { computed, type ComputedRef, onMounted, onUnmounted, ref, type Ref, watch, watchEffect } from 'vue';
@@ -51,6 +50,7 @@
   const router: Router = useRouter();
   const personStore: PersonStore = usePersonStore();
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
+  const rolleStore: RolleStore = useRolleStore();
   const { t }: Composer = useI18n({ useScope: 'global' });
 
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
@@ -71,10 +71,8 @@
   const selectedKlasseCache: Ref<TranslatedObject | undefined> = ref(undefined);
   const selectedRolleCache: Ref<string[] | undefined> = ref(undefined);
 
-  const filteredRollen: Ref<TranslatedRolleWithAttrs[] | undefined> = ref<TranslatedRolleWithAttrs[] | undefined>([]);
-  const filteredRollenCache: Ref<TranslatedRolleWithAttrs[] | undefined> = ref<TranslatedRolleWithAttrs[] | undefined>(
-    [],
-  );
+  const filteredRollen: Ref<TranslatedRolleWithAttrs[]> = ref<TranslatedRolleWithAttrs[]>([]);
+  const filteredRollenCache: Ref<TranslatedRolleWithAttrs[]> = ref<TranslatedRolleWithAttrs[]>([]);
 
   const hasPreFilled: Ref<boolean> = ref(false);
 
@@ -131,19 +129,17 @@
   });
 
   // Define a method to check if the selected Rolle is of type "Lern"
-  function isLernRolle(selectedRolleIds?: string[]): boolean | undefined {
-    if (!Array.isArray(selectedRolleIds)) {
-      return false;
-    }
-
+  function hasSelectedLernRolle(selectedRolleIds?: string[]): boolean | undefined {
     const translatedRollenWithAttrs: Array<TranslatedRolleWithAttrs> =
       filteredRollen.value && filteredRollen.value.length > 0
         ? filteredRollen.value
         : (filteredRollenCache.value ?? []);
 
-    return translatedRollenWithAttrs.some(
-      (rolle: TranslatedRolleWithAttrs) => selectedRolleIds.includes(rolle.value) && rolle.rollenart === RollenArt.Lern,
-    );
+    if (Array.isArray(selectedRolleIds)) {
+      return selectedRolleIds.some((id: string) => isLernRolle(id, translatedRollenWithAttrs));
+    } else {
+      return false;
+    }
   }
 
   const headerLabel: Ref<string> = ref(t('admin.person.addNew'));
@@ -203,7 +199,7 @@
         .required(t('admin.person.rules.familienname.required')),
       selectedOrganisation: string().required(t('admin.organisation.rules.organisation.required')),
       selectedKlasse: string().when('selectedRollen', {
-        is: (selectedRolleIds: string[]) => isLernRolle(selectedRolleIds),
+        is: (selectedRolleIds: string[]) => hasSelectedLernRolle(selectedRolleIds),
         then: (schema: StringSchema<string | undefined, AnyObject, undefined, ''>) =>
           schema.required(t('admin.klasse.rules.klasse.required')),
       }),
@@ -293,7 +289,6 @@
   setupWatchers();
   setupRolleWatcher();
 
-  const rollen: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = useRollen();
   const organisationen: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
   const organisationStore: OrganisationStore = useOrganisationStore();
 
@@ -346,7 +341,9 @@
 
     return schuleZuordnungFromCreatedKontext.value.map(
       (kontext: DBiamPersonenkontextResponse) =>
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === kontext.rolleId)?.title || '',
+        rolleStore.rollenForPersonenkontextCreation?.find(
+          (rolle: TranslatedRolleWithAttrs) => rolle.value === kontext.rolleId,
+        )?.title || '',
     );
   });
 
@@ -445,7 +442,7 @@
       selectedKlasse.value &&
       selectedRollen.value &&
       selectedRollen.value.length > 0 &&
-      isLernRolle(selectedRollen.value)
+      hasSelectedLernRolle(selectedRollen.value)
     ) {
       selectedKlasseCache.value = {
         value: selectedKlasse.value,
@@ -591,7 +588,9 @@
     (newSelectedRollen: string[] | undefined) => {
       // Decide which rollen list to use based on createType
       const baseRollen: TranslatedRolleWithAttrs[] | undefined =
-        createType.value === CreationType.AddPersonToOwnSchule ? filteredRollen.value : rollen.value;
+        createType.value === CreationType.AddPersonToOwnSchule
+          ? filteredRollen.value
+          : rolleStore.rollenForPersonenkontextCreation;
 
       if (newSelectedRollen && newSelectedRollen.length > 0) {
         const selectedRollenart: RollenArt | undefined = baseRollen?.find((rolle: TranslatedRolleWithAttrs) =>
@@ -613,47 +612,51 @@
   );
 
   // Watch the rollen and update filteredRollen based on selectedRollen... This is necessary to ensure that the filteredRollen are always in sync while the user is searching.
-  watch(rollen, async (newRollen: TranslatedRolleWithAttrs[] | undefined) => {
-    if (!newRollen) {
-      filteredRollen.value = [];
-      return;
-    }
-
-    // AddPersonToOwnSchule: only show Lehr roles for that createType
-    if (createType.value === CreationType.AddPersonToOwnSchule) {
-      const existingPerson: PersonLandesbediensteterSearchResponse | undefined =
-        personStore.allLandesbedienstetePersonen?.[0];
-      const personId: string | undefined = existingPerson?.id;
-
-      if (!personId) {
+  watch(
+    () => rolleStore.rollenForPersonenkontextCreation,
+    async (newRollen: TranslatedRolleWithAttrs[]) => {
+      if (!newRollen) {
+        filteredRollen.value = [];
         return;
       }
-      // Get latest person data
-      await personStore.getPersonenuebersichtById(personId);
-      const assignedRollenIds: Set<string> = new Set(
-        personStore.personenuebersicht?.zuordnungen
-          .filter((z: Zuordnung) => z.sskId === selectedOrganisation.value)
-          .map((z: Zuordnung) => z.rolleId) || [],
-      );
-      filteredRollen.value = newRollen.filter(
-        (rolle: TranslatedRolleWithAttrs) => rolle.rollenart === RollenArt.Lehr && !assignedRollenIds.has(rolle.value),
-      );
-      return;
-    }
 
-    // Regular filtering based on selectedRollen
-    if (!selectedRollen.value || selectedRollen.value.length === 0) {
-      filteredRollen.value = newRollen;
-    } else {
-      const selectedRollenart: RollenArt | undefined = newRollen.find((rolle: TranslatedRolleWithAttrs) =>
-        selectedRollen.value?.includes(rolle.value),
-      )?.rollenart;
+      // AddPersonToOwnSchule: only show Lehr roles for that createType
+      if (createType.value === CreationType.AddPersonToOwnSchule) {
+        const existingPerson: PersonLandesbediensteterSearchResponse | undefined =
+          personStore.allLandesbedienstetePersonen?.[0];
+        const personId: string | undefined = existingPerson?.id;
 
-      filteredRollen.value = newRollen.filter(
-        (rolle: TranslatedRolleWithAttrs) => rolle.rollenart === selectedRollenart,
-      );
-    }
-  });
+        if (!personId) {
+          return;
+        }
+        // Get latest person data
+        await personStore.getPersonenuebersichtById(personId);
+        const assignedRollenIds: Set<string> = new Set(
+          personStore.personenuebersicht?.zuordnungen
+            .filter((z: Zuordnung) => z.sskId === selectedOrganisation.value)
+            .map((z: Zuordnung) => z.rolleId) || [],
+        );
+        filteredRollen.value = newRollen.filter(
+          (rolle: TranslatedRolleWithAttrs) =>
+            rolle.rollenart === RollenArt.Lehr && !assignedRollenIds.has(rolle.value),
+        );
+        return;
+      }
+
+      // Regular filtering based on selectedRollen
+      if (!selectedRollen.value || selectedRollen.value.length === 0) {
+        filteredRollen.value = newRollen;
+      } else {
+        const selectedRollenart: RollenArt | undefined = newRollen.find((rolle: TranslatedRolleWithAttrs) =>
+          selectedRollen.value?.includes(rolle.value),
+        )?.rollenart;
+
+        filteredRollen.value = newRollen.filter(
+          (rolle: TranslatedRolleWithAttrs) => rolle.rollenart === selectedRollenart,
+        );
+      }
+    },
+  );
 
   watch(hasNoKopersNr, (newValue: boolean | undefined) => {
     if (newValue) {
@@ -885,7 +888,7 @@
                 :rollen="
                   createType === CreationType.AddPersonToOwnSchule || (filteredRollen?.length ?? 0) > 0
                     ? filteredRollen
-                    : rollen
+                    : rolleStore.rollenForPersonenkontextCreation
                 "
                 :selected-organisation-props="selectedOrganisationProps"
                 :selected-rollen-props="selectedRollenProps"
@@ -922,7 +925,9 @@
                 :create-type="createType"
                 :show-headline="true"
                 :organisationen="organisationen"
-                :rollen="(filteredRollen?.length ?? 0) > 0 ? filteredRollen : rollen"
+                :rollen="
+                  (filteredRollen?.length ?? 0) > 0 ? filteredRollen : rolleStore.rollenForPersonenkontextCreation
+                "
                 :selected-organisation-props="selectedOrganisationProps"
                 :selected-rollen-props="selectedRollenProps"
                 :selected-klasse-props="selectedKlasseProps"
@@ -1177,7 +1182,7 @@
           </v-row>
           <v-row
             v-if="
-              isLernRolle(
+              hasSelectedLernRolle(
                 klasseZuordnungFromCreatedKontext.map((kontext: DBiamPersonenkontextResponse) => kontext.rolleId),
               )
             "

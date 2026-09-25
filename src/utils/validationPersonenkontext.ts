@@ -1,9 +1,8 @@
-import { useRollen, type TranslatedRolleWithAttrs } from '@/composables/useRollen';
-import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
+import { RollenArt, RollenMerkmal, RolleStore, TranslatedRolleWithAttrs, useRolleStore } from '@/stores/RolleStore';
 import { DDMMYYYY, NO_LEADING_TRAILING_SPACES } from '@/utils/validation'; // Assuming you have this validation in place
 import { toTypedSchema } from '@vee-validate/yup';
 import { useForm, type BaseFieldProps, type TypedSchema } from 'vee-validate';
-import type { ComputedRef, Ref } from 'vue';
+import type { Ref } from 'vue';
 import { object, string, StringSchema, type AnyObject } from 'yup';
 import { isBefristungspflichtRolle } from './befristung';
 import { isValidDate, notInPast } from './date';
@@ -22,14 +21,8 @@ export type ChangeBefristungForm = {
   selectedBefristungOption: string;
 };
 
-const rollen: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = useRollen();
-
-// Define a method to check if the selected Rolle is of type "Lern"
-export function isLernRolle(selectedRolleId: string): boolean {
-  const rolle: TranslatedRolleWithAttrs | undefined = rollen.value?.find(
-    (r: TranslatedRolleWithAttrs) => r.value === selectedRolleId,
-  );
-  return !!rolle && rolle.rollenart === RollenArt.Lern;
+export function isLernRolle(selectedRolleId: string, rollen: TranslatedRolleWithAttrs[]): boolean {
+  return rollen.some((r: TranslatedRolleWithAttrs) => r.value === selectedRolleId && r.rollenart === RollenArt.Lern);
 }
 
 // Define the field properties for Personenkontext
@@ -101,12 +94,13 @@ export const getValidationSchema = (
   hasNoKopersNr: Ref<boolean | undefined>,
   hasKopersNummer: Ref<boolean>,
 ): TypedSchema<ZuordnungCreationForm> => {
+  const rolleStore: RolleStore = useRolleStore();
   return toTypedSchema(
     object({
       selectedRolle: string().required(t('admin.rolle.rules.rolle.required')),
       selectedOrganisation: string().required(t('admin.organisation.rules.organisation.required')),
       selectedKlasse: string().when('selectedRolle', {
-        is: (selectedRolleId: string) => isLernRolle(selectedRolleId), // This helper function will check if it's a learning role
+        is: (selectedRolleId: string) => isLernRolle(selectedRolleId, rolleStore.rollenForPersonenkontextCreation), // This helper function will check if it's a learning role
         then: (schema: Schema) => schema.required(t('admin.klasse.rules.klasse.required')),
       }),
       selectedNewKlasse: string().when('selectedSchule', {
@@ -119,7 +113,9 @@ export const getValidationSchema = (
         .when('selectedRolle', {
           is: (selectedRolleId: string) => {
             // Check if the selected role requires a KopersNr
-            return isKopersRolle([selectedRolleId], rollen.value) && !hasKopersNummer.value;
+            return (
+              isKopersRolle([selectedRolleId], rolleStore.rollenForPersonenkontextCreation) && !hasKopersNummer.value
+            );
           },
           // Now apply the conditional logic based on `hasNoKopersNr`
           then: (schema: StringSchema<string | undefined, AnyObject, undefined, ''>) =>

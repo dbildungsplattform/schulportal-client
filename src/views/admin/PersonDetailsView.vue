@@ -18,7 +18,6 @@
   import TokenReset from '@/components/two-factor-authentication/TokenReset.vue';
   import TwoFactorAuthenticationSetUp from '@/components/two-factor-authentication/TwoFactorAuthenticationSetUp.vue';
   import { useOrganisationen } from '@/composables/useOrganisationen';
-  import { useRollen, type TranslatedRolleWithAttrs } from '@/composables/useRollen';
   import { useAuthStore, type AuthStore, type PersonenkontextRolleFields } from '@/stores/AuthStore';
   import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
   import {
@@ -35,10 +34,8 @@
     usePersonenkontextStore,
     type PersonenkontextStore,
     type PersonenkontextUpdate,
-    type PersonenkontextWorkflowResponse,
-    type RolleResponse,
   } from '@/stores/PersonenkontextStore';
-  import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
+  import { RollenArt, RollenMerkmal, RolleStore, TranslatedRolleWithAttrs, useRolleStore } from '@/stores/RolleStore';
   import {
     StartPageServiceProvider,
     useServiceProviderStore,
@@ -63,6 +60,7 @@
     getPersonenkontextFieldDefinitions,
     getValidationSchema,
     isKopersRolle,
+    isLernRolle,
     type PersonenkontextFieldDefinitions,
   } from '@/utils/validationPersonenkontext';
   import { toTypedSchema } from '@vee-validate/yup';
@@ -110,6 +108,7 @@
   const twoFactorAuthentificationStore: TwoFactorAuthentificationStore = useTwoFactorAuthentificationStore();
   const configStore: ConfigStore = useConfigStore();
   const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
+  const rolleStore: RolleStore = useRolleStore();
 
   const devicePassword: Ref<string> = ref('');
   const password: Ref<string> = ref('');
@@ -538,7 +537,6 @@
     return result;
   }
 
-  const rollen: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = useRollen();
   const organisationen: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
   const klassen: ComputedRef<TranslatedObject[] | undefined> = computed(() => {
     // TODO: accessing the KlassenFilter this way violates encapsulation, should be refactored (see SPSH-2185)
@@ -580,31 +578,6 @@
     selectedRolle: string;
   };
 
-  // Define a method to check if the selected Rolle is of type "Lern"
-  function isLernRolle(selectedRolleId: string): boolean {
-    const rolle: TranslatedRolleWithAttrs | undefined = rollen.value?.find(
-      (r: TranslatedRolleWithAttrs) => r.value === selectedRolleId,
-    );
-    return !!rolle && rolle.rollenart === RollenArt.Lern;
-  }
-
-  async function isLernRolleForChangeKlasse(selectedRolleId: string): Promise<boolean> {
-    await personenkontextStore.processWorkflowStep({
-      personId: currentPersonId,
-      operationContext: OperationContext.PERSON_BEARBEITEN,
-      organisationId: selectedZuordnungen.value[0]?.sskId,
-      rollenIds: [selectedRolleId],
-      limit: 1,
-    });
-
-    const workflowStepResponse: PersonenkontextWorkflowResponse | null = personenkontextStore.workflowStepResponse;
-
-    const rolle: RolleResponse | undefined = workflowStepResponse?.rollen.find(
-      (r: RolleResponse) => r.id === selectedRolleId,
-    );
-    return !!rolle && rolle.rollenart === RollenArt.Lern;
-  }
-
   const hasKopersNummer: ComputedRef<boolean> = computed(() => {
     return !!personStore.currentPerson?.person.personalnummer;
   });
@@ -624,18 +597,6 @@
       (serviceProvider: StartPageServiceProvider) => serviceProvider.externalSystem === ServiceProviderSystem.Uem,
     );
   });
-
-  watch(
-    () => selectedZuordnungen.value[0]?.rolleId,
-    async (rolleId: string | undefined) => {
-      if (rolleId) {
-        isLernRolleForChangeKlasseResult.value = await isLernRolleForChangeKlasse(rolleId);
-      } else {
-        isLernRolleForChangeKlasseResult.value = false;
-      }
-    },
-    { immediate: true },
-  );
 
   const canChangeKlasse: ComputedRef<boolean> = computed(() => {
     const hasOneSelectedZuordnung: boolean = selectedZuordnungen.value.length === 1;
@@ -670,6 +631,8 @@
           limit: 25,
         });
       }
+
+      isLernRolleForChangeKlasseResult.value = newValue?.rollenArt === RollenArt.Lern;
     },
     { immediate: true }, // Run on initialization if there's already a selected Zuordnung
   );
@@ -1011,7 +974,7 @@
   // Helper function to determine the existing RollenArt
   function getExistingRollenArt(zuordnungen: Zuordnung[]): RollenArt | undefined {
     const rollenIds: string[] = zuordnungen.map((zuordnung: Zuordnung) => zuordnung.rolleId);
-    const existingRollen: TranslatedRolleWithAttrs[] | undefined = rollen.value?.filter(
+    const existingRollen: TranslatedRolleWithAttrs[] | undefined = rolleStore.rollenForPersonenkontextCreation?.filter(
       (rolle: TranslatedRolleWithAttrs) => rollenIds.includes(rolle.value),
     );
 
@@ -1026,9 +989,9 @@
   const filteredRollen: ComputedRef = computed(() => {
     const existingZuordnungen: Zuordnung[] | undefined = personStore.personenuebersicht?.zuordnungen;
 
-    // If no existing Zuordnungen then show all roles
-    if (!existingZuordnungen || existingZuordnungen.length === 0) {
-      return rollen.value;
+    // If no existing Zuordnungen or no organisation selected yet, show all roles.
+    if (!existingZuordnungen || existingZuordnungen.length === 0 || !selectedOrganisation.value) {
+      return rolleStore.rollenForPersonenkontextCreation;
     }
 
     const selectedOrgaId: string | undefined = selectedOrganisation.value;
@@ -1037,7 +1000,7 @@
     const existingRollenArt: RollenArt | undefined = getExistingRollenArt(existingZuordnungen);
 
     // Filter out Rollen that the user already has in the selected organization
-    return rollen.value?.filter((rolle: TranslatedRolleWithAttrs) => {
+    return rolleStore.rollenForPersonenkontextCreation?.filter((rolle: TranslatedRolleWithAttrs) => {
       // Check if the user already has this role in the selected organization
       const alreadyHasRolleInSelectedOrga: boolean = existingZuordnungen.some(
         (zuordnung: Zuordnung) => zuordnung.rolleId === rolle.value && zuordnung.sskId === selectedOrgaId,
@@ -1055,7 +1018,9 @@
 
   // Computed property to get the title of the selected rolle
   const selectedRolleTitle: ComputedRef<string | undefined> = computed(() => {
-    return rollen.value?.find((rolle: TranslatedObject) => rolle.value === selectedRolle.value)?.title;
+    return rolleStore.rollenForPersonenkontextCreation?.find(
+      (rolle: TranslatedObject) => rolle.value === selectedRolle.value,
+    )?.title;
   });
 
   // Computed property to get the title of the selected klasse
@@ -1106,7 +1071,7 @@
 
   const onSubmitCreateZuordnung: (e?: Event) => Promise<void | undefined> = formContext.handleSubmit(() => {
     if (selectedRolle.value) {
-      if (isLernRolle(selectedRolle.value)) {
+      if (isLernRolle(selectedRolle.value, rolleStore.rollenForPersonenkontextCreation)) {
         createZuordnungConfirmationDialogMessage.value = t('person.addZuordnungKlasseConfirmation', {
           rollenname: selectedRolleTitle.value,
           klassenname: selectedKlasseTitle.value,
@@ -1164,9 +1129,12 @@
         selectedRolle.value ?? '',
         organisation.name,
         organisation.kennung ?? '',
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)?.title || '',
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)
-          ?.rollenart as RollenArt,
+        rolleStore.rollenForPersonenkontextCreation?.find(
+          (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+        )?.title || '',
+        rolleStore.rollenForPersonenkontextCreation?.find(
+          (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+        )?.rollenart as RollenArt,
         organisation.administriertVon ?? '',
         OrganisationsTyp.Schule,
         true,
@@ -1188,9 +1156,12 @@
             selectedRolle.value ?? '',
             klasse.name,
             klasse.kennung ?? '',
-            rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)?.title || '',
-            rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)
-              ?.rollenart as RollenArt,
+            rolleStore.rollenForPersonenkontextCreation?.find(
+              (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+            )?.title || '',
+            rolleStore.rollenForPersonenkontextCreation?.find(
+              (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+            )?.rollenart as RollenArt,
             klasse.administriertVon ?? '',
             OrganisationsTyp.Klasse,
             true,
@@ -1245,10 +1216,12 @@
         selectedZuordnungen.value[0]?.rolleId ?? '',
         organisation.name,
         organisation.kennung ?? '',
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedZuordnungen.value[0]?.rolleId)
-          ?.title || '',
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)
-          ?.rollenart as RollenArt,
+        rolleStore.rollenForPersonenkontextCreation?.find(
+          (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedZuordnungen.value[0]?.rolleId,
+        )?.title || '',
+        rolleStore.rollenForPersonenkontextCreation?.find(
+          (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+        )?.rollenart as RollenArt,
         organisation.administriertVon ?? '',
         OrganisationsTyp.Schule,
         true,
@@ -1300,11 +1273,12 @@
             selectedZuordnungen.value[0]?.rolleId ?? '',
             newKlasse.name,
             newKlasse.kennung ?? '',
-            rollen.value?.find(
+            rolleStore.rollenForPersonenkontextCreation?.find(
               (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedZuordnungen.value[0]?.rolleId,
             )?.title || '',
-            rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)
-              ?.rollenart as RollenArt,
+            rolleStore.rollenForPersonenkontextCreation?.find(
+              (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+            )?.rollenart as RollenArt,
             newKlasse.administriertVon ?? '',
             OrganisationsTyp.Klasse,
             true,

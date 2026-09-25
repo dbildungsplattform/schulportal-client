@@ -1,9 +1,15 @@
-import { RollenArt, RollenMerkmal, type SystemRechtResponse } from '@/api-client/generated';
+import { RollenArt, RollenMerkmal } from '@/api-client/generated';
 import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
-import { OperationContext, usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
+import {
+  CreationType,
+  OperationContext,
+  usePersonenkontextStore,
+  type PersonenkontextStore,
+} from '@/stores/PersonenkontextStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
+import { useRolleStore, type RolleStore } from '@/stores/RolleStore';
 import { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
-import { VueWrapper, mount } from '@vue/test-utils';
+import { flushPromises, VueWrapper, mount, enableAutoUnmount } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
@@ -13,9 +19,11 @@ import PersonenkontextCreate from './PersonenkontextCreate.vue';
 let wrapper: VueWrapper | null = null;
 let personenkontextStore: PersonenkontextStore;
 let organisationStore: OrganisationStore;
+let rolleStore: RolleStore;
 const personStore: PersonStore = usePersonStore();
 const klassenFilterRef: string = 'personenkontext-create-klasse-select';
 vi.useFakeTimers();
+enableAutoUnmount(afterEach);
 
 const mountComponent = (
   props: Record<string, unknown> = {},
@@ -45,7 +53,7 @@ const mountComponent = (
         {
           value: '54329',
           title: 'Lehr',
-          merkmale: new Set<RollenMerkmal>(['KOPERS_PFLICHT']),
+          merkmale: [RollenMerkmal.KopersPflicht],
           rollenart: RollenArt.Lehr,
         },
       ],
@@ -113,23 +121,9 @@ beforeEach(() => {
   `;
   personenkontextStore = usePersonenkontextStore();
   organisationStore = useOrganisationStore();
+  rolleStore = useRolleStore();
 
   personenkontextStore.workflowStepResponse = {
-    rollen: [
-      {
-        administeredBySchulstrukturknoten: '1234',
-        rollenart: 'LERN',
-        name: 'SuS',
-        merkmale: ['KOPERS_PFLICHT'] as unknown as Set<RollenMerkmal>,
-        systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
-        createdAt: '2022',
-        updatedAt: '2022',
-        id: '54321',
-        administeredBySchulstrukturknotenName: 'Land SH',
-        administeredBySchulstrukturknotenKennung: '',
-        version: 1,
-      },
-    ],
     organisations: [
       {
         id: '1133',
@@ -195,7 +189,6 @@ describe('PersonenkontextCreate', () => {
         });
 
         afterEach(() => {
-          wrapper?.unmount();
           organisationStore.$reset();
         });
 
@@ -310,18 +303,6 @@ describe('PersonenkontextCreate', () => {
           expect(personenkontextStore.processWorkflowStep).toHaveBeenCalled();
         });
 
-        test('it updates Rollen search correctly', async () => {
-          const organisationAutocomplete: VueWrapper | undefined = wrapper
-            ?.findComponent({ ref: 'schulenFilter' })
-            .findComponent({ ref: 'personenkontext-create-organisation-select' });
-
-          await organisationAutocomplete?.setValue('org');
-          await nextTick();
-
-          await selectRolle();
-          expect(personenkontextStore.processWorkflowStep).toHaveBeenCalled();
-        });
-
         test('it does nothing if the oldValue is equal to what is selected on Organisation', async () => {
           const organisationAutocomplete: VueWrapper | undefined = wrapper
             ?.findComponent({ ref: 'schulenFilter' })
@@ -394,7 +375,6 @@ describe('PersonenkontextCreate', () => {
             organisationId: '1133',
             personId: undefined,
             rollenIds: ['54321'],
-            requestWithSystemrecht: undefined,
             limit: 25,
           });
         });
@@ -475,6 +455,114 @@ describe('PersonenkontextCreate', () => {
           // Assert that the parent component emitted the event
           expect(wrapper?.emitted('update:calculatedBefristungOption')).toBeTruthy();
           expect(wrapper?.emitted('update:calculatedBefristungOption')![0]).toEqual(['someOption']);
+        });
+
+        test('it loads Rollen for the initially selected organisation without debouncing', async () => {
+          wrapper = mountComponent({
+            operationContext,
+            allowMultipleRollen,
+            selectedOrganisation: '1133',
+          });
+          await flushPromises();
+
+          expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenCalledWith(
+            expect.objectContaining({
+              organisationId: '1133',
+              limit: 25,
+            }),
+          );
+        });
+
+        test.each([
+          [undefined, undefined, false],
+          [CreationType.Limited, undefined, false],
+          [CreationType.AddPersonToOwnSchule, undefined, true],
+          [undefined, '1', true],
+        ])(
+          'it includes rollenartOfUser for existing-person workflows (%s, personId: %s)',
+          async (
+            createType: CreationType | undefined,
+            personId: string | undefined,
+            includesRollenartOfUser: boolean,
+          ) => {
+            wrapper = mountComponent({
+              operationContext,
+              allowMultipleRollen,
+              createType,
+              personId,
+              selectedOrganisation: '1133',
+            });
+            await flushPromises();
+
+            const getRollenForPersonenkontextCreationSpy: MockInstance = vi.mocked(
+              rolleStore.getRollenForPersonenkontextCreation,
+            );
+            if (includesRollenartOfUser) {
+              expect(getRollenForPersonenkontextCreationSpy).toHaveBeenLastCalledWith(
+                expect.objectContaining({
+                  rollenartOfUser: personStore.personenuebersicht?.zuordnungen[0]?.rollenArt,
+                }),
+              );
+            } else {
+              expect(getRollenForPersonenkontextCreationSpy).toHaveBeenLastCalledWith(
+                expect.not.objectContaining({ rollenartOfUser: expect.anything() as unknown }),
+              );
+            }
+          },
+        );
+
+        test('it debounces the request when the role search input changes', async () => {
+          const organisationAutocomplete: VueWrapper | undefined = wrapper
+            ?.findComponent({ ref: 'schulenFilter' })
+            .findComponent({ ref: 'personenkontext-create-organisation-select' });
+          await organisationAutocomplete?.setValue('1133');
+          await nextTick();
+          await flushPromises();
+          vi.mocked(rolleStore.getRollenForPersonenkontextCreation).mockClear();
+
+          const rolleAutocomplete: VueWrapper | undefined = wrapper?.findComponent({
+            ref: allowMultipleRollen ? 'rollen-select' : 'rolle-select',
+          });
+          // Use a search term not matching any existing Rolle title so the filter treats it as a new search
+          rolleAutocomplete?.vm.$emit('update:search', 'Direktorin');
+          await nextTick();
+
+          expect(rolleStore.getRollenForPersonenkontextCreation).not.toHaveBeenCalled();
+
+          vi.advanceTimersByTime(500);
+          await flushPromises();
+
+          expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenCalledWith(
+            expect.objectContaining({
+              organisationId: '1133',
+              rolleName: 'Direktorin',
+            }),
+          );
+        });
+
+        test('it reloads Rollen immediately once a Rolle is selected', async () => {
+          const organisationAutocomplete: VueWrapper | undefined = wrapper
+            ?.findComponent({ ref: 'schulenFilter' })
+            .findComponent({ ref: 'personenkontext-create-organisation-select' });
+          await organisationAutocomplete?.setValue('1133');
+          await nextTick();
+          await flushPromises();
+          vi.mocked(rolleStore.getRollenForPersonenkontextCreation).mockClear();
+
+          // Set the selection directly, without touching the search input, to isolate the selection-changed branch
+          const rolleAutocomplete: VueWrapper | undefined = wrapper?.findComponent({
+            ref: allowMultipleRollen ? 'rollen-select' : 'rolle-select',
+          });
+          await rolleAutocomplete?.setValue(allowMultipleRollen ? ['54321'] : '54321');
+          await nextTick();
+          await flushPromises();
+
+          expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenCalledWith(
+            expect.objectContaining({
+              organisationId: '1133',
+              rollenIds: ['54321'],
+            }),
+          );
         });
       });
     },

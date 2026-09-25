@@ -3228,12 +3228,6 @@ export interface PersonenkontextWorkflowResponse {
      */
     'organisations': Array<OrganisationResponseLegacy>;
     /**
-     * List of available roles.
-     * @type {Array<RolleResponse>}
-     * @memberof PersonenkontextWorkflowResponse
-     */
-    'rollen': Array<RolleResponse>;
-    /**
      * Selected organisation.
      * @type {string}
      * @memberof PersonenkontextWorkflowResponse
@@ -4748,6 +4742,120 @@ export const UserExternalDataResponsePolyteiaRollenartEnum = {
 } as const;
 
 export type UserExternalDataResponsePolyteiaRollenartEnum = typeof UserExternalDataResponsePolyteiaRollenartEnum[keyof typeof UserExternalDataResponsePolyteiaRollenartEnum];
+
+/**
+ * 
+ * @export
+ * @interface UserExternalDataV2BodyParams
+ */
+export interface UserExternalDataV2BodyParams {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2BodyParams
+     */
+    'sub': string;
+    /**
+     * Unique identifier of the Angebot to check the permission for.
+     * @type {string}
+     * @memberof UserExternalDataV2BodyParams
+     */
+    'keycloakClientId': string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserExternalDataV2BodyParams
+     */
+    'includeEmailAddress'?: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface UserExternalDataV2PersonenkontextResponse
+ */
+export interface UserExternalDataV2PersonenkontextResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2PersonenkontextResponse
+     */
+    'dienststellennr': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2PersonenkontextResponse
+     */
+    'rolleId': string;
+}
+/**
+ * 
+ * @export
+ * @interface UserExternalDataV2Response
+ */
+export interface UserExternalDataV2Response {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2Response
+     */
+    'personId': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2Response
+     */
+    'vorname': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2Response
+     */
+    'nachname': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2Response
+     */
+    'rollenart'?: UserExternalDataV2ResponseRollenartEnum;
+    /**
+     * 
+     * @type {Array<UserExternalDataV2PersonenkontextResponse>}
+     * @memberof UserExternalDataV2Response
+     */
+    'personenkontexte': Array<UserExternalDataV2PersonenkontextResponse>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof UserExternalDataV2Response
+     */
+    'dienststellenNummern': Array<string>;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2Response
+     */
+    'emailAdresse'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2Response
+     */
+    'oxLoginId'?: string;
+}
+
+export const UserExternalDataV2ResponseRollenartEnum = {
+    Lern: 'LERN',
+    Lehr: 'LEHR',
+    Extern: 'EXTERN',
+    Orgadmin: 'ORGADMIN',
+    Leit: 'LEIT',
+    Sysadmin: 'SYSADMIN',
+    Sorgber: 'SORGBER',
+    Schb: 'SCHB',
+    Nlehr: 'NLEHR'
+} as const;
+
+export type UserExternalDataV2ResponseRollenartEnum = typeof UserExternalDataV2ResponseRollenartEnum[keyof typeof UserExternalDataV2ResponseRollenartEnum];
 
 /**
  * 
@@ -7543,11 +7651,14 @@ export const KeycloakinternalApiAxiosParamCreator = function (configuration?: Co
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {string} apiKey Internal API key for server-to-server communication
          * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        keycloakInternalControllerGetExternalData: async (userExternalDataBodyParams: UserExternalDataBodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        keycloakInternalControllerGetExternalData: async (apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'apiKey' is not null or undefined
+            assertParamExists('keycloakInternalControllerGetExternalData', 'apiKey', apiKey)
             // verify required parameter 'userExternalDataBodyParams' is not null or undefined
             assertParamExists('keycloakInternalControllerGetExternalData', 'userExternalDataBodyParams', userExternalDataBodyParams)
             const localVarPath = `/keycloakinternal/externaldata`;
@@ -7562,6 +7673,10 @@ export const KeycloakinternalApiAxiosParamCreator = function (configuration?: Co
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
+            if (apiKey != null) {
+                localVarHeaderParameter['api-key'] = String(apiKey);
+            }
+
 
     
             localVarHeaderParameter['Content-Type'] = 'application/json';
@@ -7570,6 +7685,49 @@ export const KeycloakinternalApiAxiosParamCreator = function (configuration?: Co
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
             localVarRequestOptions.data = serializeDataIfNeeded(userExternalDataBodyParams, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary External Data about the requested user, scoped to a single Angebot.
+         * @param {string} apiKey Internal API key for server-to-server communication
+         * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        keycloakInternalControllerGetExternalDataV2V2: async (apiKey: string, userExternalDataV2BodyParams: UserExternalDataV2BodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'apiKey' is not null or undefined
+            assertParamExists('keycloakInternalControllerGetExternalDataV2V2', 'apiKey', apiKey)
+            // verify required parameter 'userExternalDataV2BodyParams' is not null or undefined
+            assertParamExists('keycloakInternalControllerGetExternalDataV2V2', 'userExternalDataV2BodyParams', userExternalDataV2BodyParams)
+            const localVarPath = `/v2/keycloakinternal/externaldata`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (apiKey != null) {
+                localVarHeaderParameter['api-key'] = String(apiKey);
+            }
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(userExternalDataV2BodyParams, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -7589,12 +7747,25 @@ export const KeycloakinternalApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {string} apiKey Internal API key for server-to-server communication
          * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserExternalDataResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options);
+        async keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserExternalDataResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.keycloakInternalControllerGetExternalData(apiKey, userExternalDataBodyParams, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary External Data about the requested user, scoped to a single Angebot.
+         * @param {string} apiKey Internal API key for server-to-server communication
+         * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async keycloakInternalControllerGetExternalDataV2V2(apiKey: string, userExternalDataV2BodyParams: UserExternalDataV2BodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserExternalDataV2Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.keycloakInternalControllerGetExternalDataV2V2(apiKey, userExternalDataV2BodyParams, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -7610,12 +7781,24 @@ export const KeycloakinternalApiFactory = function (configuration?: Configuratio
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {string} apiKey Internal API key for server-to-server communication
          * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: any): AxiosPromise<UserExternalDataResponse> {
-            return localVarFp.keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options).then((request) => request(axios, basePath));
+        keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: any): AxiosPromise<UserExternalDataResponse> {
+            return localVarFp.keycloakInternalControllerGetExternalData(apiKey, userExternalDataBodyParams, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary External Data about the requested user, scoped to a single Angebot.
+         * @param {string} apiKey Internal API key for server-to-server communication
+         * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        keycloakInternalControllerGetExternalDataV2V2(apiKey: string, userExternalDataV2BodyParams: UserExternalDataV2BodyParams, options?: any): AxiosPromise<UserExternalDataV2Response> {
+            return localVarFp.keycloakInternalControllerGetExternalDataV2V2(apiKey, userExternalDataV2BodyParams, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -7629,12 +7812,24 @@ export interface KeycloakinternalApiInterface {
     /**
      * 
      * @summary External Data about requested in user.
+     * @param {string} apiKey Internal API key for server-to-server communication
      * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof KeycloakinternalApiInterface
      */
-    keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): AxiosPromise<UserExternalDataResponse>;
+    keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): AxiosPromise<UserExternalDataResponse>;
+
+    /**
+     * 
+     * @summary External Data about the requested user, scoped to a single Angebot.
+     * @param {string} apiKey Internal API key for server-to-server communication
+     * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof KeycloakinternalApiInterface
+     */
+    keycloakInternalControllerGetExternalDataV2V2(apiKey: string, userExternalDataV2BodyParams: UserExternalDataV2BodyParams, options?: AxiosRequestConfig): AxiosPromise<UserExternalDataV2Response>;
 
 }
 
@@ -7648,13 +7843,27 @@ export class KeycloakinternalApi extends BaseAPI implements KeycloakinternalApiI
     /**
      * 
      * @summary External Data about requested in user.
+     * @param {string} apiKey Internal API key for server-to-server communication
      * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof KeycloakinternalApi
      */
-    public keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig) {
-        return KeycloakinternalApiFp(this.configuration).keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options).then((request) => request(this.axios, this.basePath));
+    public keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig) {
+        return KeycloakinternalApiFp(this.configuration).keycloakInternalControllerGetExternalData(apiKey, userExternalDataBodyParams, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary External Data about the requested user, scoped to a single Angebot.
+     * @param {string} apiKey Internal API key for server-to-server communication
+     * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof KeycloakinternalApi
+     */
+    public keycloakInternalControllerGetExternalDataV2V2(apiKey: string, userExternalDataV2BodyParams: UserExternalDataV2BodyParams, options?: AxiosRequestConfig) {
+        return KeycloakinternalApiFp(this.configuration).keycloakInternalControllerGetExternalDataV2V2(apiKey, userExternalDataV2BodyParams, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -11526,17 +11735,15 @@ export const PersonenkontextApiAxiosParamCreator = function (configuration?: Con
         /**
          * 
          * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-         * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
-         * @param {string} [organisationId] ID of the organisation to filter the rollen later
-         * @param {Array<string>} [rollenIds] IDs of the rollen.
-         * @param {string} [rolleName] Rolle name used to filter for rollen in personenkontext.
+         * @param {string} [personId] ID of the person to be modified
+         * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
+         * @param {Array<string>} [rollenIds] IDs of the selected rollen.
          * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
-         * @param {number} [limit] The limit of items for the request.
-         * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
+         * @param {number} [limit] The limit for the returned organisations.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        dbiamPersonenkontextWorkflowControllerProcessStep: async (operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, rolleName?: string, organisationName?: string, limit?: number, requestedWithSystemrecht?: RollenSystemRechtEnum, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        dbiamPersonenkontextWorkflowControllerProcessStep: async (operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'operationContext' is not null or undefined
             assertParamExists('dbiamPersonenkontextWorkflowControllerProcessStep', 'operationContext', operationContext)
             const localVarPath = `/api/personenkontext-workflow/step`;
@@ -11575,20 +11782,12 @@ export const PersonenkontextApiAxiosParamCreator = function (configuration?: Con
                 localVarQueryParameter['rollenIds'] = rollenIds;
             }
 
-            if (rolleName !== undefined) {
-                localVarQueryParameter['rolleName'] = rolleName;
-            }
-
             if (organisationName !== undefined) {
                 localVarQueryParameter['organisationName'] = organisationName;
             }
 
             if (limit !== undefined) {
                 localVarQueryParameter['limit'] = limit;
-            }
-
-            if (requestedWithSystemrecht !== undefined) {
-                localVarQueryParameter['requestedWithSystemrecht'] = requestedWithSystemrecht;
             }
 
 
@@ -11637,18 +11836,16 @@ export const PersonenkontextApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-         * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
-         * @param {string} [organisationId] ID of the organisation to filter the rollen later
-         * @param {Array<string>} [rollenIds] IDs of the rollen.
-         * @param {string} [rolleName] Rolle name used to filter for rollen in personenkontext.
+         * @param {string} [personId] ID of the person to be modified
+         * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
+         * @param {Array<string>} [rollenIds] IDs of the selected rollen.
          * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
-         * @param {number} [limit] The limit of items for the request.
-         * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
+         * @param {number} [limit] The limit for the returned organisations.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, rolleName?: string, organisationName?: string, limit?: number, requestedWithSystemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PersonenkontextWorkflowResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, rolleName, organisationName, limit, requestedWithSystemrecht, options);
+        async dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PersonenkontextWorkflowResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, organisationName, limit, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -11684,18 +11881,16 @@ export const PersonenkontextApiFactory = function (configuration?: Configuration
         /**
          * 
          * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-         * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
-         * @param {string} [organisationId] ID of the organisation to filter the rollen later
-         * @param {Array<string>} [rollenIds] IDs of the rollen.
-         * @param {string} [rolleName] Rolle name used to filter for rollen in personenkontext.
+         * @param {string} [personId] ID of the person to be modified
+         * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
+         * @param {Array<string>} [rollenIds] IDs of the selected rollen.
          * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
-         * @param {number} [limit] The limit of items for the request.
-         * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
+         * @param {number} [limit] The limit for the returned organisations.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, rolleName?: string, organisationName?: string, limit?: number, requestedWithSystemrecht?: RollenSystemRechtEnum, options?: any): AxiosPromise<PersonenkontextWorkflowResponse> {
-            return localVarFp.dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, rolleName, organisationName, limit, requestedWithSystemrecht, options).then((request) => request(axios, basePath));
+        dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, options?: any): AxiosPromise<PersonenkontextWorkflowResponse> {
+            return localVarFp.dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, organisationName, limit, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -11729,18 +11924,16 @@ export interface PersonenkontextApiInterface {
     /**
      * 
      * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-     * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
-     * @param {string} [organisationId] ID of the organisation to filter the rollen later
-     * @param {Array<string>} [rollenIds] IDs of the rollen.
-     * @param {string} [rolleName] Rolle name used to filter for rollen in personenkontext.
+     * @param {string} [personId] ID of the person to be modified
+     * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
+     * @param {Array<string>} [rollenIds] IDs of the selected rollen.
      * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
-     * @param {number} [limit] The limit of items for the request.
-     * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
+     * @param {number} [limit] The limit for the returned organisations.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof PersonenkontextApiInterface
      */
-    dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, rolleName?: string, organisationName?: string, limit?: number, requestedWithSystemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig): AxiosPromise<PersonenkontextWorkflowResponse>;
+    dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, options?: AxiosRequestConfig): AxiosPromise<PersonenkontextWorkflowResponse>;
 
 }
 
@@ -11778,19 +11971,17 @@ export class PersonenkontextApi extends BaseAPI implements PersonenkontextApiInt
     /**
      * 
      * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-     * @param {string} [personId] ID of the person to be modified, will restrict the returned roles
-     * @param {string} [organisationId] ID of the organisation to filter the rollen later
-     * @param {Array<string>} [rollenIds] IDs of the rollen.
-     * @param {string} [rolleName] Rolle name used to filter for rollen in personenkontext.
+     * @param {string} [personId] ID of the person to be modified
+     * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
+     * @param {Array<string>} [rollenIds] IDs of the selected rollen.
      * @param {string} [organisationName] Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.
-     * @param {number} [limit] The limit of items for the request.
-     * @param {RollenSystemRechtEnum} [requestedWithSystemrecht] The systemrecht used to filter for rollen in personenkontext. Must be one of PERSONEN_VERWALTEN, PERSONEN_ANLEGEN or EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN. Defaults to PERSONEN_VERWALTEN
+     * @param {number} [limit] The limit for the returned organisations.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof PersonenkontextApi
      */
-    public dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, rolleName?: string, organisationName?: string, limit?: number, requestedWithSystemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig) {
-        return PersonenkontextApiFp(this.configuration).dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, rolleName, organisationName, limit, requestedWithSystemrecht, options).then((request) => request(this.axios, this.basePath));
+    public dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, organisationName?: string, limit?: number, options?: AxiosRequestConfig) {
+        return PersonenkontextApiFp(this.configuration).dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, organisationName, limit, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -13221,6 +13412,81 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
             };
         },
         /**
+         * Find available rollen for personenkontext creation.
+         * @summary 
+         * @param {string} organisationId The organisationId for which the available rollen should be found
+         * @param {number} [offset] The offset of the paginated list.
+         * @param {number} [limit] The requested limit for the page size.
+         * @param {RollenArt} [rollenartOfUser] The rollenart of the user for which the available rollen should be found
+         * @param {string} [rolleName] The rolleName for which the available rollen should be found
+         * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
+         * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        rolleControllerFindAvailableRollenForPersonenkontextCreation: async (organisationId: string, offset?: number, limit?: number, rollenartOfUser?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'organisationId' is not null or undefined
+            assertParamExists('rolleControllerFindAvailableRollenForPersonenkontextCreation', 'organisationId', organisationId)
+            const localVarPath = `/api/rolle/for-personenkontext-creation`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            // authentication oauth2 required
+            // oauth required
+            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
+
+            if (offset !== undefined) {
+                localVarQueryParameter['offset'] = offset;
+            }
+
+            if (limit !== undefined) {
+                localVarQueryParameter['limit'] = limit;
+            }
+
+            if (organisationId !== undefined) {
+                localVarQueryParameter['organisationId'] = organisationId;
+            }
+
+            if (rollenartOfUser !== undefined) {
+                localVarQueryParameter['rollenartOfUser'] = rollenartOfUser;
+            }
+
+            if (rolleName !== undefined) {
+                localVarQueryParameter['rolleName'] = rolleName;
+            }
+
+            if (rollenIds) {
+                localVarQueryParameter['rollenIds'] = rollenIds;
+            }
+
+            if (systemrecht !== undefined) {
+                localVarQueryParameter['systemrecht'] = systemrecht;
+            }
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * Get rolle by id.
          * @summary 
          * @param {string} rolleId The id for the rolle.
@@ -13699,6 +13965,23 @@ export const RolleApiFp = function(configuration?: Configuration) {
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
+         * Find available rollen for personenkontext creation.
+         * @summary 
+         * @param {string} organisationId The organisationId for which the available rollen should be found
+         * @param {number} [offset] The offset of the paginated list.
+         * @param {number} [limit] The requested limit for the page size.
+         * @param {RollenArt} [rollenartOfUser] The rollenart of the user for which the available rollen should be found
+         * @param {string} [rolleName] The rolleName for which the available rollen should be found
+         * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
+         * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartOfUser?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartOfUser, rolleName, rollenIds, systemrecht, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
          * Get rolle by id.
          * @summary 
          * @param {string} rolleId The id for the rolle.
@@ -13855,6 +14138,22 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
             return localVarFp.rolleControllerDeleteRolle(rolleId, options).then((request) => request(axios, basePath));
         },
         /**
+         * Find available rollen for personenkontext creation.
+         * @summary 
+         * @param {string} organisationId The organisationId for which the available rollen should be found
+         * @param {number} [offset] The offset of the paginated list.
+         * @param {number} [limit] The requested limit for the page size.
+         * @param {RollenArt} [rollenartOfUser] The rollenart of the user for which the available rollen should be found
+         * @param {string} [rolleName] The rolleName for which the available rollen should be found
+         * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
+         * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartOfUser?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: any): AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response> {
+            return localVarFp.rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartOfUser, rolleName, rollenIds, systemrecht, options).then((request) => request(axios, basePath));
+        },
+        /**
          * Get rolle by id.
          * @summary 
          * @param {string} rolleId The id for the rolle.
@@ -14000,6 +14299,22 @@ export interface RolleApiInterface {
      * @memberof RolleApiInterface
      */
     rolleControllerDeleteRolle(rolleId: string, options?: AxiosRequestConfig): AxiosPromise<void>;
+
+    /**
+     * Find available rollen for personenkontext creation.
+     * @summary 
+     * @param {string} organisationId The organisationId for which the available rollen should be found
+     * @param {number} [offset] The offset of the paginated list.
+     * @param {number} [limit] The requested limit for the page size.
+     * @param {RollenArt} [rollenartOfUser] The rollenart of the user for which the available rollen should be found
+     * @param {string} [rolleName] The rolleName for which the available rollen should be found
+     * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
+     * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof RolleApiInterface
+     */
+    rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartOfUser?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig): AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response>;
 
     /**
      * Get rolle by id.
@@ -14154,6 +14469,24 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
      */
     public rolleControllerDeleteRolle(rolleId: string, options?: AxiosRequestConfig) {
         return RolleApiFp(this.configuration).rolleControllerDeleteRolle(rolleId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Find available rollen for personenkontext creation.
+     * @summary 
+     * @param {string} organisationId The organisationId for which the available rollen should be found
+     * @param {number} [offset] The offset of the paginated list.
+     * @param {number} [limit] The requested limit for the page size.
+     * @param {RollenArt} [rollenartOfUser] The rollenart of the user for which the available rollen should be found
+     * @param {string} [rolleName] The rolleName for which the available rollen should be found
+     * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
+     * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof RolleApi
+     */
+    public rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartOfUser?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig) {
+        return RolleApiFp(this.configuration).rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartOfUser, rolleName, rollenIds, systemrecht, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

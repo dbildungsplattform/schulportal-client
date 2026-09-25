@@ -1,5 +1,9 @@
-import { EmailAddressStatus, ServiceProviderSystem, type SystemRechtResponse } from '@/api-client/generated';
-import type { TranslatedRolleWithAttrs } from '@/composables/useRollen';
+import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { expect, test, type MockInstance } from 'vitest';
+import { nextTick, type Component, type ComputedRef, type DefineComponent } from 'vue';
+import { createRouter, createWebHistory, type Router } from 'vue-router';
+
+import { EmailAddressStatus, ServiceProviderSystem } from '@/api-client/generated';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore, type PersonenkontextRolleFields, type UserInfo } from '@/stores/AuthStore';
 import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
@@ -11,7 +15,14 @@ import {
 } from '@/stores/OrganisationStore';
 import { usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
 import { usePersonStore, type Personendatensatz, type PersonStore } from '@/stores/PersonStore';
-import { RollenArt, RollenMerkmal, useRolleStore, type Rolle, type RolleStore } from '@/stores/RolleStore';
+import {
+  RollenArt,
+  RollenMerkmal,
+  useRolleStore,
+  type Rolle,
+  type RolleStore,
+  type TranslatedRolleWithAttrs,
+} from '@/stores/RolleStore';
 import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
 import {
   useTwoFactorAuthentificationStore,
@@ -21,11 +32,7 @@ import type { Person } from '@/stores/types/Person';
 import { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
 import { adjustDateForTimezoneAndFormat } from '@/utils/date';
 import { parseUserLock, PersonLockOccasion, type UserLock } from '@/utils/lock';
-import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
-import { expect, test, type MockInstance } from 'vitest';
-import { nextTick, type Component, type ComputedRef, type DefineComponent } from 'vue';
-import { createRouter, createWebHistory, type Router } from 'vue-router';
 import PersonDetailsView from './PersonDetailsView.vue';
 
 let wrapper: VueWrapper | null = null;
@@ -160,6 +167,21 @@ describe('PersonDetailsView', () => {
     rolleStore.$reset();
     serviceProviderStore.$reset();
 
+    rolleStore.rollenForPersonenkontextCreation = [
+      {
+        value: '54321',
+        title: 'Lehrkraft',
+        merkmale: [RollenMerkmal.KopersPflicht],
+        rollenart: RollenArt.Lehr,
+      },
+      {
+        value: '1',
+        title: 'SuS',
+        merkmale: [RollenMerkmal.BefristungPflicht],
+        rollenart: RollenArt.Lern,
+      },
+    ];
+
     personenkontextStore.workflowStepResponse = {
       organisations: [
         {
@@ -170,34 +192,6 @@ describe('PersonDetailsView', () => {
           namensergaenzung: 'string',
           kuerzel: 'string',
           typ: 'ROOT',
-        },
-      ],
-      rollen: [
-        {
-          id: '54321',
-          createdAt: '2024-06-25T13:03:53.802Z',
-          updatedAt: '2024-06-25T13:03:53.802Z',
-          name: 'string',
-          administeredBySchulstrukturknoten: 'string',
-          rollenart: 'LERN',
-          merkmale: [RollenMerkmal.KopersPflicht],
-          systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
-          administeredBySchulstrukturknotenName: 'Land SH',
-          administeredBySchulstrukturknotenKennung: '',
-          version: 1,
-        },
-        {
-          id: '1',
-          createdAt: '2024-06-25T13:03:53.802Z',
-          updatedAt: '2024-06-25T13:03:53.802Z',
-          name: 'SuS',
-          administeredBySchulstrukturknoten: '1',
-          rollenart: 'LERN',
-          merkmale: [RollenMerkmal.BefristungPflicht],
-          systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
-          administeredBySchulstrukturknotenName: 'Land SH',
-          administeredBySchulstrukturknotenKennung: '',
-          version: 1,
         },
       ],
       selectedOrganisation: 'string',
@@ -470,8 +464,8 @@ describe('PersonDetailsView', () => {
     expect(filteredRollen).toEqual([
       {
         value: '54321',
-        title: 'string',
-        rollenart: RollenArt.Lern,
+        title: 'Lehrkraft',
+        rollenart: RollenArt.Lehr,
         merkmale: [RollenMerkmal.KopersPflicht],
       },
       {
@@ -758,8 +752,8 @@ describe('PersonDetailsView', () => {
     const rolleAutocomplete: VueWrapper | undefined = wrapper
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'rolle-select' });
-    await rolleAutocomplete?.setValue('54321');
-    rolleAutocomplete?.vm.$emit('update:search', '54321');
+    await rolleAutocomplete?.setValue('1');
+    rolleAutocomplete?.vm.$emit('update:search', '1');
     await nextTick();
     // Set klasse value
     const klasseAutocomplete: VueWrapper | undefined = wrapper
@@ -856,8 +850,8 @@ describe('PersonDetailsView', () => {
     const rolleAutocomplete: VueWrapper | undefined = wrapper
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'rolle-select' });
-    await rolleAutocomplete?.setValue('54321');
-    rolleAutocomplete?.vm.$emit('update:search', '54321');
+    await rolleAutocomplete?.setValue('1');
+    rolleAutocomplete?.vm.$emit('update:search', '1');
     await nextTick();
     // Set klasse value
     const klasseAutocomplete: VueWrapper | undefined = wrapper
