@@ -257,7 +257,9 @@ describe('ServiceProviderDetailsBySchuleView', () => {
 
     test('requests rollen without MPT systemrecht when the user lacks the permission', async () => {
       authStore.hasMptRollenZuordnenPermission = false;
-      const getRollenSpy: MockInstance = vi.spyOn(rolleStore, 'getRollenAvailableForErweiterung').mockResolvedValue(undefined);
+      const getRollenSpy: MockInstance = vi
+        .spyOn(rolleStore, 'getRollenAvailableForErweiterung')
+        .mockResolvedValue(undefined);
       await nextTick();
 
       await wrapper?.find('[data-testid="rollenerweiterung-bearbeiten-button"]').trigger('click');
@@ -272,7 +274,9 @@ describe('ServiceProviderDetailsBySchuleView', () => {
 
     test('requests rollen including MPT systemrecht when the user has the permission', async () => {
       authStore.hasMptRollenZuordnenPermission = true;
-      const getRollenSpy: MockInstance = vi.spyOn(rolleStore, 'getRollenAvailableForErweiterung').mockResolvedValue(undefined);
+      const getRollenSpy: MockInstance = vi
+        .spyOn(rolleStore, 'getRollenAvailableForErweiterung')
+        .mockResolvedValue(undefined);
       await nextTick();
 
       await wrapper?.find('[data-testid="rollenerweiterung-bearbeiten-button"]').trigger('click');
