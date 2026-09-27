@@ -158,16 +158,14 @@ describe('rolleStore', () => {
         offset: 0,
         limit: 30,
         searchString: '',
-        organisationContextForOperation: 'org1',
-        organisationenForFilter: ['org2', 'org3'],
+        organisationIds: ['org2', 'org3'],
         merkmale: [RollenMerkmal.KopersPflicht],
         serviceProviderIds: ['sp1', 'sp2'],
       });
 
       const requestedUrl: string = mockadapter.history.get[0]!.url!;
-      expect(requestedUrl).toContain('organisationContextForOperation=org1');
-      expect(requestedUrl).toContain('organisationenForFilter=org2');
-      expect(requestedUrl).toContain('organisationenForFilter=org3');
+      expect(requestedUrl).toContain('organisationIds=org2');
+      expect(requestedUrl).toContain('organisationIds=org3');
       expect(requestedUrl).toContain(`merkmale=${RollenMerkmal.KopersPflicht}`);
       expect(requestedUrl).toContain('serviceProviderIds=sp1');
       expect(requestedUrl).toContain('serviceProviderIds=sp2');
@@ -236,7 +234,7 @@ describe('rolleStore', () => {
         items: [DoFactory.getRolleResponse()],
       };
 
-      mockadapter.onGet(/^\/api\/rolle\/for-person-administration/).replyOnce(200, mockResponse);
+      mockadapter.onGet(/^\/api\/rolle\/available-for-person-administration/).replyOnce(200, mockResponse);
 
       const getRollenForPersonAdministrationPromise: Promise<void> = rolleStore.getRollenForPersonAdministration({
         searchStr: 'Lehr',
@@ -259,7 +257,7 @@ describe('rolleStore', () => {
     });
 
     it('should pass all filter params to the person administration endpoint', async () => {
-      mockadapter.onGet(/^\/api\/rolle\/for-person-administration/).replyOnce(200, [], {});
+      mockadapter.onGet(/^\/api\/rolle\/available-for-person-administration/).replyOnce(200, [], {});
 
       await rolleStore.getRollenForPersonAdministration({
         searchStr: 'SuS',
@@ -281,7 +279,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle error when loading rollen for person administration', async () => {
-      mockadapter.onGet(/^\/api\/rolle\/for-person-administration/).replyOnce(500, 'some mock server error');
+      mockadapter.onGet(/^\/api\/rolle\/available-for-person-administration/).replyOnce(500, 'some mock server error');
 
       const getRollenForPersonAdministrationPromise: Promise<void> = rolleStore.getRollenForPersonAdministration({
         searchStr: '',
@@ -321,9 +319,9 @@ describe('rolleStore', () => {
       await promise;
 
       const requestUrl: string = mockadapter.history.get[0]?.url ?? '';
-      expect(requestUrl).toContain('organisationenForFilter=organisation-1');
+      expect(requestUrl).toContain('/api/rolle/available-for-mpt-zuordnung');
+      expect(requestUrl).toContain('organisationIds=organisation-1');
       expect(requestUrl).toContain(`rolleIds=${rolle.id}`);
-      expect(requestUrl).toContain('systemrechte=MPT_ROLLEN_ZUORDNEN');
       expect(rolleStore.currentMptRolle?.id).toBe(rolle.id);
       expect(rolleStore.errorCode).toBe('');
       expect(rolleStore.loading).toBe(false);

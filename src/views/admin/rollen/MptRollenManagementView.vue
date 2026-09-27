@@ -75,12 +75,11 @@
       return;
     }
 
-    await rolleStore.getAllRollen({
+    await rolleStore.getRollenForMptZuordnung({
       offset: (searchFilterStore.mptRollenPage - 1) * searchFilterStore.mptRollenPerPage,
       limit: searchFilterStore.mptRollenPerPage,
       searchString: '',
-      organisationenForFilter: [selectedOrganisationId.value],
-      systemrechte: [RollenSystemRechtEnum.MptRollenZuordnen],
+      organisationIds: [selectedOrganisationId.value],
     });
   }
 
