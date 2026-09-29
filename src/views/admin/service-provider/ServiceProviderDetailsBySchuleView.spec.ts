@@ -84,6 +84,7 @@ beforeEach(async () => {
     schulischeAngeboteErstellen: true,
   };
   authStore.hasRollenerweiternPermission = true;
+  authStore.hasMptRollenZuordnenPermission = false;
   configStore.configData = { schulischeAngeboteErstellen: true } as FeatureFlagResponse;
 
   rolleStore.allRollen = [
@@ -252,6 +253,36 @@ describe('ServiceProviderDetailsBySchuleView', () => {
       await nextTick();
 
       expect(wrapper?.find('[data-testid="rollenerweiterung-bearbeiten-button"]').exists()).toBe(false);
+    });
+
+    test('requests rollen without MPT systemrecht when the user lacks the permission', async () => {
+      authStore.hasMptRollenZuordnenPermission = false;
+      const getAllRollenSpy: MockInstance = vi.spyOn(rolleStore, 'getAllRollen').mockResolvedValue(undefined);
+      await nextTick();
+
+      await wrapper?.find('[data-testid="rollenerweiterung-bearbeiten-button"]').trigger('click');
+      await nextTick();
+
+      expect(getAllRollenSpy).toHaveBeenCalledWith({
+        organisationContextForOperation: 'some-org-id',
+        rollenarten: mockServiceProvider.rollenartenWhitelist,
+        systemrechte: [RollenSystemRechtEnum.RollenErweitern],
+      });
+    });
+
+    test('requests rollen including MPT systemrecht when the user has the permission', async () => {
+      authStore.hasMptRollenZuordnenPermission = true;
+      const getAllRollenSpy: MockInstance = vi.spyOn(rolleStore, 'getAllRollen').mockResolvedValue(undefined);
+      await nextTick();
+
+      await wrapper?.find('[data-testid="rollenerweiterung-bearbeiten-button"]').trigger('click');
+      await nextTick();
+
+      expect(getAllRollenSpy).toHaveBeenCalledWith({
+        organisationContextForOperation: 'some-org-id',
+        rollenarten: mockServiceProvider.rollenartenWhitelist,
+        systemrechte: [RollenSystemRechtEnum.RollenErweitern, RollenSystemRechtEnum.MptRollenZuordnen],
+      });
     });
 
     test('shows existing rollenerweiterungen as chips in read-only mode', async () => {

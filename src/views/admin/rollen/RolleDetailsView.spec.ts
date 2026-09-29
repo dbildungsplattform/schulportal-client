@@ -231,6 +231,9 @@ describe('RolleDetailsView', () => {
     );
     getAssignableServiceProvidersSpy.mockClear(); // Clear the mock call history before the assertion
     await mountComponent();
-    expect(getAssignableServiceProvidersSpy).toHaveBeenCalledWith(rolle.administeredBySchulstrukturknoten);
+    expect(getAssignableServiceProvidersSpy).toHaveBeenCalledWith(
+      rolle.administeredBySchulstrukturknoten,
+      rolle.rollenart,
+    );
   });
 });

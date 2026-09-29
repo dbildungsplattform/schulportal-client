@@ -19,17 +19,19 @@ import {
   type ProviderControllerFindRollenerweiterungenByServiceProviderId200Response,
   RollenArt,
   type RollenerweiterungWithExtendedDataResponse,
-  RollenMerkmal,
   RollenSystemRechtEnum,
   type RollenSystemRechtServiceProviderIDResponse,
   ServiceProviderKategorie,
   type ServiceProviderResponse,
   ServiceProviderTarget,
-  type SystemRechtResponse,
   TraegerschaftTyp,
   type UserinfoResponse,
 } from '@/api-client/generated';
-import { PersonenkontextWorkflowResponse, ServiceProviderMerkmal } from '@/api-client/generated/api';
+import {
+  PersonenkontextWorkflowResponse,
+  ServiceProviderMerkmal,
+  ServiceProviderSystem,
+} from '@/api-client/generated/api';
 import type { Organisation } from '@/stores/OrganisationStore';
 import { type Personendatensatz } from '@/stores/PersonStore';
 import type { Rolle, RolleResponse, RolleWithServiceProvidersResponse } from '@/stores/RolleStore';
@@ -316,8 +318,8 @@ export class DoFactory {
       administeredBySchulstrukturknotenName: faker.string.alpha(4),
       administeredBySchulstrukturknotenKennung: faker.string.alpha(4),
       rollenart: RollenArt.Lehr,
-      merkmale: new Set<RollenMerkmal>(),
-      systemrechte: new Set<SystemRechtResponse>(),
+      merkmale: [],
+      systemrechte: [],
       version: 1,
       serviceProviders: [],
       ...props,
@@ -329,7 +331,7 @@ export class DoFactory {
       administeredBySchulstrukturknoten: faker.string.uuid(),
       id: faker.string.uuid(),
       name: faker.string.alpha(4),
-      merkmale: new Set<RollenMerkmal>(),
+      merkmale: [],
       rollenart: RollenArt.Lehr,
       systemrechte: new Set<RollenSystemRechtEnum>(),
       version: 1,
@@ -342,8 +344,8 @@ export class DoFactory {
       ...this.getRolle(),
       createdAt: faker.date.past().toISOString(),
       updatedAt: faker.date.recent().toISOString(),
-      merkmale: new Set<RollenMerkmal>(),
-      systemrechte: new Set<SystemRechtResponse>(),
+      merkmale: [],
+      systemrechte: [],
       administeredBySchulstrukturknotenName: this.getFakeSchuleName(),
       administeredBySchulstrukturknotenKennung: faker.string.numeric(7),
       ...props,
@@ -470,6 +472,7 @@ export class DoFactory {
       requires2fa: false,
       merkmale: [],
       rollenartenWhitelist: [],
+      externalSystem: faker.helpers.enumValue(ServiceProviderSystem),
       ...props,
     };
   }

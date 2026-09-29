@@ -221,9 +221,10 @@ describe('RolleCreationView', () => {
     expect(getAssignableServiceProvidersSpy).not.toHaveBeenCalled();
     await fillForm({
       organisation: organisationObject.id,
+      rollenart: mockRolle.rollenart,
     });
     await flushPromises();
-    expect(getAssignableServiceProvidersSpy).toHaveBeenCalledWith(organisationObject.id);
+    expect(getAssignableServiceProvidersSpy).toHaveBeenCalledWith(organisationObject.id, mockRolle.rollenart);
   });
 
   test('it fills form and triggers dirty warning', async () => {

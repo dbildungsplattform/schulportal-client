@@ -5,7 +5,8 @@
   max-height: 40px !important;
 }
 
-.rolle-treeview {
+.rolle-treeview,
+.angebot-selection-tree {
   .v-list-group:has([data-scrollable]) .v-list-group__items {
     max-height: 400px;
     overflow-y: scroll !important;

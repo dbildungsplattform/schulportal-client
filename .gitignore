@@ -7,6 +7,11 @@ src/api-client/storageDir
 .github/skills
 .github/prompts
 
+# Environment variables
+.env
+.env.local
+.env.mcp
+
 # Logs
 logs
 *.log

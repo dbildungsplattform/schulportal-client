@@ -28,6 +28,8 @@ const authStore: AuthStore = useAuthStore();
 const rolleStore: RolleStore = useRolleStore();
 const configStore: ConfigStore = useConfigStore();
 
+enableAutoUnmount(afterEach);
+
 const mockServiceProvider: ManageableServiceProviderDetail = DoFactory.getManageableServiceProviderDetail({
   kategorie: ServiceProviderKategorie.Schulisch,
   availableForRollenerweiterung: true,
@@ -109,6 +111,7 @@ afterEach(() => {
   vi.clearAllTimers();
   vi.useRealTimers();
   wrapper?.unmount();
+  wrapper = null;
 });
 
 describe('ServiceProviderDetailsView', () => {

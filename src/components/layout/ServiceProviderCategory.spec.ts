@@ -61,6 +61,11 @@ beforeEach(() => {
   });
 });
 
+afterEach(() => {
+  wrapper?.unmount();
+  wrapper = null;
+});
+
 describe('ServiceProviderCategory.vue', () => {
   test('renders a ServiceProviderCard for each service provider with correct href', () => {
     // eslint-disable-next-line @typescript-eslint/typedef

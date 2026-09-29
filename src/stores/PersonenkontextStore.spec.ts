@@ -1,9 +1,4 @@
-import {
-  OrganisationsTyp,
-  type DBiamPersonenkontextResponse,
-  type FindRollenResponse,
-  type RolleResponse,
-} from '@/api-client/generated';
+import { OrganisationsTyp, type DBiamPersonenkontextResponse } from '@/api-client/generated';
 import axiosApiInstance from '@/services/ApiService';
 import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
@@ -372,62 +367,6 @@ describe('PersonenkontextStore', () => {
       expect(personenkontextStore.loading).toBe(true);
       await updatePersonenkontextePromise;
       expect(personenkontextStore.errorCode).toEqual('SOME_MOCK_SERVER_ERROR');
-      expect(personenkontextStore.loading).toBe(false);
-    });
-  });
-
-  describe('getPersonenkontextRolleWithFilter', () => {
-    it('should get filtered Rollen', async () => {
-      const moeglicheRollen: RolleResponse[] = [DoFactory.getRolleResponse(), DoFactory.getRolleResponse()];
-      const mockResponse: FindRollenResponse = {
-        moeglicheRollen,
-        total: moeglicheRollen.length,
-      };
-
-      mockadapter.onGet('/api/person-administration/rollen?rolleName=str&limit=2').replyOnce(200, mockResponse);
-      const getPersonenkontextRolleWithFilterPromise: Promise<void> =
-        personenkontextStore.getPersonenkontextRolleWithFilter('str', 2);
-      expect(personenkontextStore.loading).toBe(true);
-      await getPersonenkontextRolleWithFilterPromise;
-      expect(personenkontextStore.filteredRollen?.moeglicheRollen).toMatchObject(
-        mockResponse.moeglicheRollen.map((rr: RolleResponse) => ({
-          id: rr.id,
-          createdAt: rr.createdAt,
-          updatedAt: rr.updatedAt,
-          name: rr.name,
-          administeredBySchulstrukturknoten: rr.administeredBySchulstrukturknoten,
-          rollenart: rr.rollenart,
-          administeredBySchulstrukturknotenName: rr.administeredBySchulstrukturknotenName,
-          administeredBySchulstrukturknotenKennung: rr.administeredBySchulstrukturknotenKennung,
-          version: rr.version,
-        })),
-      );
-      expect(personenkontextStore.filteredRollen?.total).toEqual(mockResponse.total);
-      expect(personenkontextStore.totalFilteredRollen).toEqual(moeglicheRollen.length);
-      expect(personenkontextStore.loading).toBe(false);
-    });
-
-    it('should handle string error', async () => {
-      mockadapter
-        .onGet('/api/person-administration/rollen?rolleName=str&limit=2')
-        .replyOnce(500, 'some mock server error');
-      const getPersonenkontextRolleWithFilterPromise: Promise<void> =
-        personenkontextStore.getPersonenkontextRolleWithFilter('str', 2);
-      expect(personenkontextStore.loading).toBe(true);
-      await getPersonenkontextRolleWithFilterPromise;
-      expect(personenkontextStore.errorCode).toEqual('UNSPECIFIED_ERROR');
-      expect(personenkontextStore.loading).toBe(false);
-    });
-
-    it('should handle error code', async () => {
-      mockadapter
-        .onGet('/api/person-administration/rollen?rolleName=str&limit=2')
-        .replyOnce(500, { code: 'some mock server error' });
-      const getPersonenkontextRolleWithFilterPromise: Promise<void> =
-        personenkontextStore.getPersonenkontextRolleWithFilter('str', 2);
-      expect(personenkontextStore.loading).toBe(true);
-      await getPersonenkontextRolleWithFilterPromise;
-      expect(personenkontextStore.errorCode).toEqual('some mock server error');
       expect(personenkontextStore.loading).toBe(false);
     });
   });

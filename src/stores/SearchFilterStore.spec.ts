@@ -27,6 +27,9 @@ describe('SearchFilterStore', () => {
     expect(searchFilterStore.searchStringForServiceProvider).toEqual('');
     expect(searchFilterStore.selectedSchuleForKlassen).toEqual(null);
     expect(searchFilterStore.selectedKlassenForKlassen).toEqual([]);
+    expect(searchFilterStore.selectedSchuleForMptRollen).toEqual(null);
+    expect(searchFilterStore.mptRollenPage).toEqual(1);
+    expect(searchFilterStore.mptRollenPerPage).toEqual(30);
     expect(searchFilterStore.selectedSchuleForSchulischeServiceProvider).toEqual(null);
     expect(searchFilterStore.selectedMerkmaleForRollen).toEqual([]);
     expect(searchFilterStore.selectedRollenartenForRollen).toEqual([]);
@@ -86,6 +89,11 @@ describe('SearchFilterStore', () => {
     // it sets the selectedKlassenForKlassen
     searchFilterStore.setKlasseFilterForKlassen(['10', '20']);
     expect(searchFilterStore.selectedKlassenForKlassen).toEqual(['10', '20']);
+
+    searchFilterStore.setSchuleForMptRollen('10');
+    expect(searchFilterStore.selectedSchuleForMptRollen).toEqual('10');
+    searchFilterStore.setSchuleForMptRollen(null);
+    expect(searchFilterStore.selectedSchuleForMptRollen).toEqual(null);
 
     searchFilterStore.setSchuleForSchulischeServiceProvider('10');
     expect(searchFilterStore.selectedSchuleForSchulischeServiceProvider).toEqual('10');

@@ -1,0 +1,14 @@
+{
+  "servers": {
+    "jira": {
+      "type": "stdio",
+      "command": "${env:HOME}/.local/bin/uvx",
+      "args": [
+        "mcp-atlassian",
+        "--env-file",
+        "${workspaceFolder}/.env.mcp",
+        "--read-only"
+      ]
+    }
+  }
+}
