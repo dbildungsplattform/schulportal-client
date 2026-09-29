@@ -19,8 +19,6 @@ import { nextTick, type Component } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import ServiceProviderDetailsView from './ServiceProviderDetailsView.vue';
 
-enableAutoUnmount(afterEach);
-
 let wrapper: VueWrapper<InstanceType<typeof ServiceProviderDetailsView>> | null = null;
 let router: Router;
 const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
