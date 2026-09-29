@@ -101,7 +101,7 @@ If you push a tag upstream a container will be created for you. (Check Github un
 
 ghcr.io/dbildungsplattform/schulportal-client:_tag_
 
-## Checking for CSP issues
+## Checking for CSP problems
 
 Using `npm run dev` is quite different from the productive deployment. Locally no restrictive CSP can be applied, because it would block any convenient feature for development. <br>
 Thus to figure out CSP issues you need to run `npm run build` and `npm run preview`. Vite will start a local file server that serves files very similar to a prod environment.
