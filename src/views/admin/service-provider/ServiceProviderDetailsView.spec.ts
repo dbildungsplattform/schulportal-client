@@ -14,7 +14,7 @@ import { getLogoPath } from '@/utils/logosConfig';
 import { DOMWrapper, VueWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { DoFactory } from 'test/DoFactory';
-import type { MockInstance } from 'vitest';
+import { afterEach, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import ServiceProviderDetailsView from './ServiceProviderDetailsView.vue';
