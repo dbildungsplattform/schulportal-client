@@ -8,6 +8,7 @@
   import { type Organisation } from '@/stores/OrganisationStore';
   import { RollenArt, RollenSystemRecht } from '@/stores/RolleStore';
   import { ServiceProviderKategorie, ServiceProviderMerkmal } from '@/stores/ServiceProviderStore';
+  import { TranslatedObject } from '@/types';
   import { getLogoPath } from '@/utils/logosConfig';
   import { DIN_91379A_EXT, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
   import { toTypedSchema } from '@vee-validate/yup';
@@ -18,7 +19,6 @@
   import { array, boolean, number, object, string } from 'yup';
   import { ANBIETEN_IN_MERKMALE, extractAnbietenInMerkmale } from '../../../utils/serviceProvider.helper';
   import type { ServiceProviderFormProps as Props, ServiceProviderForm, ServiceProviderFormSubmitData } from './types';
-  import { TranslatedObject } from '@/types';
 
   type Emits = {
     (e: 'click:confirmUnsaved'): void;

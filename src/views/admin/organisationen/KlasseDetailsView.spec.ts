@@ -184,7 +184,7 @@ describe('KlassenDetailsView', () => {
   });
 
   test('it edits klassenname', async () => {
-    vi.spyOn(organisationStore, 'updateOrganisationById').mockImplementationOnce((_orgId: string, name: string) => {
+    vi.spyOn(organisationStore, 'updateOrganisationNameById').mockImplementationOnce((_orgId: string, name: string) => {
       organisationStore.updatedOrganisation = {
         ...organisationStore.currentOrganisation!,
         name,

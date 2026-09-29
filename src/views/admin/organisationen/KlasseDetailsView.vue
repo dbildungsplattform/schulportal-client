@@ -130,7 +130,11 @@
   const onSubmit = async ({ selectedKlassenname }: KlasseFormValues): Promise<void> => {
     if (selectedKlassenname) {
       if (organisationStore.currentOrganisation) {
-        await organisationStore.updateOrganisationById(currentKlasseId, selectedKlassenname, OrganisationsTyp.Klasse);
+        await organisationStore.updateOrganisationNameById(
+          currentKlasseId,
+          selectedKlassenname,
+          OrganisationsTyp.Klasse,
+        );
       }
     }
   };
