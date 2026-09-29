@@ -3,14 +3,14 @@
   import FormWrapper from '@/components/form/FormWrapper.vue';
   import { DIN_91379A_EXT, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
   import { toTypedSchema } from '@vee-validate/yup';
-  import { FormMeta, TypedSchema, useForm, type BaseFieldProps } from 'vee-validate';
+  import { FormContext, FormMeta, TypedSchema, useForm, type BaseFieldProps } from 'vee-validate';
   import { computed, ComputedRef, onMounted, Ref, watch, watchEffect } from 'vue';
   import { Composer, useI18n } from 'vue-i18n';
   import { object, string } from 'yup';
-  import { SchoolDetailsFormProps, SchoolFormEvents, SchuleDetailsForm } from './types';
+  import { SchuleDetailsForm, SchuleDetailsFormProps, SchuleFormEvents } from './types';
 
-  const props: SchoolDetailsFormProps = defineProps<SchoolDetailsFormProps>();
-  const emit: SchoolFormEvents = defineEmits<SchoolFormEvents>();
+  const props: SchuleDetailsFormProps = defineProps<SchuleDetailsFormProps>();
+  const emit: SchuleFormEvents = defineEmits<SchuleFormEvents>();
   const { t }: Composer = useI18n({ useScope: 'global' });
 
   const validationSchema: TypedSchema = toTypedSchema(
@@ -38,13 +38,13 @@
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/typedef
-  const { defineField, handleSubmit, meta, setValues } = useForm<SchuleDetailsForm>({
-    validationSchema,
-    initialValues: {
-      ...props.initialValues,
-    },
-  });
+  const { defineField, handleSubmit, meta, setValues }: FormContext<SchuleDetailsForm, SchuleDetailsForm> =
+    useForm<SchuleDetailsForm>({
+      validationSchema,
+      initialValues: {
+        ...props.initialValues,
+      },
+    });
 
   const canCommit: ComputedRef<boolean> = computed(() => meta.value.valid && meta.value.dirty);
 

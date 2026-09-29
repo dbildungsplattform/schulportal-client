@@ -96,7 +96,7 @@
   };
 
   const buttons: ComputedRef<ContextButtonConfig[]> = computed((): ContextButtonConfig[] =>
-    props.isEditMode ? [backToSchuleButton, backToListButton.value] : [backToListButton.value, createAnotherButton],
+    props.isEditMode ? [backToListButton.value, backToSchuleButton] : [backToListButton.value, createAnotherButton],
   );
 </script>
 

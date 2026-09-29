@@ -7,7 +7,7 @@ export type SchuleDetailsForm = {
   selectedEmailAdress: string | undefined;
 };
 
-export type SchoolDetailsFormProps = {
+export type SchuleDetailsFormProps = {
   initialValues: Partial<SchuleDetailsForm>;
   cachedValues?: Partial<SchuleDetailsForm>;
   isEditMode: boolean;
@@ -18,7 +18,7 @@ export type SchoolDetailsFormProps = {
   selectedSchultraegerId?: string;
 };
 
-export type SchoolFormEvents = {
+export type SchuleFormEvents = {
   (e: 'click:confirmUnsaved'): void;
   (e: 'click:discard'): void;
   (e: 'click:submit', values: SchuleDetailsForm): void;
