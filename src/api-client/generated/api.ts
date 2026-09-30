@@ -1020,7 +1020,8 @@ export const DbiamPersonenkontextErrorI18nKeyEnum = {
     OrganisationMatchesRollenart: 'ORGANISATION_MATCHES_ROLLENART',
     PersonenkontextAnlageError: 'PERSONENKONTEXT_ANLAGE_ERROR',
     RolleNurAnPassendeOrganisation: 'ROLLE_NUR_AN_PASSENDE_ORGANISATION',
-    PersonalnummerNichtEindeutig: 'PERSONALNUMMER_NICHT_EINDEUTIG'
+    PersonalnummerNichtEindeutig: 'PERSONALNUMMER_NICHT_EINDEUTIG',
+    PersonHatKeineKoperspflichtigeRolle: 'PERSON_HAT_KEINE_KOPERSPFLICHTIGE_ROLLE'
 } as const;
 
 export type DbiamPersonenkontextErrorI18nKeyEnum = typeof DbiamPersonenkontextErrorI18nKeyEnum[keyof typeof DbiamPersonenkontextErrorI18nKeyEnum];
@@ -13417,14 +13418,14 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
          * @param {string} organisationId The organisationId for which the available rollen should be found
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
-         * @param {RollenArt} [rollenartOfUser] The rollenart of the user for which the available rollen should be found
+         * @param {RollenArt} [rollenartForPerson] The rollenart of the person for whom the available rollen should be found
          * @param {string} [rolleName] The rolleName for which the available rollen should be found
          * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
          * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindAvailableRollenForPersonenkontextCreation: async (organisationId: string, offset?: number, limit?: number, rollenartOfUser?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        rolleControllerFindAvailableRollenForPersonenkontextCreation: async (organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'organisationId' is not null or undefined
             assertParamExists('rolleControllerFindAvailableRollenForPersonenkontextCreation', 'organisationId', organisationId)
             const localVarPath = `/api/rolle/for-personenkontext-creation`;
@@ -13459,8 +13460,8 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
                 localVarQueryParameter['organisationId'] = organisationId;
             }
 
-            if (rollenartOfUser !== undefined) {
-                localVarQueryParameter['rollenartOfUser'] = rollenartOfUser;
+            if (rollenartForPerson !== undefined) {
+                localVarQueryParameter['rollenartForPerson'] = rollenartForPerson;
             }
 
             if (rolleName !== undefined) {
@@ -13970,15 +13971,15 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * @param {string} organisationId The organisationId for which the available rollen should be found
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
-         * @param {RollenArt} [rollenartOfUser] The rollenart of the user for which the available rollen should be found
+         * @param {RollenArt} [rollenartForPerson] The rollenart of the person for whom the available rollen should be found
          * @param {string} [rolleName] The rolleName for which the available rollen should be found
          * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
          * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartOfUser?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartOfUser, rolleName, rollenIds, systemrecht, options);
+        async rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartForPerson, rolleName, rollenIds, systemrecht, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -14143,15 +14144,15 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * @param {string} organisationId The organisationId for which the available rollen should be found
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
-         * @param {RollenArt} [rollenartOfUser] The rollenart of the user for which the available rollen should be found
+         * @param {RollenArt} [rollenartForPerson] The rollenart of the person for whom the available rollen should be found
          * @param {string} [rolleName] The rolleName for which the available rollen should be found
          * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
          * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartOfUser?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: any): AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response> {
-            return localVarFp.rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartOfUser, rolleName, rollenIds, systemrecht, options).then((request) => request(axios, basePath));
+        rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: any): AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response> {
+            return localVarFp.rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartForPerson, rolleName, rollenIds, systemrecht, options).then((request) => request(axios, basePath));
         },
         /**
          * Get rolle by id.
@@ -14306,7 +14307,7 @@ export interface RolleApiInterface {
      * @param {string} organisationId The organisationId for which the available rollen should be found
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
-     * @param {RollenArt} [rollenartOfUser] The rollenart of the user for which the available rollen should be found
+     * @param {RollenArt} [rollenartForPerson] The rollenart of the person for whom the available rollen should be found
      * @param {string} [rolleName] The rolleName for which the available rollen should be found
      * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
      * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
@@ -14314,7 +14315,7 @@ export interface RolleApiInterface {
      * @throws {RequiredError}
      * @memberof RolleApiInterface
      */
-    rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartOfUser?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig): AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response>;
+    rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig): AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response>;
 
     /**
      * Get rolle by id.
@@ -14477,7 +14478,7 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
      * @param {string} organisationId The organisationId for which the available rollen should be found
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
-     * @param {RollenArt} [rollenartOfUser] The rollenart of the user for which the available rollen should be found
+     * @param {RollenArt} [rollenartForPerson] The rollenart of the person for whom the available rollen should be found
      * @param {string} [rolleName] The rolleName for which the available rollen should be found
      * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
      * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
@@ -14485,8 +14486,8 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
      * @throws {RequiredError}
      * @memberof RolleApi
      */
-    public rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartOfUser?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig) {
-        return RolleApiFp(this.configuration).rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartOfUser, rolleName, rollenIds, systemrecht, options).then((request) => request(this.axios, this.basePath));
+    public rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig) {
+        return RolleApiFp(this.configuration).rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartForPerson, rolleName, rollenIds, systemrecht, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

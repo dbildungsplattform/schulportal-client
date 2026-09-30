@@ -73,7 +73,7 @@ export type RollenForPersonenkontextCreationQuery = {
   organisationId: string;
   offset?: number;
   limit?: number;
-  rollenartOfUser?: RollenArt;
+  rollenartForPerson?: RollenArt;
   rolleName?: string;
   rollenIds?: Array<string>;
   systemrecht?: RollenSystemRechtEnum;
@@ -413,7 +413,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               params.organisationId,
               params.offset,
               params.limit,
-              params.rollenartOfUser,
+              params.rollenartForPerson,
               params.rolleName,
               params.rollenIds,
               params.systemrecht,

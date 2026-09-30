@@ -477,6 +477,85 @@ describe('PersonDetailsView', () => {
     ]);
   });
 
+  describe('Rollen for Zuordnung creation', () => {
+    beforeEach(async () => {
+      wrapper?.unmount();
+      await router.push({ name: 'person-details', params: { id: '1' } });
+      wrapper = mount(PersonDetailsView, {
+        attachTo: document.getElementById('app') || '',
+        global: {
+          components: {
+            PersonDetailsView: PersonDetailsView as Component,
+          },
+          plugins: [router],
+        },
+      });
+      await flushPromises();
+    });
+
+    afterEach(() => {
+      wrapper?.unmount();
+    });
+
+    async function openZuordnungCreationForm(): Promise<VueWrapper> {
+      await wrapper?.find('[data-testid="zuordnung-edit-button"]').trigger('click');
+      await nextTick();
+      await wrapper?.find('[data-testid="zuordnung-create-button"]').trigger('click');
+      await flushPromises();
+      return wrapper!.findComponent({ ref: 'personenkontext-create' });
+    }
+
+    async function selectOrganisation(personenkontextCreate: VueWrapper, organisationId: string): Promise<void> {
+      await personenkontextCreate
+        .findComponent({ ref: 'schulenFilter' })
+        .findComponent({ ref: 'personenkontext-create-organisation-select' })
+        .setValue(organisationId);
+      await flushPromises();
+    }
+
+    test('it passes the existing rollenart to the Rollen query', async () => {
+      const personenkontextCreate: VueWrapper = await openZuordnungCreationForm();
+      expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lern);
+
+      await selectOrganisation(personenkontextCreate, 'O1');
+
+      expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenLastCalledWith(
+        expect.objectContaining({ organisationId: 'O1', rollenartForPerson: RollenArt.Lern }),
+      );
+    });
+
+    test('it updates rollenartForPerson once the existing rollenart becomes available', async () => {
+      const [lehrRolle, lernRolle]: TranslatedRolleWithAttrs[] = rolleStore.rollenForPersonenkontextCreation;
+      rolleStore.rollenForPersonenkontextCreation = [lehrRolle!];
+
+      const personenkontextCreate: VueWrapper = await openZuordnungCreationForm();
+      expect(personenkontextCreate.props('rollenartForPerson')).toBeUndefined();
+
+      rolleStore.rollenForPersonenkontextCreation = [lehrRolle!, lernRolle!];
+      await nextTick();
+
+      expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lern);
+    });
+
+    test('it excludes Rollen already assigned at the selected organisation without filtering by rollenart', async () => {
+      personStore.personenuebersicht = DoFactory.getPersonenUebersicht(undefined, [
+        DoFactory.getZuordnung({ sskId: 'O1', rolleId: '1', rollenArt: RollenArt.Lern }),
+      ]);
+
+      const personenkontextCreate: VueWrapper = await openZuordnungCreationForm();
+      await selectOrganisation(personenkontextCreate, 'O1');
+
+      expect(personenkontextCreate.props('rollen')).toEqual([
+        {
+          value: '54321',
+          title: 'Lehrkraft',
+          rollenart: RollenArt.Lehr,
+          merkmale: [RollenMerkmal.KopersPflicht],
+        },
+      ]);
+    });
+  });
+
   test('it displays lockInfo if there is any', async () => {
     expect(personStore.currentPerson).toBeDefined();
     expect(wrapper).toBeDefined();

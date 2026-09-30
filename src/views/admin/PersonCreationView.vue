@@ -127,10 +127,7 @@
     }
   });
 
-  function getFilteredRollen(
-    selectedRolleIds: string[] | undefined,
-    organisationId?: string,
-  ): TranslatedRolleWithAttrs[] {
+  function getFilteredRollen(organisationId?: string): TranslatedRolleWithAttrs[] {
     const rollen: TranslatedRolleWithAttrs[] = rolleStore.rollenForPersonenkontextCreation;
 
     if (createType.value === CreationType.AddPersonToOwnSchule) {
@@ -139,25 +136,16 @@
           .filter((zuordnung: Zuordnung) => zuordnung.sskId === organisationId)
           .map((zuordnung: Zuordnung) => zuordnung.rolleId) || [],
       );
-      return rollen.filter(
-        (rolle: TranslatedRolleWithAttrs) => rolle.rollenart === RollenArt.Lehr && !assignedRollenIds.has(rolle.value),
-      );
+      return rollen.filter((rolle: TranslatedRolleWithAttrs) => !assignedRollenIds.has(rolle.value));
     }
 
-    if (!selectedRolleIds || selectedRolleIds.length === 0) {
-      return rollen;
-    }
-
-    const selectedRollenart: RollenArt | undefined = rollen.find((rolle: TranslatedRolleWithAttrs) =>
-      selectedRolleIds.includes(rolle.value),
-    )?.rollenart;
-    return rollen.filter((rolle: TranslatedRolleWithAttrs) => rolle.rollenart === selectedRollenart);
+    return rollen;
   }
 
   // Define a method to check if the selected Rolle is of type "Lern"
   function hasSelectedLernRolle(selectedRolleIds?: string[]): boolean | undefined {
     const translatedRollenWithAttrs: Array<TranslatedRolleWithAttrs> =
-      filteredRollenCache.value.length > 0 ? filteredRollenCache.value : getFilteredRollen(selectedRolleIds);
+      filteredRollenCache.value.length > 0 ? filteredRollenCache.value : getFilteredRollen();
 
     if (Array.isArray(selectedRolleIds)) {
       return selectedRolleIds.some((id: string) => isLernRolle(id, translatedRollenWithAttrs));
@@ -231,7 +219,7 @@
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.person.rules.kopersNr.noLeadingTrailingSpaces'))
         .when('selectedRollen', {
           is: (selectedRolleIds: string[]) =>
-            isKopersRolle(selectedRolleIds, getFilteredRollen(selectedRolleIds)) && !hasNoKopersNr.value,
+            isKopersRolle(selectedRolleIds, getFilteredRollen()) && !hasNoKopersNr.value,
           then: (schema: StringSchema<string | undefined, AnyObject, undefined, ''>) =>
             schema.required(t('admin.person.rules.kopersNr.required')),
         }),
@@ -298,7 +286,17 @@
   ] = formContext.defineField('selectedKopersNr', vuetifyConfig);
 
   const filteredRollen: ComputedRef<TranslatedRolleWithAttrs[]> = computed(() => {
-    return getFilteredRollen(selectedRollen.value, selectedOrganisation.value);
+    return getFilteredRollen(selectedOrganisation.value);
+  });
+
+  // This primitive value is load-bearing: equal store replacements must not invalidate the Rollen query.
+  const rollenartForPerson: ComputedRef<RollenArt | undefined> = computed((): RollenArt | undefined => {
+    if (createType.value === CreationType.AddPersonToOwnSchule) {
+      return personStore.personenuebersicht?.zuordnungen[0]?.rollenArt;
+    }
+    return rolleStore.rollenForPersonenkontextCreation.find((rolle: TranslatedRolleWithAttrs) =>
+      selectedRollen.value?.includes(rolle.value),
+    )?.rollenart;
   });
 
   const {
@@ -846,6 +844,7 @@
                 :operation-context="OperationContext.PERSON_ANLEGEN"
                 :allow-multiple-rollen="true"
                 :create-type="createType"
+                :rollenart-for-person="rollenartForPerson"
                 :show-headline="true"
                 :organisationen="organisationen"
                 :rollen="
@@ -886,6 +885,7 @@
                 :operation-context="OperationContext.PERSON_ANLEGEN"
                 :allow-multiple-rollen="true"
                 :create-type="createType"
+                :rollenart-for-person="rollenartForPerson"
                 :show-headline="true"
                 :organisationen="organisationen"
                 :rollen="

@@ -474,22 +474,25 @@ describe('PersonenkontextCreate', () => {
         });
 
         test.each([
-          [undefined, undefined, false],
-          [CreationType.Limited, undefined, false],
-          [CreationType.AddPersonToOwnSchule, undefined, true],
-          [undefined, '1', true],
+          [undefined, undefined, RollenArt.Lehr],
+          [CreationType.Limited, undefined, RollenArt.Lehr],
+          [CreationType.AddPersonToOwnSchule, undefined, RollenArt.Lehr],
+          [undefined, '1', RollenArt.Lehr],
+          [undefined, undefined, undefined],
+          [CreationType.AddPersonToOwnSchule, '1', undefined],
         ])(
-          'it includes rollenartOfUser for existing-person workflows (%s, personId: %s)',
+          'it passes rollenartForPerson to the Rollen query whenever it is set (%s, personId: %s, rollenartForPerson: %s)',
           async (
             createType: CreationType | undefined,
             personId: string | undefined,
-            includesRollenartOfUser: boolean,
+            rollenartForPerson: RollenArt | undefined,
           ) => {
             wrapper = mountComponent({
               operationContext,
               allowMultipleRollen,
               createType,
               personId,
+              rollenartForPerson,
               selectedOrganisation: '1133',
             });
             await flushPromises();
@@ -497,28 +500,23 @@ describe('PersonenkontextCreate', () => {
             const getRollenForPersonenkontextCreationSpy: MockInstance = vi.mocked(
               rolleStore.getRollenForPersonenkontextCreation,
             );
-            if (includesRollenartOfUser) {
+            if (rollenartForPerson) {
               expect(getRollenForPersonenkontextCreationSpy).toHaveBeenLastCalledWith(
-                expect.objectContaining({
-                  rollenartOfUser: personStore.personenuebersicht?.zuordnungen[0]?.rollenArt,
-                }),
+                expect.objectContaining({ rollenartForPerson }),
               );
             } else {
               expect(getRollenForPersonenkontextCreationSpy).toHaveBeenLastCalledWith(
-                expect.not.objectContaining({ rollenartOfUser: expect.anything() as unknown }),
+                expect.not.objectContaining({ rollenartForPerson: expect.anything() as unknown }),
               );
             }
           },
         );
 
-        test('it does not refetch Rollen when personenuebersicht is replaced with the same rollenArt', async () => {
-          personStore.personenuebersicht = DoFactory.getPersonenUebersicht(DoFactory.getPerson(), [
-            DoFactory.getZuordnung({ rollenArt: RollenArt.Lehr }),
-          ]);
+        test('it refetches Rollen when rollenartForPerson becomes available', async () => {
           wrapper = mountComponent({
             operationContext,
             allowMultipleRollen,
-            createType: CreationType.AddPersonToOwnSchule,
+            personId: '1',
             selectedOrganisation: '1133',
           });
           await flushPromises();
@@ -528,10 +526,31 @@ describe('PersonenkontextCreate', () => {
           );
           getRollenForPersonenkontextCreationSpy.mockClear();
 
-          personStore.personenuebersicht = DoFactory.getPersonenUebersicht(DoFactory.getPerson(), [
-            DoFactory.getZuordnung({ rollenArt: RollenArt.Lehr }),
-          ]);
-          await nextTick();
+          await wrapper.setProps({ rollenartForPerson: RollenArt.Lern });
+          await flushPromises();
+
+          expect(getRollenForPersonenkontextCreationSpy).toHaveBeenCalledOnce();
+          expect(getRollenForPersonenkontextCreationSpy).toHaveBeenLastCalledWith(
+            expect.objectContaining({ organisationId: '1133', rollenartForPerson: RollenArt.Lern }),
+          );
+        });
+
+        test('it does not refetch Rollen when rollenartForPerson is set to the same value', async () => {
+          wrapper = mountComponent({
+            operationContext,
+            allowMultipleRollen,
+            createType: CreationType.AddPersonToOwnSchule,
+            rollenartForPerson: RollenArt.Lehr,
+            selectedOrganisation: '1133',
+          });
+          await flushPromises();
+
+          const getRollenForPersonenkontextCreationSpy: MockInstance = vi.mocked(
+            rolleStore.getRollenForPersonenkontextCreation,
+          );
+          getRollenForPersonenkontextCreationSpy.mockClear();
+
+          await wrapper.setProps({ rollenartForPerson: RollenArt.Lehr });
           await flushPromises();
 
           expect(getRollenForPersonenkontextCreationSpy).not.toHaveBeenCalled();

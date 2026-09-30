@@ -354,6 +354,33 @@ describe('PersonCreationView', () => {
     ).toEqual([undefined]);
   });
 
+  test('it passes the rollenart of the selected Rolle to the Rollen query without filtering Rollen by rollenart', async () => {
+    const lehrRolleResponse: RolleResponse = DoFactory.getRolleResponse({ rollenart: 'LEHR' });
+    const lehrRolle: TranslatedRolleWithAttrs = {
+      value: lehrRolleResponse.id,
+      title: lehrRolleResponse.name,
+      merkmale: lehrRolleResponse.merkmale,
+      rollenart: lehrRolleResponse.rollenart,
+    };
+    rolleStore.rollenForPersonenkontextCreation = [mockRolleForPersonenkontextCreation, lehrRolle];
+
+    const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
+    expect(personenkontextCreate.props('rollenartForPerson')).toBeUndefined();
+
+    await personenkontextCreate
+      .findComponent({ ref: 'schulenFilter' })
+      .findComponent({ ref: 'personenkontext-create-organisation-select' })
+      .setValue(ORGANISATION_ID);
+    await personenkontextCreate.findComponent({ ref: 'rollen-select' }).setValue([ROLLE_ID]);
+    await flushPromises();
+
+    expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lern);
+    expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenLastCalledWith(
+      expect.objectContaining({ organisationId: ORGANISATION_ID, rollenartForPerson: RollenArt.Lern }),
+    );
+    expect(personenkontextCreate.props('rollen')).toEqual([mockRolleForPersonenkontextCreation, lehrRolle]);
+  });
+
   test('it navigates back to personen table', async () => {
     const push: MockInstance = vi.spyOn(router, 'push');
     await wrapper?.find('[data-testid="close-layout-card-button"]').trigger('click');
@@ -584,6 +611,7 @@ describe('PersonCreationView', () => {
     const rolleId: string = ROLLE_ID;
 
     personStore.allLandesbedienstetePersonen = mockLandesbedienstetePersonen;
+    rolleStore.rollenForPersonenkontextCreation = [{ ...mockRolleForPersonenkontextCreation, rollenart: 'LEHR' }];
     await router.push({ name: 'add-person-to-own-schule' });
     await router.isReady();
 
@@ -836,6 +864,56 @@ describe('PersonCreationView', () => {
 
       expect(rollenRequestSpy).toHaveBeenCalledTimes(1);
       expect(uebersichtRequestSpy?.mock.calls.length ?? 0).toBeLessThanOrEqual(1);
+    });
+
+    test('it passes the rollenart of the existing person to the Rollen query', async () => {
+      const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
+      expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lehr);
+
+      await personenkontextCreate
+        .findComponent({ ref: 'schulenFilter' })
+        .findComponent({ ref: 'personenkontext-create-organisation-select' })
+        .setValue(ORGANISATION_ID);
+      await flushPromises();
+
+      expect(rollenRequestSpy).toHaveBeenLastCalledWith(
+        expect.objectContaining({ organisationId: ORGANISATION_ID, rollenartForPerson: RollenArt.Lehr }),
+      );
+    });
+
+    test('it updates rollenartForPerson when the rollenart of the existing person changes', async () => {
+      personStore.personenuebersicht = DoFactory.getPersonenUebersicht(
+        DoFactory.getPerson({ id: landesbediensteter.id }),
+        [DoFactory.getZuordnung({ sskId: ORGANISATION_ID, rolleId: ROLLE_ID, rollenArt: RollenArt.Lern })],
+      );
+      await nextTick();
+
+      expect(wrapper!.findComponent({ ref: 'personenkontext-create' }).props('rollenartForPerson')).toBe(
+        RollenArt.Lern,
+      );
+    });
+
+    test('it excludes Rollen already assigned at the selected organisation without filtering by rollenart', async () => {
+      const lernRolleResponse: RolleResponse = DoFactory.getRolleResponse({ rollenart: 'LERN' });
+      const lernRolle: TranslatedRolleWithAttrs = {
+        value: lernRolleResponse.id,
+        title: lernRolleResponse.name,
+        merkmale: lernRolleResponse.merkmale,
+        rollenart: lernRolleResponse.rollenart,
+      };
+      rollenRequestSpy?.mockImplementation(() => {
+        rolleStore.rollenForPersonenkontextCreation = [{ ...lehrRolle }, lernRolle];
+        return Promise.resolve();
+      });
+
+      const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
+      await personenkontextCreate
+        .findComponent({ ref: 'schulenFilter' })
+        .findComponent({ ref: 'personenkontext-create-organisation-select' })
+        .setValue(ORGANISATION_ID);
+      await flushPromises();
+
+      expect(personenkontextCreate.props('rollen')).toEqual([lernRolle]);
     });
   });
 });

@@ -996,25 +996,19 @@
 
     const selectedOrgaId: string | undefined = selectedOrganisation.value;
 
-    // Determine the existing RollenArt from Zuordnungen
-    const existingRollenArt: RollenArt | undefined = getExistingRollenArt(existingZuordnungen);
-
     // Filter out Rollen that the user already has in the selected organization
-    return rolleStore.rollenForPersonenkontextCreation?.filter((rolle: TranslatedRolleWithAttrs) => {
-      // Check if the user already has this role in the selected organization
-      const alreadyHasRolleInSelectedOrga: boolean = existingZuordnungen.some(
-        (zuordnung: Zuordnung) => zuordnung.rolleId === rolle.value && zuordnung.sskId === selectedOrgaId,
-      );
-
-      // If there's an existing RollenArt, only allow roles of that type
-      if (existingRollenArt) {
-        return !alreadyHasRolleInSelectedOrga && rolle.rollenart === existingRollenArt;
-      }
-
-      // If there's no existing RollenArt, allow any role that hasn't been assigned yet in the selected organization
-      return !alreadyHasRolleInSelectedOrga;
-    });
+    return rolleStore.rollenForPersonenkontextCreation?.filter(
+      (rolle: TranslatedRolleWithAttrs) =>
+        !existingZuordnungen.some(
+          (zuordnung: Zuordnung) => zuordnung.rolleId === rolle.value && zuordnung.sskId === selectedOrgaId,
+        ),
+    );
   });
+
+  // Primitive value so equal personenuebersicht replacements do not invalidate the Rollen query.
+  const existingRollenArt: ComputedRef<RollenArt | undefined> = computed((): RollenArt | undefined =>
+    getExistingRollenArt(personStore.personenuebersicht?.zuordnungen ?? []),
+  );
 
   // Computed property to get the title of the selected rolle
   const selectedRolleTitle: ComputedRef<string | undefined> = computed(() => {
@@ -2343,6 +2337,7 @@
                   v-model:selected-rolle="selectedRolle"
                   v-model:selected-klasse="selectedKlasse"
                   :person-id="currentPersonId"
+                  :rollenart-for-person="existingRollenArt"
                   :operation-context="OperationContext.PERSON_BEARBEITEN"
                   :allow-multiple-rollen="false"
                   :show-headline="false"

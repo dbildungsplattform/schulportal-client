@@ -571,7 +571,7 @@ describe('rolleStore', () => {
         organisationId: 'organisation-1',
         offset: 0,
         limit: 20,
-        rollenartOfUser: RollenArt.Lehr,
+        rollenartForPerson: RollenArt.Lehr,
         rolleName: 'Lehrer',
         rollenIds: ['rolle-1', 'rolle-2'],
         systemrecht: RollenSystemRechtEnum.RollenVerwalten,
@@ -588,6 +588,7 @@ describe('rolleStore', () => {
       expect(rolleStore.rollenForPersonenkontextCreation[1]?.merkmale).toEqual(rolleB.merkmale);
       expect(rolleStore.rollenForPersonenkontextCreation[1]?.rollenart).toBe(rolleB.rollenart);
       expect(mockadapter.history.get[0]?.url).toContain('organisationId=organisation-1');
+      expect(mockadapter.history.get[0]?.url).toContain('rollenartForPerson=LEHR');
       expect(mockadapter.history.get[0]?.url).toContain('rollenIds=rolle-1');
       expect(mockadapter.history.get[0]?.url).toContain('rollenIds=rolle-2');
       expect(rolleStore.errorCode).toBe('');

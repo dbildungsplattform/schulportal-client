@@ -74,6 +74,7 @@
     };
     allowMultipleRollen?: boolean;
     rolleDialogMode?: RolleDialogMode;
+    rollenartForPerson?: RollenArt;
   };
 
   const props: Props = defineProps<Props>();
@@ -120,11 +121,6 @@
     }
   });
 
-  // This primitive value is load-bearing: equal personenuebersicht replacements must not invalidate rollenFilter.
-  const rollenartOfUser: ComputedRef<RollenArt | undefined> = computed(
-    (): RollenArt | undefined => personStore.personenuebersicht?.zuordnungen[0]?.rollenArt,
-  );
-
   const rollenFilter: ComputedRef<RollenForPersonenkontextCreationQuery | undefined> = computed(() => {
     if (!selectedOrganisation.value) {
       return;
@@ -138,8 +134,8 @@
       filter.systemrecht = RollenSystemRecht.EingeschraenktNeueBenutzerErstellen;
     }
 
-    if (props.createType === CreationType.AddPersonToOwnSchule || props.personId !== undefined) {
-      filter.rollenartOfUser = rollenartOfUser.value;
+    if (props.rollenartForPerson) {
+      filter.rollenartForPerson = props.rollenartForPerson;
     }
 
     if (props.allowMultipleRollen) {
