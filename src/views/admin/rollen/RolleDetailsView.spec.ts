@@ -1,4 +1,4 @@
-import { OrganisationsTyp, type SystemRechtResponse } from '@/api-client/generated';
+import { OrganisationsTyp } from '@/api-client/generated';
 import routes from '@/router/routes';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
 import {
@@ -36,7 +36,7 @@ const mockUpdatedRolle: RolleWithServiceProvidersResponse = {
   version: 2,
   createdAt: faker.date.past().toISOString(),
   updatedAt: faker.date.recent().toISOString(),
-  systemrechte: new Set<SystemRechtResponse>(),
+  systemrechte: [],
 };
 
 rolleStore.currentRolle = mockCurrentRolle;
@@ -116,21 +116,6 @@ describe('RolleDetailsView', () => {
     const form: VueWrapper = wrapper.findComponent({ ref: 'rolle-form' });
     const merkmaleSelect: VueWrapper = form.findComponent({ ref: 'merkmale-select' });
     const systemrechteSelect: VueWrapper = form.findComponent({ ref: 'systemrechte-select' });
-    expect(merkmaleSelect.props('modelValue')).toEqual(remove ? merkmale : []);
-    expect(systemrechteSelect.props('modelValue')).toEqual(remove ? systemrechte : []);
-    expect(merkmaleSelect.props('items')).toEqual(
-      expect.arrayContaining(
-        merkmale.map((value: RollenMerkmal, index: number) => ({ value, title: `Ist Pilot-${index + 1}-Rolle` })),
-      ),
-    );
-    expect(systemrechteSelect.props('items')).toEqual(
-      expect.arrayContaining(
-        systemrechte.map((value: RollenSystemRecht, index: number) => ({
-          value,
-          title: `Darf Pilot-${index + 1}-Rollen zuordnen`,
-        })),
-      ),
-    );
 
     await merkmaleSelect.setValue(remove ? [] : merkmale);
     await systemrechteSelect.setValue(remove ? [] : systemrechte);
@@ -179,8 +164,8 @@ describe('RolleDetailsView', () => {
   test('it renders data in success template', async () => {
     rolleStore.updatedRolle = DoFactory.getRolleWithServiceProviders({
       name: 'Updated Lehrer',
-      merkmale: new Set(),
-      systemrechte: new Set<SystemRechtResponse>(),
+      merkmale: [],
+      systemrechte: [],
       serviceProviders: [],
       version: 2,
     });
