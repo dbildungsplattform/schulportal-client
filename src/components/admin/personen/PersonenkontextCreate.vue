@@ -105,11 +105,18 @@
   // doing it this way prevents an issue where the reactive system constantly re-runs which causes requests to be issued in a loop
   const administriertVon: Ref<string[] | undefined> = ref([]);
 
-  const isSelectedRolleAlreadyPresent: ComputedRef<boolean> = computed(() => {
+  const isRolleSearchStringEqualToSelection: ComputedRef<boolean> = computed(() => {
     if (props.allowMultipleRollen) {
-      return props.rollen?.some((rolle: TranslatedObject) => rolle.title === searchInputRollen.value) ?? false;
+      const selectedRollenWithAttrs: TranslatedRolleWithAttrs[] =
+        props.rollen?.filter((rolle: TranslatedRolleWithAttrs) => selectedRollen.value?.includes(rolle.value)) ?? [];
+      return (
+        selectedRollenWithAttrs.some((rolle: TranslatedObject) => rolle.title === searchInputRollen.value) ?? false
+      );
     } else {
-      return props.rollen?.some((rolle: TranslatedObject) => rolle.title === searchInputRolle.value) ?? false;
+      const selectedRolleWithAttrs: TranslatedRolleWithAttrs | undefined = props.rollen?.find(
+        (rolle: TranslatedRolleWithAttrs) => selectedRollen.value?.includes(rolle.value),
+      );
+      return selectedRolleWithAttrs?.title === searchInputRolle.value;
     }
   });
 
@@ -137,14 +144,14 @@
 
     if (props.allowMultipleRollen) {
       filter.rollenIds = selectedRollen.value;
-      if (searchInputRollen.value && !isSelectedRolleAlreadyPresent.value) {
+      if (searchInputRollen.value && !isRolleSearchStringEqualToSelection.value) {
         filter.rolleName = searchInputRollen.value;
       }
     } else {
       if (selectedRolle.value) {
         filter.rollenIds = [selectedRolle.value];
       }
-      if (searchInputRolle.value && !isSelectedRolleAlreadyPresent.value) {
+      if (searchInputRolle.value && !isRolleSearchStringEqualToSelection.value) {
         filter.rolleName = searchInputRolle.value;
       }
     }

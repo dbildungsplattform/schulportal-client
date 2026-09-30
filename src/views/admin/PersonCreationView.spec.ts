@@ -802,7 +802,9 @@ describe('PersonCreationView', () => {
       });
       rollenRequestSpy = vi.mocked(rolleStore.getRollenForPersonenkontextCreation).mockImplementation(() => {
         // Safety cap so a runaway loop fails the assertion instead of hanging the suite.
-        if ((rollenRequestSpy?.mock.calls.length ?? 0) > MAX_ROLLEN_REQUESTS) {return Promise.resolve();}
+        if ((rollenRequestSpy?.mock.calls.length ?? 0) > MAX_ROLLEN_REQUESTS) {
+          return Promise.resolve();
+        }
         rolleStore.rollenForPersonenkontextCreation = [{ ...lehrRolle }];
         return Promise.resolve();
       });
@@ -825,10 +827,12 @@ describe('PersonCreationView', () => {
         .findComponent({ ref: 'personenkontext-create-organisation-select' });
       await organisationSelect.setValue(ORGANISATION_ID);
 
-      await Promise.all(Array.from({ length: SETTLE_ITERATIONS }, async () => {
-        await nextTick();
-        await flushPromises();
-      }));
+      await Promise.all(
+        Array.from({ length: SETTLE_ITERATIONS }, async () => {
+          await nextTick();
+          await flushPromises();
+        }),
+      );
 
       expect(rollenRequestSpy).toHaveBeenCalledTimes(1);
       expect(uebersichtRequestSpy?.mock.calls.length ?? 0).toBeLessThanOrEqual(1);

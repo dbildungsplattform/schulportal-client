@@ -166,8 +166,6 @@
     }
   }
 
-  
-
   const headerLabel: Ref<string> = ref(t('admin.person.addNew'));
   const layoutCardLabel: Ref<string> = ref(t('admin.person.addNew'));
   const layoutCardHeadlineTestId: Ref<string> = ref('create-person-headline');
@@ -609,7 +607,6 @@
   const sectionNumberOrg: ComputedRef<string> = computed(() => (isOwnSchule.value ? '2.' : '1.'));
   const sectionNumberRolle: ComputedRef<string> = computed(() => (isOwnSchule.value ? '3.' : '2.'));
   const sectionNumberBefristung: ComputedRef<string> = computed(() => (isOwnSchule.value ? '4.' : '2.1'));
-
 
   watch(selectedOrganisation, async (newSelectedOrganisation: string | undefined) => {
     const existingPerson: PersonLandesbediensteterSearchResponse | undefined =
