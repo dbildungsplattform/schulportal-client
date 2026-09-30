@@ -3,6 +3,11 @@
 # src/api-client/generated
 src/api-client/storageDir
 
+# exclude directories to allow custom configuration
+.github/agents
+.github/skills
+.github/prompts
+
 # Environment variables
 .env
 .env.local

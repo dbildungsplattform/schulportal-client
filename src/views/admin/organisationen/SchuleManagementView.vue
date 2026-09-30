@@ -175,6 +175,14 @@
               {{ item.name }}
             </div>
           </template>
+          <template #[`item.emailAdress`]="{ item }">
+            <div
+              class="ellipsis-wrapper"
+              :title="item.emailAdress"
+            >
+              {{ item.emailAdress ?? '---' }}
+            </div>
+          </template>
           <template #[`item.itslearning`]="{ item }">
             <ItsLearningSetup
               :error-code="organisationStore.errorCode"

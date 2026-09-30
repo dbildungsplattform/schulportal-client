@@ -19,7 +19,7 @@
     ServiceProviderStore,
     useServiceProviderStore,
   } from '@/stores/ServiceProviderStore';
-  import { computed, ComputedRef, onMounted, ref, Ref } from 'vue';
+  import { computed, ComputedRef, onMounted, onUnmounted, ref, Ref } from 'vue';
 
   import { useI18n, type Composer } from 'vue-i18n';
   import { useRouter, type Router } from 'vue-router';
@@ -233,6 +233,10 @@
     }
 
     await Promise.all(tasks);
+  });
+
+  onUnmounted(() => {
+    clearTimeout(angeboteSearchTimerId);
   });
 </script>
 
