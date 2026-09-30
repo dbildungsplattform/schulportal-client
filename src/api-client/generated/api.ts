@@ -1773,6 +1773,11 @@ export interface ManageableServiceProviderResponse {
 export const ManageableServiceProviderResponseRelevantSystemrechteEnum = {
     RollenVerwalten: 'ROLLEN_VERWALTEN',
     MptRollenZuordnen: 'MPT_ROLLEN_ZUORDNEN',
+    Pilot1RollenZuordnen: 'PILOT_1_ROLLEN_ZUORDNEN',
+    Pilot2RollenZuordnen: 'PILOT_2_ROLLEN_ZUORDNEN',
+    Pilot3RollenZuordnen: 'PILOT_3_ROLLEN_ZUORDNEN',
+    Pilot4RollenZuordnen: 'PILOT_4_ROLLEN_ZUORDNEN',
+    Pilot5RollenZuordnen: 'PILOT_5_ROLLEN_ZUORDNEN',
     PersonenSofortLoeschen: 'PERSONEN_SOFORT_LOESCHEN',
     PersonenVerwalten: 'PERSONEN_VERWALTEN',
     LandesbediensteteSuchenUndHinzufuegen: 'LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN',
@@ -3760,7 +3765,12 @@ export type RollenArt = typeof RollenArt[keyof typeof RollenArt];
 export const RollenMerkmal = {
     BefristungPflicht: 'BEFRISTUNG_PFLICHT',
     KopersPflicht: 'KOPERS_PFLICHT',
-    MptRolle: 'MPT_ROLLE'
+    MptRolle: 'MPT_ROLLE',
+    Pilot1Rolle: 'PILOT_1_ROLLE',
+    Pilot2Rolle: 'PILOT_2_ROLLE',
+    Pilot3Rolle: 'PILOT_3_ROLLE',
+    Pilot4Rolle: 'PILOT_4_ROLLE',
+    Pilot5Rolle: 'PILOT_5_ROLLE'
 } as const;
 
 export type RollenMerkmal = typeof RollenMerkmal[keyof typeof RollenMerkmal];
@@ -3775,6 +3785,11 @@ export type RollenMerkmal = typeof RollenMerkmal[keyof typeof RollenMerkmal];
 export const RollenSystemRechtEnum = {
     RollenVerwalten: 'ROLLEN_VERWALTEN',
     MptRollenZuordnen: 'MPT_ROLLEN_ZUORDNEN',
+    Pilot1RollenZuordnen: 'PILOT_1_ROLLEN_ZUORDNEN',
+    Pilot2RollenZuordnen: 'PILOT_2_ROLLEN_ZUORDNEN',
+    Pilot3RollenZuordnen: 'PILOT_3_ROLLEN_ZUORDNEN',
+    Pilot4RollenZuordnen: 'PILOT_4_ROLLEN_ZUORDNEN',
+    Pilot5RollenZuordnen: 'PILOT_5_ROLLEN_ZUORDNEN',
     PersonenSofortLoeschen: 'PERSONEN_SOFORT_LOESCHEN',
     PersonenVerwalten: 'PERSONEN_VERWALTEN',
     LandesbediensteteSuchenUndHinzufuegen: 'LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN',

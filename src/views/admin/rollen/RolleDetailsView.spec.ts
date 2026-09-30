@@ -2,6 +2,8 @@ import { OrganisationsTyp, type SystemRechtResponse } from '@/api-client/generat
 import routes from '@/router/routes';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
 import {
+  RollenMerkmal,
+  RollenSystemRecht,
   useRolleStore,
   type Rolle,
   type RolleStore,
@@ -78,7 +80,75 @@ beforeEach(async () => {
   wrapper = await mountComponent();
 });
 
+afterEach(() => {
+  wrapper?.unmount();
+});
+
 describe('RolleDetailsView', () => {
+  test.each([false, true])('should save pilot selections with removal=%s', async (remove: boolean) => {
+    const merkmale: RollenMerkmal[] = [
+      RollenMerkmal.Pilot1Rolle,
+      RollenMerkmal.Pilot2Rolle,
+      RollenMerkmal.Pilot3Rolle,
+      RollenMerkmal.Pilot4Rolle,
+      RollenMerkmal.Pilot5Rolle,
+    ];
+    const systemrechte: RollenSystemRecht[] = [
+      RollenSystemRecht.Pilot1RollenZuordnen,
+      RollenSystemRecht.Pilot2RollenZuordnen,
+      RollenSystemRecht.Pilot3RollenZuordnen,
+      RollenSystemRecht.Pilot4RollenZuordnen,
+      RollenSystemRecht.Pilot5RollenZuordnen,
+    ];
+    const rolle: Rolle = DoFactory.getRolle({
+      administeredBySchulstrukturknoten: mockOrga.id,
+      merkmale: remove ? merkmale : [],
+      systemrechte: new Set(remove ? systemrechte : []),
+    });
+    wrapper?.unmount();
+    rolleStore.currentRolle = rolle;
+    rolleStore.updatedRolle = null;
+    rolleStore.errorCode = '';
+    rolleStore.getRolleById = vi.fn();
+    rolleStore.updateRolle = vi.fn();
+    wrapper = await mountComponent();
+    await wrapper.find('[data-testid="rolle-edit-button"]').trigger('click');
+    const form: VueWrapper = wrapper.findComponent({ ref: 'rolle-form' });
+    const merkmaleSelect: VueWrapper = form.findComponent({ ref: 'merkmale-select' });
+    const systemrechteSelect: VueWrapper = form.findComponent({ ref: 'systemrechte-select' });
+    expect(merkmaleSelect.props('modelValue')).toEqual(remove ? merkmale : []);
+    expect(systemrechteSelect.props('modelValue')).toEqual(remove ? systemrechte : []);
+    expect(merkmaleSelect.props('items')).toEqual(
+      expect.arrayContaining(
+        merkmale.map((value: RollenMerkmal, index: number) => ({ value, title: `Ist Pilot-${index + 1}-Rolle` })),
+      ),
+    );
+    expect(systemrechteSelect.props('items')).toEqual(
+      expect.arrayContaining(
+        systemrechte.map((value: RollenSystemRecht, index: number) => ({
+          value,
+          title: `Darf Pilot-${index + 1}-Rollen zuordnen`,
+        })),
+      ),
+    );
+
+    await merkmaleSelect.setValue(remove ? [] : merkmale);
+    await systemrechteSelect.setValue(remove ? [] : systemrechte);
+    await wrapper.find('[data-testid="rolle-changes-save-button"]').trigger('click');
+    await flushPromises();
+
+    expect(rolleStore.updateRolle).toHaveBeenLastCalledWith(
+      rolle.id,
+      rolle.name,
+      remove ? [] : merkmale,
+      remove ? [] : systemrechte,
+      [],
+      rolle.version,
+    );
+    rolleStore.currentRolle = mockCurrentRolle;
+    rolleStore.updatedRolle = mockUpdatedRolle;
+  });
+
   test('it renders the rolle details view', () => {
     expect(wrapper?.find('[data-testid="rolle-details-headline"]').isVisible()).toBe(true);
   });
