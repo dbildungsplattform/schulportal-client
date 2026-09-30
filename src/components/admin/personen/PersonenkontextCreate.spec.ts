@@ -511,6 +511,32 @@ describe('PersonenkontextCreate', () => {
           },
         );
 
+        test('it does not refetch Rollen when personenuebersicht is replaced with the same rollenArt', async () => {
+          personStore.personenuebersicht = DoFactory.getPersonenUebersicht(DoFactory.getPerson(), [
+            DoFactory.getZuordnung({ rollenArt: RollenArt.Lehr }),
+          ]);
+          wrapper = mountComponent({
+            operationContext,
+            allowMultipleRollen,
+            createType: CreationType.AddPersonToOwnSchule,
+            selectedOrganisation: '1133',
+          });
+          await flushPromises();
+
+          const getRollenForPersonenkontextCreationSpy: MockInstance = vi.mocked(
+            rolleStore.getRollenForPersonenkontextCreation,
+          );
+          getRollenForPersonenkontextCreationSpy.mockClear();
+
+          personStore.personenuebersicht = DoFactory.getPersonenUebersicht(DoFactory.getPerson(), [
+            DoFactory.getZuordnung({ rollenArt: RollenArt.Lehr }),
+          ]);
+          await nextTick();
+          await flushPromises();
+
+          expect(getRollenForPersonenkontextCreationSpy).not.toHaveBeenCalled();
+        });
+
         test('it debounces the request when the role search input changes', async () => {
           const organisationAutocomplete: VueWrapper | undefined = wrapper
             ?.findComponent({ ref: 'schulenFilter' })

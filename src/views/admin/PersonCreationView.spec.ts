@@ -14,12 +14,14 @@ import {
 } from '@/stores/PersonenkontextStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import {
+  RollenArt,
   RollenMerkmal,
   useRolleStore,
   type RolleStore,
   type TranslatedRolleWithAttrs,
   type RolleWithServiceProvidersResponse,
 } from '@/stores/RolleStore';
+import type { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
 import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { expect, test, type Mock, type MockInstance } from 'vitest';
@@ -753,6 +755,83 @@ describe('PersonCreationView', () => {
       await nextTick();
 
       personenkontextStore.errorCode = '';
+    });
+  });
+
+  describe('rollen refresh loop', () => {
+    const MAX_ROLLEN_REQUESTS: number = 20;
+    const SETTLE_ITERATIONS: number = 15;
+
+    let landesbediensteter: PersonLandesbediensteterSearchResponse;
+    let lehrRolle: TranslatedRolleWithAttrs;
+    let rollenRequestSpy: MockInstance | undefined;
+    let uebersichtRequestSpy: MockInstance | undefined;
+
+    function buildPersonenuebersicht(): PersonenUebersicht {
+      return DoFactory.getPersonenUebersicht(DoFactory.getPerson({ id: landesbediensteter.id }), [
+        DoFactory.getZuordnung({ sskId: ORGANISATION_ID, rolleId: ROLLE_ID, rollenArt: RollenArt.Lehr }),
+      ]);
+    }
+
+    beforeEach(async () => {
+      landesbediensteter = DoFactory.getPersonLandesbediensteterSearchResponse({ id: PERSON_ID });
+      const lehrRolleResponse: RolleResponse = DoFactory.getRolleResponse({ id: ROLLE_ID, rollenart: 'LEHR' });
+      lehrRolle = {
+        value: lehrRolleResponse.id,
+        title: lehrRolleResponse.name,
+        merkmale: lehrRolleResponse.merkmale,
+        rollenart: lehrRolleResponse.rollenart,
+      };
+
+      personStore.allLandesbedienstetePersonen = [landesbediensteter];
+      personStore.personenuebersicht = buildPersonenuebersicht();
+      rolleStore.rollenForPersonenkontextCreation = [lehrRolle];
+      personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
+        organisations: [DoFactory.getOrganisationResponse({ id: ORGANISATION_ID })],
+        canCommit: true,
+      });
+
+      await router.push({ name: 'add-person-to-own-schule' });
+      await router.isReady();
+      wrapper = await mountComponent();
+
+      // Both responses replace the state with a fresh object carrying identical content, as the real stores do.
+      uebersichtRequestSpy = vi.mocked(personStore.getPersonenuebersichtById).mockImplementation(() => {
+        personStore.personenuebersicht = buildPersonenuebersicht();
+        return Promise.resolve();
+      });
+      rollenRequestSpy = vi.mocked(rolleStore.getRollenForPersonenkontextCreation).mockImplementation(() => {
+        // Safety cap so a runaway loop fails the assertion instead of hanging the suite.
+        if ((rollenRequestSpy?.mock.calls.length ?? 0) > MAX_ROLLEN_REQUESTS) {return Promise.resolve();}
+        rolleStore.rollenForPersonenkontextCreation = [{ ...lehrRolle }];
+        return Promise.resolve();
+      });
+
+      await nextTick();
+      await flushPromises();
+      rollenRequestSpy.mockClear();
+      uebersichtRequestSpy.mockClear();
+    });
+
+    afterEach(() => {
+      rollenRequestSpy?.mockReset();
+      uebersichtRequestSpy?.mockReset();
+    });
+
+    test('it does not refetch Rollen repeatedly when the Personenübersicht is replaced with unchanged content', async () => {
+      const organisationSelect: VueWrapper = wrapper!
+        .findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'schulenFilter' })
+        .findComponent({ ref: 'personenkontext-create-organisation-select' });
+      await organisationSelect.setValue(ORGANISATION_ID);
+
+      await Promise.all(Array.from({ length: SETTLE_ITERATIONS }, async () => {
+        await nextTick();
+        await flushPromises();
+      }));
+
+      expect(rollenRequestSpy).toHaveBeenCalledTimes(1);
+      expect(uebersichtRequestSpy?.mock.calls.length ?? 0).toBeLessThanOrEqual(1);
     });
   });
 });

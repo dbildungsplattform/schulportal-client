@@ -17,6 +17,7 @@
   } from '@/stores/PersonenkontextStore';
   import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
   import {
+    RollenArt,
     RollenForPersonenkontextCreationQuery,
     RollenSystemRecht,
     RolleStore,
@@ -112,6 +113,11 @@
     }
   });
 
+  // This primitive value is load-bearing: equal personenuebersicht replacements must not invalidate rollenFilter.
+  const rollenartOfUser: ComputedRef<RollenArt | undefined> = computed(
+    (): RollenArt | undefined => personStore.personenuebersicht?.zuordnungen[0]?.rollenArt,
+  );
+
   const rollenFilter: ComputedRef<RollenForPersonenkontextCreationQuery | undefined> = computed(() => {
     if (!selectedOrganisation.value) {
       return;
@@ -126,7 +132,7 @@
     }
 
     if (props.createType === CreationType.AddPersonToOwnSchule || props.personId !== undefined) {
-      filter.rollenartOfUser = personStore.personenuebersicht?.zuordnungen[0]?.rollenArt;
+      filter.rollenartOfUser = rollenartOfUser.value;
     }
 
     if (props.allowMultipleRollen) {

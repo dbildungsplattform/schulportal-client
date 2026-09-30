@@ -71,7 +71,6 @@
   const selectedKlasseCache: Ref<TranslatedObject | undefined> = ref(undefined);
   const selectedRolleCache: Ref<string[] | undefined> = ref(undefined);
 
-  const filteredRollen: Ref<TranslatedRolleWithAttrs[]> = ref<TranslatedRolleWithAttrs[]>([]);
   const filteredRollenCache: Ref<TranslatedRolleWithAttrs[]> = ref<TranslatedRolleWithAttrs[]>([]);
 
   const hasPreFilled: Ref<boolean> = ref(false);
@@ -128,12 +127,37 @@
     }
   });
 
+  function getFilteredRollen(
+    selectedRolleIds: string[] | undefined,
+    organisationId?: string,
+  ): TranslatedRolleWithAttrs[] {
+    const rollen: TranslatedRolleWithAttrs[] = rolleStore.rollenForPersonenkontextCreation;
+
+    if (createType.value === CreationType.AddPersonToOwnSchule) {
+      const assignedRollenIds: Set<string> = new Set(
+        personStore.personenuebersicht?.zuordnungen
+          .filter((zuordnung: Zuordnung) => zuordnung.sskId === organisationId)
+          .map((zuordnung: Zuordnung) => zuordnung.rolleId) || [],
+      );
+      return rollen.filter(
+        (rolle: TranslatedRolleWithAttrs) => rolle.rollenart === RollenArt.Lehr && !assignedRollenIds.has(rolle.value),
+      );
+    }
+
+    if (!selectedRolleIds || selectedRolleIds.length === 0) {
+      return rollen;
+    }
+
+    const selectedRollenart: RollenArt | undefined = rollen.find((rolle: TranslatedRolleWithAttrs) =>
+      selectedRolleIds.includes(rolle.value),
+    )?.rollenart;
+    return rollen.filter((rolle: TranslatedRolleWithAttrs) => rolle.rollenart === selectedRollenart);
+  }
+
   // Define a method to check if the selected Rolle is of type "Lern"
   function hasSelectedLernRolle(selectedRolleIds?: string[]): boolean | undefined {
     const translatedRollenWithAttrs: Array<TranslatedRolleWithAttrs> =
-      filteredRollen.value && filteredRollen.value.length > 0
-        ? filteredRollen.value
-        : (filteredRollenCache.value ?? []);
+      filteredRollenCache.value.length > 0 ? filteredRollenCache.value : getFilteredRollen(selectedRolleIds);
 
     if (Array.isArray(selectedRolleIds)) {
       return selectedRolleIds.some((id: string) => isLernRolle(id, translatedRollenWithAttrs));
@@ -141,6 +165,8 @@
       return false;
     }
   }
+
+  
 
   const headerLabel: Ref<string> = ref(t('admin.person.addNew'));
   const layoutCardLabel: Ref<string> = ref(t('admin.person.addNew'));
@@ -207,7 +233,7 @@
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.person.rules.kopersNr.noLeadingTrailingSpaces'))
         .when('selectedRollen', {
           is: (selectedRolleIds: string[]) =>
-            isKopersRolle(selectedRolleIds, filteredRollen.value) && !hasNoKopersNr.value,
+            isKopersRolle(selectedRolleIds, getFilteredRollen(selectedRolleIds)) && !hasNoKopersNr.value,
           then: (schema: StringSchema<string | undefined, AnyObject, undefined, ''>) =>
             schema.required(t('admin.person.rules.kopersNr.required')),
         }),
@@ -272,6 +298,10 @@
     Ref<string | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedKopersNr', vuetifyConfig);
+
+  const filteredRollen: ComputedRef<TranslatedRolleWithAttrs[]> = computed(() => {
+    return getFilteredRollen(selectedRollen.value, selectedOrganisation.value);
+  });
 
   const {
     handleBefristungUpdate,
@@ -465,7 +495,6 @@
     await personenkontextStore.createPersonWithKontexte(bodyParams);
     formContext.resetForm();
     hasNoKopersNr.value = false;
-    filteredRollen.value = [];
     // Reset canCommit to false after creating the personto avoid issues when going back to the form
     if (personenkontextStore.workflowStepResponse) {
       personenkontextStore.workflowStepResponse.canCommit = false;
@@ -498,7 +527,6 @@
     selectedRolleCache.value = selectedRollen.value;
     await personenkontextStore.commitLandesbediensteteKontext(personId, newKontexte, existingPerson.personalnummer);
     formContext.resetForm();
-    filteredRollen.value = [];
   }
 
   const onSubmit: (e?: Event) => Promise<Promise<void> | undefined> = formContext.handleSubmit(async () => {
@@ -582,81 +610,14 @@
   const sectionNumberRolle: ComputedRef<string> = computed(() => (isOwnSchule.value ? '3.' : '2.'));
   const sectionNumberBefristung: ComputedRef<string> = computed(() => (isOwnSchule.value ? '4.' : '2.1'));
 
-  // Watch the selectedRollen and update filteredRollen accordingly
-  watch(
-    selectedRollen,
-    (newSelectedRollen: string[] | undefined) => {
-      // Decide which rollen list to use based on createType
-      const baseRollen: TranslatedRolleWithAttrs[] | undefined =
-        createType.value === CreationType.AddPersonToOwnSchule
-          ? filteredRollen.value
-          : rolleStore.rollenForPersonenkontextCreation;
 
-      if (newSelectedRollen && newSelectedRollen.length > 0) {
-        const selectedRollenart: RollenArt | undefined = baseRollen?.find((rolle: TranslatedRolleWithAttrs) =>
-          newSelectedRollen.includes(rolle.value),
-        )?.rollenart;
-
-        filteredRollen.value =
-          baseRollen?.filter((rolle: TranslatedRolleWithAttrs) => rolle.rollenart === selectedRollenart) || [];
-        // If no roles are selected, reset the filteredRollen to the normal rollen list and for createType AddPersonToOwnSchule nothing happens because the rollen are always filtered
-      } else if (
-        newSelectedRollen &&
-        newSelectedRollen.length === 0 &&
-        createType.value !== CreationType.AddPersonToOwnSchule
-      ) {
-        filteredRollen.value = [];
-      }
-    },
-    { immediate: true },
-  );
-
-  // Watch the rollen and update filteredRollen based on selectedRollen... This is necessary to ensure that the filteredRollen are always in sync while the user is searching.
-  watch(
-    () => rolleStore.rollenForPersonenkontextCreation,
-    async (newRollen: TranslatedRolleWithAttrs[]) => {
-      if (!newRollen) {
-        filteredRollen.value = [];
-        return;
-      }
-
-      // AddPersonToOwnSchule: only show Lehr roles for that createType
-      if (createType.value === CreationType.AddPersonToOwnSchule) {
-        const existingPerson: PersonLandesbediensteterSearchResponse | undefined =
-          personStore.allLandesbedienstetePersonen?.[0];
-        const personId: string | undefined = existingPerson?.id;
-
-        if (!personId) {
-          return;
-        }
-        // Get latest person data
-        await personStore.getPersonenuebersichtById(personId);
-        const assignedRollenIds: Set<string> = new Set(
-          personStore.personenuebersicht?.zuordnungen
-            .filter((z: Zuordnung) => z.sskId === selectedOrganisation.value)
-            .map((z: Zuordnung) => z.rolleId) || [],
-        );
-        filteredRollen.value = newRollen.filter(
-          (rolle: TranslatedRolleWithAttrs) =>
-            rolle.rollenart === RollenArt.Lehr && !assignedRollenIds.has(rolle.value),
-        );
-        return;
-      }
-
-      // Regular filtering based on selectedRollen
-      if (!selectedRollen.value || selectedRollen.value.length === 0) {
-        filteredRollen.value = newRollen;
-      } else {
-        const selectedRollenart: RollenArt | undefined = newRollen.find((rolle: TranslatedRolleWithAttrs) =>
-          selectedRollen.value?.includes(rolle.value),
-        )?.rollenart;
-
-        filteredRollen.value = newRollen.filter(
-          (rolle: TranslatedRolleWithAttrs) => rolle.rollenart === selectedRollenart,
-        );
-      }
-    },
-  );
+  watch(selectedOrganisation, async (newSelectedOrganisation: string | undefined) => {
+    const existingPerson: PersonLandesbediensteterSearchResponse | undefined =
+      personStore.allLandesbedienstetePersonen?.[0];
+    if (createType.value === CreationType.AddPersonToOwnSchule && newSelectedOrganisation && existingPerson) {
+      await personStore.getPersonenuebersichtById(existingPerson.id);
+    }
+  });
 
   watch(hasNoKopersNr, (newValue: boolean | undefined) => {
     if (newValue) {
@@ -736,12 +697,17 @@
     },
   );
 
-  onMounted(() => {
+  onMounted(async () => {
     personStore.errorCode = '';
     personenkontextStore.createdPersonWithKontext = null;
     personenkontextStore.landesbediensteteCommitResponse = null;
     /* listen for browser changes and prevent them when form is dirty */
     window.addEventListener('beforeunload', preventNavigation);
+    const existingPerson: PersonLandesbediensteterSearchResponse | undefined =
+      personStore.allLandesbedienstetePersonen?.[0];
+    if (createType.value === CreationType.AddPersonToOwnSchule && existingPerson) {
+      await personStore.getPersonenuebersichtById(existingPerson.id);
+    }
   });
 
   onUnmounted(() => {
