@@ -1020,7 +1020,8 @@ export const DbiamPersonenkontextErrorI18nKeyEnum = {
     OrganisationMatchesRollenart: 'ORGANISATION_MATCHES_ROLLENART',
     PersonenkontextAnlageError: 'PERSONENKONTEXT_ANLAGE_ERROR',
     RolleNurAnPassendeOrganisation: 'ROLLE_NUR_AN_PASSENDE_ORGANISATION',
-    PersonalnummerNichtEindeutig: 'PERSONALNUMMER_NICHT_EINDEUTIG'
+    PersonalnummerNichtEindeutig: 'PERSONALNUMMER_NICHT_EINDEUTIG',
+    PersonHatKeineKoperspflichtigeRolle: 'PERSON_HAT_KEINE_KOPERSPFLICHTIGE_ROLLE'
 } as const;
 
 export type DbiamPersonenkontextErrorI18nKeyEnum = typeof DbiamPersonenkontextErrorI18nKeyEnum[keyof typeof DbiamPersonenkontextErrorI18nKeyEnum];
@@ -1773,6 +1774,11 @@ export interface ManageableServiceProviderResponse {
 export const ManageableServiceProviderResponseRelevantSystemrechteEnum = {
     RollenVerwalten: 'ROLLEN_VERWALTEN',
     MptRollenZuordnen: 'MPT_ROLLEN_ZUORDNEN',
+    Pilot1RollenZuordnen: 'PILOT_1_ROLLEN_ZUORDNEN',
+    Pilot2RollenZuordnen: 'PILOT_2_ROLLEN_ZUORDNEN',
+    Pilot3RollenZuordnen: 'PILOT_3_ROLLEN_ZUORDNEN',
+    Pilot4RollenZuordnen: 'PILOT_4_ROLLEN_ZUORDNEN',
+    Pilot5RollenZuordnen: 'PILOT_5_ROLLEN_ZUORDNEN',
     PersonenSofortLoeschen: 'PERSONEN_SOFORT_LOESCHEN',
     PersonenVerwalten: 'PERSONEN_VERWALTEN',
     LandesbediensteteSuchenUndHinzufuegen: 'LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN',
@@ -3760,7 +3766,12 @@ export type RollenArt = typeof RollenArt[keyof typeof RollenArt];
 export const RollenMerkmal = {
     BefristungPflicht: 'BEFRISTUNG_PFLICHT',
     KopersPflicht: 'KOPERS_PFLICHT',
-    MptRolle: 'MPT_ROLLE'
+    MptRolle: 'MPT_ROLLE',
+    Pilot1Rolle: 'PILOT_1_ROLLE',
+    Pilot2Rolle: 'PILOT_2_ROLLE',
+    Pilot3Rolle: 'PILOT_3_ROLLE',
+    Pilot4Rolle: 'PILOT_4_ROLLE',
+    Pilot5Rolle: 'PILOT_5_ROLLE'
 } as const;
 
 export type RollenMerkmal = typeof RollenMerkmal[keyof typeof RollenMerkmal];
@@ -3775,6 +3786,11 @@ export type RollenMerkmal = typeof RollenMerkmal[keyof typeof RollenMerkmal];
 export const RollenSystemRechtEnum = {
     RollenVerwalten: 'ROLLEN_VERWALTEN',
     MptRollenZuordnen: 'MPT_ROLLEN_ZUORDNEN',
+    Pilot1RollenZuordnen: 'PILOT_1_ROLLEN_ZUORDNEN',
+    Pilot2RollenZuordnen: 'PILOT_2_ROLLEN_ZUORDNEN',
+    Pilot3RollenZuordnen: 'PILOT_3_ROLLEN_ZUORDNEN',
+    Pilot4RollenZuordnen: 'PILOT_4_ROLLEN_ZUORDNEN',
+    Pilot5RollenZuordnen: 'PILOT_5_ROLLEN_ZUORDNEN',
     PersonenSofortLoeschen: 'PERSONEN_SOFORT_LOESCHEN',
     PersonenVerwalten: 'PERSONEN_VERWALTEN',
     LandesbediensteteSuchenUndHinzufuegen: 'LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN',
@@ -4748,6 +4764,120 @@ export const UserExternalDataResponsePolyteiaRollenartEnum = {
 } as const;
 
 export type UserExternalDataResponsePolyteiaRollenartEnum = typeof UserExternalDataResponsePolyteiaRollenartEnum[keyof typeof UserExternalDataResponsePolyteiaRollenartEnum];
+
+/**
+ * 
+ * @export
+ * @interface UserExternalDataV2BodyParams
+ */
+export interface UserExternalDataV2BodyParams {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2BodyParams
+     */
+    'sub': string;
+    /**
+     * Unique identifier of the Angebot to check the permission for.
+     * @type {string}
+     * @memberof UserExternalDataV2BodyParams
+     */
+    'keycloakClientId': string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserExternalDataV2BodyParams
+     */
+    'includeEmailAddress'?: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface UserExternalDataV2PersonenkontextResponse
+ */
+export interface UserExternalDataV2PersonenkontextResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2PersonenkontextResponse
+     */
+    'dienststellennr': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2PersonenkontextResponse
+     */
+    'rolleId': string;
+}
+/**
+ * 
+ * @export
+ * @interface UserExternalDataV2Response
+ */
+export interface UserExternalDataV2Response {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2Response
+     */
+    'personId': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2Response
+     */
+    'vorname': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2Response
+     */
+    'nachname': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2Response
+     */
+    'rollenart'?: UserExternalDataV2ResponseRollenartEnum;
+    /**
+     * 
+     * @type {Array<UserExternalDataV2PersonenkontextResponse>}
+     * @memberof UserExternalDataV2Response
+     */
+    'personenkontexte': Array<UserExternalDataV2PersonenkontextResponse>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof UserExternalDataV2Response
+     */
+    'dienststellenNummern': Array<string>;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2Response
+     */
+    'emailAdresse'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserExternalDataV2Response
+     */
+    'oxLoginId'?: string;
+}
+
+export const UserExternalDataV2ResponseRollenartEnum = {
+    Lern: 'LERN',
+    Lehr: 'LEHR',
+    Extern: 'EXTERN',
+    Orgadmin: 'ORGADMIN',
+    Leit: 'LEIT',
+    Sysadmin: 'SYSADMIN',
+    Sorgber: 'SORGBER',
+    Schb: 'SCHB',
+    Nlehr: 'NLEHR'
+} as const;
+
+export type UserExternalDataV2ResponseRollenartEnum = typeof UserExternalDataV2ResponseRollenartEnum[keyof typeof UserExternalDataV2ResponseRollenartEnum];
 
 /**
  * 
@@ -7543,11 +7673,14 @@ export const KeycloakinternalApiAxiosParamCreator = function (configuration?: Co
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {string} apiKey Internal API key for server-to-server communication
          * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        keycloakInternalControllerGetExternalData: async (userExternalDataBodyParams: UserExternalDataBodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        keycloakInternalControllerGetExternalData: async (apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'apiKey' is not null or undefined
+            assertParamExists('keycloakInternalControllerGetExternalData', 'apiKey', apiKey)
             // verify required parameter 'userExternalDataBodyParams' is not null or undefined
             assertParamExists('keycloakInternalControllerGetExternalData', 'userExternalDataBodyParams', userExternalDataBodyParams)
             const localVarPath = `/keycloakinternal/externaldata`;
@@ -7562,6 +7695,10 @@ export const KeycloakinternalApiAxiosParamCreator = function (configuration?: Co
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
+            if (apiKey != null) {
+                localVarHeaderParameter['api-key'] = String(apiKey);
+            }
+
 
     
             localVarHeaderParameter['Content-Type'] = 'application/json';
@@ -7570,6 +7707,49 @@ export const KeycloakinternalApiAxiosParamCreator = function (configuration?: Co
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
             localVarRequestOptions.data = serializeDataIfNeeded(userExternalDataBodyParams, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary External Data about the requested user, scoped to a single Angebot.
+         * @param {string} apiKey Internal API key for server-to-server communication
+         * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        keycloakInternalControllerGetExternalDataV2V2: async (apiKey: string, userExternalDataV2BodyParams: UserExternalDataV2BodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'apiKey' is not null or undefined
+            assertParamExists('keycloakInternalControllerGetExternalDataV2V2', 'apiKey', apiKey)
+            // verify required parameter 'userExternalDataV2BodyParams' is not null or undefined
+            assertParamExists('keycloakInternalControllerGetExternalDataV2V2', 'userExternalDataV2BodyParams', userExternalDataV2BodyParams)
+            const localVarPath = `/v2/keycloakinternal/externaldata`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (apiKey != null) {
+                localVarHeaderParameter['api-key'] = String(apiKey);
+            }
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(userExternalDataV2BodyParams, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -7589,12 +7769,25 @@ export const KeycloakinternalApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {string} apiKey Internal API key for server-to-server communication
          * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserExternalDataResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options);
+        async keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserExternalDataResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.keycloakInternalControllerGetExternalData(apiKey, userExternalDataBodyParams, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary External Data about the requested user, scoped to a single Angebot.
+         * @param {string} apiKey Internal API key for server-to-server communication
+         * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async keycloakInternalControllerGetExternalDataV2V2(apiKey: string, userExternalDataV2BodyParams: UserExternalDataV2BodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserExternalDataV2Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.keycloakInternalControllerGetExternalDataV2V2(apiKey, userExternalDataV2BodyParams, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -7610,12 +7803,24 @@ export const KeycloakinternalApiFactory = function (configuration?: Configuratio
         /**
          * 
          * @summary External Data about requested in user.
+         * @param {string} apiKey Internal API key for server-to-server communication
          * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: any): AxiosPromise<UserExternalDataResponse> {
-            return localVarFp.keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options).then((request) => request(axios, basePath));
+        keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: any): AxiosPromise<UserExternalDataResponse> {
+            return localVarFp.keycloakInternalControllerGetExternalData(apiKey, userExternalDataBodyParams, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary External Data about the requested user, scoped to a single Angebot.
+         * @param {string} apiKey Internal API key for server-to-server communication
+         * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        keycloakInternalControllerGetExternalDataV2V2(apiKey: string, userExternalDataV2BodyParams: UserExternalDataV2BodyParams, options?: any): AxiosPromise<UserExternalDataV2Response> {
+            return localVarFp.keycloakInternalControllerGetExternalDataV2V2(apiKey, userExternalDataV2BodyParams, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -7629,12 +7834,24 @@ export interface KeycloakinternalApiInterface {
     /**
      * 
      * @summary External Data about requested in user.
+     * @param {string} apiKey Internal API key for server-to-server communication
      * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof KeycloakinternalApiInterface
      */
-    keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): AxiosPromise<UserExternalDataResponse>;
+    keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): AxiosPromise<UserExternalDataResponse>;
+
+    /**
+     * 
+     * @summary External Data about the requested user, scoped to a single Angebot.
+     * @param {string} apiKey Internal API key for server-to-server communication
+     * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof KeycloakinternalApiInterface
+     */
+    keycloakInternalControllerGetExternalDataV2V2(apiKey: string, userExternalDataV2BodyParams: UserExternalDataV2BodyParams, options?: AxiosRequestConfig): AxiosPromise<UserExternalDataV2Response>;
 
 }
 
@@ -7648,13 +7865,27 @@ export class KeycloakinternalApi extends BaseAPI implements KeycloakinternalApiI
     /**
      * 
      * @summary External Data about requested in user.
+     * @param {string} apiKey Internal API key for server-to-server communication
      * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof KeycloakinternalApi
      */
-    public keycloakInternalControllerGetExternalData(userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig) {
-        return KeycloakinternalApiFp(this.configuration).keycloakInternalControllerGetExternalData(userExternalDataBodyParams, options).then((request) => request(this.axios, this.basePath));
+    public keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig) {
+        return KeycloakinternalApiFp(this.configuration).keycloakInternalControllerGetExternalData(apiKey, userExternalDataBodyParams, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary External Data about the requested user, scoped to a single Angebot.
+     * @param {string} apiKey Internal API key for server-to-server communication
+     * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof KeycloakinternalApi
+     */
+    public keycloakInternalControllerGetExternalDataV2V2(apiKey: string, userExternalDataV2BodyParams: UserExternalDataV2BodyParams, options?: AxiosRequestConfig) {
+        return KeycloakinternalApiFp(this.configuration).keycloakInternalControllerGetExternalDataV2V2(apiKey, userExternalDataV2BodyParams, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
