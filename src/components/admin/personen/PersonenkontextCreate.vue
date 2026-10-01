@@ -106,18 +106,37 @@
   // doing it this way prevents an issue where the reactive system constantly re-runs which causes requests to be issued in a loop
   const administriertVon: Ref<string[] | undefined> = ref([]);
 
+  function findSelectedRolleWithAttrs(
+    rollen: TranslatedRolleWithAttrs[],
+    id: string | undefined,
+  ): TranslatedRolleWithAttrs | undefined {
+    return rollen.find((rolle: TranslatedRolleWithAttrs) => rolle.value === id);
+  }
+
+  function findSelectedRollenWithAttrs(
+    rollen: TranslatedRolleWithAttrs[],
+    ids: string[] | undefined,
+  ): TranslatedRolleWithAttrs[] {
+    return rollen.filter((rolle: TranslatedRolleWithAttrs) => ids?.includes(rolle.value)) ?? [];
+  }
+
   const isRolleSearchStringEqualToSelection: ComputedRef<boolean> = computed(() => {
     if (props.allowMultipleRollen) {
-      const selectedRollenWithAttrs: TranslatedRolleWithAttrs[] =
-        props.rollen?.filter((rolle: TranslatedRolleWithAttrs) => selectedRollen.value?.includes(rolle.value)) ?? [];
       return (
-        selectedRollenWithAttrs.some((rolle: TranslatedObject) => rolle.title === searchInputRollen.value) ?? false
+        findSelectedRollenWithAttrs(props.rollen, selectedRollen.value).some(
+          (rolle: TranslatedObject) => rolle.title === searchInputRollen.value,
+        ) ?? false
       );
     } else {
-      const selectedRolleWithAttrs: TranslatedRolleWithAttrs | undefined = props.rollen?.find(
-        (rolle: TranslatedRolleWithAttrs) => selectedRollen.value?.includes(rolle.value),
-      );
-      return selectedRolleWithAttrs?.title === searchInputRolle.value;
+      return findSelectedRolleWithAttrs(props.rollen, selectedRolle.value)?.title === searchInputRolle.value;
+    }
+  });
+
+  const selectedRollenart: ComputedRef<RollenArt | undefined> = computed(() => {
+    if (props.allowMultipleRollen) {
+      return findSelectedRollenWithAttrs(props.rollen, selectedRollen.value)[0]?.rollenart;
+    } else {
+      return findSelectedRolleWithAttrs(props.rollen, selectedRolle.value)?.rollenart;
     }
   });
 
@@ -128,14 +147,11 @@
     const filter: RollenForPersonenkontextCreationQuery = {
       organisationId: selectedOrganisation.value,
       limit: 25,
+      rollenartForPerson: props.rollenartForPerson ?? selectedRollenart.value,
     };
 
     if (props.createType === CreationType.Limited) {
       filter.systemrecht = RollenSystemRecht.EingeschraenktNeueBenutzerErstellen;
-    }
-
-    if (props.rollenartForPerson) {
-      filter.rollenartForPerson = props.rollenartForPerson;
     }
 
     if (props.allowMultipleRollen) {
@@ -298,10 +314,6 @@
   watch(
     () => (props.allowMultipleRollen ? selectedRollen.value : selectedRolle.value),
     async (newValue: string | string[] | undefined, oldValue: string | string[] | undefined) => {
-      // Cancel any pending debounced search to prevent a stale request from overwriting
-      // the workflow response triggered by this selection.
-      clearTimeout(rollenSearchDebounceTimerId.value);
-
       const filter: WorkflowFilter = {
         personId: props.personId,
         organisationId: selectedOrganisation.value,

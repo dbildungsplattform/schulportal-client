@@ -606,6 +606,7 @@ describe('PersonenkontextCreate', () => {
             expect.objectContaining({
               organisationId: '1133',
               rollenIds: ['54321'],
+              rollenartForPerson: RollenArt.Lern,
             }),
           );
         });
