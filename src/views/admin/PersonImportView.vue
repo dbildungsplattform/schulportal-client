@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ImportDataItemStatus, RollenSystemRechtEnum } from '@/api-client/generated';
+  import { ImportDataItemStatus } from '@/api-client/generated';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
@@ -92,9 +92,8 @@
   watch(selectedSchule, async (newValue: string | undefined, oldValue: string | undefined) => {
     if (newValue && newValue !== oldValue) {
       // Fetch rollen after selecting the organization
-      await rolleStore.getAllRollen({
-        organisationContextForOperation: newValue,
-        systemrechte: [RollenSystemRechtEnum.ImportDurchfuehren],
+      await rolleStore.getRollenAvailableForImport({
+        organisationId: newValue,
         rollenarten: [RollenArt.Lern],
       });
 
@@ -399,11 +398,10 @@
     }
   });
 
-  onMounted(async () => {
-    await rolleStore.getAllRollen({
-      systemrechte: [RollenSystemRechtEnum.ImportDurchfuehren],
-      rollenarten: [RollenArt.Lern],
-    });
+  onMounted(() => {
+    // Rollen are only fetched once a Schule is selected, see the watcher above.
+    rolleStore.allRollen = [];
+    rolleStore.totalRollen = 0;
     importStore.uploadResponse = null;
     importStore.importResponse = null;
     importStore.importProgress = 0;

@@ -210,8 +210,8 @@
       if (authStore.hasMptRollenZuordnenPermission) {
         systemrechte.push(RollenSystemRechtEnum.MptRollenZuordnen);
       }
-      await rolleStore.getAllRollen({
-        organisationContextForOperation: organisationIdFromQuery.value,
+      await rolleStore.getRollenAvailableForErweiterung({
+        organisationId: organisationIdFromQuery.value,
         systemrechte,
         rollenarten: serviceProviderStore.currentServiceProvider?.rollenartenWhitelist,
       });

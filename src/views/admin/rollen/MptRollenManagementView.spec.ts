@@ -77,10 +77,10 @@ describe('MptRollenManagementView', () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain('Bitte wählen Sie zunächst im Filter eine Schule aus');
-    expect(rolleStore.getAllRollen).not.toHaveBeenCalled();
+    expect(rolleStore.getRollenForMptZuordnung).not.toHaveBeenCalled();
   });
 
-  it('loads rollen with MPT systemrecht when schule is selected', async () => {
+  it('loads rollen from the MPT endpoint when schule is selected', async () => {
     const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
     const schuleId: string = DoFactory.getSchule().id;
     const schuleFilter: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
@@ -89,10 +89,9 @@ describe('MptRollenManagementView', () => {
     await nextTick();
     await flushPromises();
 
-    expect(rolleStore.getAllRollen).toHaveBeenCalledWith(
+    expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledWith(
       expect.objectContaining({
-        organisationenForFilter: [schuleId],
-        systemrechte: [expect.stringMatching('MPT_ROLLEN_ZUORDNEN')],
+        organisationIds: [schuleId],
       }),
     );
   });
@@ -180,7 +179,7 @@ describe('MptRollenManagementView', () => {
     const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
     const schuleId: string = DoFactory.getSchule().id;
     const schuleFilter: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
-    const getAllRollenMock: Mock = rolleStore.getAllRollen as unknown as Mock;
+    const getAllRollenMock: Mock = rolleStore.getRollenForMptZuordnung as unknown as Mock;
 
     schuleFilter.vm.$emit('update:selectedSchulen', schuleId);
     await nextTick();
@@ -196,7 +195,7 @@ describe('MptRollenManagementView', () => {
 
     expect(latestCallArgs).toEqual(
       expect.objectContaining({
-        organisationenForFilter: [schuleId],
+        organisationIds: [schuleId],
         offset: 30,
       }),
     );
@@ -215,12 +214,12 @@ describe('MptRollenManagementView', () => {
     resultTable.vm.$emit('onItemsPerPageUpdate', 50);
     await nextTick();
 
-    const getAllRollenMock: Mock = rolleStore.getAllRollen as unknown as Mock;
+    const getAllRollenMock: Mock = rolleStore.getRollenForMptZuordnung as unknown as Mock;
     const latestCallArgs: unknown = getAllRollenMock.mock.calls.at(-1)?.[0];
 
     expect(latestCallArgs).toEqual(
       expect.objectContaining({
-        organisationenForFilter: [schuleId],
+        organisationIds: [schuleId],
         limit: 50,
       }),
     );
@@ -253,9 +252,9 @@ describe('MptRollenManagementView', () => {
     await flushPromises();
 
     expect((wrapper.vm as unknown as MptRollenManagementViewVm).selectedOrganisationId).toBe(schuleId);
-    expect(rolleStore.getAllRollen).toHaveBeenCalledWith(
+    expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledWith(
       expect.objectContaining({
-        organisationenForFilter: [schuleId],
+        organisationIds: [schuleId],
       }),
     );
   });
