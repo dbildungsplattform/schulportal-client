@@ -1,7 +1,9 @@
-import { OrganisationsTyp, type SystemRechtResponse } from '@/api-client/generated';
+import { OrganisationsTyp } from '@/api-client/generated';
 import routes from '@/router/routes';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
 import {
+  RollenMerkmal,
+  RollenSystemRecht,
   useRolleStore,
   type Rolle,
   type RolleStore,
@@ -34,7 +36,7 @@ const mockUpdatedRolle: RolleWithServiceProvidersResponse = {
   version: 2,
   createdAt: faker.date.past().toISOString(),
   updatedAt: faker.date.recent().toISOString(),
-  systemrechte: new Set<SystemRechtResponse>(),
+  systemrechte: [],
 };
 
 rolleStore.currentRolle = mockCurrentRolle;
@@ -78,7 +80,60 @@ beforeEach(async () => {
   wrapper = await mountComponent();
 });
 
+afterEach(() => {
+  wrapper?.unmount();
+});
+
 describe('RolleDetailsView', () => {
+  test.each([false, true])('should save pilot selections with removal=%s', async (remove: boolean) => {
+    const merkmale: RollenMerkmal[] = [
+      RollenMerkmal.Pilot1Rolle,
+      RollenMerkmal.Pilot2Rolle,
+      RollenMerkmal.Pilot3Rolle,
+      RollenMerkmal.Pilot4Rolle,
+      RollenMerkmal.Pilot5Rolle,
+    ];
+    const systemrechte: RollenSystemRecht[] = [
+      RollenSystemRecht.Pilot1RollenZuordnen,
+      RollenSystemRecht.Pilot2RollenZuordnen,
+      RollenSystemRecht.Pilot3RollenZuordnen,
+      RollenSystemRecht.Pilot4RollenZuordnen,
+      RollenSystemRecht.Pilot5RollenZuordnen,
+    ];
+    const rolle: Rolle = DoFactory.getRolle({
+      administeredBySchulstrukturknoten: mockOrga.id,
+      merkmale: remove ? merkmale : [],
+      systemrechte: new Set(remove ? systemrechte : []),
+    });
+    wrapper?.unmount();
+    rolleStore.currentRolle = rolle;
+    rolleStore.updatedRolle = null;
+    rolleStore.errorCode = '';
+    rolleStore.getRolleById = vi.fn();
+    rolleStore.updateRolle = vi.fn();
+    wrapper = await mountComponent();
+    await wrapper.find('[data-testid="rolle-edit-button"]').trigger('click');
+    const form: VueWrapper = wrapper.findComponent({ ref: 'rolle-form' });
+    const merkmaleSelect: VueWrapper = form.findComponent({ ref: 'merkmale-select' });
+    const systemrechteSelect: VueWrapper = form.findComponent({ ref: 'systemrechte-select' });
+
+    await merkmaleSelect.setValue(remove ? [] : merkmale);
+    await systemrechteSelect.setValue(remove ? [] : systemrechte);
+    await wrapper.find('[data-testid="rolle-changes-save-button"]').trigger('click');
+    await flushPromises();
+
+    expect(rolleStore.updateRolle).toHaveBeenLastCalledWith(
+      rolle.id,
+      rolle.name,
+      remove ? [] : merkmale,
+      remove ? [] : systemrechte,
+      [],
+      rolle.version,
+    );
+    rolleStore.currentRolle = mockCurrentRolle;
+    rolleStore.updatedRolle = mockUpdatedRolle;
+  });
+
   test('it renders the rolle details view', () => {
     expect(wrapper?.find('[data-testid="rolle-details-headline"]').isVisible()).toBe(true);
   });
@@ -109,8 +164,8 @@ describe('RolleDetailsView', () => {
   test('it renders data in success template', async () => {
     rolleStore.updatedRolle = DoFactory.getRolleWithServiceProviders({
       name: 'Updated Lehrer',
-      merkmale: new Set(),
-      systemrechte: new Set<SystemRechtResponse>(),
+      merkmale: [],
+      systemrechte: [],
       serviceProviders: [],
       version: 2,
     });

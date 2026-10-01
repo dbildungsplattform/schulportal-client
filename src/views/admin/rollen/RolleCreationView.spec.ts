@@ -1,4 +1,5 @@
 import {
+  RollenMerkmal,
   RollenSystemRechtEnum,
   type ServiceProviderResponse,
   type SystemRechtResponse,
@@ -241,6 +242,55 @@ describe('RolleCreationView', () => {
     await nextTick();
 
     document.querySelector('[data-testid="confirm-unsaved-changes-button"]');
+  });
+
+  test('should offer and submit multiple pilot attributes and system rights', async () => {
+    const merkmale: RollenMerkmal[] = [
+      RollenMerkmal.Pilot1Rolle,
+      RollenMerkmal.Pilot2Rolle,
+      RollenMerkmal.Pilot3Rolle,
+      RollenMerkmal.Pilot4Rolle,
+      RollenMerkmal.Pilot5Rolle,
+    ];
+    const systemrechte: RollenSystemRechtEnum[] = [
+      RollenSystemRechtEnum.Pilot1RollenZuordnen,
+      RollenSystemRechtEnum.Pilot2RollenZuordnen,
+      RollenSystemRechtEnum.Pilot3RollenZuordnen,
+      RollenSystemRechtEnum.Pilot4RollenZuordnen,
+      RollenSystemRechtEnum.Pilot5RollenZuordnen,
+    ];
+    const { merkmaleSelect, systemrechteSelect }: Partial<FormSelectors> = await fillForm({
+      organisation: organisationObject.id,
+      rollenart: mockRolle.rollenart,
+      rollenname: mockRolle.name,
+      merkmale,
+      systemrechte,
+    });
+
+    expect(merkmaleSelect?.props('items')).toEqual(
+      expect.arrayContaining(
+        merkmale.map((value: RollenMerkmal, index: number) => ({ value, title: `Ist Pilot-${index + 1}-Rolle` })),
+      ),
+    );
+    expect(systemrechteSelect?.props('items')).toEqual(
+      expect.arrayContaining(
+        systemrechte.map((value: RollenSystemRechtEnum, index: number) => ({
+          value,
+          title: `Darf Pilot-${index + 1}-Rollen zuordnen`,
+        })),
+      ),
+    );
+    await wrapper?.find('[data-testid="rolle-form-submit-button"]').trigger('click');
+    await flushPromises();
+
+    expect(rolleStore.createRolle).toHaveBeenLastCalledWith(
+      mockRolle.name,
+      organisationObject.id,
+      mockRolle.rollenart,
+      merkmale,
+      systemrechte,
+      [],
+    );
   });
 
   test('it fills form and triggers submit', async () => {
