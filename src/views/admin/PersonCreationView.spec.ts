@@ -22,9 +22,9 @@ import {
   type RolleWithServiceProvidersResponse,
 } from '@/stores/RolleStore';
 import type { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
-import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
-import { expect, test, type Mock, type MockInstance } from 'vitest';
+import { afterEach, expect, test, type Mock, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import {
   createRouter,
@@ -35,6 +35,8 @@ import {
 } from 'vue-router';
 import { noop } from 'vuetify/lib/util/helpers.mjs';
 import PersonCreationView from './PersonCreationView.vue';
+
+enableAutoUnmount(afterEach);
 
 let wrapper: VueWrapper | null = null;
 let router: Router;
@@ -612,6 +614,7 @@ describe('PersonCreationView', () => {
 
     personStore.allLandesbedienstetePersonen = mockLandesbedienstetePersonen;
     rolleStore.rollenForPersonenkontextCreation = [{ ...mockRolleForPersonenkontextCreation, rollenart: 'LEHR' }];
+    wrapper?.unmount();
     await router.push({ name: 'add-person-to-own-schule' });
     await router.isReady();
 
@@ -660,6 +663,7 @@ describe('PersonCreationView', () => {
   });
 
   test('it renders success template for added Landesbediensteter and navigates back to person management', async () => {
+    wrapper?.unmount();
     await router.push({ name: 'add-person-to-own-schule' });
     await router.isReady();
 
@@ -795,8 +799,8 @@ describe('PersonCreationView', () => {
     let rollenRequestSpy: MockInstance | undefined;
     let uebersichtRequestSpy: MockInstance | undefined;
 
-    function buildPersonenuebersicht(): PersonenUebersicht {
-      return DoFactory.getPersonenUebersicht(DoFactory.getPerson({ id: landesbediensteter.id }), [
+    function buildPersonenuebersicht(personId: string = landesbediensteter.id): PersonenUebersicht {
+      return DoFactory.getPersonenUebersicht(DoFactory.getPerson({ id: personId }), [
         DoFactory.getZuordnung({ sskId: ORGANISATION_ID, rolleId: ROLLE_ID, rollenArt: RollenArt.Lehr }),
       ]);
     }
@@ -819,13 +823,13 @@ describe('PersonCreationView', () => {
         canCommit: true,
       });
 
+      wrapper?.unmount();
       await router.push({ name: 'add-person-to-own-schule' });
       await router.isReady();
-      wrapper = await mountComponent();
 
       // Both responses replace the state with a fresh object carrying identical content, as the real stores do.
-      uebersichtRequestSpy = vi.mocked(personStore.getPersonenuebersichtById).mockImplementation(() => {
-        personStore.personenuebersicht = buildPersonenuebersicht();
+      uebersichtRequestSpy = vi.mocked(personStore.getPersonenuebersichtById).mockImplementation((personId: string) => {
+        personStore.personenuebersicht = buildPersonenuebersicht(personId);
         return Promise.resolve();
       });
       rollenRequestSpy = vi.mocked(rolleStore.getRollenForPersonenkontextCreation).mockImplementation(() => {
@@ -837,10 +841,10 @@ describe('PersonCreationView', () => {
         return Promise.resolve();
       });
 
+      wrapper = await mountComponent();
       await nextTick();
       await flushPromises();
       rollenRequestSpy.mockClear();
-      uebersichtRequestSpy.mockClear();
     });
 
     afterEach(() => {
@@ -848,7 +852,37 @@ describe('PersonCreationView', () => {
       uebersichtRequestSpy?.mockReset();
     });
 
-    test('it does not refetch Rollen repeatedly when the Personenübersicht is replaced with unchanged content', async () => {
+    test('it fetches the overview immediately for the existing person', () => {
+      expect(uebersichtRequestSpy?.mock.calls).toEqual([[landesbediensteter.id]]);
+    });
+
+    test('it fetches the overview again when the existing person ID changes', async () => {
+      const nextPerson: PersonLandesbediensteterSearchResponse = DoFactory.getPersonLandesbediensteterSearchResponse({
+        id: 'next-person-id',
+      });
+      personStore.allLandesbedienstetePersonen = [nextPerson];
+
+      await nextTick();
+      await flushPromises();
+
+      expect(uebersichtRequestSpy?.mock.calls).toEqual([[landesbediensteter.id], [nextPerson.id]]);
+    });
+
+    test('it does not fetch the overview outside the add-to-own-school flow', async () => {
+      wrapper?.unmount();
+      await router.push({ name: 'create-person' });
+      await router.isReady();
+      uebersichtRequestSpy?.mockClear();
+
+      wrapper = await mountComponent();
+      await nextTick();
+      await flushPromises();
+
+      expect(uebersichtRequestSpy).not.toHaveBeenCalled();
+    });
+
+    test('it fetches Rollen once without refetching the overview when the organisation changes', async () => {
+      uebersichtRequestSpy?.mockClear();
       const organisationSelect: VueWrapper = wrapper!
         .findComponent({ ref: 'personenkontext-create' })
         .findComponent({ ref: 'schulenFilter' })
@@ -863,7 +897,7 @@ describe('PersonCreationView', () => {
       );
 
       expect(rollenRequestSpy).toHaveBeenCalledTimes(1);
-      expect(uebersichtRequestSpy?.mock.calls.length ?? 0).toBeLessThanOrEqual(1);
+      expect(uebersichtRequestSpy).not.toHaveBeenCalled();
     });
 
     test('it passes the rollenart of the existing person to the Rollen query', async () => {

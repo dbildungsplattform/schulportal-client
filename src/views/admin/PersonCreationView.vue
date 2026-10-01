@@ -594,6 +594,12 @@
   };
 
   const isOwnSchule: ComputedRef<boolean> = computed(() => createType.value === CreationType.AddPersonToOwnSchule);
+  const existingPersonId: ComputedRef<string | undefined> = computed((): string | undefined => {
+    if (!isOwnSchule.value) {
+      return undefined;
+    }
+    return personStore.allLandesbedienstetePersonen?.[0]?.id;
+  });
   const showKopersInput: ComputedRef<boolean> = computed(
     (): boolean =>
       !!selectedOrganisation.value &&
@@ -606,13 +612,15 @@
   const sectionNumberRolle: ComputedRef<string> = computed(() => (isOwnSchule.value ? '3.' : '2.'));
   const sectionNumberBefristung: ComputedRef<string> = computed(() => (isOwnSchule.value ? '4.' : '2.1'));
 
-  watch(selectedOrganisation, async (newSelectedOrganisation: string | undefined) => {
-    const existingPerson: PersonLandesbediensteterSearchResponse | undefined =
-      personStore.allLandesbedienstetePersonen?.[0];
-    if (createType.value === CreationType.AddPersonToOwnSchule && newSelectedOrganisation && existingPerson) {
-      await personStore.getPersonenuebersichtById(existingPerson.id);
-    }
-  });
+  watch(
+    existingPersonId,
+    async (personId: string | undefined): Promise<void> => {
+      if (personId) {
+        await personStore.getPersonenuebersichtById(personId);
+      }
+    },
+    { immediate: true },
+  );
 
   watch(hasNoKopersNr, (newValue: boolean | undefined) => {
     if (newValue) {
@@ -692,17 +700,12 @@
     },
   );
 
-  onMounted(async () => {
+  onMounted(() => {
     personStore.errorCode = '';
     personenkontextStore.createdPersonWithKontext = null;
     personenkontextStore.landesbediensteteCommitResponse = null;
     /* listen for browser changes and prevent them when form is dirty */
     window.addEventListener('beforeunload', preventNavigation);
-    const existingPerson: PersonLandesbediensteterSearchResponse | undefined =
-      personStore.allLandesbedienstetePersonen?.[0];
-    if (createType.value === CreationType.AddPersonToOwnSchule && existingPerson) {
-      await personStore.getPersonenuebersichtById(existingPerson.id);
-    }
   });
 
   onUnmounted(() => {
