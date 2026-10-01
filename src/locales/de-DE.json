@@ -679,6 +679,11 @@
           "LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN": "Darf Landesbedienstete suchen und hinzufügen",
           "MPT_ROLLEN_ZUORDNEN": "Darf Rollen für multiprofessionelle Teams zuordnen",
           "PERSONEN_ANLEGEN": "Darf Benutzer anlegen",
+          "PILOT_1_ROLLEN_ZUORDNEN": "Darf Pilot-1-Rollen zuordnen",
+          "PILOT_2_ROLLEN_ZUORDNEN": "Darf Pilot-2-Rollen zuordnen",
+          "PILOT_3_ROLLEN_ZUORDNEN": "Darf Pilot-3-Rollen zuordnen",
+          "PILOT_4_ROLLEN_ZUORDNEN": "Darf Pilot-4-Rollen zuordnen",
+          "PILOT_5_ROLLEN_ZUORDNEN": "Darf Pilot-5-Rollen zuordnen",
           "PERSONEN_SOFORT_LOESCHEN": "Darf Benutzer sofort löschen",
           "PERSONEN_VERWALTEN": "Darf Benutzer verwalten",
           "PERSON_SYNCHRONISIEREN": "Darf Benutzer synchronisieren",
@@ -703,7 +708,12 @@
         "merkmale": {
           "BEFRISTUNG_PFLICHT": "Befristung ist Pflichtangabe",
           "KOPERS_PFLICHT": "KoPers.-Nr. ist Pflichtangabe",
-          "MPT_ROLLE": "Ist MPT-Rolle"
+          "MPT_ROLLE": "Ist MPT-Rolle",
+          "PILOT_1_ROLLE": "Ist Pilot-1-Rolle",
+          "PILOT_2_ROLLE": "Ist Pilot-2-Rolle",
+          "PILOT_3_ROLLE": "Ist Pilot-3-Rolle",
+          "PILOT_4_ROLLE": "Ist Pilot-4-Rolle",
+          "PILOT_5_ROLLE": "Ist Pilot-5-Rolle"
         }
       },
       "merkmale": "Merkmale",
