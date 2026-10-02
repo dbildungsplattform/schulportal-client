@@ -47,6 +47,8 @@
 
   const localKlassenOption: Ref<string | undefined> = ref(KlassenOption.KEEP_KLASSE);
 
+  type SelectedRollenIds = Array<string> | string | undefined;
+
   type Props = {
     organisationen: TranslatedObject[] | undefined;
     rollen: TranslatedRolleWithAttrs[];
@@ -183,7 +185,7 @@
     },
   );
 
-  function hasSelectedLernRolle(selectedRolleIds: string | string[] | undefined): boolean {
+  function hasSelectedLernRolle(selectedRolleIds: SelectedRollenIds): boolean {
     if (!selectedRolleIds) {
       return false;
     }
@@ -313,7 +315,7 @@
 
   watch(
     () => (props.allowMultipleRollen ? selectedRollen.value : selectedRolle.value),
-    async (newValue: string | string[] | undefined, oldValue: string | string[] | undefined) => {
+    async (newValue: SelectedRollenIds, oldValue: SelectedRollenIds) => {
       const filter: WorkflowFilter = {
         personId: props.personId,
         organisationId: selectedOrganisation.value,
