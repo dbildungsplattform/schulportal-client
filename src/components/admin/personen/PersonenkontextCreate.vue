@@ -29,7 +29,7 @@
   import { blurActiveElement } from '@/utils/focus';
   import { isLernRolle } from '@/utils/validationPersonenkontext';
   import type { BaseFieldProps } from 'vee-validate';
-  import { computed, onMounted, ref, watch, type ComputedRef, type Ref } from 'vue';
+  import { computed, onMounted, onUnmounted, ref, watch, type ComputedRef, type Ref } from 'vue';
   import { useI18n } from 'vue-i18n';
 
   useI18n({ useScope: 'global' });
@@ -410,6 +410,10 @@
   onMounted(() => {
     emits('update:canCommit', personenkontextStore.workflowStepResponse?.canCommit ?? false);
     emits('update:selectedKlassenOption', localKlassenOption.value!);
+  });
+
+  onUnmounted(() => {
+    clearTimeout(rollenSearchDebounceTimerId.value);
   });
 </script>
 
