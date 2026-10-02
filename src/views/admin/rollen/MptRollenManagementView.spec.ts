@@ -281,62 +281,68 @@ describe('MptRollenManagementView', () => {
     { page: 2, limit: 30, offset: 30 },
     { page: 1, limit: 50, offset: 0 },
     { page: 2, limit: 50, offset: 50 },
-  ])('dispatches once when reactive pagination changes to page $page and limit $limit', async ({ page, limit, offset }: {
-    page: number;
-    limit: number;
-    offset: number;
-  }): Promise<void> => {
-    const schuleId: string = DoFactory.getSchule().id;
-    searchFilterStore.selectedSchuleForMptRollen = schuleId;
-    rolleStore.totalRollen = 100;
-    mountComponent();
-    await flushPromises();
-    vi.mocked(rolleStore.getAllRollen).mockClear();
-    vi.mocked(organisationStore.getOrganisationById).mockClear();
+  ])(
+    'dispatches once when reactive pagination changes to page $page and limit $limit',
+    async ({ page, limit, offset }: { page: number; limit: number; offset: number }): Promise<void> => {
+      const schuleId: string = DoFactory.getSchule().id;
+      searchFilterStore.selectedSchuleForMptRollen = schuleId;
+      rolleStore.totalRollen = 100;
+      mountComponent();
+      await flushPromises();
+      vi.mocked(rolleStore.getAllRollen).mockClear();
+      vi.mocked(organisationStore.getOrganisationById).mockClear();
 
-    searchFilterStore.mptRollenPage = page;
-    searchFilterStore.mptRollenPerPage = limit;
-    await nextTick();
-    await flushPromises();
+      searchFilterStore.mptRollenPage = page;
+      searchFilterStore.mptRollenPerPage = limit;
+      await nextTick();
+      await flushPromises();
 
-    expect(rolleStore.getAllRollen).toHaveBeenCalledExactlyOnceWith({
-      offset,
-      limit,
-      searchString: '',
-      organisationenForFilter: [schuleId],
-      systemrechte: [RollenSystemRechtEnum.MptRollenZuordnen],
-    });
-    expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
-  });
+      expect(rolleStore.getAllRollen).toHaveBeenCalledExactlyOnceWith({
+        offset,
+        limit,
+        searchString: '',
+        organisationenForFilter: [schuleId],
+        systemrechte: [RollenSystemRechtEnum.MptRollenZuordnen],
+      });
+      expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([
     { total: 40, expectedPage: 1, expectedOffset: 0 },
     { total: 100, expectedPage: 2, expectedOffset: 50 },
-  ])('dispatches the final page-size filter once with $total total rollen', async ({ total, expectedPage, expectedOffset }: {
-    total: number;
-    expectedPage: number;
-    expectedOffset: number;
-  }): Promise<void> => {
-    const schuleId: string = DoFactory.getSchule().id;
-    searchFilterStore.selectedSchuleForMptRollen = schuleId;
-    searchFilterStore.mptRollenPage = 2;
-    rolleStore.totalRollen = total;
-    const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
-    await flushPromises();
-    vi.mocked(rolleStore.getAllRollen).mockClear();
-    vi.mocked(organisationStore.getOrganisationById).mockClear();
+  ])(
+    'dispatches the final page-size filter once with $total total rollen',
+    async ({
+      total,
+      expectedPage,
+      expectedOffset,
+    }: {
+      total: number;
+      expectedPage: number;
+      expectedOffset: number;
+    }): Promise<void> => {
+      const schuleId: string = DoFactory.getSchule().id;
+      searchFilterStore.selectedSchuleForMptRollen = schuleId;
+      searchFilterStore.mptRollenPage = 2;
+      rolleStore.totalRollen = total;
+      const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
+      await flushPromises();
+      vi.mocked(rolleStore.getAllRollen).mockClear();
+      vi.mocked(organisationStore.getOrganisationById).mockClear();
 
-    const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' });
-    resultTable.vm.$emit('onItemsPerPageUpdate', 50);
-    await nextTick();
-    await flushPromises();
+      const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' });
+      resultTable.vm.$emit('onItemsPerPageUpdate', 50);
+      await nextTick();
+      await flushPromises();
 
-    expect(searchFilterStore.mptRollenPage).toBe(expectedPage);
-    expect(rolleStore.getAllRollen).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ offset: expectedOffset, limit: 50, organisationenForFilter: [schuleId] }),
-    );
-    expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
-  });
+      expect(searchFilterStore.mptRollenPage).toBe(expectedPage);
+      expect(rolleStore.getAllRollen).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ offset: expectedOffset, limit: 50, organisationenForFilter: [schuleId] }),
+      );
+      expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
+    },
+  );
 
   it('does not dispatch when the filter inputs are unchanged', async () => {
     const schuleId: string = DoFactory.getSchule().id;
