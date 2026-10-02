@@ -971,20 +971,6 @@
   // The save button is always disabled if there is no pending creation, deletion nor changeKlasse.
   const isSaveButtonDisabled: ComputedRef<boolean> = computed(() => !hasPendingChange.value);
 
-  // Helper function to determine the existing RollenArt
-  function getExistingRollenArt(zuordnungen: Zuordnung[]): RollenArt | undefined {
-    const rollenIds: string[] = zuordnungen.map((zuordnung: Zuordnung) => zuordnung.rolleId);
-    const existingRollen: TranslatedRolleWithAttrs[] | undefined = rolleStore.rollenForPersonenkontextCreation?.filter(
-      (rolle: TranslatedRolleWithAttrs) => rollenIds.includes(rolle.value),
-    );
-
-    if (existingRollen && existingRollen.length > 0) {
-      return existingRollen[0]?.rollenart;
-    }
-
-    return undefined;
-  }
-
   // Filter out the Rollen based on the user's existing Zuordnungen and selected organization
   const filteredRollen: ComputedRef = computed(() => {
     const existingZuordnungen: Zuordnung[] | undefined = personStore.personenuebersicht?.zuordnungen;
@@ -1006,8 +992,8 @@
   });
 
   // Primitive value so equal personenuebersicht replacements do not invalidate the Rollen query.
-  const existingRollenArt: ComputedRef<RollenArt | undefined> = computed((): RollenArt | undefined =>
-    getExistingRollenArt(personStore.personenuebersicht?.zuordnungen ?? []),
+  const existingRollenArt: ComputedRef<RollenArt | undefined> = computed(
+    (): RollenArt | undefined => personStore.personenuebersicht?.zuordnungen[0]?.rollenArt,
   );
 
   // Computed property to get the title of the selected rolle

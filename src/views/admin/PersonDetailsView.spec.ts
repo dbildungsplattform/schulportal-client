@@ -524,19 +524,6 @@ describe('PersonDetailsView', () => {
       );
     });
 
-    test('it updates rollenartForPerson once the existing rollenart becomes available', async () => {
-      const [lehrRolle, lernRolle]: TranslatedRolleWithAttrs[] = rolleStore.rollenForPersonenkontextCreation;
-      rolleStore.rollenForPersonenkontextCreation = [lehrRolle!];
-
-      const personenkontextCreate: VueWrapper = await openZuordnungCreationForm();
-      expect(personenkontextCreate.props('rollenartForPerson')).toBeUndefined();
-
-      rolleStore.rollenForPersonenkontextCreation = [lehrRolle!, lernRolle!];
-      await nextTick();
-
-      expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lern);
-    });
-
     test('it excludes Rollen already assigned at the selected organisation without filtering by rollenart', async () => {
       personStore.personenuebersicht = DoFactory.getPersonenUebersicht(undefined, [
         DoFactory.getZuordnung({ sskId: 'O1', rolleId: '1', rollenArt: RollenArt.Lern }),
