@@ -1,8 +1,7 @@
-import { watch, type ComputedRef, type Ref } from 'vue';
+import { watch, type Ref } from 'vue';
 import { getNextSchuljahresende } from './date';
 import type { useForm } from 'vee-validate';
-import { useRollen, type TranslatedRolleWithAttrs } from '@/composables/useRollen';
-import { RollenMerkmal, useRolleStore, type RolleStore } from '@/stores/RolleStore';
+import { RollenMerkmal, TranslatedRolleWithAttrs, useRolleStore, type RolleStore } from '@/stores/RolleStore';
 
 const rolleStore: RolleStore = useRolleStore();
 
@@ -26,15 +25,13 @@ export type BefristungUtilsType = {
   setupRolleWatcher: () => void;
 };
 
-const rollen: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = useRollen();
-
 // Checks if the selected Rolle has Befristungspflicht
 export async function isBefristungspflichtRolle(selectedRolleIds: string[] | undefined): Promise<boolean> {
   if (!selectedRolleIds || selectedRolleIds.length === 0) {
     return false;
   }
 
-  const existingRollen: TranslatedRolleWithAttrs[] = rollen.value ?? [];
+  const existingRollen: TranslatedRolleWithAttrs[] = rolleStore.rollenForPersonenkontextCreation ?? [];
 
   for (const rolleId of selectedRolleIds) {
     let rolle: TranslatedRolleWithAttrs | undefined = existingRollen.find(

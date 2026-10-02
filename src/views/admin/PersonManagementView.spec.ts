@@ -1,4 +1,4 @@
-import { RollenArt, RollenMerkmal, RollenSystemRechtEnum } from '@/api-client/generated/api';
+import { RollenArt } from '@/api-client/generated/api';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
@@ -10,7 +10,7 @@ import type { Person } from '@/stores/types/Person';
 import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
 import type { Zuordnung } from '@/stores/types/Zuordnung';
 import { OperationType } from '@/stores/types/bulkOperationTypes';
-import { DOMWrapper, VueWrapper, flushPromises, mount } from '@vue/test-utils';
+import { DOMWrapper, VueWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { expect, test, type Mock, type MockInstance } from 'vitest';
 import {
@@ -37,6 +37,7 @@ let searchFilterStore: SearchFilterStore;
 let authStore: AuthStore;
 
 vi.useFakeTimers();
+enableAutoUnmount(afterEach);
 
 function mountComponent(): VueWrapper<InstanceType<typeof PersonManagementView>> {
   return mount(PersonManagementView, {
@@ -118,21 +119,6 @@ beforeEach(async () => {
   ];
 
   personenkontextStore.workflowStepResponse = {
-    rollen: [
-      {
-        administeredBySchulstrukturknoten: '1234',
-        rollenart: RollenArt.Lehr,
-        name: 'SuS',
-        merkmale: [RollenMerkmal.KopersPflicht],
-        systemrechte: [{ name: RollenSystemRechtEnum.RollenVerwalten, isTechnical: false }],
-        createdAt: '2022',
-        updatedAt: '2022',
-        id: '54321',
-        administeredBySchulstrukturknotenName: 'Land SH',
-        administeredBySchulstrukturknotenKennung: '',
-        version: 1,
-      },
-    ],
     organisations: [
       {
         id: '9876',

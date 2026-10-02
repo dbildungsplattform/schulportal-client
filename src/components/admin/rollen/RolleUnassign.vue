@@ -3,7 +3,6 @@
   import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import { type BulkErrorList, useBulkErrors } from '@/composables/useBulkErrors';
-  import { type TranslatedRolleWithAttrs, useRollen } from '@/composables/useRollen';
   import { type BulkOperationStore, useBulkOperationStore } from '@/stores/BulkOperationStore';
   import { type Organisation } from '@/stores/OrganisationStore';
   import {
@@ -12,9 +11,10 @@
     RolleDialogMode,
     usePersonenkontextStore,
   } from '@/stores/PersonenkontextStore';
-  import { RollenArt, type RolleResponse } from '@/stores/RolleStore';
+  import { RollenArt, type RolleResponse, RolleStore, useRolleStore } from '@/stores/RolleStore';
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
   import type { TranslatedObject } from '@/types';
+  import { isLernRolle } from '@/utils/validationPersonenkontext';
   import { toTypedSchema } from '@vee-validate/yup';
   import { type BaseFieldProps, type TypedSchema, useForm } from 'vee-validate';
   import { computed, type ComputedRef, ref, type Ref, watch } from 'vue';
@@ -42,6 +42,8 @@
   const props: Props = defineProps<Props>();
   const emit: Emits = defineEmits<Emits>();
 
+  const rolleStore: RolleStore = useRolleStore();
+
   function closeDialog(finished: boolean): void {
     bulkOperationStore.resetState();
     emit('update:dialogExit', finished);
@@ -50,8 +52,6 @@
 
   // Local state for selectedOrganisation to avoid mutating the prop directly
   const selectedOrganisationFromFilterId: Ref<string> = ref<string>(props.selectedOrganisationFromFilter.id);
-
-  const rollenForForm: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = useRollen();
 
   // Define the error list for the selected persons using the useBulkErrors composable
   const bulkErrorList: ComputedRef<BulkErrorList[]> = computed(() => useBulkErrors(t, props.selectedPersonen));
@@ -97,23 +97,11 @@
     }
   }
 
-  function isLernRolle(selectedRolleId: string | undefined): boolean {
-    if (!selectedRolleId) {
-      return false;
-    }
-
-    const rolle: TranslatedRolleWithAttrs | undefined = rollenForForm.value?.find(
-      (r: TranslatedRolleWithAttrs) => r.value === selectedRolleId,
-    );
-
-    return rolle?.rollenart === RollenArt.Lern;
-  }
-
   async function handleRolleUnassign(): Promise<void> {
     const rolleId: string = selectedRolle.value ?? props.selectedRolleFromFilter?.id ?? '';
     const isRolleLern: boolean =
       selectedRolle.value != null
-        ? isLernRolle(selectedRolle.value)
+        ? isLernRolle(selectedRolle.value, rolleStore.rollenForPersonenkontextCreation)
         : props.selectedRolleFromFilter?.rollenart === RollenArt.Lern;
 
     await bulkOperationStore.bulkUnassignPersonenFromRolle(
@@ -166,7 +154,7 @@
             :show-headline="false"
             :selected-organisation="selectedOrganisationFromFilterId"
             :organisationen="props.organisationen"
-            :rollen="rollenForForm"
+            :rollen="rolleStore.rollenForPersonenkontextCreation"
             :selected-rolle-props="selectedRolleProps"
             :selected-rolle="props.selectedRolleFromFilter ? props.selectedRolleFromFilter.id : undefined"
             @update:selected-rolle="selectedRolle = $event"

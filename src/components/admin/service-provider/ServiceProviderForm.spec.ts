@@ -5,7 +5,7 @@ import { ServiceProviderKategorie, ServiceProviderMerkmal } from '@/stores/Servi
 import { extractAnbietenInMerkmale } from '@/utils/serviceProvider.helper.js';
 import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
-import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 import type { ComponentInstance } from 'vue';
 import ServiceProviderForm from './ServiceProviderForm.vue';
 import type {

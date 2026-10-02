@@ -10,6 +10,7 @@
     type OrganisationStore,
   } from '@/stores/OrganisationStore';
   import {
+    LandesbediensteterWorkflowFilter,
     usePersonenkontextStore,
     type OperationContext,
     type PersonenkontextStore,
@@ -110,15 +111,13 @@
   });
 
   // Specific filter to load the organisationen in the forms that are tied to the workflow endpoints (Normal and landesbedienstete)
-  const organisationenFilter: WorkflowFilter = reactive({
+  const organisationenFilter: WorkflowFilter | LandesbediensteterWorkflowFilter = reactive({
     operationContext: props.operationContext,
     personId: props.personId,
     organisationId: undefined,
     rollenIds: [],
-    rolleName: undefined,
     organisationName: undefined,
     limit: 25,
-    requestedWithSystemrecht: props.systemrechteForSearch ? props.systemrechteForSearch[0] : undefined,
   });
 
   const { hasAutoselectedSchule, autoselectedSchule }: ReturnType<typeof useAutoselectedSchule> = useAutoselectedSchule(
@@ -310,14 +309,13 @@
     }
   };
 
-  async function handleWorkflowStep(filter: WorkflowFilter): Promise<void> {
+  async function handleWorkflowStep(filter: WorkflowFilter | LandesbediensteterWorkflowFilter): Promise<void> {
     if (props.useLandesbediensteteWorkflow) {
       await personenkontextStore.processWorkflowStepLandesbedienstete(filter);
     } else {
       await personenkontextStore.processWorkflowStep({
         operationContext: props.operationContext,
         ...filter,
-        requestedWithSystemrecht: props.systemrechteForSearch ? props.systemrechteForSearch[0] : undefined,
       });
     }
   }

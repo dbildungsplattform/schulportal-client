@@ -9,6 +9,7 @@ import type { Mock } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import MptRollenManagementView from './MptRollenManagementView.vue';
+import { RollenSystemRechtEnum } from '@/api-client/generated';
 
 type MptRollenManagementViewVm = {
   selectedOrganisationId: string;
@@ -92,7 +93,7 @@ describe('MptRollenManagementView', () => {
     expect(rolleStore.getAllRollen).toHaveBeenCalledWith(
       expect.objectContaining({
         organisationenForFilter: [schuleId],
-        systemrechte: [expect.stringMatching('MPT_ROLLEN_ZUORDNEN')],
+        systemrechte: [expect.stringMatching(RollenSystemRechtEnum.MptRollenZuordnen)],
       }),
     );
   });
