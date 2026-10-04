@@ -111,10 +111,9 @@
   });
 
   const systemrechte: ComputedRef<RollenSystemRecht[]> = computed(() => {
-    if (authStore.hasMptRollenZuordnenPermission) {
-      return [RollenSystemRecht.RollenVerwalten, RollenSystemRecht.MptRollenZuordnen];
-    }
-    return [RollenSystemRecht.RollenVerwalten];
+    // Gated Rollen (MPT_ROLLE, PILOT_1_ROLLE, ...) are only shown if their systemrecht is both requested here
+    // and actually held by the caller - so only explicitly request the gated rechte the user actually holds.
+    return [RollenSystemRecht.RollenVerwalten, ...authStore.grantedGatedRollenSystemrechte];
   });
 
   function navigateToRolleDetails(_$event: PointerEvent, { item }: { item: RolleTableItem }): void {

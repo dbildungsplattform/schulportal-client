@@ -140,11 +140,7 @@
   const authStore: AuthStore = useAuthStore();
 
   const rollenSystemrechteForPersonAdministration: ComputedRef<RollenSystemRecht[]> = computed(() => {
-    const systemrechte: RollenSystemRecht[] = [RollenSystemRecht.PersonenVerwalten];
-    if (authStore.hasMptRollenZuordnenPermission) {
-      systemrechte.push(RollenSystemRecht.MptRollenZuordnen);
-    }
-    return systemrechte;
+    return [RollenSystemRecht.PersonenVerwalten, ...authStore.grantedGatedRollenSystemrechte];
   });
 
   async function loadRollenForPersonAdministration(searchStr: string): Promise<void> {

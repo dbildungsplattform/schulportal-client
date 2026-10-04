@@ -35,11 +35,10 @@ beforeEach(async (): Promise<void> => {
 
   authStore = useAuthStore();
   authStore.hasAngeboteVerwaltenPermission = true;
+  authStore.grantedGatedRollenSystemrechte = [];
   rolleStore = useRolleStore();
   searchFilterStore = useSearchFilterStore();
   serviceProviderStore = useServiceProviderStore();
-
-  authStore.hasMptRollenZuordnenPermission = true;
 
   searchFilterStore.selectedMerkmaleForRollen = [];
   searchFilterStore.selectedRollenartenForRollen = [];
@@ -218,9 +217,36 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenZuordnen],
+      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
       merkmale: [RollenMerkmal.KopersPflicht],
       rollenarten: undefined,
+      organisationenForFilter: undefined,
+      serviceProviderIds: undefined,
+    });
+  });
+
+  test('requests granted gated systemrechte (MPT and Pilot) in addition to RollenVerwalten', async () => {
+    authStore.grantedGatedRollenSystemrechte = [
+      RollenSystemRechtEnum.MptRollenZuordnen,
+      RollenSystemRechtEnum.Pilot3RollenZuordnen,
+    ];
+
+    const rollenartenSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+      '[data-testid="rollenarten-filter-select"]',
+    );
+    await rollenartenSelect?.setValue([RollenArt.Lehr]);
+
+    expect(rolleStore.getAllRollen).toHaveBeenLastCalledWith({
+      offset: 0,
+      limit: 30,
+      searchString: '',
+      systemrechte: [
+        RollenSystemRechtEnum.RollenVerwalten,
+        RollenSystemRechtEnum.MptRollenZuordnen,
+        RollenSystemRechtEnum.Pilot3RollenZuordnen,
+      ],
+      merkmale: undefined,
+      rollenarten: [RollenArt.Lehr],
       organisationenForFilter: undefined,
       serviceProviderIds: undefined,
     });
@@ -233,26 +259,6 @@ describe('RolleManagementView', () => {
     await rollenartenSelect?.setValue([RollenArt.Lehr]);
 
     expect(searchFilterStore.setRollenartenFilterForRollen).toHaveBeenCalledWith([RollenArt.Lehr]);
-    expect(rolleStore.getAllRollen).toHaveBeenLastCalledWith({
-      offset: 0,
-      limit: 30,
-      searchString: '',
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenZuordnen],
-      merkmale: undefined,
-      rollenarten: [RollenArt.Lehr],
-      organisationenForFilter: undefined,
-      serviceProviderIds: undefined,
-    });
-  });
-
-  test('requests only RollenVerwalten when user lacks MPT permission', async () => {
-    authStore.hasMptRollenZuordnenPermission = false;
-
-    const rollenartenSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
-      '[data-testid="rollenarten-filter-select"]',
-    );
-    await rollenartenSelect?.setValue([RollenArt.Lehr]);
-
     expect(rolleStore.getAllRollen).toHaveBeenLastCalledWith({
       offset: 0,
       limit: 30,
@@ -280,7 +286,7 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenZuordnen],
+      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
       merkmale: undefined,
       rollenarten: undefined,
       organisationenForFilter: orgs,
@@ -333,7 +339,7 @@ describe('RolleManagementView', () => {
         offset: 0,
         limit: 30,
         searchString: '',
-        systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenZuordnen],
+        systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
         merkmale: undefined,
         rollenarten: undefined,
         organisationenForFilter: undefined,
@@ -440,7 +446,7 @@ describe('RolleManagementView', () => {
       merkmale: undefined,
       rollenarten: undefined,
       organisationenForFilter: undefined,
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten, RollenSystemRechtEnum.MptRollenZuordnen],
+      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
     });
   });
 

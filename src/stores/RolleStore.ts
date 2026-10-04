@@ -76,6 +76,19 @@ type RolleActions = {
 export { RollenArt, RollenMerkmal, RollenSystemRechtEnum as RollenSystemRecht };
 export type { RolleResponse, RolleWithServiceProvidersResponse };
 
+/**
+ * RollenSystemRechte that gate the visibility/assignability of Rollen carrying a paired RollenMerkmal
+ * (MPT_ROLLE <-> MPT_ROLLEN_ZUORDNEN, PILOT_X_ROLLE <-> PILOT_X_ROLLEN_ZUORDNEN). Add new pairs here only.
+ */
+export const GATED_ROLLEN_SYSTEMRECHTE: RollenSystemRechtEnum[] = [
+  RollenSystemRechtEnum.MptRollenZuordnen,
+  RollenSystemRechtEnum.Pilot1RollenZuordnen,
+  RollenSystemRechtEnum.Pilot2RollenZuordnen,
+  RollenSystemRechtEnum.Pilot3RollenZuordnen,
+  RollenSystemRechtEnum.Pilot4RollenZuordnen,
+  RollenSystemRechtEnum.Pilot5RollenZuordnen,
+];
+
 export type Rolle = {
   administeredBySchulstrukturknoten: string;
   id: string;

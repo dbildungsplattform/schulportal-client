@@ -8,7 +8,7 @@ import {
   type UserinfoResponse,
 } from '../api-client/generated/api';
 import type { Organisation } from './OrganisationStore';
-import { RollenSystemRecht } from './RolleStore';
+import { GATED_ROLLEN_SYSTEMRECHTE, RollenSystemRecht } from './RolleStore';
 import type { AxiosResponse } from 'axios';
 
 export enum StepUpLevel {
@@ -66,6 +66,8 @@ type AuthState = {
   hasAngeboteVerwaltenPermission: boolean;
   hasRollenerweiternPermission: boolean;
   hasMptRollenZuordnenPermission: boolean;
+  /** The gated RollenSystemRechte (MPT_ROLLEN_ZUORDNEN, PILOT_1_ROLLEN_ZUORDNEN, ...) the current user actually holds. */
+  grantedGatedRollenSystemrechte: RollenSystemRecht[];
   hasEingeschränktAngeboteVerwaltenPermission: boolean;
   hasVidisPermission: boolean;
   isAuthenticated: boolean;
@@ -108,6 +110,7 @@ export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, 
       hasAngeboteVerwaltenPermission: false,
       hasRollenerweiternPermission: false,
       hasMptRollenZuordnenPermission: false,
+      grantedGatedRollenSystemrechte: [],
       hasEingeschränktAngeboteVerwaltenPermission: false,
       isAuthenticated: false,
       acr: StepUpLevel.NONE,
@@ -167,6 +170,9 @@ export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, 
             this.hasMptRollenZuordnenPermission = this.currentUserPermissions.includes(
               RollenSystemRecht.MptRollenZuordnen,
             );
+            this.grantedGatedRollenSystemrechte = GATED_ROLLEN_SYSTEMRECHTE.filter((systemrecht: RollenSystemRecht) =>
+              this.currentUserPermissions.includes(systemrecht),
+            );
             this.hasEingeschränktAngeboteVerwaltenPermission = this.currentUserPermissions.includes(
               RollenSystemRecht.AngeboteEingeschraenktVerwalten,
             );
@@ -196,6 +202,7 @@ export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, 
           this.hasEingeschränktNeueBenutzerErstellenPermission = false;
           this.hasAngeboteVerwaltenPermission = false;
           this.hasMptRollenZuordnenPermission = false;
+          this.grantedGatedRollenSystemrechte = [];
           this.hasEingeschränktAngeboteVerwaltenPermission = false;
           this.hasVidisPermission = false;
           this.isAuthenticated = false;

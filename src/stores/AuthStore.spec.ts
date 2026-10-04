@@ -74,6 +74,26 @@ describe('AuthStore', () => {
       expect(authStore.hasMptRollenZuordnenPermission).toBe(false);
     });
 
+    it('should collect all granted gated Rollen systemrechte (MPT and Pilot)', async () => {
+      const mockInfo: UserinfoResponse = DoFactory.getUserinfoResponse();
+      mockInfo.personenkontexte[0]!.rolle.systemrechte = [
+        'MPT_ROLLEN_ZUORDNEN',
+        'PILOT_2_ROLLEN_ZUORDNEN',
+        'PILOT_5_ROLLEN_ZUORDNEN',
+      ];
+
+      mockadapter.onGet('/api/auth/logininfo').replyOnce(200, mockInfo);
+      mockadapter.onGet('/api/auth/csrf-token').replyOnce(200, { csrfToken: 'mock-csrf-token' });
+
+      await authStore.initializeAuthStatus();
+
+      expect(authStore.grantedGatedRollenSystemrechte).toEqual([
+        'MPT_ROLLEN_ZUORDNEN',
+        'PILOT_2_ROLLEN_ZUORDNEN',
+        'PILOT_5_ROLLEN_ZUORDNEN',
+      ]);
+    });
+
     it('should save no system permissions if none are present', async () => {
       const mockResponse: UserinfoResponse = DoFactory.getUserinfoResponse({ personenkontexte: [] });
 
@@ -87,6 +107,7 @@ describe('AuthStore', () => {
       expect(authStore.isAuthenticated).toBe(true);
       expect(authStore.currentUserPermissions).toEqual([]);
       expect(authStore.hasMptRollenZuordnenPermission).toBe(false);
+      expect(authStore.grantedGatedRollenSystemrechte).toEqual([]);
     });
 
     it('should not authenticate on server error', async () => {
