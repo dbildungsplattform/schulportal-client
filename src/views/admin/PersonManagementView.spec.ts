@@ -603,10 +603,12 @@ describe('PersonManagementView', () => {
     benutzerEditSelect?.setValue(OperationType.MODIFY_ROLLE);
     await nextTick();
 
-    const rolleSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+    const rolleSelect: VueWrapper = wrapper?.findComponent(
       '[data-testid="rolle-modify-layout-card"] [data-testid="rolle-select"]',
-    );
-    const rollenItems: Array<{ value: string }> = rolleSelect?.props('items') as Array<{ value: string }>;
+    ) as VueWrapper;
+    const rollenItems: Array<{ value: string }> = (
+      rolleSelect as unknown as { props: (key: string) => Array<{ value: string }> }
+    ).props('items');
     expect(rollenItems.some((item: { value: string }) => item.value === '99999')).toBe(true);
   });
 
