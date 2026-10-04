@@ -89,6 +89,16 @@ export const GATED_ROLLEN_SYSTEMRECHTE: RollenSystemRechtEnum[] = [
   RollenSystemRechtEnum.Pilot5RollenZuordnen,
 ];
 
+/** RollenMerkmale paired with a GATED_ROLLEN_SYSTEMRECHTE entry above. Add new pairs here only. */
+export const GATED_ROLLEN_MERKMALE: RollenMerkmal[] = [
+  RollenMerkmal.MptRolle,
+  RollenMerkmal.Pilot1Rolle,
+  RollenMerkmal.Pilot2Rolle,
+  RollenMerkmal.Pilot3Rolle,
+  RollenMerkmal.Pilot4Rolle,
+  RollenMerkmal.Pilot5Rolle,
+];
+
 export type Rolle = {
   administeredBySchulstrukturknoten: string;
   id: string;

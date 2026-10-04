@@ -20,6 +20,7 @@
   import { type PersonStore, SortField, usePersonStore } from '@/stores/PersonStore';
   import { type PersonenkontextStore, usePersonenkontextStore } from '@/stores/PersonenkontextStore';
   import {
+    GATED_ROLLEN_MERKMALE,
     type RolleResponse,
     type RolleStore,
     RollenArt,
@@ -219,8 +220,8 @@
       (rolle: TranslatedRolleWithAttrs) =>
         rolle.rollenart === RollenArt.Lehr ||
         rolle.rollenart === RollenArt.Lern ||
-        // this assumes the incoming rollen have checked MPT-permission
-        rolle.merkmale?.includes(RollenMerkmal.MptRolle),
+        // this assumes the incoming rollen have already been checked for gated-Merkmal permission server-side
+        rolle.merkmale?.some((merkmal: RollenMerkmal) => GATED_ROLLEN_MERKMALE.includes(merkmal)),
     );
   });
 

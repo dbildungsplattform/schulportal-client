@@ -572,6 +572,44 @@ describe('PersonManagementView', () => {
     },
   );
 
+  test('offers Pilot-Merkmal rollen (not just MPT) in the Rolle zuordnen bulk dialog', async () => {
+    personenkontextStore.workflowStepResponse = {
+      ...personenkontextStore.workflowStepResponse!,
+      rollen: [
+        ...(personenkontextStore.workflowStepResponse?.rollen ?? []),
+        {
+          administeredBySchulstrukturknoten: '1234',
+          rollenart: RollenArt.Schb,
+          name: 'Pilot Rolle',
+          merkmale: [RollenMerkmal.Pilot2Rolle],
+          systemrechte: [],
+          createdAt: '2022',
+          updatedAt: '2022',
+          id: '99999',
+          administeredBySchulstrukturknotenName: 'Land SH',
+          administeredBySchulstrukturknotenKennung: '',
+          version: 1,
+        },
+      ],
+    };
+
+    const checkbox: DOMWrapper<Element> | undefined = wrapper?.find(
+      '[data-testid="person-table"] .v-selection-control',
+    );
+    await checkbox?.trigger('click');
+    await nextTick();
+
+    const benutzerEditSelect: VueWrapper | undefined = wrapper?.findComponent({ ref: 'benutzer-bulk-edit-select' });
+    benutzerEditSelect?.setValue(OperationType.MODIFY_ROLLE);
+    await nextTick();
+
+    const rolleSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+      '[data-testid="rolle-modify-layout-card"] [data-testid="rolle-select"]',
+    );
+    const rollenItems: Array<{ value: string }> = rolleSelect?.props('items') as Array<{ value: string }>;
+    expect(rollenItems.some((item: { value: string }) => item.value === '99999')).toBe(true);
+  });
+
   test.each([
     [OperationType.CHANGE_KLASSE],
     [OperationType.DELETE_PERSON],
