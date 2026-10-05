@@ -113,38 +113,37 @@ const mountComponent = (
   });
 };
 
-
-  test('it retains the existing Landesbediensteter Rollenart filter after clearing selected Rollen', async () => {
-    wrapper = mountComponent({
-      operationContext: OperationContext.PERSON_ANLEGEN,
-      allowMultipleRollen: true,
-      createType: CreationType.AddPersonToOwnSchule,
-      personId: '1',
-      rollenartForPerson: RollenArt.Lehr,
-      selectedOrganisation: '1133',
-    });
-    await flushPromises();
-
-    const getRollenForPersonenkontextCreationSpy: MockInstance = vi.mocked(
-      rolleStore.getRollenForPersonenkontextCreation,
-    );
-    getRollenForPersonenkontextCreationSpy.mockClear();
-
-    const rollenAutocomplete: VueWrapper = wrapper.findComponent({ ref: 'rollen-select' });
-    await rollenAutocomplete.setValue(['54321']);
-    await flushPromises();
-
-    await rollenAutocomplete.get('.v-field__clearable .v-icon').trigger('click');
-    await flushPromises();
-
-    expect(getRollenForPersonenkontextCreationSpy).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        organisationId: '1133',
-        rollenIds: [],
-        rollenartForPerson: RollenArt.Lehr,
-      }),
-    );
+test('it retains the existing Landesbediensteter Rollenart filter after clearing selected Rollen', async () => {
+  wrapper = mountComponent({
+    operationContext: OperationContext.PERSON_ANLEGEN,
+    allowMultipleRollen: true,
+    createType: CreationType.AddPersonToOwnSchule,
+    personId: '1',
+    rollenartForPerson: RollenArt.Lehr,
+    selectedOrganisation: '1133',
   });
+  await flushPromises();
+
+  const getRollenForPersonenkontextCreationSpy: MockInstance = vi.mocked(
+    rolleStore.getRollenForPersonenkontextCreation,
+  );
+  getRollenForPersonenkontextCreationSpy.mockClear();
+
+  const rollenAutocomplete: VueWrapper = wrapper.findComponent({ ref: 'rollen-select' });
+  await rollenAutocomplete.setValue(['54321']);
+  await flushPromises();
+
+  await rollenAutocomplete.get('.v-field__clearable .v-icon').trigger('click');
+  await flushPromises();
+
+  expect(getRollenForPersonenkontextCreationSpy).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      organisationId: '1133',
+      rollenIds: [],
+      rollenartForPerson: RollenArt.Lehr,
+    }),
+  );
+});
 beforeEach(() => {
   document.body.innerHTML = `
     <div>
