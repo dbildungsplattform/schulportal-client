@@ -1196,12 +1196,8 @@
         selectedZuordnungen.value[0]?.rolleId ?? '',
         organisation.name,
         organisation.kennung ?? '',
-        rolleStore.rollenForPersonenkontextCreation?.find(
-          (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedZuordnungen.value[0]?.rolleId,
-        )?.title || '',
-        rolleStore.rollenForPersonenkontextCreation?.find(
-          (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
-        )?.rollenart as RollenArt,
+        selectedZuordnungen.value[0]!.rolle,
+        selectedZuordnungen.value[0]!.rollenArt,
         organisation.administriertVon ?? '',
         OrganisationsTyp.Schule,
         true,
@@ -1253,12 +1249,8 @@
             selectedZuordnungen.value[0]?.rolleId ?? '',
             newKlasse.name,
             newKlasse.kennung ?? '',
-            rolleStore.rollenForPersonenkontextCreation?.find(
-              (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedZuordnungen.value[0]?.rolleId,
-            )?.title || '',
-            rolleStore.rollenForPersonenkontextCreation?.find(
-              (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
-            )?.rollenart as RollenArt,
+            selectedZuordnungen.value[0]!.rolle,
+            selectedZuordnungen.value[0]!.rollenArt,
             newKlasse.administriertVon ?? '',
             OrganisationsTyp.Klasse,
             true,

@@ -4,6 +4,8 @@ import { nextTick, type Component, type ComputedRef, type DefineComponent } from
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 
 import { EmailAddressStatus, ServiceProviderSystem } from '@/api-client/generated';
+import { PendingState } from '@/components/admin/personen/details/PersonenkontextItem.types';
+import PersonenkontextItem from '@/components/admin/personen/details/PersonenkontextItem.vue';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore, type PersonenkontextRolleFields, type UserInfo } from '@/stores/AuthStore';
 import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
@@ -30,6 +32,7 @@ import {
 } from '@/stores/TwoFactorAuthentificationStore';
 import type { Person } from '@/stores/types/Person';
 import { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
+import type { Zuordnung } from '@/stores/types/Zuordnung';
 import { adjustDateForTimezoneAndFormat } from '@/utils/date';
 import { parseUserLock, PersonLockOccasion, type UserLock } from '@/utils/lock';
 import { DoFactory } from 'test/DoFactory';
@@ -983,6 +986,108 @@ describe('PersonDetailsView', () => {
     await nextTick();
 
     expect(personenkontextStore.errorCode).toBe('');
+  });
+
+  describe('Rolle metadata when changing Klasse', () => {
+    afterEach(() => {
+      wrapper?.unmount();
+    });
+
+    test('preserves existing Rolle metadata when changing Klasse with no creation Rollen available', async () => {
+      const schule: Organisation = DoFactory.getSchule({ id: 'schule-id' });
+      const oldKlasse: Organisation = DoFactory.getSchule({
+        id: 'old-klasse-id',
+        name: '9a',
+        typ: OrganisationsTyp.Klasse,
+        administriertVon: schule.id,
+      });
+      const newKlasse: Organisation = DoFactory.getSchule({
+        id: 'new-klasse-id',
+        name: '9b',
+        typ: OrganisationsTyp.Klasse,
+        administriertVon: schule.id,
+      });
+      const existingZuordnung: Zuordnung = DoFactory.getZuordnung({
+        sskId: schule.id,
+        sskName: schule.name,
+        rolleId: 'existing-rolle-id',
+        rolle: 'Existing Lernrolle',
+        rollenArt: RollenArt.Lern,
+        typ: OrganisationsTyp.Schule,
+        editable: true,
+      });
+      personStore.personenuebersicht = DoFactory.getPersonenUebersicht(mockPerson.person, [
+        existingZuordnung,
+        DoFactory.getZuordnung({
+          sskId: oldKlasse.id,
+          sskName: oldKlasse.name,
+          rolleId: existingZuordnung.rolleId,
+          rolle: existingZuordnung.rolle,
+          rollenArt: existingZuordnung.rollenArt,
+          typ: OrganisationsTyp.Klasse,
+          administriertVon: schule.id,
+        }),
+      ]);
+      personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
+        organisations: [schule],
+        canCommit: true,
+      });
+      rolleStore.rollenForPersonenkontextCreation = [];
+      await flushPromises();
+
+      await wrapper!.get('[data-testid="zuordnung-edit-button"]').trigger('click');
+      await wrapper!.get(`[data-testid="person-zuordnung-${schule.id}"] input[type="checkbox"]`).setValue(true);
+      await flushPromises();
+      await wrapper!.get('[data-testid="klasse-change-button"]').trigger('click');
+      await flushPromises();
+
+      organisationStore.klassenFilters.set('klasse-change', {
+        filterResult: [oldKlasse, newKlasse],
+        total: 2,
+        loading: false,
+      });
+      const klassenFilter: VueWrapper = wrapper!
+        .findComponent({ ref: 'klasse-change-form' })
+        .getComponent({ name: 'KlassenFilter' });
+      klassenFilter.vm.$emit('update:selectedKlassen', newKlasse.id);
+      await flushPromises();
+      await wrapper!.get('[data-testid="klasse-change-submit-button"]').trigger('click');
+      await flushPromises();
+
+      const confirmButton: Element = await vi.waitUntil(() =>
+        document.body.querySelector('[data-testid="confirm-change-klasse-button"]'),
+      );
+      confirmButton.dispatchEvent(new Event('click'));
+      await flushPromises();
+
+      const pendingItems: VueWrapper<InstanceType<typeof PersonenkontextItem>>[] = wrapper!
+        .findAllComponents<typeof PersonenkontextItem>(PersonenkontextItem)
+        .filter((item: VueWrapper) => item.props('pendingState') === PendingState.CREATED);
+      expect(pendingItems).toHaveLength(1);
+      expect.soft(pendingItems[0]!.props('zuordnung')).toMatchObject({
+        sskId: schule.id,
+        rolleId: existingZuordnung.rolleId,
+        rolle: existingZuordnung.rolle,
+        rollenArt: existingZuordnung.rollenArt,
+        klasse: newKlasse.name,
+      });
+      expect.soft(pendingItems[0]!.text()).toContain(existingZuordnung.rolle);
+
+      const vm: { zuordnungenToBePersisted: Zuordnung[] } = wrapper!.vm as unknown as {
+        zuordnungenToBePersisted: Zuordnung[];
+      };
+      const newKlasseZuordnung: Zuordnung | undefined = vm.zuordnungenToBePersisted.find(
+        (zuordnung: Zuordnung) =>
+          zuordnung.sskId === newKlasse.id &&
+          zuordnung.rolleId === existingZuordnung.rolleId &&
+          zuordnung.typ === OrganisationsTyp.Klasse,
+      );
+      expect(newKlasseZuordnung).toBeDefined();
+      expect.soft(newKlasseZuordnung).toMatchObject({
+        rolle: existingZuordnung.rolle,
+        rollenArt: existingZuordnung.rollenArt,
+      });
+    });
   });
 
   test('renders form to change Klasse and triggers submit', async () => {
