@@ -236,6 +236,7 @@
   }
 
   function clearSelectedRollen(): void {
+    selectedRollen.value = [];
     emits('fieldReset', 'selectedRollen');
   }
 

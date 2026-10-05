@@ -383,6 +383,42 @@ describe('PersonCreationView', () => {
     expect(personenkontextCreate.props('rollen')).toEqual([mockRolleForPersonenkontextCreation, lehrRolle]);
   });
 
+  test('should request Rollen without the previous rollenart after clearing the multiple Rolle autocomplete', async () => {
+    const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
+
+    await personenkontextCreate
+      .findComponent({ ref: 'schulenFilter' })
+      .findComponent({ ref: 'personenkontext-create-organisation-select' })
+      .setValue(ORGANISATION_ID);
+
+    const rollenSelect: VueWrapper = personenkontextCreate.findComponent({ ref: 'rollen-select' });
+    await rollenSelect.setValue([ROLLE_ID]);
+    await flushPromises();
+
+    expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lern);
+    expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenLastCalledWith(
+      expect.objectContaining({ organisationId: ORGANISATION_ID, rollenartForPerson: RollenArt.Lern }),
+    );
+    vi.mocked(rolleStore.getRollenForPersonenkontextCreation).mockClear();
+
+    await rollenSelect.get('.v-field__clearable .v-icon').trigger('click');
+    await flushPromises();
+
+    expect(personenkontextCreate.emitted('fieldReset')).toContainEqual(['selectedRollen']);
+    expect(personenkontextCreate.props('selectedRollen') ?? []).toEqual([]);
+    expect(personenkontextCreate.props('rollenartForPerson')).toBeUndefined();
+
+    await rollenSelect.get('input').setValue('another Rolle');
+    await flushPromises();
+    await vi.waitFor((): void => {
+      expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenCalled();
+    });
+
+    expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenLastCalledWith(
+      expect.objectContaining({ organisationId: ORGANISATION_ID, rollenartForPerson: undefined }),
+    );
+  });
+
   test('it navigates back to personen table', async () => {
     const push: MockInstance = vi.spyOn(router, 'push');
     await wrapper?.find('[data-testid="close-layout-card-button"]').trigger('click');
