@@ -110,11 +110,7 @@
     );
   });
 
-  const systemrechte: ComputedRef<RollenSystemRecht[]> = computed(() => {
-    // Gated Rollen (MPT_ROLLE, PILOT_1_ROLLE, ...) are only shown if their systemrecht is both requested here
-    // and actually held by the caller - so only explicitly request the gated rechte the user actually holds.
-    return [RollenSystemRecht.RollenVerwalten, ...authStore.grantedGatedRollenSystemrechte];
-  });
+  const systemrechte: RollenSystemRecht[] = [RollenSystemRecht.RollenVerwalten];
 
   function navigateToRolleDetails(_$event: PointerEvent, { item }: { item: RolleTableItem }): void {
     router.push({ name: 'rolle-details', params: { id: item.id } });
@@ -125,7 +121,7 @@
       offset: (searchFilterStore.rollenPage - 1) * searchFilterStore.rollenPerPage,
       limit: searchFilterStore.rollenPerPage,
       searchString: searchFilterStore.searchStringForRollen ?? undefined,
-      systemrechte: systemrechte.value,
+      systemrechte,
       organisationenForFilter: searchFilterStore.selectedOrganisationenForRollen?.length
         ? searchFilterStore.selectedOrganisationenForRollen
         : undefined,

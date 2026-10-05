@@ -225,7 +225,7 @@ describe('RolleManagementView', () => {
     });
   });
 
-  test('requests granted gated systemrechte (MPT and Pilot) in addition to RollenVerwalten', async () => {
+  test('requests only RollenVerwalten even when the user has gated systemrechte', async () => {
     authStore.grantedGatedRollenSystemrechte = [
       RollenSystemRechtEnum.MptRollenZuordnen,
       RollenSystemRechtEnum.Pilot3RollenZuordnen,
@@ -240,11 +240,7 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
-      systemrechte: [
-        RollenSystemRechtEnum.RollenVerwalten,
-        RollenSystemRechtEnum.MptRollenZuordnen,
-        RollenSystemRechtEnum.Pilot3RollenZuordnen,
-      ],
+      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
       merkmale: undefined,
       rollenarten: [RollenArt.Lehr],
       organisationenForFilter: undefined,
