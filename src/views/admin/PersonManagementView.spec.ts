@@ -77,6 +77,7 @@ beforeEach(async () => {
   authStore.hasPersonenBulkPermission = true;
   authStore.hasPersonenLoeschenPermission = true;
   authStore.hasPersonenverwaltungPermission = true;
+  authStore.grantedGatedRollenSystemrechte = [];
 
   personStore.getAllPersons = vi.fn();
   organisationStore.getFilteredKlassen = vi.fn();
@@ -498,6 +499,37 @@ describe('PersonManagementView', () => {
     expect(rolleStore.rollenForPersonAdministration).toHaveLength(1);
   });
 
+  test.each([
+    { systemrechte: [] },
+    {
+      systemrechte: [
+        RollenSystemRechtEnum.MptRollenZuordnen,
+        RollenSystemRechtEnum.Pilot2RollenZuordnen,
+        RollenSystemRechtEnum.Pilot5RollenZuordnen,
+      ],
+    },
+  ])(
+    'forwards granted gated rights to Rollen search: $systemrechte',
+    async ({ systemrechte }: { systemrechte: RollenSystemRechtEnum[] }) => {
+      authStore.grantedGatedRollenSystemrechte = systemrechte;
+      const getRollenForPersonAdministration: Mock = vi.fn().mockResolvedValue(undefined);
+      rolleStore.getRollenForPersonAdministration = getRollenForPersonAdministration;
+      const rollenAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ ref: 'rolle-select' });
+
+      rollenAutocomplete?.vm.$emit('update:search', 'pilot');
+      await nextTick();
+      vi.runAllTimers();
+      vi.runAllTicks();
+
+      expect(getRollenForPersonAdministration).toHaveBeenLastCalledWith({
+        searchStr: 'pilot',
+        limit: 25,
+        organisationIds: [],
+        systemrechte: [RollenSystemRechtEnum.PersonenVerwalten, ...systemrechte],
+      });
+    },
+  );
+
   type BulkOperationTestParams = {
     operationType: OperationType;
     layoutCardTestId: string;
@@ -577,19 +609,11 @@ describe('PersonManagementView', () => {
       ...personenkontextStore.workflowStepResponse!,
       rollen: [
         ...(personenkontextStore.workflowStepResponse?.rollen ?? []),
-        {
-          administeredBySchulstrukturknoten: '1234',
+        DoFactory.getRolleResponse({
           rollenart: RollenArt.Schb,
-          name: 'Pilot Rolle',
           merkmale: [RollenMerkmal.Pilot2Rolle],
-          systemrechte: [],
-          createdAt: '2022',
-          updatedAt: '2022',
           id: '99999',
-          administeredBySchulstrukturknotenName: 'Land SH',
-          administeredBySchulstrukturknotenKennung: '',
-          version: 1,
-        },
+        }),
       ],
     };
 
