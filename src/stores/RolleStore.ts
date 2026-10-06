@@ -144,7 +144,7 @@ export type RollenForErweiterungFilter = {
   limit?: number;
   offset?: number;
   searchString?: string;
-  organisationId?: string;
+  organisationId: string;
   rollenarten?: Array<RollenArt>;
   systemrechte?: RollenSystemRechtEnum[];
 };
@@ -253,11 +253,11 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
         try {
           const response: AxiosResponse<Array<RolleWithServiceProvidersResponse>> =
             await rolleApi.rolleControllerFindRollenAvailableForErweiterung(
+              filter.organisationId,
               filter.offset,
               filter.limit,
               filter.searchString,
               filter.rollenarten,
-              filter.organisationId,
               filter.systemrechte,
             );
           this.allRollen = response.data;

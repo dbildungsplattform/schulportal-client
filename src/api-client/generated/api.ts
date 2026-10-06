@@ -13499,9 +13499,9 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
-         * @param {Array<string>} [organisationIds] Filters the result to roles administered by any of the given organisations.
+         * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
          * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
-         * @param {Array<RollenSystemRechtEnum>} [systemrechte] Restricts the result to roles administered at organisations where the requesting user holds the given systemrechte. Defaults to ROLLEN_VERWALTEN.
+         * @param {Array<RollenSystemRechtEnum>} [systemrechte] Restricts the result to roles administered at organisations where the requesting user holds the given systemrechte. Must be ROLLEN_VERWALTEN, ROLLEN_ERWEITERN, or MPT_ROLLEN_ZUORDNEN. Defaults to ROLLEN_VERWALTEN.
          * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
          * @param {Array<RollenMerkmal>} [merkmale] Filter roles by merkmal.
          * @param {Array<string>} [serviceProviderIds] Filter roles by service provider ids.
@@ -13579,16 +13579,18 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * List all rollen that are available for the Rollenerweiterung workflow.
          * @summary 
+         * @param {string} organisationId The organisation the Rollenerweiterung is performed for.
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
          * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
-         * @param {string} [organisationId] The organisation the Rollenerweiterung is performed for. If omitted, roles of all organisations the user may create Rollenerweiterungen for are returned.
          * @param {Array<RollenSystemRechtEnum>} [systemrechte] Systemrechte the requesting user\&#39;s permissions are evaluated against. Including MPT_ROLLEN_ZUORDNEN additionally returns MPT roles. Can only be ROLLEN_ERWEITERN and optionally MPT_ROLLEN_ZUORDNEN. Defaults to ROLLEN_ERWEITERN.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollenAvailableForErweiterung: async (offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        rolleControllerFindRollenAvailableForErweiterung: async (organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'organisationId' is not null or undefined
+            assertParamExists('rolleControllerFindRollenAvailableForErweiterung', 'organisationId', organisationId)
             const localVarPath = `/api/rolle/available-for-erweiterung`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -13778,7 +13780,7 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
-         * @param {Array<string>} [organisationIds] Filters the result to roles administered by any of the given organisations.
+         * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
          * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -14137,9 +14139,9 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
-         * @param {Array<string>} [organisationIds] Filters the result to roles administered by any of the given organisations.
+         * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
          * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
-         * @param {Array<RollenSystemRechtEnum>} [systemrechte] Restricts the result to roles administered at organisations where the requesting user holds the given systemrechte. Defaults to ROLLEN_VERWALTEN.
+         * @param {Array<RollenSystemRechtEnum>} [systemrechte] Restricts the result to roles administered at organisations where the requesting user holds the given systemrechte. Must be ROLLEN_VERWALTEN, ROLLEN_ERWEITERN, or MPT_ROLLEN_ZUORDNEN. Defaults to ROLLEN_VERWALTEN.
          * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
          * @param {Array<RollenMerkmal>} [merkmale] Filter roles by merkmal.
          * @param {Array<string>} [serviceProviderIds] Filter roles by service provider ids.
@@ -14153,17 +14155,17 @@ export const RolleApiFp = function(configuration?: Configuration) {
         /**
          * List all rollen that are available for the Rollenerweiterung workflow.
          * @summary 
+         * @param {string} organisationId The organisation the Rollenerweiterung is performed for.
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
          * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
-         * @param {string} [organisationId] The organisation the Rollenerweiterung is performed for. If omitted, roles of all organisations the user may create Rollenerweiterungen for are returned.
          * @param {Array<RollenSystemRechtEnum>} [systemrechte] Systemrechte the requesting user\&#39;s permissions are evaluated against. Including MPT_ROLLEN_ZUORDNEN additionally returns MPT roles. Can only be ROLLEN_ERWEITERN and optionally MPT_ROLLEN_ZUORDNEN. Defaults to ROLLEN_ERWEITERN.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async rolleControllerFindRollenAvailableForErweiterung(offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<RolleWithServiceProvidersResponse>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollenAvailableForErweiterung(offset, limit, searchStr, rollenarten, organisationId, systemrechte, options);
+        async rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<RolleWithServiceProvidersResponse>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollenAvailableForErweiterung(organisationId, offset, limit, searchStr, rollenarten, systemrechte, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -14202,7 +14204,7 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
-         * @param {Array<string>} [organisationIds] Filters the result to roles administered by any of the given organisations.
+         * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
          * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -14337,9 +14339,9 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
-         * @param {Array<string>} [organisationIds] Filters the result to roles administered by any of the given organisations.
+         * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
          * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
-         * @param {Array<RollenSystemRechtEnum>} [systemrechte] Restricts the result to roles administered at organisations where the requesting user holds the given systemrechte. Defaults to ROLLEN_VERWALTEN.
+         * @param {Array<RollenSystemRechtEnum>} [systemrechte] Restricts the result to roles administered at organisations where the requesting user holds the given systemrechte. Must be ROLLEN_VERWALTEN, ROLLEN_ERWEITERN, or MPT_ROLLEN_ZUORDNEN. Defaults to ROLLEN_VERWALTEN.
          * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
          * @param {Array<RollenMerkmal>} [merkmale] Filter roles by merkmal.
          * @param {Array<string>} [serviceProviderIds] Filter roles by service provider ids.
@@ -14352,17 +14354,17 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
         /**
          * List all rollen that are available for the Rollenerweiterung workflow.
          * @summary 
+         * @param {string} organisationId The organisation the Rollenerweiterung is performed for.
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
          * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
-         * @param {string} [organisationId] The organisation the Rollenerweiterung is performed for. If omitted, roles of all organisations the user may create Rollenerweiterungen for are returned.
          * @param {Array<RollenSystemRechtEnum>} [systemrechte] Systemrechte the requesting user\&#39;s permissions are evaluated against. Including MPT_ROLLEN_ZUORDNEN additionally returns MPT roles. Can only be ROLLEN_ERWEITERN and optionally MPT_ROLLEN_ZUORDNEN. Defaults to ROLLEN_ERWEITERN.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollenAvailableForErweiterung(offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options?: any): AxiosPromise<Array<RolleWithServiceProvidersResponse>> {
-            return localVarFp.rolleControllerFindRollenAvailableForErweiterung(offset, limit, searchStr, rollenarten, organisationId, systemrechte, options).then((request) => request(axios, basePath));
+        rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: any): AxiosPromise<Array<RolleWithServiceProvidersResponse>> {
+            return localVarFp.rolleControllerFindRollenAvailableForErweiterung(organisationId, offset, limit, searchStr, rollenarten, systemrechte, options).then((request) => request(axios, basePath));
         },
         /**
          * List all rollen that are available for the Personen-Import workflow.
@@ -14398,7 +14400,7 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
-         * @param {Array<string>} [organisationIds] Filters the result to roles administered by any of the given organisations.
+         * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
          * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -14526,9 +14528,9 @@ export interface RolleApiInterface {
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
      * @param {string} [searchStr] The name for the role.
-     * @param {Array<string>} [organisationIds] Filters the result to roles administered by any of the given organisations.
+     * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
      * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
-     * @param {Array<RollenSystemRechtEnum>} [systemrechte] Restricts the result to roles administered at organisations where the requesting user holds the given systemrechte. Defaults to ROLLEN_VERWALTEN.
+     * @param {Array<RollenSystemRechtEnum>} [systemrechte] Restricts the result to roles administered at organisations where the requesting user holds the given systemrechte. Must be ROLLEN_VERWALTEN, ROLLEN_ERWEITERN, or MPT_ROLLEN_ZUORDNEN. Defaults to ROLLEN_VERWALTEN.
      * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
      * @param {Array<RollenMerkmal>} [merkmale] Filter roles by merkmal.
      * @param {Array<string>} [serviceProviderIds] Filter roles by service provider ids.
@@ -14541,17 +14543,17 @@ export interface RolleApiInterface {
     /**
      * List all rollen that are available for the Rollenerweiterung workflow.
      * @summary 
+     * @param {string} organisationId The organisation the Rollenerweiterung is performed for.
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
      * @param {string} [searchStr] The name for the role.
      * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
-     * @param {string} [organisationId] The organisation the Rollenerweiterung is performed for. If omitted, roles of all organisations the user may create Rollenerweiterungen for are returned.
      * @param {Array<RollenSystemRechtEnum>} [systemrechte] Systemrechte the requesting user\&#39;s permissions are evaluated against. Including MPT_ROLLEN_ZUORDNEN additionally returns MPT roles. Can only be ROLLEN_ERWEITERN and optionally MPT_ROLLEN_ZUORDNEN. Defaults to ROLLEN_ERWEITERN.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof RolleApiInterface
      */
-    rolleControllerFindRollenAvailableForErweiterung(offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): AxiosPromise<Array<RolleWithServiceProvidersResponse>>;
+    rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): AxiosPromise<Array<RolleWithServiceProvidersResponse>>;
 
     /**
      * List all rollen that are available for the Personen-Import workflow.
@@ -14587,7 +14589,7 @@ export interface RolleApiInterface {
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
      * @param {string} [searchStr] The name for the role.
-     * @param {Array<string>} [organisationIds] Filters the result to roles administered by any of the given organisations.
+     * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
      * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -14725,9 +14727,9 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
      * @param {string} [searchStr] The name for the role.
-     * @param {Array<string>} [organisationIds] Filters the result to roles administered by any of the given organisations.
+     * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
      * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
-     * @param {Array<RollenSystemRechtEnum>} [systemrechte] Restricts the result to roles administered at organisations where the requesting user holds the given systemrechte. Defaults to ROLLEN_VERWALTEN.
+     * @param {Array<RollenSystemRechtEnum>} [systemrechte] Restricts the result to roles administered at organisations where the requesting user holds the given systemrechte. Must be ROLLEN_VERWALTEN, ROLLEN_ERWEITERN, or MPT_ROLLEN_ZUORDNEN. Defaults to ROLLEN_VERWALTEN.
      * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
      * @param {Array<RollenMerkmal>} [merkmale] Filter roles by merkmal.
      * @param {Array<string>} [serviceProviderIds] Filter roles by service provider ids.
@@ -14742,18 +14744,18 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
     /**
      * List all rollen that are available for the Rollenerweiterung workflow.
      * @summary 
+     * @param {string} organisationId The organisation the Rollenerweiterung is performed for.
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
      * @param {string} [searchStr] The name for the role.
      * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
-     * @param {string} [organisationId] The organisation the Rollenerweiterung is performed for. If omitted, roles of all organisations the user may create Rollenerweiterungen for are returned.
      * @param {Array<RollenSystemRechtEnum>} [systemrechte] Systemrechte the requesting user\&#39;s permissions are evaluated against. Including MPT_ROLLEN_ZUORDNEN additionally returns MPT roles. Can only be ROLLEN_ERWEITERN and optionally MPT_ROLLEN_ZUORDNEN. Defaults to ROLLEN_ERWEITERN.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof RolleApi
      */
-    public rolleControllerFindRollenAvailableForErweiterung(offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, organisationId?: string, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig) {
-        return RolleApiFp(this.configuration).rolleControllerFindRollenAvailableForErweiterung(offset, limit, searchStr, rollenarten, organisationId, systemrechte, options).then((request) => request(this.axios, this.basePath));
+    public rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig) {
+        return RolleApiFp(this.configuration).rolleControllerFindRollenAvailableForErweiterung(organisationId, offset, limit, searchStr, rollenarten, systemrechte, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -14794,7 +14796,7 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
      * @param {string} [searchStr] The name for the role.
-     * @param {Array<string>} [organisationIds] Filters the result to roles administered by any of the given organisations.
+     * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
      * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}

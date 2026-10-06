@@ -226,7 +226,9 @@ describe('rolleStore', () => {
     it('should handle a structured error', async () => {
       mockadapter.onGet(/^\/api\/rolle\/available-for-erweiterung/).replyOnce(500, { i18nKey: 'ERWEITERUNG_ERROR' });
 
-      const promise: Promise<void> = rolleStore.getRollenAvailableForErweiterung({});
+      const promise: Promise<void> = rolleStore.getRollenAvailableForErweiterung({
+        organisationId: 'fake-id',
+      });
       expect(rolleStore.loading).toBe(true);
       await promise;
 
@@ -237,7 +239,9 @@ describe('rolleStore', () => {
     it('should handle an unstructured error', async () => {
       mockadapter.onGet(/^\/api\/rolle\/available-for-erweiterung/).replyOnce(500, 'server error');
 
-      const promise: Promise<void> = rolleStore.getRollenAvailableForErweiterung({});
+      const promise: Promise<void> = rolleStore.getRollenAvailableForErweiterung({
+        organisationId: 'fake-id',
+      });
       expect(rolleStore.loading).toBe(true);
       await promise;
 
