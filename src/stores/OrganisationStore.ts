@@ -98,6 +98,7 @@ type OrganisationState = {
   createdKlasse: Organisation | null;
   createdSchule: Organisation | null;
   createdSchultraeger: Organisation | null;
+  createdBehoerde: Organisation | null;
   lockingOrganisation: Organisation | null;
   schulenFromTraeger: Array<Organisation>;
   schulenWithoutTraeger: Array<Organisation>;
@@ -164,6 +165,7 @@ type OrganisationActions = {
     traegerschaft?: TraegerschaftTyp,
     emailAdress?: string,
   ) => Promise<void>;
+  createBehoerde: (administriertVon: string, zugehoerigZu: string, name: string, kennung?: string) => Promise<void>;
   deleteOrganisationById: (organisationId: string) => Promise<void>;
   updateOrganisationNameById: (organisationId: string, name: string, type: OrganisationsTyp) => Promise<void>;
   getRootKinderSchultraeger: () => Promise<void>;
@@ -216,6 +218,7 @@ export const useOrganisationStore: StoreDefinition<
       createdKlasse: null,
       createdSchule: null,
       createdSchultraeger: null,
+      createdBehoerde: null,
       lockingOrganisation: null,
       schulenFromTraeger: [],
       schulenWithoutTraeger: [],
@@ -543,6 +546,31 @@ export const useOrganisationStore: StoreDefinition<
         } else if (typ === OrganisationsTyp.Traeger) {
           this.createdSchultraeger = data;
         }
+      } catch (error: unknown) {
+        this.errorCode = getResponseErrorCode(error, 'ORGANISATION_SPECIFICATION_ERROR');
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async createBehoerde(
+      administriertVon: string,
+      zugehoerigZu: string,
+      name: string,
+      kennung?: string,
+    ): Promise<void> {
+      this.loading = true;
+      try {
+        const createOrganisationBodyParams: CreateOrganisationBodyParams = {
+          administriertVon: administriertVon,
+          zugehoerigZu: zugehoerigZu,
+          kennung: kennung,
+          name: name,
+          typ: OrganisationsTyp.Behoerde,
+        };
+        const { data }: { data: Organisation } =
+          await organisationApi.organisationControllerCreateOrganisation(createOrganisationBodyParams);
+        this.createdBehoerde = data;
       } catch (error: unknown) {
         this.errorCode = getResponseErrorCode(error, 'ORGANISATION_SPECIFICATION_ERROR');
       } finally {

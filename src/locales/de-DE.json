@@ -215,6 +215,41 @@
       "untilEndOfSchoolYear": "Bis Schuljahresende"
     },
     "doNotCloseBrowserNotice": "Bitte den Browser während der Bearbeitung nicht schließen!",
+    "behoerde": {
+      "addNew": "Neue Behörde hinzufügen",
+      "assignZustaendigkeitsbereich": "Zuständigkeitsbereich zuordnen",
+      "backToCreateBehoerde": "Zurück zur Behördenanlage",
+      "behoerdeAddedSuccessfully": "Die Behörde wurde erfolgreich hinzugefügt.",
+      "behoerdeCreateErrorTitle": "Fehler beim Anlegen der Behörde",
+      "behoerdenname": "Behördenname",
+      "create": "Behörde anlegen",
+      "createAnother": "Weitere Behörde anlegen",
+      "createNew": "Neue Behörde anlegen",
+      "dienststellennummer": "Dienststellennummer",
+      "discard": "Behörde verwerfen",
+      "enterBehoerdenname": "Behördenname eingeben",
+      "enterDienststellennummer": "Dienststellennummer eingeben",
+      "errors": {
+        "BEHOERDE_NAME_EINDEUTIG": "Der Behördenname existiert bereits.",
+        "ORGANISATION_SPECIFICATION_ERROR": "Die Behörde konnte nicht angelegt werden.",
+        "REQUIRED_STEP_UP_LEVEL_NOT_MET": "Die letzte Aktion konnte nicht ausgeführt werden. Aufgrund von längerer Inaktivität ist eine erneute Authentifizierung mit einem zweiten Faktor erforderlich. Um fortzufahren, klicken Sie bitte auf „Zurück zur Ergebnisliste“ oder „Schließen“. Sie werden anschließend zur Eingabe Ihres zweiten Faktors aufgefordert."
+      },
+      "management": "Behördenverwaltung",
+      "rules": {
+        "behoerdenname": {
+          "matches": "Der Behördenname darf keine ungültigen Zeichen beinhalten.",
+          "noLeadingTrailingSpaces": "Der Behördenname darf nicht mit Leerzeichen beginnen oder enden.",
+          "required": "Der Behördenname muss angegeben werden."
+        },
+        "dienststellennummer": {
+          "noLeadingTrailingSpaces": "Die Dienststellennummer darf nicht mit Leerzeichen beginnen oder enden."
+        }
+      },
+      "title": {
+        "ORGANISATION_SPECIFICATION_ERROR": "Fehler bei Anlage der Behörde"
+      },
+      "zustaendigkeitsbereich": "Zuständigkeitsbereich"
+    },
     "followingDataCreated": "Folgende Daten wurden gespeichert:",
     "headline": "Administrationsbereich",
     "import": {
