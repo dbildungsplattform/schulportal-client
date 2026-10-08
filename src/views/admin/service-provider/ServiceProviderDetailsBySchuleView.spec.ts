@@ -257,14 +257,16 @@ describe('ServiceProviderDetailsBySchuleView', () => {
 
     test('requests rollen without MPT systemrecht when the user lacks the permission', async () => {
       authStore.hasMptRollenZuordnenPermission = false;
-      const getAllRollenSpy: MockInstance = vi.spyOn(rolleStore, 'getAllRollen').mockResolvedValue(undefined);
+      const getRollenSpy: MockInstance = vi
+        .spyOn(rolleStore, 'getRollenAvailableForErweiterung')
+        .mockResolvedValue(undefined);
       await nextTick();
 
       await wrapper?.find('[data-testid="rollenerweiterung-bearbeiten-button"]').trigger('click');
       await nextTick();
 
-      expect(getAllRollenSpy).toHaveBeenCalledWith({
-        organisationContextForOperation: 'some-org-id',
+      expect(getRollenSpy).toHaveBeenCalledWith({
+        organisationId: 'some-org-id',
         rollenarten: mockServiceProvider.rollenartenWhitelist,
         systemrechte: [RollenSystemRechtEnum.RollenErweitern],
       });
@@ -272,14 +274,16 @@ describe('ServiceProviderDetailsBySchuleView', () => {
 
     test('requests rollen including MPT systemrecht when the user has the permission', async () => {
       authStore.hasMptRollenZuordnenPermission = true;
-      const getAllRollenSpy: MockInstance = vi.spyOn(rolleStore, 'getAllRollen').mockResolvedValue(undefined);
+      const getRollenSpy: MockInstance = vi
+        .spyOn(rolleStore, 'getRollenAvailableForErweiterung')
+        .mockResolvedValue(undefined);
       await nextTick();
 
       await wrapper?.find('[data-testid="rollenerweiterung-bearbeiten-button"]').trigger('click');
       await nextTick();
 
-      expect(getAllRollenSpy).toHaveBeenCalledWith({
-        organisationContextForOperation: 'some-org-id',
+      expect(getRollenSpy).toHaveBeenCalledWith({
+        organisationId: 'some-org-id',
         rollenarten: mockServiceProvider.rollenartenWhitelist,
         systemrechte: [RollenSystemRechtEnum.RollenErweitern, RollenSystemRechtEnum.MptRollenZuordnen],
       });

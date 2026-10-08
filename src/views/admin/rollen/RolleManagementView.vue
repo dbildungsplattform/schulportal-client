@@ -127,7 +127,7 @@
       limit: searchFilterStore.rollenPerPage,
       searchString: searchFilterStore.searchStringForRollen ?? undefined,
       systemrechte: systemrechte.value,
-      organisationenForFilter: searchFilterStore.selectedOrganisationenForRollen?.length
+      organisationIds: searchFilterStore.selectedOrganisationenForRollen?.length
         ? searchFilterStore.selectedOrganisationenForRollen
         : undefined,
       merkmale: searchFilterStore.selectedMerkmaleForRollen?.length

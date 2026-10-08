@@ -57,6 +57,9 @@ type RolleActions = {
     serviceProvider: string[],
   ) => Promise<void>;
   getAllRollen: (filter: RolleFilter) => Promise<void>;
+  getRollenAvailableForErweiterung: (filter: RollenForErweiterungFilter) => Promise<void>;
+  getRollenAvailableForImport: (filter: RollenForImportFilter) => Promise<void>;
+  getRollenForMptZuordnung: (filter: RollenForMptZuordnungFilter) => Promise<void>;
   getRolleById: (rolleId: string) => Promise<void>;
   getRollenForPersonAdministration: (params: RollenForPersonAdministrationParams) => Promise<void>;
   getMptRolleById: (rolleId: string, organisationId: string) => Promise<void>;
@@ -129,13 +132,37 @@ export type RolleFilter = {
   limit?: number;
   offset?: number;
   searchString?: string;
-  organisationContextForOperation?: string;
-  organisationenForFilter?: string[];
+  organisationIds?: string[];
   rolleIds?: string[];
   systemrechte?: RollenSystemRechtEnum[];
   rollenarten?: Array<RollenArt>;
   merkmale?: Array<RollenMerkmal>;
   serviceProviderIds?: Array<string>;
+};
+
+export type RollenForErweiterungFilter = {
+  limit?: number;
+  offset?: number;
+  searchString?: string;
+  organisationId: string;
+  rollenarten?: Array<RollenArt>;
+  systemrechte?: RollenSystemRechtEnum[];
+};
+
+export type RollenForImportFilter = {
+  organisationId: string;
+  limit?: number;
+  offset?: number;
+  searchString?: string;
+  rollenarten?: Array<RollenArt>;
+};
+
+export type RollenForMptZuordnungFilter = {
+  limit?: number;
+  offset?: number;
+  searchString?: string;
+  organisationIds?: string[];
+  rolleIds?: string[];
 };
 
 export type PersistRollenerweiterungForRolle = {
@@ -205,13 +232,73 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               filter.offset,
               filter.limit,
               filter.searchString,
-              filter.organisationContextForOperation,
-              filter.organisationenForFilter,
+              filter.organisationIds,
               filter.rolleIds,
               filter.systemrechte,
               filter.rollenarten,
               filter.merkmale,
               filter.serviceProviderIds,
+            );
+          this.allRollen = response.data;
+          this.totalRollen = +response.headers['x-paging-total'];
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async getRollenAvailableForErweiterung(filter: RollenForErweiterungFilter): Promise<void> {
+        this.loading = true;
+        try {
+          const response: AxiosResponse<Array<RolleWithServiceProvidersResponse>> =
+            await rolleApi.rolleControllerFindRollenAvailableForErweiterung(
+              filter.organisationId,
+              filter.offset,
+              filter.limit,
+              filter.searchString,
+              filter.rollenarten,
+              filter.systemrechte,
+            );
+          this.allRollen = response.data;
+          this.totalRollen = +response.headers['x-paging-total'];
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async getRollenAvailableForImport(filter: RollenForImportFilter): Promise<void> {
+        this.loading = true;
+        try {
+          const response: AxiosResponse<Array<RolleWithServiceProvidersResponse>> =
+            await rolleApi.rolleControllerFindRollenAvailableForImport(
+              filter.organisationId,
+              filter.offset,
+              filter.limit,
+              filter.searchString,
+              filter.rollenarten,
+            );
+          this.allRollen = response.data;
+          this.totalRollen = +response.headers['x-paging-total'];
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async getRollenForMptZuordnung(filter: RollenForMptZuordnungFilter): Promise<void> {
+        this.loading = true;
+        try {
+          const response: AxiosResponse<Array<RolleWithServiceProvidersResponse>> =
+            await rolleApi.rolleControllerFindRollenForMptZuordnung(
+              filter.offset,
+              filter.limit,
+              filter.searchString,
+              filter.organisationIds,
+              filter.rolleIds,
             );
           this.allRollen = response.data;
           this.totalRollen = +response.headers['x-paging-total'];
@@ -271,14 +358,12 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
           }
 
           const { data }: AxiosResponse<Array<RolleWithServiceProvidersResponse>> =
-            await rolleApi.rolleControllerFindRollen(
-              undefined,
+            await rolleApi.rolleControllerFindRollenForMptZuordnung(
               undefined,
               undefined,
               undefined,
               [organisationId],
               [rolleId],
-              [RollenSystemRechtEnum.MptRollenZuordnen],
             );
           const rolle: RolleWithServiceProvidersResponse | undefined = data[0];
           if (!rolle) {

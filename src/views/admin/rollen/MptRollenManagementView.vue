@@ -49,7 +49,7 @@
       offset: (searchFilterStore.mptRollenPage - 1) * searchFilterStore.mptRollenPerPage,
       limit: searchFilterStore.mptRollenPerPage,
       searchString: '',
-      organisationenForFilter: [selectedOrganisationId.value],
+      organisationIds: [selectedOrganisationId.value],
       systemrechte: [RollenSystemRechtEnum.MptRollenZuordnen],
     };
   });
@@ -114,7 +114,7 @@
 
   watch(mptRollenFilter, async (filter: RolleFilter | null): Promise<void> => {
     if (filter) {
-      await rolleStore.getAllRollen(filter);
+      await rolleStore.getRollenForMptZuordnung(filter);
     }
   });
 
