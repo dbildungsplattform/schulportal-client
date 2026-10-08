@@ -1,3 +1,4 @@
+import { RollenSystemRechtEnum } from '@/api-client/generated/api';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
@@ -5,14 +6,9 @@ import { RollenArt, useRolleStore, type RolleStore } from '@/stores/RolleStore';
 import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
-import type { Mock } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import MptRollenManagementView from './MptRollenManagementView.vue';
-
-type MptRollenManagementViewVm = {
-  selectedOrganisationId: string;
-};
 
 let router: Router;
 let authStore: AuthStore;
@@ -60,8 +56,11 @@ beforeEach(async (): Promise<void> => {
   searchFilterStore.$reset();
   authStore.hasRollenerweiternPermission = true;
 
-  vi.spyOn(rolleStore, 'getAllRollen').mockResolvedValue();
+  vi.spyOn(rolleStore, 'getRollenForMptZuordnung').mockResolvedValue();
   vi.spyOn(organisationStore, 'getOrganisationById').mockResolvedValue();
+  vi.spyOn(searchFilterStore, 'setSchuleForMptRollen').mockImplementation((schuleId: string | null): void => {
+    searchFilterStore.selectedSchuleForMptRollen = schuleId;
+  });
 });
 
 afterEach((): void => {
@@ -89,6 +88,8 @@ describe('MptRollenManagementView', () => {
     await nextTick();
     await flushPromises();
 
+    expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledOnce();
+    expect(organisationStore.getOrganisationById).toHaveBeenCalledExactlyOnceWith(schuleId);
     expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledWith(
       expect.objectContaining({
         organisationIds: [schuleId],
@@ -179,21 +180,17 @@ describe('MptRollenManagementView', () => {
     const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
     const schuleId: string = DoFactory.getSchule().id;
     const schuleFilter: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
-    const getAllRollenMock: Mock = rolleStore.getRollenForMptZuordnung as unknown as Mock;
-
     schuleFilter.vm.$emit('update:selectedSchulen', schuleId);
     await nextTick();
     await flushPromises();
 
-    getAllRollenMock.mockClear();
+    vi.mocked(rolleStore.getRollenForMptZuordnung).mockClear();
     rolleStore.totalRollen = 50;
     await nextTick();
 
     await wrapper.find('.v-pagination__next button:not(.v-btn--disabled)').trigger('click');
     await flushPromises();
-    const latestCallArgs: unknown = getAllRollenMock.mock.calls.at(-1)?.[0];
-
-    expect(latestCallArgs).toEqual(
+    expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         organisationIds: [schuleId],
         offset: 30,
@@ -210,14 +207,13 @@ describe('MptRollenManagementView', () => {
     await nextTick();
     await flushPromises();
 
+    vi.mocked(rolleStore.getRollenForMptZuordnung).mockClear();
     const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' });
     resultTable.vm.$emit('onItemsPerPageUpdate', 50);
     await nextTick();
+    await flushPromises();
 
-    const getAllRollenMock: Mock = rolleStore.getRollenForMptZuordnung as unknown as Mock;
-    const latestCallArgs: unknown = getAllRollenMock.mock.calls.at(-1)?.[0];
-
-    expect(latestCallArgs).toEqual(
+    expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         organisationIds: [schuleId],
         limit: 50,
@@ -235,27 +231,196 @@ describe('MptRollenManagementView', () => {
 
     schuleFilter.vm.$emit('update:selectedSchulen', schuleId);
     await nextTick();
+    await flushPromises();
+
+    searchFilterStore.mptRollenPage = 2;
+    searchFilterStore.mptRollenPerPage = 50;
+    organisationStore.currentOrganisation = DoFactory.getSchule({ id: schuleId });
+    await nextTick();
+    await flushPromises();
+    vi.mocked(rolleStore.getRollenForMptZuordnung).mockClear();
+    vi.mocked(organisationStore.getOrganisationById).mockClear();
 
     await wrapper.find('[data-testid="reset-filter-button"]').trigger('click');
     await nextTick();
+    await flushPromises();
 
     expect(rolleStore.allRollen).toEqual([]);
     expect(rolleStore.totalRollen).toBe(0);
     expect(searchFilterStore.selectedSchuleForMptRollen).toBeNull();
+    expect(searchFilterStore.mptRollenPage).toBe(1);
+    expect(searchFilterStore.mptRollenPerPage).toBe(30);
+    expect(organisationStore.currentOrganisation).toBeNull();
+    expect(rolleStore.getRollenForMptZuordnung).not.toHaveBeenCalled();
+    expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
   });
 
   it('restores selected school from search filter store on mount', async () => {
     const schuleId: string = DoFactory.getSchule().id;
     searchFilterStore.selectedSchuleForMptRollen = schuleId;
+    searchFilterStore.mptRollenPage = 2;
+    searchFilterStore.mptRollenPerPage = 50;
 
     const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
     await flushPromises();
 
-    expect((wrapper.vm as unknown as MptRollenManagementViewVm).selectedOrganisationId).toBe(schuleId);
-    expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledWith(
+    const schuleFilter: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
+    expect(schuleFilter.props()).toEqual(expect.objectContaining({ selectedSchulen: [schuleId] }));
+    expect(organisationStore.getOrganisationById).toHaveBeenCalledExactlyOnceWith(schuleId);
+    expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         organisationIds: [schuleId],
+        offset: 50,
+        limit: 50,
       }),
     );
+  });
+
+  it.each([
+    { page: 2, limit: 30, offset: 30 },
+    { page: 1, limit: 50, offset: 0 },
+    { page: 2, limit: 50, offset: 50 },
+  ])(
+    'dispatches once when reactive pagination changes to page $page and limit $limit',
+    async ({ page, limit, offset }: { page: number; limit: number; offset: number }): Promise<void> => {
+      const schuleId: string = DoFactory.getSchule().id;
+      searchFilterStore.selectedSchuleForMptRollen = schuleId;
+      rolleStore.totalRollen = 100;
+      mountComponent();
+      await flushPromises();
+      vi.mocked(rolleStore.getRollenForMptZuordnung).mockClear();
+      vi.mocked(organisationStore.getOrganisationById).mockClear();
+
+      searchFilterStore.mptRollenPage = page;
+      searchFilterStore.mptRollenPerPage = limit;
+      await nextTick();
+      await flushPromises();
+
+      expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledExactlyOnceWith({
+        offset,
+        limit,
+        searchString: '',
+        organisationIds: [schuleId],
+        systemrechte: [RollenSystemRechtEnum.MptRollenZuordnen],
+      });
+      expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    { total: 40, expectedPage: 1, expectedOffset: 0 },
+    { total: 100, expectedPage: 2, expectedOffset: 50 },
+  ])(
+    'dispatches the final page-size filter once with $total total rollen',
+    async ({
+      total,
+      expectedPage,
+      expectedOffset,
+    }: {
+      total: number;
+      expectedPage: number;
+      expectedOffset: number;
+    }): Promise<void> => {
+      const schuleId: string = DoFactory.getSchule().id;
+      searchFilterStore.selectedSchuleForMptRollen = schuleId;
+      searchFilterStore.mptRollenPage = 2;
+      rolleStore.totalRollen = total;
+      const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
+      await flushPromises();
+      vi.mocked(rolleStore.getRollenForMptZuordnung).mockClear();
+      vi.mocked(organisationStore.getOrganisationById).mockClear();
+
+      const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' });
+      resultTable.vm.$emit('onItemsPerPageUpdate', 50);
+      await nextTick();
+      await flushPromises();
+
+      expect(searchFilterStore.mptRollenPage).toBe(expectedPage);
+      expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ offset: expectedOffset, limit: 50, organisationIds: [schuleId] }),
+      );
+      expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
+    },
+  );
+
+  it('does not dispatch when the filter inputs are unchanged', async () => {
+    const schuleId: string = DoFactory.getSchule().id;
+    searchFilterStore.selectedSchuleForMptRollen = schuleId;
+    const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
+    await flushPromises();
+    vi.mocked(rolleStore.getRollenForMptZuordnung).mockClear();
+    vi.mocked(organisationStore.getOrganisationById).mockClear();
+
+    const schuleFilter: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
+    const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' });
+    schuleFilter.vm.$emit('update:selectedSchulen', schuleId);
+    resultTable.vm.$emit('onPageUpdate', 1);
+    resultTable.vm.$emit('onItemsPerPageUpdate', 30);
+    await nextTick();
+    await flushPromises();
+
+    expect(rolleStore.getRollenForMptZuordnung).not.toHaveBeenCalled();
+    expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
+  });
+
+  it('does not dispatch pagination changes without a selected school', async () => {
+    const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
+    await flushPromises();
+
+    const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' });
+    resultTable.vm.$emit('onPageUpdate', 2);
+    resultTable.vm.$emit('onItemsPerPageUpdate', 50);
+    await nextTick();
+    await flushPromises();
+
+    expect(rolleStore.getRollenForMptZuordnung).not.toHaveBeenCalled();
+    expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
+  });
+
+  it('reloads rollen and organisation details once when the school changes', async () => {
+    searchFilterStore.selectedSchuleForMptRollen = DoFactory.getSchule().id;
+    searchFilterStore.mptRollenPage = 2;
+    rolleStore.totalRollen = 100;
+    const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
+    await flushPromises();
+    vi.mocked(rolleStore.getRollenForMptZuordnung).mockClear();
+    vi.mocked(organisationStore.getOrganisationById).mockClear();
+    const schuleId: string = DoFactory.getSchule().id;
+
+    const schuleFilter: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
+    schuleFilter.vm.$emit('update:selectedSchulen', schuleId);
+    await nextTick();
+    await flushPromises();
+
+    expect(searchFilterStore.selectedSchuleForMptRollen).toBe(schuleId);
+    expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ organisationIds: [schuleId], offset: 30 }),
+    );
+    expect(organisationStore.getOrganisationById).toHaveBeenCalledExactlyOnceWith(schuleId);
+  });
+
+  it('dispatches once for an autoselected school on mount', async () => {
+    const schule: ReturnType<typeof DoFactory.getSchule> = DoFactory.getSchule();
+    authStore.currentUser = {
+      ...DoFactory.getUserinfoResponse(),
+      personenkontexte: [
+        {
+          ...DoFactory.getPersonenkontextRolleFieldsResponse({
+            rolle: DoFactory.getRollenSystemRechtServiceProviderIDResponse({
+              systemrechte: [RollenSystemRechtEnum.MptRollenZuordnen],
+            }),
+          }),
+          organisation: schule,
+        },
+      ],
+    };
+    mountComponent();
+    await flushPromises();
+
+    expect(searchFilterStore.selectedSchuleForMptRollen).toBe(schule.id);
+    expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ organisationIds: [schule.id], offset: 0, limit: 30 }),
+    );
+    expect(organisationStore.getOrganisationById).toHaveBeenCalledExactlyOnceWith(schule.id);
   });
 });
