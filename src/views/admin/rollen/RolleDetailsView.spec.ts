@@ -12,7 +12,6 @@ import {
 import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
 import { faker } from '@faker-js/faker';
 import { DOMWrapper, VueWrapper, flushPromises, mount } from '@vue/test-utils';
-import { createPinia, setActivePinia } from 'pinia';
 import { DoFactory } from 'test/DoFactory';
 import { expect, test, type Mock } from 'vitest';
 import { nextTick, type Component } from 'vue';
@@ -39,9 +38,6 @@ const mockUpdatedRolle: RolleWithServiceProvidersResponse = {
   systemrechte: [],
 };
 
-rolleStore.currentRolle = mockCurrentRolle;
-rolleStore.updatedRolle = mockUpdatedRolle;
-
 async function mountComponent(): Promise<VueWrapper<InstanceType<typeof RolleDetailsView>>> {
   const wrapper: VueWrapper<InstanceType<typeof RolleDetailsView>> = mount(RolleDetailsView, {
     attachTo: document.getElementById('app') || '',
@@ -62,7 +58,6 @@ async function mountComponent(): Promise<VueWrapper<InstanceType<typeof RolleDet
 }
 
 beforeEach(async () => {
-  setActivePinia(createPinia());
   document.body.innerHTML = `
     <div>
       <div id="app"></div>
@@ -74,6 +69,8 @@ beforeEach(async () => {
     routes,
   });
 
+  rolleStore.currentRolle = mockCurrentRolle;
+
   router.push('/');
   await router.isReady();
 
@@ -82,6 +79,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   wrapper?.unmount();
+  rolleStore.$reset();
 });
 
 describe('RolleDetailsView', () => {
@@ -112,6 +110,7 @@ describe('RolleDetailsView', () => {
     rolleStore.getRolleById = vi.fn();
     rolleStore.updateRolle = vi.fn();
     wrapper = await mountComponent();
+
     await wrapper.find('[data-testid="rolle-edit-button"]').trigger('click');
     const form: VueWrapper = wrapper.findComponent({ ref: 'rolle-form' });
     const merkmaleSelect: VueWrapper = form.findComponent({ ref: 'merkmale-select' });
@@ -122,26 +121,27 @@ describe('RolleDetailsView', () => {
     await wrapper.find('[data-testid="rolle-changes-save-button"]').trigger('click');
     await flushPromises();
 
-    expect(rolleStore.updateRolle).toHaveBeenLastCalledWith(
-      rolle.id,
-      rolle.name,
-      remove ? [] : merkmale,
-      remove ? [] : systemrechte,
-      [],
-      rolle.version,
-    );
+    // validation is not instant and can cause flakiness here, if we don't wait for it
+    await vi.waitFor(() => {
+      expect(rolleStore.updateRolle).toHaveBeenLastCalledWith(
+        rolle.id,
+        rolle.name,
+        remove ? [] : merkmale,
+        remove ? [] : systemrechte,
+        [],
+        rolle.version,
+      );
+    });
     rolleStore.currentRolle = mockCurrentRolle;
     rolleStore.updatedRolle = mockUpdatedRolle;
   });
 
   test('it renders the rolle details view', () => {
+    rolleStore.currentRolle = mockCurrentRolle;
     expect(wrapper?.find('[data-testid="rolle-details-headline"]').isVisible()).toBe(true);
   });
 
   test('it renders data for current rolle', async () => {
-    rolleStore.errorCode = '';
-    rolleStore.updatedRolle = null;
-    rolleStore.currentRolle = mockCurrentRolle;
     organisationStore.currentOrganisation = mockOrga;
     organisationStore.organisationenFilters.set('rolle-form', {
       filterResult: [mockOrga],
@@ -157,8 +157,6 @@ describe('RolleDetailsView', () => {
         .findComponent({ ref: 'rolle-form-organisation-select' })
         .text(),
     ).toContain(mockOrga.name);
-
-    rolleStore.updatedRolle = mockUpdatedRolle;
   });
 
   test('it renders data in success template', async () => {
@@ -185,11 +183,6 @@ describe('RolleDetailsView', () => {
   });
 
   test('it activates editing mode', async () => {
-    rolleStore.updatedRolle = null;
-    rolleStore.errorCode = '';
-
-    await nextTick();
-
     await wrapper?.find('[data-testid="rolle-edit-button"]').trigger('click');
     await nextTick();
 
@@ -197,25 +190,21 @@ describe('RolleDetailsView', () => {
   });
 
   test('it does not cancel editing because of unsaved changes', async () => {
-    rolleStore.updatedRolle = null;
-    rolleStore.errorCode = '';
+    expect(wrapper).not.toBeNull();
+    const view: VueWrapper = wrapper!;
 
-    await wrapper?.find('[data-testid="rolle-edit-button"]').trigger('click');
-    await nextTick();
+    await view.get('[data-testid="rolle-edit-button"]').trigger('click');
+    await view.get('[data-testid="rollenname-input"] input').setValue('1b');
+    await view.get('[data-testid="rolle-edit-cancel-button"]').trigger('click');
 
-    await wrapper?.find('[data-testid="rollenname-input"] input').setValue('1b');
-    await nextTick();
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-testid="unsaved-changes-warning-text"]')).not.toBeNull();
+    });
 
-    await wrapper?.find('[data-testid="rolle-edit-cancel-button"]').trigger('click');
-    await nextTick();
-
-    expect(document.querySelector('[data-testid="unsaved-changes-warning-text"]')).not.toBeNull();
+    expect(view.get('[data-testid="rolle-changes-save-button"]').isVisible()).toBe(true);
   });
 
   test('it submits the form and shows the success template', async () => {
-    rolleStore.updatedRolle = null;
-    rolleStore.errorCode = '';
-
     await wrapper?.find('[data-testid="rolle-edit-button"]').trigger('click');
     await nextTick();
 
@@ -251,27 +240,17 @@ describe('RolleDetailsView', () => {
     );
   });
 
-  test('displays error message correctly', async () => {
-    // We have to reset updatedRolle to null to trigger the error message
-    rolleStore.updatedRolle = null;
-
-    // Test case 1: ROLLE_UPDATE_ERROR
-    rolleStore.errorCode = 'ROLLE_UPDATE_ERROR';
+  test.each([
+    ['ROLLE_UPDATE_ERROR', 'Die Rolle konnte nicht bearbeitet werden'],
+    ['NEWER_VERSION_OF_ROLLE_AVAILABLE', 'Geänderte Daten'],
+  ])('displays error message correctly for %s', async (errorCode: string, expectedTitle: string) => {
+    rolleStore.errorCode = errorCode;
     await nextTick();
 
     const spshAlertWrapper: VueWrapper | undefined = wrapper?.findComponent({ name: 'SpshAlert' });
     expect(spshAlertWrapper?.props()).toMatchObject({
-      title: 'Die Rolle konnte nicht bearbeitet werden',
+      title: expectedTitle,
     });
-    // Test case 2: NEWER_VERSION_OF_ROLLE_AVAILABLE
-    rolleStore.errorCode = 'NEWER_VERSION_OF_ROLLE_AVAILABLE';
-    await nextTick();
-
-    expect(spshAlertWrapper?.props()).toMatchObject({
-      title: 'Geänderte Daten',
-    });
-    // reset errorCode after test
-    rolleStore.errorCode = '';
   });
 
   test('it calls getAssignableServiceProvidersForRolleByOrganisationId on mount', async () => {
