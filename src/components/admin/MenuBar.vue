@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
   import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
+  import { RollenSystemRecht } from '@/stores/RolleStore';
   import { onMounted, ref, type ComputedRef, type Ref } from 'vue';
   import { useRoute, useRouter, type RouteLocationNormalizedLoaded, type Router } from 'vue-router';
   import { useDisplay } from 'vuetify';
@@ -250,7 +251,7 @@
         @click="closeMenuOnMobile"
       />
       <v-list-item
-        v-if="authStore.hasMptRollenZuordnenPermission"
+        v-if="authStore.grantedGatedRollenSystemrechte.includes(RollenSystemRecht.MptRollenZuordnen)"
         class="menu-bar-sub-item caption"
         data-testid="mpt-rolle-management-menu-item"
         prepend-icon="mdi-format-list-bulleted"
@@ -306,7 +307,12 @@
     </div>
 
     <!-- Rollenverwaltung (MPT only) -->
-    <div v-if="authStore.hasMptRollenZuordnenPermission && !authStore.hasRollenverwaltungPermission">
+    <div
+      v-if="
+        authStore.grantedGatedRollenSystemrechte.includes(RollenSystemRecht.MptRollenZuordnen) &&
+        !authStore.hasRollenverwaltungPermission
+      "
+    >
       <v-list-item
         class="menu-bar-main-item headline-2"
         data-testid="mpt-rolle-section-title"

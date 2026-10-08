@@ -65,7 +65,6 @@ type AuthState = {
   hasEingeschränktNeueBenutzerErstellenPermission: boolean;
   hasAngeboteVerwaltenPermission: boolean;
   hasRollenerweiternPermission: boolean;
-  hasMptRollenZuordnenPermission: boolean;
   /** The gated RollenSystemRechte (MPT_ROLLEN_ZUORDNEN, PILOT_1_ROLLEN_ZUORDNEN, ...) the current user actually holds. */
   grantedGatedRollenSystemrechte: RollenSystemRecht[];
   hasEingeschränktAngeboteVerwaltenPermission: boolean;
@@ -109,7 +108,6 @@ export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, 
       hasEingeschränktNeueBenutzerErstellenPermission: false,
       hasAngeboteVerwaltenPermission: false,
       hasRollenerweiternPermission: false,
-      hasMptRollenZuordnenPermission: false,
       grantedGatedRollenSystemrechte: [],
       hasEingeschränktAngeboteVerwaltenPermission: false,
       isAuthenticated: false,
@@ -167,9 +165,6 @@ export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, 
               RollenSystemRecht.AngeboteVerwalten,
             );
             this.hasRollenerweiternPermission = this.currentUserPermissions.includes(RollenSystemRecht.RollenErweitern);
-            this.hasMptRollenZuordnenPermission = this.currentUserPermissions.includes(
-              RollenSystemRecht.MptRollenZuordnen,
-            );
             this.grantedGatedRollenSystemrechte = GATED_ROLLEN_SYSTEMRECHTE.filter((systemrecht: RollenSystemRecht) =>
               this.currentUserPermissions.includes(systemrecht),
             );
@@ -201,7 +196,6 @@ export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, 
           this.hasLandesbediensteteSuchenUndHinzufügenPermission = false;
           this.hasEingeschränktNeueBenutzerErstellenPermission = false;
           this.hasAngeboteVerwaltenPermission = false;
-          this.hasMptRollenZuordnenPermission = false;
           this.grantedGatedRollenSystemrechte = [];
           this.hasEingeschränktAngeboteVerwaltenPermission = false;
           this.hasVidisPermission = false;

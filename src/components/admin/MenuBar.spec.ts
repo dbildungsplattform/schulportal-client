@@ -6,6 +6,7 @@ import { h, nextTick, type Component } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useDisplay } from 'vuetify';
 import { VApp } from 'vuetify/components';
+import { GATED_ROLLEN_SYSTEMRECHTE, RollenSystemRecht } from '@/stores/RolleStore';
 import MenuBar from './MenuBar.vue';
 
 let wrapper: VueWrapper | null = null;
@@ -62,7 +63,7 @@ function setPermissions(hasPermission: boolean): void {
   authStore.hasEingeschränktNeueBenutzerErstellenPermission = hasPermission;
   authStore.hasAngeboteVerwaltenPermission = hasPermission;
   authStore.hasRollenerweiternPermission = hasPermission;
-  authStore.hasMptRollenZuordnenPermission = hasPermission;
+  authStore.grantedGatedRollenSystemrechte = hasPermission ? [...GATED_ROLLEN_SYSTEMRECHTE] : [];
 }
 
 beforeEach(() => {
@@ -130,7 +131,7 @@ describe('MenuBar', () => {
   test('hides elements when permissions are false', async () => {
     // Reset permissions to false
     authStore.hasPersonenAnlegenPermission = false;
-    authStore.hasMptRollenZuordnenPermission = false;
+    authStore.grantedGatedRollenSystemrechte = [];
     await nextTick();
 
     expect(wrapper?.find('[data-testid="person-creation-menu-item"]').exists()).toBe(false);
@@ -140,7 +141,7 @@ describe('MenuBar', () => {
 
   test('renders standalone mpt role section for users without rollenverwaltung permission', async () => {
     setPermissions(false);
-    authStore.hasMptRollenZuordnenPermission = true;
+    authStore.grantedGatedRollenSystemrechte = [RollenSystemRecht.MptRollenZuordnen];
     await nextTick();
 
     expect(wrapper?.find('[data-testid="rolle-management-title"]').exists()).toBe(false);

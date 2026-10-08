@@ -84,7 +84,7 @@ beforeEach(async () => {
     schulischeAngeboteErstellen: true,
   };
   authStore.hasRollenerweiternPermission = true;
-  authStore.hasMptRollenZuordnenPermission = false;
+  authStore.grantedGatedRollenSystemrechte = [];
   configStore.configData = { schulischeAngeboteErstellen: true } as FeatureFlagResponse;
 
   rolleStore.allRollen = [
@@ -256,7 +256,7 @@ describe('ServiceProviderDetailsBySchuleView', () => {
     });
 
     test('requests rollen without MPT systemrecht when the user lacks the permission', async () => {
-      authStore.hasMptRollenZuordnenPermission = false;
+      authStore.grantedGatedRollenSystemrechte = [];
       const getAllRollenSpy: MockInstance = vi.spyOn(rolleStore, 'getAllRollen').mockResolvedValue(undefined);
       await nextTick();
 
@@ -271,7 +271,7 @@ describe('ServiceProviderDetailsBySchuleView', () => {
     });
 
     test('requests rollen including MPT systemrecht when the user has the permission', async () => {
-      authStore.hasMptRollenZuordnenPermission = true;
+      authStore.grantedGatedRollenSystemrechte = [RollenSystemRechtEnum.MptRollenZuordnen];
       const getAllRollenSpy: MockInstance = vi.spyOn(rolleStore, 'getAllRollen').mockResolvedValue(undefined);
       await nextTick();
 
