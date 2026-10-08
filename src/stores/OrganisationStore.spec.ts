@@ -1272,9 +1272,9 @@ describe('OrganisationStore', () => {
     it('should delete organisation and update state', async () => {
       mockadapter.onDelete(endpoint).replyOnce(200);
       const deleteOrganisationPromise: Promise<void> = organisationStore.deleteOrganisationById(organisationId);
-      expect(organisationStore.loading).toBe(true);
+      expect(organisationStore.loadingDelete).toBe(true);
       await deleteOrganisationPromise;
-      expect(organisationStore.loading).toBe(false);
+      expect(organisationStore.loadingDelete).toBe(false);
       expect(organisationStore.errorCode).toEqual('');
     });
 
@@ -1286,9 +1286,9 @@ describe('OrganisationStore', () => {
     ])('should handle error', async (error: ErrorType, expectedErrorCode: string) => {
       mockadapter.onDelete(endpoint).replyOnce(500, error);
       const deleteOrganisationPromise: Promise<void> = organisationStore.deleteOrganisationById(organisationId);
-      expect(organisationStore.loading).toBe(true);
+      expect(organisationStore.loadingDelete).toBe(true);
       await deleteOrganisationPromise;
-      expect(organisationStore.loading).toBe(false);
+      expect(organisationStore.loadingDelete).toBe(false);
       expect(organisationStore.errorCode).toEqual(expectedErrorCode);
     });
   });

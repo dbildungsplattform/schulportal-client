@@ -206,7 +206,7 @@
                 organisationStore.errorCode ? $t(`admin.schule.errors.${organisationStore.errorCode}`) : ''
               "
               :use-icon-activator="true"
-              :is-loading="organisationStore.loading"
+              :is-loading="organisationStore.loadingDelete"
               @on-delete-organisation="deleteSchule(item.id)"
               @on-close="handleSchuleDeleteClose"
             />
