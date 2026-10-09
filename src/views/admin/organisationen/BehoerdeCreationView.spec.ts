@@ -102,7 +102,8 @@ describe('BehoerdeCreationView', () => {
     } = await setup();
 
     const statusRegion: Element = wrapper.get('[data-testid="behoerde-creation-status"]').element;
-    expect(statusRegion.getAttribute('role')).toBe('status');
+    expect(statusRegion.tagName).toBe('OUTPUT');
+    expect(statusRegion.hasAttribute('role')).toBe(false);
     expect(statusRegion.textContent?.trim()).toBe('');
 
     organisationStore.createdBehoerde = DoFactory.getOrganisation({ name: 'New Behoerde' });

@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import BehoerdeForm from '@/components/admin/behoerden/BehoerdeForm.vue';
   import BehoerdeSuccessTemplate from '@/components/admin/behoerden/BehoerdeSuccessTemplate.vue';
-  import ScreenreaderStatus from '@/components/alert/ScreenreaderStatus.vue';
+  import ScreenreaderOutput from '@/components/alert/ScreenreaderOutput.vue';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
@@ -150,9 +150,9 @@
 
 <template>
   <div class="admin">
-    <ScreenreaderStatus data-testid="behoerde-creation-status">
+    <ScreenreaderOutput>
       {{ creationStatusMessage }}
-    </ScreenreaderStatus>
+    </ScreenreaderOutput>
     <h1
       class="text-center headline"
       data-testid="admin-headline"

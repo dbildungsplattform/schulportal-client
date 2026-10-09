@@ -1,11 +1,10 @@
 <script setup lang="ts"></script>
 
 <template>
-  <div
+  <output
     class="d-sr-only"
-    role="status"
-    data-testid="screenreader-status"
+    data-testid="screenreader-output"
   >
     <slot />
-  </div>
+  </output>
 </template>
