@@ -24,7 +24,7 @@ let personInfoStore: PersonInfoStore;
 let meldungStore: MeldungStore;
 
 const mockProviders: Array<StartPageServiceProvider> = [
-  {
+  DoFactory.getStartPageServiceProvider({
     id: '2',
     name: 'Spongebob Squarepants',
     target: 'URL',
@@ -32,8 +32,8 @@ const mockProviders: Array<StartPageServiceProvider> = [
     kategorie: 'EMAIL',
     hasLogo: false,
     requires2fa: false,
-  },
-  {
+  }),
+  DoFactory.getStartPageServiceProvider({
     id: '3',
     name: 'Not Squarepants',
     target: 'URL',
@@ -41,8 +41,8 @@ const mockProviders: Array<StartPageServiceProvider> = [
     kategorie: 'EMAIL',
     hasLogo: false,
     requires2fa: false,
-  },
-  {
+  }),
+  DoFactory.getStartPageServiceProvider({
     id: '1',
     name: 'Schulportal-Administration',
     target: 'SCHULPORTAL_ADMINISTRATION',
@@ -50,7 +50,7 @@ const mockProviders: Array<StartPageServiceProvider> = [
     kategorie: 'VERWALTUNG',
     hasLogo: false,
     requires2fa: false,
-  },
+  }),
 ];
 
 const mockPerson: PersonInfoResponse = DoFactory.getPersonInfoResponse();
@@ -251,7 +251,7 @@ describe('StartView', () => {
   test('filterSortProviders filters out service providers with target NONE', () => {
     const providersWithNone: StartPageServiceProvider[] = [
       ...mockProviders,
-      {
+      DoFactory.getStartPageServiceProvider({
         id: '99',
         name: 'Hidden Provider',
         target: 'NONE',
@@ -259,7 +259,7 @@ describe('StartView', () => {
         kategorie: ServiceProviderKategorie.Email,
         hasLogo: false,
         requires2fa: false,
-      },
+      }),
     ];
 
     interface StartViewComponent {
@@ -282,7 +282,7 @@ describe('StartView', () => {
   test('it does not render tiles for service providers with target NONE', async () => {
     serviceProviderStore.assignedServiceProviders = [
       ...mockProviders,
-      {
+      DoFactory.getStartPageServiceProvider({
         id: '99',
         name: 'Hidden Provider',
         target: 'NONE',
@@ -290,7 +290,7 @@ describe('StartView', () => {
         kategorie: ServiceProviderKategorie.Email,
         hasLogo: false,
         requires2fa: false,
-      },
+      }),
     ];
     await nextTick();
 
@@ -300,7 +300,7 @@ describe('StartView', () => {
 
   test('it renders category title for class service providers when providers exist', async () => {
     serviceProviderStore.assignedServiceProviders = [
-      {
+      DoFactory.getStartPageServiceProvider({
         id: '4',
         name: 'Moodle',
         target: 'URL',
@@ -308,7 +308,7 @@ describe('StartView', () => {
         kategorie: ServiceProviderKategorie.Unterricht,
         hasLogo: false,
         requires2fa: false,
-      },
+      }),
     ];
     await nextTick();
 
@@ -330,7 +330,7 @@ describe('StartView', () => {
   test('it renders category titles for all categories when providers exist', async () => {
     serviceProviderStore.assignedServiceProviders = [
       ...mockProviders,
-      {
+      DoFactory.getStartPageServiceProvider({
         id: '5',
         name: 'Moodle',
         target: 'URL',
@@ -338,8 +338,8 @@ describe('StartView', () => {
         kategorie: ServiceProviderKategorie.Unterricht,
         hasLogo: false,
         requires2fa: false,
-      },
-      {
+      }),
+      DoFactory.getStartPageServiceProvider({
         id: '6',
         name: 'SchulApp',
         target: 'URL',
@@ -347,8 +347,8 @@ describe('StartView', () => {
         kategorie: ServiceProviderKategorie.Schulisch,
         hasLogo: false,
         requires2fa: false,
-      },
-      {
+      }),
+      DoFactory.getStartPageServiceProvider({
         id: '7',
         name: 'Hinweis Tool',
         target: 'URL',
@@ -356,7 +356,7 @@ describe('StartView', () => {
         kategorie: ServiceProviderKategorie.Hinweise,
         hasLogo: false,
         requires2fa: false,
-      },
+      }),
     ];
     await nextTick();
 

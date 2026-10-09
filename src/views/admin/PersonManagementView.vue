@@ -14,7 +14,6 @@
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
   import { useOrganisationen } from '@/composables/useOrganisationen';
-  import { type TranslatedRolleWithAttrs, useRollen } from '@/composables/useRollen';
   import { type AuthStore, useAuthStore } from '@/stores/AuthStore';
   import { type Organisation, type OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
   import { type PersonStore, SortField, usePersonStore } from '@/stores/PersonStore';
@@ -25,6 +24,7 @@
     RollenArt,
     RollenMerkmal,
     RollenSystemRecht,
+    TranslatedRolleWithAttrs,
     useRolleStore,
   } from '@/stores/RolleStore';
   import { type SearchFilterStore, useSearchFilterStore } from '@/stores/SearchFilterStore';
@@ -215,11 +215,9 @@
 
   const organisationenForForm: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
 
-  const rollenForForm: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = useRollen();
-
   // Only Rollen from type LEHR and LERN
-  const rollenForRolleModify: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = computed(() => {
-    return rollenForForm.value?.filter(
+  const rollenForRolleModify: ComputedRef<TranslatedRolleWithAttrs[]> = computed(() => {
+    return rolleStore.rollenForPersonenkontextCreation.filter(
       (rolle: TranslatedRolleWithAttrs) =>
         rolle.rollenart === RollenArt.Lehr ||
         rolle.rollenart === RollenArt.Lern ||

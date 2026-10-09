@@ -4,6 +4,7 @@
 src/api-client/storageDir
 
 # exclude directories to allow custom configuration
+.github/agents
 .github/skills
 .github/prompts
 

@@ -13,7 +13,7 @@ import {
   useServiceProviderStore,
   type ServiceProviderStore,
 } from '@/stores/ServiceProviderStore';
-import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { expect, test, type Mock, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
@@ -51,6 +51,8 @@ vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
     }),
   };
 });
+
+enableAutoUnmount(afterEach);
 
 let wrapper: VueWrapper | null = null;
 let router: Router;

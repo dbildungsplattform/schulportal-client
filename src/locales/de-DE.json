@@ -637,7 +637,12 @@
         "ROLLE_NAME_UNIQUE_ON_SSK": "Der Rollenname ist bereits vergeben. Bitte korrigieren Sie Ihre Eingabe.",
         "UPDATE_MERKMALE_ERROR": "Die gewünschte Bearbeitung kann nicht ausgeführt werden, da die Rolle noch Benutzern zugeordnet ist. Nehmen Sie bitte zunächst alle Zuordnungen zurück.",
         "REQUIRED_STEP_UP_LEVEL_NOT_MET": "Die letzte Aktion konnte nicht ausgeführt werden. Aufgrund von längerer Inaktivität ist eine erneute Authentifizierung mit einem zweiten Faktor erforderlich. Um fortzufahren, klicken Sie bitte auf „Zurück zur Ergebnisliste“ oder „Schließen“. Sie werden anschließend zur Eingabe Ihres zweiten Faktors aufgefordert.",
-        "SERVICE_PROVIDER_NICHT_NACHTRAEGLICH_ZUWEISBAR": "Eines der gewählten Angebote darf einer Rolle mit bereits zugewiesenen Benutzern nicht hinzugefügt oder entzogen werden."
+        "SERVICE_PROVIDER_NICHT_NACHTRAEGLICH_ZUWEISBAR": "Eines der gewählten Angebote darf einer Rolle mit bereits zugewiesenen Benutzern nicht hinzugefügt oder entzogen werden.",
+        "fallbackError": "Es ist ein technischer Fehler aufgetreten.",
+        "500": "Es ist ein technischer Fehler aufgetreten.",
+        "INTERNAL": "Es ist ein technischer Fehler aufgetreten.",
+        "404": "Die Rolle konnte nicht gefunden werden.",
+        "ENTITY_NOT_FOUND": "Die Rolle konnte nicht gefunden werden."
       },
       "title": {
         "NEWER_VERSION_OF_ROLLE_AVAILABLE": "Geänderte Daten",
@@ -647,7 +652,12 @@
         "ROLLE_NAME_UNIQUE_ON_SSK": "Der Rollenname ist nicht eindeutig",
         "UPDATE_MERKMALE_ERROR": "Die Merkmale konnten nicht bearbeitet werden",
         "REQUIRED_STEP_UP_LEVEL_NOT_MET": "Zwei-Faktor-Authentifizierung (2FA) erforderlich",
-        "SERVICE_PROVIDER_NICHT_NACHTRAEGLICH_ZUWEISBAR": "Die Angebote konnten nicht bearbeitet werden"
+        "SERVICE_PROVIDER_NICHT_NACHTRAEGLICH_ZUWEISBAR": "Die Angebote konnten nicht bearbeitet werden",
+        "fallbackError": "Technischer Fehler",
+        "500": "Technischer Fehler",
+        "INTERNAL": "Technischer Fehler",
+        "404": "Die Rolle konnte nicht gefunden werden",
+        "ENTITY_NOT_FOUND": "Die Rolle konnte nicht gefunden werden"
       },
       "isAllowedToManageRollen": "Darf Rollen verwalten",
       "loadingErrorText": "Es konnten keine Rollendaten geladen werden.",
