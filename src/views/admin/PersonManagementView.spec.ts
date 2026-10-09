@@ -77,6 +77,7 @@ beforeEach(async () => {
   authStore.hasPersonenBulkPermission = true;
   authStore.hasPersonenLoeschenPermission = true;
   authStore.hasPersonenverwaltungPermission = true;
+  authStore.grantedGatedRollenSystemrechte = [];
 
   personStore.getAllPersons = vi.fn();
   organisationStore.getFilteredKlassen = vi.fn();
@@ -498,6 +499,37 @@ describe('PersonManagementView', () => {
     expect(rolleStore.rollenForPersonAdministration).toHaveLength(1);
   });
 
+  test.each([
+    { systemrechte: [] },
+    {
+      systemrechte: [
+        RollenSystemRechtEnum.MptRollenZuordnen,
+        RollenSystemRechtEnum.Pilot2RollenZuordnen,
+        RollenSystemRechtEnum.Pilot5RollenZuordnen,
+      ],
+    },
+  ])(
+    'forwards granted gated rights to Rollen search: $systemrechte',
+    async ({ systemrechte }: { systemrechte: RollenSystemRechtEnum[] }) => {
+      authStore.grantedGatedRollenSystemrechte = systemrechte;
+      const getRollenForPersonAdministration: Mock = vi.fn().mockResolvedValue(undefined);
+      rolleStore.getRollenForPersonAdministration = getRollenForPersonAdministration;
+      const rollenAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ ref: 'rolle-select' });
+
+      rollenAutocomplete?.vm.$emit('update:search', 'pilot');
+      await nextTick();
+      vi.runAllTimers();
+      vi.runAllTicks();
+
+      expect(getRollenForPersonAdministration).toHaveBeenLastCalledWith({
+        searchStr: 'pilot',
+        limit: 25,
+        organisationIds: [],
+        systemrechte: [RollenSystemRechtEnum.PersonenVerwalten, ...systemrechte],
+      });
+    },
+  );
+
   type BulkOperationTestParams = {
     operationType: OperationType;
     layoutCardTestId: string;
@@ -571,6 +603,38 @@ describe('PersonManagementView', () => {
       expect(document.body.querySelector(`[data-testid="${layoutCardTestId}"]`)).toBeNull();
     },
   );
+
+  test('offers Pilot-Merkmal rollen (not just MPT) in the Rolle zuordnen bulk dialog', async () => {
+    personenkontextStore.workflowStepResponse = {
+      ...personenkontextStore.workflowStepResponse!,
+      rollen: [
+        ...(personenkontextStore.workflowStepResponse?.rollen ?? []),
+        DoFactory.getRolleResponse({
+          rollenart: RollenArt.Schb,
+          merkmale: [RollenMerkmal.Pilot2Rolle],
+          id: '99999',
+        }),
+      ],
+    };
+
+    const checkbox: DOMWrapper<Element> | undefined = wrapper?.find(
+      '[data-testid="person-table"] .v-selection-control',
+    );
+    await checkbox?.trigger('click');
+    await nextTick();
+
+    const benutzerEditSelect: VueWrapper | undefined = wrapper?.findComponent({ ref: 'benutzer-bulk-edit-select' });
+    benutzerEditSelect?.setValue(OperationType.MODIFY_ROLLE);
+    await nextTick();
+
+    const rolleSelect: VueWrapper = wrapper?.findComponent(
+      '[data-testid="rolle-modify-layout-card"] [data-testid="rolle-select"]',
+    ) as VueWrapper;
+    const rollenItems: Array<{ value: string }> = (
+      rolleSelect as unknown as { props: (key: string) => Array<{ value: string }> }
+    ).props('items');
+    expect(rollenItems.some((item: { value: string }) => item.value === '99999')).toBe(true);
+  });
 
   test.each([
     [OperationType.CHANGE_KLASSE],

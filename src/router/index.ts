@@ -1,5 +1,6 @@
 import type { FeatureFlagResponse } from '@/api-client/generated/api';
 import { StepUpLevel, useAuthStore, type AuthStore } from '@/stores/AuthStore';
+import { RollenSystemRecht } from '@/stores/RolleStore';
 import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
 import { useMasterDataStore, type MasterDataStore } from '@/stores/MasterDataStore';
 import {
@@ -147,7 +148,7 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
         case 'rollenverwaltung':
           return authStore.hasRollenverwaltungPermission;
         case 'mptrollenzuordnen':
-          return authStore.hasMptRollenZuordnenPermission;
+          return authStore.grantedGatedRollenSystemrechte.includes(RollenSystemRecht.MptRollenZuordnen);
         case 'angebotsverwaltung':
           return authStore.hasAngeboteVerwaltenPermission;
         case 'eingeschränktangebotsverwaltung':

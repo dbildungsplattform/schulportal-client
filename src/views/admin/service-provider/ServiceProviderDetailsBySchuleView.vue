@@ -207,7 +207,7 @@
     // Load available rollen for this organisation if not yet loaded
     if (organisationIdFromQuery.value) {
       const systemrechte: RollenSystemRechtEnum[] = [RollenSystemRechtEnum.RollenErweitern];
-      if (authStore.hasMptRollenZuordnenPermission) {
+      if (authStore.grantedGatedRollenSystemrechte.includes(RollenSystemRechtEnum.MptRollenZuordnen)) {
         systemrechte.push(RollenSystemRechtEnum.MptRollenZuordnen);
       }
       await rolleStore.getAllRollen({
