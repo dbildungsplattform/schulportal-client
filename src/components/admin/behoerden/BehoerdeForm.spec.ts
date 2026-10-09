@@ -69,6 +69,13 @@ describe('BehoerdeForm', () => {
     expect(wrapper?.find('[data-testid="zustaendigkeitsbereich-radio-button-ersatzschulen"]').exists()).toBe(true);
   });
 
+  test('it names the Zustaendigkeitsbereich radio group using its heading', (): void => {
+    expect(wrapper?.get('[role="radiogroup"]').attributes('aria-labelledby')).toBe(
+      'behoerde-zustaendigkeitsbereich-heading',
+    );
+    expect(wrapper?.get('#behoerde-zustaendigkeitsbereich-heading').text()).toBe('1. Zuständigkeitsbereich zuordnen');
+  });
+
   test('it renders the optional Dienststellennummer input', () => {
     expect(wrapper?.find('[data-testid="behoerde-dienststellennummer-input"]').exists()).toBe(true);
   });

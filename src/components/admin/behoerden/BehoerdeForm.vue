@@ -82,7 +82,12 @@
       <!-- Select Zustaendigkeitsbereich -->
       <v-row>
         <v-col>
-          <h3 class="headline-3">1. {{ $t('admin.behoerde.assignZustaendigkeitsbereich') }}</h3>
+          <h3
+            id="behoerde-zustaendigkeitsbereich-heading"
+            class="headline-3"
+          >
+            1. {{ $t('admin.behoerde.assignZustaendigkeitsbereich') }}
+          </h3>
         </v-col>
       </v-row>
       <v-row>
@@ -93,6 +98,7 @@
         <v-radio-group
           v-bind="selectedZustaendigkeitsbereichProps"
           v-model="selectedZustaendigkeitsbereich"
+          aria-labelledby="behoerde-zustaendigkeitsbereich-heading"
           inline
           data-testid="zustaendigkeitsbereich-radio-group"
         >
@@ -127,6 +133,7 @@
         :label="$t('admin.behoerde.behoerdenname')"
       >
         <v-text-field
+          id="behoerdenname-input"
           v-bind="selectedBehoerdennameProps"
           ref="behoerdenname-input"
           v-model="selectedBehoerdenname"
@@ -151,6 +158,7 @@
         :label="$t('admin.behoerde.dienststellennummer')"
       >
         <v-text-field
+          id="behoerde-dienststellennummer-input"
           v-bind="selectedDienststellennummerProps"
           ref="behoerde-dienststellennummer-input"
           v-model="selectedDienststellennummer"

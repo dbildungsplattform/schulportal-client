@@ -120,6 +120,30 @@ afterEach(() => {
 });
 
 describe('BehoerdeCreationView', () => {
+  test('announces successful creation in a persistent status region', async (): Promise<void> => {
+    const statusRegion: Element = wrapper!.get('[data-testid="behoerde-creation-status"]').element;
+    expect(statusRegion.getAttribute('role')).toBe('status');
+    expect(statusRegion.textContent?.trim()).toBe('');
+
+    organisationStore.createdBehoerde = DoFactory.getOrganisation({ name: 'New Behoerde' });
+    await nextTick();
+
+    expect(wrapper!.get('[data-testid="behoerde-creation-status"]').element).toBe(statusRegion);
+    expect(statusRegion.textContent?.trim()).toBe('Die Behörde wurde erfolgreich hinzugefügt.');
+
+    await wrapper!.get('[data-testid="create-another-behoerde-button"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper!.get('[data-testid="behoerde-creation-status"]').element).toBe(statusRegion);
+    expect(statusRegion.textContent?.trim()).toBe('');
+
+    organisationStore.errorCode = 'ORGANISATION_SPECIFICATION_ERROR';
+    organisationStore.createdBehoerde = DoFactory.getOrganisation({ name: 'New Behoerde' });
+    await nextTick();
+
+    expect(statusRegion.textContent?.trim()).toBe('');
+  });
+
   test('it renders the Behoerde form', () => {
     expect(wrapper?.find('[data-testid="behoerdenname-input"]').isVisible()).toBe(true);
   });

@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import BehoerdeForm from '@/components/admin/behoerden/BehoerdeForm.vue';
   import BehoerdeSuccessTemplate from '@/components/admin/behoerden/BehoerdeSuccessTemplate.vue';
+  import ScreenreaderStatus from '@/components/alert/ScreenreaderStatus.vue';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
@@ -35,6 +36,13 @@
 
   const zustaendigkeitsbereichList: ComputedRef<Organisation[]> = computed(() => {
     return organisationStore.schultraeger;
+  });
+  const creationStatusMessage: ComputedRef<string> = computed((): string => {
+    if (!organisationStore.createdBehoerde || organisationStore.errorCode) {
+      return '';
+    }
+
+    return t('admin.behoerde.behoerdeAddedSuccessfully');
   });
   const createdDataRows: ComputedRef<Array<{ label: string; value: string; testId: string }>> = computed(() => {
     const administriertVon: string | undefined | null = organisationStore.createdBehoerde?.administriertVon;
@@ -142,6 +150,9 @@
 
 <template>
   <div class="admin">
+    <ScreenreaderStatus data-testid="behoerde-creation-status">
+      {{ creationStatusMessage }}
+    </ScreenreaderStatus>
     <h1
       class="text-center headline"
       data-testid="admin-headline"
