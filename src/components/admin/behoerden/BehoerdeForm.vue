@@ -5,7 +5,7 @@
   import { mapVeeValidationErrorsToVuetifyProps } from '@/utils/validation';
   import { getValidationSchema, type BehoerdeFormValues } from '@/utils/validationBehoerde';
   import { useForm, type BaseFieldProps, type FormContext, type FormMeta, type TypedSchema } from 'vee-validate';
-  import { computed, defineEmits, defineProps, onMounted, watch, type ComputedRef, type Ref } from 'vue';
+  import { computed, onMounted, watch, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
 
   type Props = {

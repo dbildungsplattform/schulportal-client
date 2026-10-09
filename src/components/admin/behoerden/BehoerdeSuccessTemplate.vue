@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import SuccessIcon from '@/components/icons/SuccessIcon.vue';
   import SpshDivider from '@/components/layout/SpshDivider.vue';
-  import { defineEmits, defineProps, type Ref } from 'vue';
+  import { type Ref } from 'vue';
   import { useDisplay } from 'vuetify';
 
   defineProps<{
