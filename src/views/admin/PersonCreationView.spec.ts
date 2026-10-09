@@ -796,9 +796,24 @@ describe('PersonCreationView', () => {
   });
 
   describe('error handling', () => {
+    beforeEach((): void => {
+      rolleStore.errorCode = '';
+    });
+
+    afterEach((): void => {
+      rolleStore.errorCode = '';
+    });
+
     test('it renders an error', async () => {
       personStore.errorCode = 'ERROR_ERROR';
       await nextTick();
+
+      expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('modelValue')).toBe(true);
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
+        wrapper?.vm.$t('admin.person.creationErrorTitle'),
+      );
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe('');
 
       const push: MockInstance = vi.spyOn(router, 'push');
       await wrapper?.find('[data-testid$="alert-button"]').trigger('click');
@@ -806,6 +821,65 @@ describe('PersonCreationView', () => {
 
       expect(push).toHaveBeenCalledTimes(1);
       expect(personStore.errorCode).toBe('');
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('modelValue')).toBe(false);
+    });
+
+    test('prioritizes Personenkontext errors in the single alert', async () => {
+      personenkontextStore.errorCode = 'REQUIRED_STEP_UP_LEVEL_NOT_MET';
+      await nextTick();
+
+      expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('modelValue')).toBe(true);
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
+        wrapper?.vm.$t('admin.personenkontext.title.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
+      );
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe(
+        wrapper?.vm.$t('admin.personenkontext.errors.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
+      );
+
+      personStore.errorCode = 'ERROR_ERROR';
+      rolleStore.errorCode = 'ROLLE_ERROR';
+      await nextTick();
+
+      expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
+        wrapper?.vm.$t('admin.personenkontext.title.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
+      );
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe(
+        wrapper?.vm.$t('admin.personenkontext.errors.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
+      );
+    });
+
+    test('maps Rolle errors and prioritizes them over Person errors', async () => {
+      rolleStore.errorCode = 'ROLLE_ERROR';
+      await nextTick();
+
+      expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('modelValue')).toBe(true);
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
+        wrapper?.vm.$t('admin.rolle.title.ROLLE_ERROR'),
+      );
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe(
+        wrapper?.vm.$t('admin.rolle.errors.ROLLE_ERROR'),
+      );
+
+      personStore.errorCode = 'ERROR_ERROR';
+      await nextTick();
+
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
+        wrapper?.vm.$t('admin.rolle.title.ROLLE_ERROR'),
+      );
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe(
+        wrapper?.vm.$t('admin.rolle.errors.ROLLE_ERROR'),
+      );
+
+      rolleStore.errorCode = '';
+      await nextTick();
+
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
+        wrapper?.vm.$t('admin.person.creationErrorTitle'),
+      );
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe('');
     });
 
     test('shows error message if REQUIRED_STEP_UP_LEVEL_NOT_MET error is present and click close button', async () => {

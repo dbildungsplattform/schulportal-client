@@ -220,6 +220,8 @@
 
   const handleAlertClose = (): void => {
     personStore.errorCode = '';
+    personenkontextStore.errorCode = '';
+    rolleStore.errorCode = '';
     navigateToPersonTable();
   };
 
@@ -1644,6 +1646,20 @@
             :show-button="true"
             :text="creationErrorText"
             :title="creationErrorTitle"
+            :type="'error'"
+            @update:model-value="handleAlertClose"
+          />
+
+          <!-- Error Message Display if the rolleStore throws any kind of error (Not being able to load rollen) -->
+          <SpshAlert
+            ref="rollen-store-error-alert"
+            :model-value="!!rolleStore.errorCode"
+            :button-text="alertButtonText"
+            :button-action="alertButtonAction"
+            :closable="false"
+            :show-button="true"
+            :text="t(`admin.rolle.errors.${rolleStore.errorCode}`)"
+            :title="t(`admin.rolle.title.${rolleStore.errorCode}`)"
             :type="'error'"
             @update:model-value="handleAlertClose"
           />

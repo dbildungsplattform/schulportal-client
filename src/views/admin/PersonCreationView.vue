@@ -393,7 +393,30 @@
     return utcDate.toLocaleDateString('de-DE');
   });
 
-  const creationErrorText: Ref<string> = ref('');
+  const hasError: ComputedRef<boolean> = computed(
+    (): boolean => !!personenkontextStore.errorCode || !!rolleStore.errorCode || !!personStore.errorCode,
+  );
+  const errorText: ComputedRef<string> = computed((): string => {
+    if (personenkontextStore.errorCode) {
+      return t(`admin.personenkontext.errors.${personenkontextStore.errorCode}`);
+    }
+    return rolleStore.errorCode ? t(`admin.rolle.errors.${rolleStore.errorCode}`) : '';
+  });
+  const errorTitle: ComputedRef<string> = computed((): string => {
+    if (personenkontextStore.errorCode) {
+      return t(`admin.personenkontext.title.${personenkontextStore.errorCode}`);
+    }
+    if (rolleStore.errorCode) {
+      return t(`admin.rolle.title.${rolleStore.errorCode}`);
+    }
+    return personStore.errorCode ? t('admin.person.creationErrorTitle') : '';
+  });
+
+  function clearErrorsInStores(): void {
+    personStore.errorCode = '';
+    personenkontextStore.errorCode = '';
+    rolleStore.errorCode = '';
+  }
 
   function isFormDirty(): boolean {
     return (
@@ -570,8 +593,7 @@
       formContext.resetForm();
       await navigateToCreatePersonRoute(true);
     } else {
-      personenkontextStore.errorCode = '';
-      personStore.errorCode = '';
+      clearErrorsInStores();
       navigateToCreatePersonRoute();
     }
   }
@@ -662,8 +684,7 @@
 
   function handleConfirmUnsavedChanges(): void {
     blockedNext();
-    personStore.errorCode = '';
-    personenkontextStore.errorCode = '';
+    clearErrorsInStores();
   }
 
   function preventNavigation(event: BeforeUnloadEvent): void {
@@ -724,7 +745,7 @@
       {{ headerLabel }}
     </h1>
     <LayoutCard
-      :closable="!personenkontextStore.errorCode && !personStore.errorCode"
+      :closable="!hasError"
       :header="layoutCardLabel"
       :headlineTestId="layoutCardHeadlineTestId"
       @onCloseClicked="navigateToPersonTable"
@@ -741,41 +762,25 @@
           :confirm-unsaved-changes-action="handleConfirmUnsavedChanges"
           :create-button-label="createButtonLabel"
           :discard-button-label="discardButtonLabel"
-          :hide-actions="!!personenkontextStore.errorCode || !!personStore.errorCode"
+          :hide-actions="hasError"
           :is-loading="personenkontextStore.loading"
           :on-discard="navigateToPersonTable"
           :on-submit="onSubmit"
           :show-unsaved-changes-dialog="showUnsavedChangesDialog"
           @on-show-dialog-change="(value?: boolean) => (showUnsavedChangesDialog = value || false)"
         >
-          <!-- Error Message Display for error messages from the personenkontextStore -->
           <SpshAlert
-            :model-value="!!personenkontextStore.errorCode"
+            :model-value="hasError"
             :type="'error'"
             :closable="false"
-            :text="
-              personenkontextStore.errorCode ? t(`admin.personenkontext.errors.${personenkontextStore.errorCode}`) : ''
-            "
+            :text="errorText"
             :show-button="true"
             :button-text="$t('admin.person.backToCreatePerson')"
             :button-action="navigateBackToPersonForm"
-            :title="
-              personenkontextStore.errorCode ? t(`admin.personenkontext.title.${personenkontextStore.errorCode}`) : ''
-            "
-          />
-          <!-- Error Message Display for error messages from the personStore -->
-          <SpshAlert
-            :model-value="!!personStore.errorCode"
-            :title="$t('admin.person.creationErrorTitle')"
-            :type="'error'"
-            :closable="false"
-            :show-button="true"
-            :button-text="$t('admin.person.backToCreatePerson')"
-            :button-action="navigateBackToPersonForm"
-            :text="creationErrorText"
+            :title="errorTitle"
           />
 
-          <template v-if="!personenkontextStore.errorCode && !personStore.errorCode">
+          <template v-if="!hasError">
             <!-- If AddPersonToOwnSchule: Persönliche Info first -->
             <template v-if="createType === CreationType.AddPersonToOwnSchule">
               <v-row>
@@ -978,11 +983,7 @@
       </template>
 
       <!-- Result template on success after submit  -->
-      <template
-        v-if="
-          personenkontextStore.createdPersonWithKontext && !personStore.errorCode && !personenkontextStore.errorCode
-        "
-      >
+      <template v-if="personenkontextStore.createdPersonWithKontext && !hasError">
         <v-container>
           <v-row class="justify-center">
             <v-col
@@ -1217,13 +1218,7 @@
         </v-container>
       </template>
       <!-- Result template on success after assigning the Landesbediensteter to a Schule   -->
-      <template
-        v-if="
-          personenkontextStore.landesbediensteteCommitResponse !== null &&
-          !personStore.errorCode &&
-          !personenkontextStore.errorCode
-        "
-      >
+      <template v-if="personenkontextStore.landesbediensteteCommitResponse !== null && !hasError">
         <v-container>
           <v-row class="justify-center">
             <v-col
