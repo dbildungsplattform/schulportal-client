@@ -189,7 +189,7 @@ describe('BehoerdeCreationView', () => {
     wrapper.find('[data-testid="create-another-behoerde-button"]').trigger('click');
     await nextTick();
 
-    expect(organisationStore.createdBehoerde).toBe(null);
+    expect(organisationStore.createdBehoerde).toBeNull();
   });
 
   test('it shows error message', async () => {
@@ -309,7 +309,7 @@ describe('BehoerdeCreationView', () => {
     test('triggers unsaved changes dialog when form is dirty', async () => {
       const expectedCallsToNext: number = 0;
       // Mock onBeforeRouteLeave to capture the callback
-      vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
+      vi.doMock('vue-router', async (importOriginal: () => Promise<object>) => {
         const mod: object = await importOriginal();
         return {
           ...mod,
