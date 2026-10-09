@@ -9,7 +9,6 @@ import { DoFactory } from 'test/DoFactory';
 import { nextTick, type Component } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import MptRollenManagementView from './MptRollenManagementView.vue';
-import { RollenSystemRechtEnum } from '@/api-client/generated';
 
 let router: Router;
 let authStore: AuthStore;
