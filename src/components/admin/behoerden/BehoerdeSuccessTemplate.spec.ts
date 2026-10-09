@@ -1,21 +1,14 @@
 import SuccessIcon from '@/components/icons/SuccessIcon.vue';
 import SpshDivider from '@/components/layout/SpshDivider.vue';
-import { VueWrapper, mount } from '@vue/test-utils';
+import { VueWrapper, enableAutoUnmount, mount } from '@vue/test-utils';
 import { expect, test } from 'vitest';
-import type { Component } from 'vue';
+import type { ComponentInstance } from 'vue';
 import BehoerdeSuccessTemplate from './BehoerdeSuccessTemplate.vue';
 
-let wrapper: VueWrapper | null = null;
+enableAutoUnmount(afterEach);
 
-beforeEach(() => {
-  document.body.innerHTML = `
-    <div>
-      <div id="app"></div>
-    </div>
-  `;
-
-  wrapper = mount(BehoerdeSuccessTemplate, {
-    attachTo: document.getElementById('app') || '',
+const setup = (): { wrapper: VueWrapper<ComponentInstance<typeof BehoerdeSuccessTemplate>> } => {
+  const wrapper: VueWrapper<ComponentInstance<typeof BehoerdeSuccessTemplate>> = mount(BehoerdeSuccessTemplate, {
     props: {
       successMessage: 'Die Behörde wurde erfolgreich hinzugefügt.',
       changedData: [{ label: 'Behördenname', value: 'Test Behörde', testId: 'created-behoerde-name' }],
@@ -24,31 +17,34 @@ beforeEach(() => {
       backButtonTestId: 'back-to-behoerde-list-button',
       createAnotherButtonTestId: 'create-another-behoerde-button',
     },
-    global: {
-      components: {
-        BehoerdeSuccessTemplate: BehoerdeSuccessTemplate as Component,
-      },
-    },
   });
-});
+
+  return { wrapper };
+};
 
 describe('BehoerdeSuccessTemplate', () => {
   test('it displays the success message and data correctly', () => {
-    expect(wrapper?.get('[data-testid="behoerde-success-text"]').text()).toBe(
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof BehoerdeSuccessTemplate>> } = setup();
+
+    expect(wrapper.get('[data-testid="behoerde-success-text"]').text()).toBe(
       'Die Behörde wurde erfolgreich hinzugefügt.',
     );
-    expect(wrapper?.get('[data-testid="created-behoerde-name"]').text()).toBe('Test Behörde');
-    expect(wrapper?.findComponent(SuccessIcon).exists()).toBe(true);
-    expect(wrapper?.findComponent(SpshDivider).exists()).toBe(true);
+    expect(wrapper.get('[data-testid="created-behoerde-name"]').text()).toBe('Test Behörde');
+    expect(wrapper.findComponent(SuccessIcon).exists()).toBe(true);
+    expect(wrapper.findComponent(SpshDivider).exists()).toBe(true);
   });
 
   test('it emits onCreateAnotherBehoerde when the create another button is clicked', async () => {
-    await wrapper?.get('[data-testid="create-another-behoerde-button"]').trigger('click');
-    expect(wrapper?.emitted('onCreateAnotherBehoerde')).toBeTruthy();
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof BehoerdeSuccessTemplate>> } = setup();
+
+    await wrapper.get('[data-testid="create-another-behoerde-button"]').trigger('click');
+    expect(wrapper.emitted('onCreateAnotherBehoerde')).toBeTruthy();
   });
 
   test('it emits onNavigateBackToBehoerdeList when the back button is clicked', async () => {
-    await wrapper?.get('[data-testid="back-to-behoerde-list-button"]').trigger('click');
-    expect(wrapper?.emitted('onNavigateBackToBehoerdeList')).toBeTruthy();
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof BehoerdeSuccessTemplate>> } = setup();
+
+    await wrapper.get('[data-testid="back-to-behoerde-list-button"]').trigger('click');
+    expect(wrapper.emitted('onNavigateBackToBehoerdeList')).toBeTruthy();
   });
 });

@@ -1,9 +1,9 @@
 import type { UserinfoResponse } from '@/api-client/generated';
-import axiosApiInstance from '@/services/ApiService';
 import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
 import { DoFactory } from 'test/DoFactory';
 import { useAuthStore, type AuthStore } from './AuthStore';
+import axiosApiInstance from '@/services/ApiService';
 
 describe('AuthStore', () => {
   let authStore: AuthStore;

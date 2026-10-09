@@ -26,6 +26,7 @@ describe('OrganisationStore', () => {
 
   it('should initialize state correctly', () => {
     expect(organisationStore.allOrganisationen).toEqual([]);
+    expect(organisationStore.createdBehoerde).toBeNull();
     expect(organisationStore.errorCode).toEqual('');
     expect(organisationStore.loading).toBe(false);
   });
@@ -1202,6 +1203,133 @@ describe('OrganisationStore', () => {
       expect(organisationStore.createdSchule).toEqual(null);
       expect(organisationStore.errorCode).toEqual('SOME_MOCK_SERVER_ERROR');
       expect(organisationStore.loading).toBe(false);
+    });
+  });
+
+  describe('createBehoerde', () => {
+    beforeEach(() => {
+      organisationStore.$reset();
+      vi.restoreAllMocks();
+    });
+
+    describe('with kennung', () => {
+      it('should create Behoerde and update state', async () => {
+        const administriertVon: string = DoFactory.getOrganisation().id;
+        const zugehoerigZu: string = DoFactory.getOrganisation().id;
+        const mockResponse: Organisation = DoFactory.getOrganisation({
+          typ: OrganisationsTyp.Behoerde,
+          administriertVon,
+          zugehoerigZu,
+        });
+        const kennung: string = mockResponse.kennung!;
+
+        mockadapter
+          .onPost('/api/organisationen', {
+            administriertVon,
+            zugehoerigZu,
+            name: mockResponse.name,
+            typ: OrganisationsTyp.Behoerde,
+            kennung,
+          })
+          .replyOnce(201, mockResponse);
+
+        const promise: Promise<void> = organisationStore.createBehoerde(
+          administriertVon,
+          zugehoerigZu,
+          mockResponse.name,
+          kennung,
+        );
+
+        expect(organisationStore.loading).toBe(true);
+        expect(organisationStore.createdBehoerde).toBeNull();
+        await promise;
+
+        expect(organisationStore.createdBehoerde).toEqual(mockResponse);
+        expect(organisationStore.errorCode).toBe('');
+        expect(organisationStore.loading).toBe(false);
+      });
+    });
+
+    describe('without kennung', () => {
+      it('should create Behoerde and update state', async () => {
+        const administriertVon: string = DoFactory.getOrganisation().id;
+        const zugehoerigZu: string = DoFactory.getOrganisation().id;
+        const mockResponse: Organisation = DoFactory.getOrganisation({
+          typ: OrganisationsTyp.Behoerde,
+          administriertVon,
+          zugehoerigZu,
+          kennung: undefined,
+        });
+
+        mockadapter
+          .onPost('/api/organisationen', {
+            administriertVon,
+            zugehoerigZu,
+            name: mockResponse.name,
+            typ: OrganisationsTyp.Behoerde,
+          })
+          .replyOnce(201, mockResponse);
+
+        const promise: Promise<void> = organisationStore.createBehoerde(
+          administriertVon,
+          zugehoerigZu,
+          mockResponse.name,
+        );
+
+        expect(organisationStore.loading).toBe(true);
+        expect(organisationStore.createdBehoerde).toBeNull();
+        await promise;
+
+        expect(organisationStore.createdBehoerde).toEqual(mockResponse);
+        expect(organisationStore.errorCode).toBe('');
+        expect(organisationStore.loading).toBe(false);
+      });
+    });
+
+    describe('with an unstructured error response', () => {
+      it('should set the fallback error code', async () => {
+        const mockBehoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
+        const administriertVon: string = DoFactory.getOrganisation().id;
+        const zugehoerigZu: string = DoFactory.getOrganisation().id;
+
+        mockadapter.onPost('/api/organisationen').replyOnce(500, 'some mock server error');
+
+        const promise: Promise<void> = organisationStore.createBehoerde(
+          administriertVon,
+          zugehoerigZu,
+          mockBehoerde.name,
+        );
+
+        expect(organisationStore.loading).toBe(true);
+        await promise;
+
+        expect(organisationStore.createdBehoerde).toBeNull();
+        expect(organisationStore.errorCode).toBe('ORGANISATION_SPECIFICATION_ERROR');
+        expect(organisationStore.loading).toBe(false);
+      });
+    });
+
+    describe('with a structured error response', () => {
+      it('should set the error code from i18nKey', async () => {
+        const mockBehoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
+        const administriertVon: string = DoFactory.getOrganisation().id;
+        const zugehoerigZu: string = DoFactory.getOrganisation().id;
+
+        mockadapter.onPost('/api/organisationen').replyOnce(500, { i18nKey: 'BEHOERDE_CREATE_ERROR' });
+
+        const promise: Promise<void> = organisationStore.createBehoerde(
+          administriertVon,
+          zugehoerigZu,
+          mockBehoerde.name,
+        );
+
+        expect(organisationStore.loading).toBe(true);
+        await promise;
+
+        expect(organisationStore.createdBehoerde).toBeNull();
+        expect(organisationStore.errorCode).toBe('BEHOERDE_CREATE_ERROR');
+        expect(organisationStore.loading).toBe(false);
+      });
     });
   });
 

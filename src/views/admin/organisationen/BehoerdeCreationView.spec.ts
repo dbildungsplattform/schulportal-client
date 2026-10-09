@@ -3,10 +3,10 @@ import BehoerdeForm from '@/components/admin/behoerden/BehoerdeForm.vue';
 import routes from '@/router/routes';
 import { OrganisationsTyp, useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
 import type { BehoerdeFormValues } from '@/utils/validationBehoerde';
-import { VueWrapper, flushPromises, mount } from '@vue/test-utils';
+import { VueWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { expect, test, type Mock, type MockInstance } from 'vitest';
-import { nextTick, type Component } from 'vue';
+import { nextTick, type ComponentInstance } from 'vue';
 import {
   createRouter,
   createWebHistory,
@@ -16,9 +16,7 @@ import {
 } from 'vue-router';
 import BehoerdeCreationView from './BehoerdeCreationView.vue';
 
-let wrapper: VueWrapper | null = null;
-let router: Router;
-let organisationStore: OrganisationStore;
+enableAutoUnmount(afterEach);
 
 type OnBeforeRouteLeaveCallback = (
   _to: RouteLocationNormalized,
@@ -39,45 +37,12 @@ let { storedBeforeRouteLeaveCallback }: { storedBeforeRouteLeaveCallback: OnBefo
   },
 );
 
-async function mountComponent(): Promise<ReturnType<typeof mount<typeof BehoerdeCreationView>>> {
-  await vi.dynamicImportSettled();
-  return mount(BehoerdeCreationView, {
-    attachTo: document.getElementById('app') || '',
-    global: {
-      components: {
-        BehoerdeCreationView: BehoerdeCreationView as Component,
-      },
-      plugins: [router],
-    },
-  });
-}
-
-beforeEach(async () => {
-  Object.defineProperty(window, 'location', {
-    value: {
-      href: '',
-      reload: vi.fn(),
-    },
-    writable: true,
-  });
-
-  Object.defineProperty(window, 'history', {
-    value: {
-      go: vi.fn(),
-      pushState: vi.fn(),
-      replaceState: vi.fn(),
-    },
-    writable: true,
-  });
-  document.body.innerHTML = `
-    <div>
-        <router-view>
-            <div id="app"></div>
-         </router-view>
-    </div>
-  `;
-
-  organisationStore = useOrganisationStore();
+const setup = async (): Promise<{
+  wrapper: VueWrapper<ComponentInstance<typeof BehoerdeCreationView>>;
+  router: Router;
+  organisationStore: OrganisationStore;
+}> => {
+  const organisationStore: OrganisationStore = useOrganisationStore();
   organisationStore.$reset();
   vi.spyOn(organisationStore, 'getRootKinderSchultraeger').mockResolvedValue();
   organisationStore.schultraeger = [
@@ -102,7 +67,7 @@ beforeEach(async () => {
   ];
   organisationStore.errorCode = '';
 
-  router = createRouter({
+  const router: Router = createRouter({
     history: createWebHistory(),
     routes,
   });
@@ -110,31 +75,46 @@ beforeEach(async () => {
   router.push({ name: 'create-behoerde' });
   await router.isReady();
 
-  wrapper = await mountComponent();
+  await vi.dynamicImportSettled();
+  const wrapper: VueWrapper<ComponentInstance<typeof BehoerdeCreationView>> = mount(BehoerdeCreationView, {
+    attachTo: document.getElementById('app') || '',
+    global: {
+      plugins: [router],
+    },
+  });
   await flushPromises();
-});
+
+  return { wrapper, router, organisationStore };
+};
 
 afterEach(() => {
   vi.restoreAllMocks();
-  wrapper?.unmount();
 });
 
 describe('BehoerdeCreationView', () => {
   test('announces successful creation in a persistent status region', async (): Promise<void> => {
-    const statusRegion: Element = wrapper!.get('[data-testid="behoerde-creation-status"]').element;
+    const {
+      wrapper,
+      organisationStore,
+    }: {
+      wrapper: VueWrapper<ComponentInstance<typeof BehoerdeCreationView>>;
+      organisationStore: OrganisationStore;
+    } = await setup();
+
+    const statusRegion: Element = wrapper.get('[data-testid="behoerde-creation-status"]').element;
     expect(statusRegion.getAttribute('role')).toBe('status');
     expect(statusRegion.textContent?.trim()).toBe('');
 
     organisationStore.createdBehoerde = DoFactory.getOrganisation({ name: 'New Behoerde' });
     await nextTick();
 
-    expect(wrapper!.get('[data-testid="behoerde-creation-status"]').element).toBe(statusRegion);
+    expect(wrapper.get('[data-testid="behoerde-creation-status"]').element).toBe(statusRegion);
     expect(statusRegion.textContent?.trim()).toBe('Die Behörde wurde erfolgreich hinzugefügt.');
 
-    await wrapper!.get('[data-testid="create-another-behoerde-button"]').trigger('click');
+    await wrapper.get('[data-testid="create-another-behoerde-button"]').trigger('click');
     await flushPromises();
 
-    expect(wrapper!.get('[data-testid="behoerde-creation-status"]').element).toBe(statusRegion);
+    expect(wrapper.get('[data-testid="behoerde-creation-status"]').element).toBe(statusRegion);
     expect(statusRegion.textContent?.trim()).toBe('');
 
     organisationStore.errorCode = 'ORGANISATION_SPECIFICATION_ERROR';
@@ -144,34 +124,51 @@ describe('BehoerdeCreationView', () => {
     expect(statusRegion.textContent?.trim()).toBe('');
   });
 
-  test('it renders the Behoerde form', () => {
-    expect(wrapper?.find('[data-testid="behoerdenname-input"]').isVisible()).toBe(true);
+  test('it renders the Behoerde form', async (): Promise<void> => {
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof BehoerdeCreationView>> } = await setup();
+
+    expect(wrapper.find('[data-testid="behoerdenname-input"]').isVisible()).toBe(true);
   });
 
-  test('it renders all child components', () => {
-    expect(wrapper?.getComponent({ name: 'LayoutCard' })).toBeTruthy();
-    expect(wrapper?.getComponent({ name: 'SpshAlert' })).toBeTruthy();
-    expect(wrapper?.getComponent({ name: 'BehoerdeForm' })).toBeTruthy();
-    expect(wrapper?.getComponent({ name: 'FormWrapper' })).toBeTruthy();
-    expect(wrapper?.getComponent({ name: 'FormRow' })).toBeTruthy();
+  test('it renders all child components', async (): Promise<void> => {
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof BehoerdeCreationView>> } = await setup();
+
+    expect(wrapper.getComponent({ name: 'LayoutCard' })).toBeTruthy();
+    expect(wrapper.getComponent({ name: 'SpshAlert' })).toBeTruthy();
+    expect(wrapper.getComponent({ name: 'BehoerdeForm' })).toBeTruthy();
+    expect(wrapper.getComponent({ name: 'FormWrapper' })).toBeTruthy();
+    expect(wrapper.getComponent({ name: 'FormRow' })).toBeTruthy();
   });
 
   test('it navigates to start when the close button is clicked', async () => {
+    const {
+      wrapper,
+      router,
+    }: {
+      wrapper: VueWrapper<ComponentInstance<typeof BehoerdeCreationView>>;
+      router: Router;
+    } = await setup();
+
     const push: MockInstance = vi.spyOn(router, 'push');
-    await wrapper?.find('[data-testid="close-layout-card-button"]').trigger('click');
+    await wrapper.find('[data-testid="close-layout-card-button"]').trigger('click');
 
     expect(push).toHaveBeenCalledTimes(1);
   });
 
   test('it fills form and triggers submit', async () => {
+    const {
+      wrapper,
+      organisationStore,
+    }: {
+      wrapper: VueWrapper<ComponentInstance<typeof BehoerdeCreationView>>;
+      organisationStore: OrganisationStore;
+    } = await setup();
+
     organisationStore.createdBehoerde = null;
     await nextTick();
 
-    const behoerdennameInput: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'behoerde-creation-form' })
-      .findComponent({ ref: 'behoerdenname-input' });
-    await behoerdennameInput?.setValue('Random Behoerdenname');
-    await nextTick();
+    await wrapper.get('[data-testid="behoerdenname-input"] input').setValue('Random Behoerdenname');
+    await flushPromises();
     const mockBehoerde: OrganisationResponse = DoFactory.getOrganisation({
       id: '2',
       name: 'Random Behoerde',
@@ -182,70 +179,95 @@ describe('BehoerdeCreationView', () => {
       administriertVon: '2',
     }) as OrganisationResponse;
 
-    wrapper?.find('[data-testid="behoerde-form-submit-button"]').trigger('click');
+    wrapper.find('[data-testid="behoerde-form-submit-button"]').trigger('click');
     organisationStore.createdBehoerde = mockBehoerde;
     await flushPromises();
 
-    expect(wrapper?.find('[data-testid="create-another-behoerde-button"]').isVisible()).toBe(true);
+    expect(wrapper.find('[data-testid="create-another-behoerde-button"]').isVisible()).toBe(true);
 
-    wrapper?.find('[data-testid="create-another-behoerde-button"]').trigger('click');
+    wrapper.find('[data-testid="create-another-behoerde-button"]').trigger('click');
     await nextTick();
 
     expect(organisationStore.createdBehoerde).toBe(null);
   });
 
   test('it shows error message', async () => {
+    const {
+      wrapper,
+      organisationStore,
+    }: {
+      wrapper: VueWrapper<ComponentInstance<typeof BehoerdeCreationView>>;
+      organisationStore: OrganisationStore;
+    } = await setup();
+
     organisationStore.errorCode = 'BEHOERDE_NAME_EINDEUTIG';
     await nextTick();
-    expect(wrapper?.find('[data-testid$="alert-title"]').isVisible()).toBe(true);
-    wrapper?.find('[data-testid$="alert-button"]').trigger('click');
+    expect(wrapper.find('[data-testid$="alert-title"]').isVisible()).toBe(true);
+    wrapper.find('[data-testid$="alert-button"]').trigger('click');
     await nextTick();
 
     organisationStore.errorCode = '';
     await nextTick();
   });
 
-  test('the loaded default allows leaving without a warning', (): void => {
+  test('the loaded default allows leaving without a warning', async (): Promise<void> => {
+    await setup();
+
     const next: Mock = vi.fn();
     storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, next);
     expect(next).toHaveBeenCalledOnce();
   });
 
   test('restores all submitted values after a duplicate error', async (): Promise<void> => {
+    const {
+      wrapper,
+      organisationStore,
+    }: {
+      wrapper: VueWrapper<ComponentInstance<typeof BehoerdeCreationView>>;
+      organisationStore: OrganisationStore;
+    } = await setup();
+
     vi.spyOn(organisationStore, 'createBehoerde').mockImplementation((): Promise<void> => {
       organisationStore.errorCode = 'BEHOERDE_NAME_EINDEUTIG';
       return Promise.resolve();
     });
-    const form: { $emit: (event: string, values: BehoerdeFormValues) => void } = wrapper!.getComponent({
-      name: 'BehoerdeForm',
-    }).vm;
+    const form: { $emit: (event: string, values: BehoerdeFormValues) => void } = wrapper.getComponent(BehoerdeForm)
+      .vm as { $emit: (event: string, values: BehoerdeFormValues) => void };
     form.$emit('click:submit', {
       selectedZustaendigkeitsbereich: '3',
       selectedBehoerdenname: 'Existing Behoerde',
       selectedDienststellennummer: '123',
     });
     await flushPromises();
-    expect(wrapper?.findComponent(BehoerdeForm).exists()).toBe(false);
-    await wrapper?.get('[data-testid$="alert-button"]').trigger('click');
+    expect(wrapper.findComponent(BehoerdeForm).exists()).toBe(false);
+    await wrapper.get('[data-testid$="alert-button"]').trigger('click');
     await flushPromises();
-    expect(wrapper?.getComponent(BehoerdeForm).props('cachedValues')).toEqual({
+    expect(wrapper.getComponent(BehoerdeForm).props('cachedValues')).toEqual({
       selectedZustaendigkeitsbereich: '3',
       selectedBehoerdenname: 'Existing Behoerde',
       selectedDienststellennummer: '123',
     });
-    expect(wrapper?.get<HTMLInputElement>('[data-testid="behoerdenname-input"] input').element.value).toBe(
+    expect(wrapper.get<HTMLInputElement>('[data-testid="behoerdenname-input"] input').element.value).toBe(
       'Existing Behoerde',
     );
   });
 
   test('clears unsaved changes only after a successful save', async (): Promise<void> => {
+    const {
+      wrapper,
+      organisationStore,
+    }: {
+      wrapper: VueWrapper<ComponentInstance<typeof BehoerdeCreationView>>;
+      organisationStore: OrganisationStore;
+    } = await setup();
+
     vi.spyOn(organisationStore, 'createBehoerde').mockImplementation((): Promise<void> => {
       organisationStore.createdBehoerde = DoFactory.getOrganisation({ name: 'New Behoerde' });
       return Promise.resolve();
     });
-    const form: { $emit: (event: string, values: BehoerdeFormValues | boolean) => void } = wrapper!.getComponent({
-      name: 'BehoerdeForm',
-    }).vm;
+    const form: { $emit: (event: string, values: BehoerdeFormValues | boolean) => void } = wrapper.getComponent(
+      BehoerdeForm,
+    ).vm as { $emit: (event: string, values: BehoerdeFormValues | boolean) => void };
     form.$emit('update:dirty', true);
     form.$emit('click:submit', {
       selectedZustaendigkeitsbereich: '2',
@@ -253,17 +275,25 @@ describe('BehoerdeCreationView', () => {
       selectedDienststellennummer: '',
     });
     await flushPromises();
-    expect(organisationStore.createBehoerde).toHaveBeenCalledWith('2', '2', 'New Behoerde', undefined);
+    expect(organisationStore.createBehoerde).toHaveBeenCalledWith('2', '2', 'New Behoerde', '');
     const next: Mock = vi.fn();
     storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, next);
     expect(next).toHaveBeenCalledOnce();
   });
 
   test('shows error message if REQUIRED_STEP_UP_LEVEL_NOT_MET error is present and click close button', async () => {
+    const {
+      wrapper,
+      organisationStore,
+    }: {
+      wrapper: VueWrapper<ComponentInstance<typeof BehoerdeCreationView>>;
+      organisationStore: OrganisationStore;
+    } = await setup();
+
     organisationStore.errorCode = 'REQUIRED_STEP_UP_LEVEL_NOT_MET';
     await nextTick();
-    expect(wrapper?.find('[data-testid$="alert-title"]').isVisible()).toBe(true);
-    wrapper?.find('[data-testid$="alert-button"]').trigger('click');
+    expect(wrapper.find('[data-testid$="alert-title"]').isVisible()).toBe(true);
+    wrapper.find('[data-testid$="alert-button"]').trigger('click');
     await nextTick();
 
     organisationStore.errorCode = '';
@@ -288,17 +318,11 @@ describe('BehoerdeCreationView', () => {
         };
       });
 
-      // Remount the component to make sure the form is empty at first
-      wrapper?.unmount();
-      wrapper = await mountComponent();
-      await flushPromises();
+      const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof BehoerdeCreationView>> } = await setup();
 
       // Fill the form to make it dirty
-      const behoerdennameInput: VueWrapper | undefined = wrapper
-        .findComponent({ ref: 'behoerde-creation-form' })
-        .findComponent({ ref: 'behoerdenname-input' });
-      await behoerdennameInput.setValue('Random Behoerdenname');
-      await nextTick();
+      await wrapper.get('[data-testid="behoerdenname-input"] input').setValue('Random Behoerdenname');
+      await flushPromises();
 
       const spy: Mock = vi.fn();
       storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, spy);
