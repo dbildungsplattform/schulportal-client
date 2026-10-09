@@ -37,6 +37,16 @@ let { storedBeforeRouteLeaveCallback }: { storedBeforeRouteLeaveCallback: OnBefo
   },
 );
 
+vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
+  const mod: object = await importOriginal();
+  return {
+    ...mod,
+    onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
+      storedBeforeRouteLeaveCallback = actualCallback;
+    }),
+  };
+});
+
 const setup = async (): Promise<{
   wrapper: VueWrapper<ComponentInstance<typeof BehoerdeCreationView>>;
   router: Router;
@@ -101,7 +111,7 @@ describe('BehoerdeCreationView', () => {
       organisationStore: OrganisationStore;
     } = await setup();
 
-    const statusRegion: Element = wrapper.get('[data-testid="behoerde-creation-status"]').element;
+    const statusRegion: Element = wrapper.get('[data-testid="screenreader-output"]').element;
     expect(statusRegion.tagName).toBe('OUTPUT');
     expect(statusRegion.hasAttribute('role')).toBe(false);
     expect(statusRegion.textContent?.trim()).toBe('');
@@ -109,13 +119,13 @@ describe('BehoerdeCreationView', () => {
     organisationStore.createdBehoerde = DoFactory.getOrganisation({ name: 'New Behoerde' });
     await nextTick();
 
-    expect(wrapper.get('[data-testid="behoerde-creation-status"]').element).toBe(statusRegion);
+    expect(wrapper.get('[data-testid="screenreader-output"]').element).toBe(statusRegion);
     expect(statusRegion.textContent?.trim()).toBe('Die Behörde wurde erfolgreich hinzugefügt.');
 
     await wrapper.get('[data-testid="create-another-behoerde-button"]').trigger('click');
     await flushPromises();
 
-    expect(wrapper.get('[data-testid="behoerde-creation-status"]').element).toBe(statusRegion);
+    expect(wrapper.get('[data-testid="screenreader-output"]').element).toBe(statusRegion);
     expect(statusRegion.textContent?.trim()).toBe('');
 
     organisationStore.errorCode = 'ORGANISATION_SPECIFICATION_ERROR';
@@ -302,23 +312,8 @@ describe('BehoerdeCreationView', () => {
   });
 
   describe('navigation interception', () => {
-    afterEach(() => {
-      vi.unmock('vue-router');
-    });
-
     test('triggers unsaved changes dialog when form is dirty', async () => {
       const expectedCallsToNext: number = 0;
-      // Mock onBeforeRouteLeave to capture the callback
-      vi.doMock('vue-router', async (importOriginal: () => Promise<object>) => {
-        const mod: object = await importOriginal();
-        return {
-          ...mod,
-          onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
-            storedBeforeRouteLeaveCallback = actualCallback;
-          }),
-        };
-      });
-
       const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof BehoerdeCreationView>> } = await setup();
 
       // Fill the form to make it dirty
