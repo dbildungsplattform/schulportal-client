@@ -154,7 +154,7 @@ const routes: readonly RouteRecordRaw[] = [
       layout: 'AdminLayout',
       requiresAuth: true,
       requiredStepUpLevel: StepUpLevel.GOLD,
-      requiresPermission: 'schulspezifischeangebotsverwaltung',
+      requiresPermission: ['mptrollenzuordnen', 'schulspezifischeangebotsverwaltung'],
       requiresOrga: true,
       missingOrgaRedirect: { name: 'mpt-rolle-management' },
     },

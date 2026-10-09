@@ -6,9 +6,14 @@
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
   import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
   import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
-  import { useRolleStore, type RolleStore, type RolleWithServiceProvidersResponse } from '@/stores/RolleStore';
+  import {
+    useRolleStore,
+    type RolleFilter,
+    type RolleStore,
+    type RolleWithServiceProvidersResponse,
+  } from '@/stores/RolleStore';
   import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
-  import { computed, onMounted, ref, watchEffect, type ComputedRef, type Ref } from 'vue';
+  import { computed, onMounted, ref, watch, type ComputedRef, type Ref } from 'vue';
   import { onBeforeRouteLeave, useRouter, type Router } from 'vue-router';
   import { useI18n, type Composer } from 'vue-i18n';
 
@@ -35,6 +40,20 @@
 
   const selectedOrganisationId: Ref<string> = ref('');
 
+  const mptRollenFilter: ComputedRef<RolleFilter | null> = computed((): RolleFilter | null => {
+    if (!selectedOrganisationId.value) {
+      return null;
+    }
+
+    return {
+      offset: (searchFilterStore.mptRollenPage - 1) * searchFilterStore.mptRollenPerPage,
+      limit: searchFilterStore.mptRollenPerPage,
+      searchString: '',
+      organisationenForFilter: [selectedOrganisationId.value],
+      systemrechte: [RollenSystemRechtEnum.MptRollenZuordnen],
+    };
+  });
+
   const headers: Headers = [
     { title: t('admin.rolle.rollenname'), key: 'name', align: 'start' },
     { title: t('admin.rolle.rollenart'), key: 'rollenart', align: 'start' },
@@ -50,7 +69,7 @@
     });
   });
 
-  function resetSearchAndFilter(): void {
+  function resetFilters(): void {
     selectedOrganisationId.value = '';
     rolleStore.allRollen = [];
     rolleStore.totalRollen = 0;
@@ -60,42 +79,26 @@
     searchFilterStore.mptRollenPerPage = 30;
   }
 
-  function setOrganisationFilter(newValue: string | undefined): void {
-    if (!newValue) {
-      resetSearchAndFilter();
+  function setSelectedOrganisation(organisationId: string | undefined): void {
+    if (!organisationId) {
+      resetFilters();
       return;
     }
 
-    selectedOrganisationId.value = newValue;
-    searchFilterStore.setSchuleForMptRollen(newValue);
+    selectedOrganisationId.value = organisationId;
+    searchFilterStore.setSchuleForMptRollen(organisationId);
   }
 
-  async function getMptRollen(): Promise<void> {
-    if (!selectedOrganisationId.value) {
-      return;
-    }
-
-    await rolleStore.getAllRollen({
-      offset: (searchFilterStore.mptRollenPage - 1) * searchFilterStore.mptRollenPerPage,
-      limit: searchFilterStore.mptRollenPerPage,
-      searchString: '',
-      organisationenForFilter: [selectedOrganisationId.value],
-      systemrechte: [RollenSystemRechtEnum.MptRollenZuordnen],
-    });
-  }
-
-  function getPaginatedRollen(page: number): void {
+  function setPage(page: number): void {
     searchFilterStore.mptRollenPage = page;
-    void getMptRollen();
   }
 
-  function getPaginatedRollenWithLimit(limit: number): void {
-    if (rolleStore.totalRollen <= limit) {
+  function setItemsPerPage(itemsPerPage: number): void {
+    if (rolleStore.totalRollen <= itemsPerPage) {
       searchFilterStore.mptRollenPage = 1;
     }
 
-    searchFilterStore.mptRollenPerPage = limit;
-    void getMptRollen();
+    searchFilterStore.mptRollenPerPage = itemsPerPage;
   }
 
   function navigateToRolleDetails(_event: PointerEvent, row: { item: MptRolleTableItem }): void {
@@ -109,9 +112,15 @@
     });
   }
 
-  watchEffect(async (): Promise<void> => {
-    if (selectedOrganisationId.value) {
-      await Promise.all([getMptRollen(), organisationStore.getOrganisationById(selectedOrganisationId.value)]);
+  watch(mptRollenFilter, async (filter: RolleFilter | null): Promise<void> => {
+    if (filter) {
+      await rolleStore.getAllRollen(filter);
+    }
+  });
+
+  watch(selectedOrganisationId, async (organisationId: string): Promise<void> => {
+    if (organisationId) {
+      await organisationStore.getOrganisationById(organisationId);
     }
   });
 
@@ -166,7 +175,7 @@
           size="x-small"
           variant="text"
           width="auto"
-          @click="resetSearchAndFilter()"
+          @click="resetFilters"
         >
           {{ $t('resetFilter') }}
         </v-btn>
@@ -183,7 +192,7 @@
           parentId="mpt-rolle-management"
           :systemrechteForSearch="[RollenSystemRechtEnum.MptRollenZuordnen]"
           :selectedSchulen="selectedOrganisationId ? [selectedOrganisationId] : []"
-          @update:selected-schulen="setOrganisationFilter"
+          @update:selected-schulen="setSelectedOrganisation"
           :placeholderText="$t('admin.schule.schule')"
           hideDetails
         />
@@ -205,8 +214,8 @@
         selectedOrganisationId ? $t('admin.rolle.noRollenFound') : $t('admin.rolle.mptManagement.noSchuleSelected')
       "
       @on-handle-row-click="navigateToRolleDetails"
-      @on-items-per-page-update="getPaginatedRollenWithLimit"
-      @on-page-update="getPaginatedRollen"
+      @on-items-per-page-update="setItemsPerPage"
+      @on-page-update="setPage"
     />
   </LayoutCard>
 </template>
