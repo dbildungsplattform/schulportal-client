@@ -370,6 +370,22 @@
         @click="closeMenuOnMobile"
       />
     </div>
+    <!-- Behördenverwaltung -->
+    <div v-if="authStore.hasBehoerdenverwaltungPermission">
+      <v-list-item
+        class="menu-bar-main-item headline-2"
+        data-testid="behoerde-management-title"
+        :title="$t('admin.behoerde.management')"
+      />
+      <v-list-item
+        class="menu-bar-sub-item caption"
+        data-testid="behoerde-creation-menu-item"
+        prepend-icon="mdi-plus-circle-outline"
+        :title="$t('admin.behoerde.createNew')"
+        to="/admin/behoerden/new"
+        @click="closeMenuOnMobile"
+      />
+    </div>
     <!-- Portalverwaltung -->
     <div v-if="authStore.hasPortalVerwaltungPermission && authStore.hasHinweiseBearbeitenPermission">
       <v-list-item

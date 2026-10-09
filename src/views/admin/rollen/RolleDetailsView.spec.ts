@@ -120,16 +120,16 @@ describe('RolleDetailsView', () => {
     await merkmaleSelect.setValue(remove ? [] : merkmale);
     await systemrechteSelect.setValue(remove ? [] : systemrechte);
     await wrapper.find('[data-testid="rolle-changes-save-button"]').trigger('click');
-    await flushPromises();
-
-    expect(rolleStore.updateRolle).toHaveBeenLastCalledWith(
-      rolle.id,
-      rolle.name,
-      remove ? [] : merkmale,
-      remove ? [] : systemrechte,
-      [],
-      rolle.version,
-    );
+    await vi.waitFor(() => {
+      expect(rolleStore.updateRolle).toHaveBeenLastCalledWith(
+        rolle.id,
+        rolle.name,
+        remove ? [] : merkmale,
+        remove ? [] : systemrechte,
+        [],
+        rolle.version,
+      );
+    });
     rolleStore.currentRolle = mockCurrentRolle;
     rolleStore.updatedRolle = mockUpdatedRolle;
   });

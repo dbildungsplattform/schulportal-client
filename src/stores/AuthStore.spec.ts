@@ -35,6 +35,7 @@ describe('AuthStore', () => {
       expect(authStore.hasMptRollenZuordnenPermission).toBe(false);
       expect(authStore.hasSchulverwaltungPermission).toBe(false);
       expect(authStore.hasSchultraegerverwaltungPermission).toBe(false);
+      expect(authStore.hasBehoerdenverwaltungPermission).toBe(false);
       expect(authStore.hasPersonenSyncPermission).toBe(false);
       expect(authStore.hasImportPermission).toBe(false);
       await initializeAuthStatus;
@@ -46,6 +47,7 @@ describe('AuthStore', () => {
       expect(authStore.hasMptRollenZuordnenPermission).toBe(false);
       expect(authStore.hasSchulverwaltungPermission).toBe(true);
       expect(authStore.hasSchultraegerverwaltungPermission).toBe(false);
+      expect(authStore.hasBehoerdenverwaltungPermission).toBe(false);
       expect(authStore.hasPersonenSyncPermission).toBe(true);
       expect(authStore.hasImportPermission).toBe(true);
       expect(authStore.csrfToken).toBe('mock-csrf-token');
@@ -72,6 +74,18 @@ describe('AuthStore', () => {
       await authStore.initializeAuthStatus();
 
       expect(authStore.hasMptRollenZuordnenPermission).toBe(false);
+    });
+
+    it('should set behoerdenverwaltung permission when present', async () => {
+      const mockInfo: UserinfoResponse = DoFactory.getUserinfoResponse();
+      mockInfo.personenkontexte[0]!.rolle.systemrechte = ['BEHOERDEN_VERWALTEN'];
+
+      mockadapter.onGet('/api/auth/logininfo').replyOnce(200, mockInfo);
+      mockadapter.onGet('/api/auth/csrf-token').replyOnce(200, { csrfToken: 'mock-csrf-token' });
+
+      await authStore.initializeAuthStatus();
+
+      expect(authStore.hasBehoerdenverwaltungPermission).toBe(true);
     });
 
     it('should save no system permissions if none are present', async () => {
