@@ -198,7 +198,6 @@
         <BehoerdeSuccessTemplate
           :success-message="$t('admin.behoerde.behoerdeAddedSuccessfully')"
           :changed-data="createdDataRows"
-          :create-another-button-test-id="'create-another-behoerde-button'"
           :create-another-button-text="$t('admin.behoerde.createAnother')"
           @on-navigate-back-to-behoerde-list="handleNavigateBackToBehoerdeList"
           @on-create-another-behoerde="handleCreateAnotherBehoerde"

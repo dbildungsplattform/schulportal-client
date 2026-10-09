@@ -1,14 +1,12 @@
 <script setup lang="ts">
-  import SuccessIcon from '@/components/icons/SuccessIcon.vue';
-  import SpshDivider from '@/components/layout/SpshDivider.vue';
-  import { type Ref } from 'vue';
-  import { useDisplay } from 'vuetify';
+  import CreateAnotherButton from '@/components/layout/success/CreateAnotherButton.vue';
+  import NavigationButton from '@/components/layout/success/NavigationButton.vue';
+  import DataRow from '@/components/layout/success/DataRow.vue';
+  import SuccessTemplate from '@/components/layout/success/SuccessTemplate.vue';
 
   defineProps<{
-    backButtonTestId?: string;
     backButtonText?: string;
     changedData: Array<{ label: string; value: string; testId: string }>;
-    createAnotherButtonTestId: string;
     createAnotherButtonText: string;
     successMessage: string;
   }>();
@@ -20,86 +18,38 @@
 
   const emit: Emits = defineEmits<Emits>();
 
-  const { mdAndDown }: { mdAndDown: Ref<boolean> } = useDisplay();
-
   /* the results list is not available yet, see SPSH-4323 */
   const navigateBack = (): void => emit('onNavigateBackToBehoerdeList');
   const createAnother = (): void => emit('onCreateAnotherBehoerde');
 </script>
 
 <template>
-  <v-container>
-    <v-row class="justify-center">
-      <v-col
-        class="subtitle-1"
-        cols="auto"
-        data-testid="behoerde-success-text"
-      >
-        {{ successMessage }}
-      </v-col>
-    </v-row>
-    <v-row class="justify-center">
-      <v-col cols="auto">
-        <SuccessIcon />
-      </v-col>
-    </v-row>
-    <v-row class="justify-center">
-      <v-col
-        class="subtitle-2"
-        cols="auto"
-      >
-        {{ $t('admin.followingDataCreated') }}
-      </v-col>
-    </v-row>
-    <v-row
-      v-for="(item, index) in changedData"
-      :key="index"
-    >
-      <v-col class="text-body bold text-right"> {{ item.label }}: </v-col>
-      <v-col class="text-body">
-        <span :data-testid="item.testId">{{ item.value }}</span>
-      </v-col>
-    </v-row>
-    <SpshDivider />
-    <v-row class="justify-end">
-      <v-col
+  <SuccessTemplate>
+    <template #message>
+      <span data-testid="behoerde-success-text">{{ successMessage }}</span>
+    </template>
+    <template #description>
+      {{ $t('admin.followingDataCreated') }}
+    </template>
+    <template #default>
+      <DataRow
+        v-for="item in changedData"
+        :key="item.testId"
+        :label="item.label"
+        :value="item.value"
+        :test-id="item.testId"
+      />
+    </template>
+    <template #actions>
+      <NavigationButton
         v-if="backButtonText"
-        cols="12"
-        sm="6"
-        md="auto"
+        @click="navigateBack"
       >
-        <v-btn
-          class="secondary"
-          :data-testid="backButtonTestId"
-          :block="mdAndDown"
-          @click="navigateBack"
-        >
-          {{ backButtonText }}
-        </v-btn>
-      </v-col>
-      <v-col
-        cols="12"
-        sm="6"
-        md="auto"
-      >
-        <v-btn
-          class="primary"
-          :data-testid="createAnotherButtonTestId"
-          :block="mdAndDown"
-          @click="createAnother"
-        >
-          {{ createAnotherButtonText }}
-        </v-btn>
-      </v-col>
-    </v-row>
-  </v-container>
+        {{ backButtonText }}
+      </NavigationButton>
+      <CreateAnotherButton @click="createAnother">
+        {{ createAnotherButtonText }}
+      </CreateAnotherButton>
+    </template>
+  </SuccessTemplate>
 </template>
-
-<style scoped>
-  .text-body {
-    font-weight: normal;
-  }
-  .bold {
-    font-weight: bold;
-  }
-</style>
