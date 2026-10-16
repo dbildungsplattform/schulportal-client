@@ -1,4 +1,5 @@
 import axiosApiInstance from '@/services/ApiService';
+import type { AxiosResponse } from 'axios';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import {
   AuthApiFactory,
@@ -10,7 +11,6 @@ import {
 } from '../api-client/generated/api';
 import type { Organisation } from './OrganisationStore';
 import { GATED_ROLLEN_SYSTEMRECHTE } from './types/GatedRollen';
-import type { AxiosResponse } from 'axios';
 
 export enum StepUpLevel {
   NONE = 'none',
@@ -59,6 +59,7 @@ type AuthState = {
   hasRollenverwaltungPermission: boolean;
   hasSchulverwaltungPermission: boolean;
   hasSchultraegerverwaltungPermission: boolean;
+  hasBehoerdenverwaltungPermission: boolean;
   hasPersonenBulkPermission: boolean;
   hasPortalVerwaltungPermission: boolean;
   hasHinweiseBearbeitenPermission: boolean;
@@ -102,6 +103,7 @@ export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, 
       hasRollenverwaltungPermission: false,
       hasSchulverwaltungPermission: false,
       hasSchultraegerverwaltungPermission: false,
+      hasBehoerdenverwaltungPermission: false,
       hasPersonenBulkPermission: false,
       hasPortalVerwaltungPermission: false,
       hasHinweiseBearbeitenPermission: false,
@@ -153,6 +155,9 @@ export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, 
             this.hasRollenverwaltungPermission = this.currentUserPermissions.includes('ROLLEN_VERWALTEN');
             this.hasSchulverwaltungPermission = this.currentUserPermissions.includes('SCHULEN_VERWALTEN');
             this.hasSchultraegerverwaltungPermission = this.currentUserPermissions.includes('SCHULTRAEGER_VERWALTEN');
+            this.hasBehoerdenverwaltungPermission = this.currentUserPermissions.includes(
+              RollenSystemRecht.BehoerdenVerwalten,
+            );
             this.hasPersonenBulkPermission = this.currentUserPermissions.includes('BULK_VERWALTEN');
             this.hasPortalVerwaltungPermission = this.currentUserPermissions.includes('SCHULPORTAL_VERWALTEN');
             this.hasHinweiseBearbeitenPermission = this.currentUserPermissions.includes('HINWEISE_BEARBEITEN');
@@ -191,6 +196,7 @@ export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, 
           this.hasRollenverwaltungPermission = false;
           this.hasSchulverwaltungPermission = false;
           this.hasSchultraegerverwaltungPermission = false;
+          this.hasBehoerdenverwaltungPermission = false;
           this.hasPersonenBulkPermission = false;
           this.hasPortalVerwaltungPermission = false;
           this.hasHinweiseBearbeitenPermission = false;

@@ -28,6 +28,7 @@ type Permission =
   | 'schulspezifischeangebotsverwaltung'
   | 'schulverwaltung'
   | 'schultraegerverwaltung'
+  | 'behoerdenverwaltung'
   | 'portalverwaltung'
   | 'hinweisebearbeiten'
   | 'landesbedienstetesuchenundhinzufügen'
@@ -159,6 +160,8 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
           return authStore.hasSchulverwaltungPermission;
         case 'schultraegerverwaltung':
           return authStore.hasSchultraegerverwaltungPermission;
+        case 'behoerdenverwaltung':
+          return authStore.hasBehoerdenverwaltungPermission;
         case 'portalverwaltung':
           return authStore.hasPortalVerwaltungPermission;
         case 'hinweisebearbeiten':

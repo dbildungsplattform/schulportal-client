@@ -119,9 +119,7 @@ describe('RolleDetailsView', () => {
     await merkmaleSelect.setValue(remove ? [] : merkmale);
     await systemrechteSelect.setValue(remove ? [] : systemrechte);
     await wrapper.find('[data-testid="rolle-changes-save-button"]').trigger('click');
-    await flushPromises();
 
-    // validation is not instant and can cause flakiness here, if we don't wait for it
     await vi.waitFor(() => {
       expect(rolleStore.updateRolle).toHaveBeenLastCalledWith(
         rolle.id,

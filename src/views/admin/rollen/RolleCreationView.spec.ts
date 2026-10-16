@@ -281,16 +281,16 @@ describe('RolleCreationView', () => {
       ),
     );
     await wrapper?.find('[data-testid="rolle-form-submit-button"]').trigger('click');
-    await flushPromises();
-
-    expect(rolleStore.createRolle).toHaveBeenLastCalledWith(
-      mockRolle.name,
-      organisationObject.id,
-      mockRolle.rollenart,
-      merkmale,
-      systemrechte,
-      [],
-    );
+    await vi.waitFor(() => {
+      expect(rolleStore.createRolle).toHaveBeenLastCalledWith(
+        mockRolle.name,
+        organisationObject.id,
+        mockRolle.rollenart,
+        merkmale,
+        systemrechte,
+        [],
+      );
+    });
   });
 
   test('it fills form and triggers submit', async () => {
