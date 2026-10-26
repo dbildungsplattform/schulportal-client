@@ -39,11 +39,11 @@ describe('BehoerdeManagementView', (): void => {
     await flushPromises();
 
     expect(wrapper.text()).toContain(organisationStore.allOrganisationen[0]!.name);
-    expect(wrapper.getComponent(ResultTable).props('headers')).toEqual([
-      { title: 'Behördenname', key: 'name', align: 'start', sortable: false },
-    ]);
-    expect(wrapper.getComponent(ResultTable).props('hideSelect')).toBe(true);
-    expect(wrapper.getComponent(ResultTable).props('disableRowClick')).toBe(true);
+    expect(wrapper.getComponent({ name: 'ResultTable' }).props()).toMatchObject({
+      headers: [{ title: 'Behördenname', key: 'name', align: 'start', sortable: false }],
+      hideSelect: true,
+      disableRowClick: true,
+    });
     expect(wrapper.text()).not.toContain('Dienststellennummer');
   });
 
@@ -61,7 +61,7 @@ describe('BehoerdeManagementView', (): void => {
     expect(organisationStore.getAllOrganisationen).toHaveBeenLastCalledWith(
       expect.objectContaining({ offset: 0, limit: 50 }),
     );
-    expect(wrapper.getComponent(ResultTable).props('currentPage')).toBe(1);
+    expect(wrapper.getComponent({ name: 'ResultTable' }).props()).toMatchObject({ currentPage: 1 });
   });
 
   it('should display loading failures and retry fetching the list', async (): Promise<void> => {

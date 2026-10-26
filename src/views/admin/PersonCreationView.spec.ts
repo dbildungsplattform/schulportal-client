@@ -5,6 +5,7 @@ import {
   type DBiamPersonResponse,
   type PersonLandesbediensteterSearchResponse,
 } from '@/api-client/generated';
+import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
 import routes from '@/router/routes';
 import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
 import {
@@ -366,7 +367,7 @@ describe('PersonCreationView', () => {
     };
     rolleStore.rollenForPersonenkontextCreation = [mockRolleForPersonenkontextCreation, lehrRolle];
 
-    const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
+    const personenkontextCreate = wrapper!.findComponent(PersonenkontextCreate);
     expect(personenkontextCreate.props('rollenartForPerson')).toBeUndefined();
 
     await personenkontextCreate
@@ -384,7 +385,7 @@ describe('PersonCreationView', () => {
   });
 
   test('should request Rollen without the previous rollenart after clearing the multiple Rolle autocomplete', async () => {
-    const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
+    const personenkontextCreate = wrapper!.findComponent(PersonenkontextCreate);
 
     await personenkontextCreate
       .findComponent({ ref: 'schulenFilter' })
@@ -1011,7 +1012,7 @@ describe('PersonCreationView', () => {
     });
 
     test('it passes the rollenart of the existing person to the Rollen query', async () => {
-      const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
+      const personenkontextCreate = wrapper!.findComponent(PersonenkontextCreate);
       expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lehr);
 
       await personenkontextCreate
@@ -1032,7 +1033,7 @@ describe('PersonCreationView', () => {
       );
       await nextTick();
 
-      expect(wrapper!.findComponent({ ref: 'personenkontext-create' }).props('rollenartForPerson')).toBe(
+      expect(wrapper!.findComponent(PersonenkontextCreate).props('rollenartForPerson')).toBe(
         RollenArt.Lern,
       );
     });
@@ -1050,7 +1051,7 @@ describe('PersonCreationView', () => {
         return Promise.resolve();
       });
 
-      const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
+      const personenkontextCreate = wrapper!.findComponent(PersonenkontextCreate);
       await personenkontextCreate
         .findComponent({ ref: 'schulenFilter' })
         .findComponent({ ref: 'personenkontext-create-organisation-select' })

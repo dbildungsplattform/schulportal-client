@@ -267,19 +267,19 @@ describe('RolleCreationView', () => {
       systemrechte,
     });
 
-    expect(merkmaleSelect?.props('items')).toEqual(
-      expect.arrayContaining(
+    expect(merkmaleSelect?.props()).toMatchObject({
+      items: expect.arrayContaining(
         merkmale.map((value: RollenMerkmal, index: number) => ({ value, title: `Ist Pilot-${index + 1}-Rolle` })),
       ),
-    );
-    expect(systemrechteSelect?.props('items')).toEqual(
-      expect.arrayContaining(
+    });
+    expect(systemrechteSelect?.props()).toMatchObject({
+      items: expect.arrayContaining(
         systemrechte.map((value: RollenSystemRechtEnum, index: number) => ({
           value,
           title: `Darf Pilot-${index + 1}-Rollen zuordnen`,
         })),
       ),
-    );
+    });
     await wrapper?.find('[data-testid="rolle-form-submit-button"]').trigger('click');
     await vi.waitFor(() => {
       expect(rolleStore.createRolle).toHaveBeenLastCalledWith(

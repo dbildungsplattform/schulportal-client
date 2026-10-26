@@ -1,5 +1,6 @@
 import SearchField from '@/components/admin/SearchField.vue';
 import VidisInfoDialog from '@/components/admin/service-provider/VidisInfoDialog.vue';
+import type { ManageableServiceProviderSimpleListEntryResponse } from '@/api-client/generated';
 import routes from '@/router/routes';
 import {
   DEFAULT_SERVICE_PROVIDER_KATEGORIEN,
@@ -179,7 +180,7 @@ describe('ServiceProviderManagementView', () => {
       const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
       await flushPromises();
 
-      const searchField: VueWrapper = wrapper.findComponent(SearchField) as VueWrapper;
+      const searchField = wrapper.findComponent(SearchField);
       expect(searchField.props('initialValue')).toBe('persisted-suche');
       expect((searchField.vm as unknown as { searchFilter: string }).searchFilter).toBe('persisted-suche');
       expect(wrapper.find('[data-testid="reset-filter-button"]').attributes('disabled')).toBeUndefined();
@@ -296,7 +297,7 @@ describe('ServiceProviderManagementView', () => {
 
     it('opens vidis info dialog with provider name and closes it on ok click', async () => {
       const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
-      const vidisProvider: ManageableServiceProviderSimpleListEntry =
+      const vidisProvider: ManageableServiceProviderSimpleListEntryResponse =
         DoFactory.getManageableServiceProviderSimpleListEntryResponse({
           hasSomeVerwaltenPermission: true,
           vidisAngebotId: 'vidis-angebot-1',
@@ -338,7 +339,7 @@ describe('ServiceProviderManagementView', () => {
 
     it('clears the cached service provider once the vidis info dialog finishes closing', async () => {
       const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
-      const vidisProvider: ManageableServiceProviderSimpleListEntry =
+      const vidisProvider: ManageableServiceProviderSimpleListEntryResponse =
         DoFactory.getManageableServiceProviderSimpleListEntryResponse({
           hasSomeVerwaltenPermission: true,
           vidisAngebotId: 'vidis-angebot-1',

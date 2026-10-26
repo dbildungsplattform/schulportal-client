@@ -1,4 +1,4 @@
-import type { OrganisationResponseLegacy, RolleResponse, SystemRechtResponse } from '@/api-client/generated';
+import type { OrganisationResponseLegacy, RolleResponse } from '@/api-client/generated';
 import routes from '@/router/routes';
 import { useBulkOperationStore, type BulkOperationStore } from '@/stores/BulkOperationStore';
 import { usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
@@ -32,7 +32,7 @@ const rolleLern: RolleResponse = DoFactory.getRolleResponse({
 const kopersRolle: RolleResponse = DoFactory.getRolleResponse({
   administeredBySchulstrukturknoten: organisation.id,
   merkmale: [RollenMerkmal.KopersPflicht],
-  systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }] as unknown as Set<SystemRechtResponse>,
+  systemrechte: [{ name: 'ROLLEN_VERWALTEN', isTechnical: false }],
   rollenart: RollenArt.Lern,
 });
 
@@ -93,7 +93,6 @@ beforeEach(async () => {
 });
 personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
   organisations: [organisation],
-  rollen: [rolle, kopersRolle],
   canCommit: true,
 });
 

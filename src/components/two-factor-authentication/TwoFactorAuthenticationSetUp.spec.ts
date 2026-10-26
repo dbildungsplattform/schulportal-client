@@ -3,7 +3,7 @@ import {
   useTwoFactorAuthentificationStore,
   type TwoFactorAuthentificationStore,
 } from '@/stores/TwoFactorAuthentificationStore';
-import { DOMWrapper, VueWrapper, mount } from '@vue/test-utils';
+import { DOMWrapper, VueWrapper, flushPromises, mount } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { nextTick, type Component } from 'vue';
 import TwoFactorAuthenticationSetUp from './TwoFactorAuthenticationSetUp.vue';
@@ -11,7 +11,7 @@ import TwoFactorAuthenticationSetUp from './TwoFactorAuthenticationSetUp.vue';
 let wrapper: VueWrapper<InstanceType<typeof TwoFactorAuthenticationSetUp>> | null = null;
 let twoFactorAuthenticationStore: TwoFactorAuthentificationStore;
 
-beforeEach(() => {
+beforeEach(async () => {
   twoFactorAuthenticationStore = useTwoFactorAuthentificationStore();
   document.body.innerHTML = `
     <div>
@@ -33,6 +33,7 @@ beforeEach(() => {
       },
     },
   });
+  await flushPromises();
 });
 
 describe('set up two-factor authentication', () => {
@@ -91,7 +92,7 @@ describe('set up two-factor authentication', () => {
     expect(proceedButton).not.toBeNull();
     const proceedButtonElement: DOMWrapper<Element> = new DOMWrapper(proceedButton);
     await proceedButtonElement.trigger('click');
-    await nextTick();
+    await flushPromises();
     expect(document.querySelector('[data-testid="layout-card-headline"]')).not.toBeNull();
     expect(document.querySelector('[data-testid="layout-card-headline"]')?.textContent).toBe(
       'Software-Token einrichten',
@@ -174,4 +175,5 @@ describe('set up two-factor authentication', () => {
 
 afterEach(() => {
   wrapper?.unmount();
+  wrapper = null;
 });

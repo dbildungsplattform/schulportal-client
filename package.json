@@ -21,7 +21,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ci": "vitest run --coverage",
-    "type-check": "vue-tsc --noEmit -p tsconfig.app.json --composite false"
+    "type-check": "vue-tsc --noEmit -p tsconfig.app.json --composite false && vue-tsc --noEmit -p tsconfig.test.json --composite false"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",

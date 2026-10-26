@@ -1,4 +1,4 @@
-import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { nextTick, type Component } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 
@@ -12,13 +12,15 @@ import {
   type ServiceProviderStore,
 } from '@/stores/ServiceProviderStore';
 import { DoFactory } from 'test/DoFactory';
-import type { Mock, MockInstance } from 'vitest';
+import { afterEach, type Mock, type MockInstance } from 'vitest';
 import ServiceProviderManagementBySchuleView from './ServiceProviderManagementBySchuleView.vue';
 
 let router: Router;
 const authStore: AuthStore = useAuthStore();
 const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
 const searchFilterStore: SearchFilterStore = useSearchFilterStore();
+
+enableAutoUnmount(afterEach);
 
 function mountComponent(): VueWrapper<InstanceType<typeof ServiceProviderManagementBySchuleView>> {
   return mount(ServiceProviderManagementBySchuleView, {
@@ -126,9 +128,10 @@ describe('ServiceProviderManagementBySchuleView', () => {
     await flushPromises();
 
     await wrapper?.find('.v-data-table__tr').trigger('click');
-    await nextTick();
 
-    expect(push).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => {
+      expect(push).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('ServiceProviderDelete', () => {
