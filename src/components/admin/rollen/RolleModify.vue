@@ -181,6 +181,10 @@
     }
   }
 
+  function handleKlasseForRadio(selectedKlasse: Organisation | undefined): void {
+    selectedKlasseForRadio.value = selectedKlasse?.id;
+  }
+
   // Creates a new Personenkontext for an array of Person IDs. For each processed ID the progress bar will increment according to the total number of items to process
   async function handleModifyRolle(personIDs: string[]): Promise<void> {
     const befristungDate: string | undefined = selectedBefristung.value
@@ -260,9 +264,7 @@
               @update:can-commit="canCommit = $event"
               @update:befristung="handleBefristungUpdate($event)"
               @update:calculated-befristung-option="handleBefristungOptionUpdate($event)"
-              @update:selectedKlasseForRadio="
-                (selectedKlasse: Organisation | undefined) => (selectedKlasseForRadio = selectedKlasse?.id)
-              "
+              @update:selectedKlasseForRadio="handleKlasseForRadio($event)"
               @fieldReset="handleFieldReset($event)"
             />
 

@@ -123,10 +123,8 @@
       if (selectedRollen.value) {
         activeSelection.push(...selectedRollen.value);
       }
-    } else {
-      if (selectedRolle.value) {
-        activeSelection.push(selectedRolle.value);
-      }
+    } else if (selectedRolle.value) {
+      activeSelection.push(selectedRolle.value);
     }
     return dedup([...props.rollen, ...activeSelection], (rolle: TranslatedRolleWithAttrs) => rolle.value);
   });
