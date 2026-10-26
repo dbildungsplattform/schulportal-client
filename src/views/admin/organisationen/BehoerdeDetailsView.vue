@@ -83,16 +83,28 @@
         class="px-3 px-sm-16"
         data-testid="behoerde-details-container"
       >
-        <LabeledField
-          :label="$t('admin.behoerde.zustaendigkeitsbereich')"
-          :value="parentOrganisation?.name ?? $t('admin.organisation.unknownOrganisation')"
-          test-id="behoerde-zustaendigkeitsbereich"
-        />
-        <LabeledField
-          :label="$t('admin.behoerde.name')"
-          :value="organisationStore.currentOrganisation.name"
-          test-id="behoerde-name"
-        />
+        <v-row class="mt-2">
+          <v-col
+            cols="12"
+            md="6"
+          >
+            <LabeledField
+              :label="$t('admin.behoerde.zustaendigkeitsbereich')"
+              :value="parentOrganisation?.name ?? $t('admin.organisation.unknownOrganisation')"
+              test-id="behoerde-zustaendigkeitsbereich"
+            />
+          </v-col>
+          <v-col
+            cols="12"
+            md="6"
+          >
+            <LabeledField
+              :label="$t('admin.behoerde.name')"
+              :value="organisationStore.currentOrganisation.name"
+              test-id="behoerde-name"
+            />
+          </v-col>
+        </v-row>
       </v-container>
     </LayoutCard>
   </div>
