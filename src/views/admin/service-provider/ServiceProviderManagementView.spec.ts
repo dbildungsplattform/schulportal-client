@@ -180,7 +180,7 @@ describe('ServiceProviderManagementView', () => {
       const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
       await flushPromises();
 
-      const searchField = wrapper.findComponent(SearchField);
+      const searchField: VueWrapper<InstanceType<typeof SearchField>> = wrapper.findComponent(SearchField);
       expect(searchField.props('initialValue')).toBe('persisted-suche');
       expect((searchField.vm as unknown as { searchFilter: string }).searchFilter).toBe('persisted-suche');
       expect(wrapper.find('[data-testid="reset-filter-button"]').attributes('disabled')).toBeUndefined();

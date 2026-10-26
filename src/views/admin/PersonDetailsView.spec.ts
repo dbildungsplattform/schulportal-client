@@ -7,7 +7,6 @@ import { EmailAddressStatus, ServiceProviderSystem } from '@/api-client/generate
 import { PendingState } from '@/components/admin/personen/details/PersonenkontextItem.types';
 import PersonenkontextItem from '@/components/admin/personen/details/PersonenkontextItem.vue';
 import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
-import KlassenFilter from '@/components/filter/KlassenFilter.vue';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore, type PersonenkontextRolleFields, type UserInfo } from '@/stores/AuthStore';
 import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
@@ -525,7 +524,8 @@ describe('PersonDetailsView', () => {
     }
 
     test('it passes the existing rollenart to the Rollen query', async () => {
-      const personenkontextCreate = await openZuordnungCreationForm();
+      const personenkontextCreate: VueWrapper<InstanceType<typeof PersonenkontextCreate>> =
+        await openZuordnungCreationForm();
       expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lern);
 
       await selectOrganisation(personenkontextCreate, 'O1');
@@ -540,7 +540,8 @@ describe('PersonDetailsView', () => {
         DoFactory.getZuordnung({ sskId: 'O1', rolleId: '1', rollenArt: RollenArt.Lern }),
       ]);
 
-      const personenkontextCreate = await openZuordnungCreationForm();
+      const personenkontextCreate: VueWrapper<InstanceType<typeof PersonenkontextCreate>> =
+        await openZuordnungCreationForm();
       await selectOrganisation(personenkontextCreate, 'O1');
 
       expect(personenkontextCreate.props('rollen')).toEqual([
@@ -1050,8 +1051,14 @@ describe('PersonDetailsView', () => {
         total: 2,
         loading: false,
       });
-      const klassenFilter = wrapper!.findComponent({ ref: 'klasse-change-form' }).getComponent(KlassenFilter);
-      klassenFilter.vm.$emit('update:selectedKlassen', newKlasse.id);
+      const klassenFilter: VueWrapper = wrapper!
+        .findComponent({ ref: 'klasse-change-form' })
+        .findComponent({ name: 'KlassenFilter' });
+      (
+        klassenFilter.vm as {
+          $emit: (event: 'update:selectedKlassen', value: string | string[] | undefined) => void;
+        }
+      ).$emit('update:selectedKlassen', newKlasse.id);
       await flushPromises();
       await wrapper!.get('[data-testid="klasse-change-submit-button"]').trigger('click');
       await flushPromises();
@@ -1062,9 +1069,12 @@ describe('PersonDetailsView', () => {
       confirmButton.dispatchEvent(new Event('click'));
       await flushPromises();
 
-      const pendingItems = wrapper!
+      const pendingItems: VueWrapper<InstanceType<typeof PersonenkontextItem>>[] = wrapper!
         .findAllComponents(PersonenkontextItem)
-        .filter((item) => item.props('pendingState') === PendingState.CREATED);
+        .filter(
+          (item: VueWrapper<InstanceType<typeof PersonenkontextItem>>) =>
+            item.props('pendingState') === PendingState.CREATED,
+        );
       expect(pendingItems).toHaveLength(1);
       expect.soft(pendingItems[0]!.props('zuordnung')).toMatchObject({
         sskId: schule.id,

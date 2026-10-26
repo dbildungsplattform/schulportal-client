@@ -367,7 +367,8 @@ describe('PersonCreationView', () => {
     };
     rolleStore.rollenForPersonenkontextCreation = [mockRolleForPersonenkontextCreation, lehrRolle];
 
-    const personenkontextCreate = wrapper!.findComponent(PersonenkontextCreate);
+    const personenkontextCreate: VueWrapper<InstanceType<typeof PersonenkontextCreate>> =
+      wrapper!.findComponent(PersonenkontextCreate);
     expect(personenkontextCreate.props('rollenartForPerson')).toBeUndefined();
 
     await personenkontextCreate
@@ -385,7 +386,8 @@ describe('PersonCreationView', () => {
   });
 
   test('should request Rollen without the previous rollenart after clearing the multiple Rolle autocomplete', async () => {
-    const personenkontextCreate = wrapper!.findComponent(PersonenkontextCreate);
+    const personenkontextCreate: VueWrapper<InstanceType<typeof PersonenkontextCreate>> =
+      wrapper!.findComponent(PersonenkontextCreate);
 
     await personenkontextCreate
       .findComponent({ ref: 'schulenFilter' })
@@ -1012,7 +1014,8 @@ describe('PersonCreationView', () => {
     });
 
     test('it passes the rollenart of the existing person to the Rollen query', async () => {
-      const personenkontextCreate = wrapper!.findComponent(PersonenkontextCreate);
+      const personenkontextCreate: VueWrapper<InstanceType<typeof PersonenkontextCreate>> =
+        wrapper!.findComponent(PersonenkontextCreate);
       expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lehr);
 
       await personenkontextCreate
@@ -1049,7 +1052,8 @@ describe('PersonCreationView', () => {
         return Promise.resolve();
       });
 
-      const personenkontextCreate = wrapper!.findComponent(PersonenkontextCreate);
+      const personenkontextCreate: VueWrapper<InstanceType<typeof PersonenkontextCreate>> =
+        wrapper!.findComponent(PersonenkontextCreate);
       await personenkontextCreate
         .findComponent({ ref: 'schulenFilter' })
         .findComponent({ ref: 'personenkontext-create-organisation-select' })
