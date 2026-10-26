@@ -1033,9 +1033,7 @@ describe('PersonCreationView', () => {
       );
       await nextTick();
 
-      expect(wrapper!.findComponent(PersonenkontextCreate).props('rollenartForPerson')).toBe(
-        RollenArt.Lern,
-      );
+      expect(wrapper!.findComponent(PersonenkontextCreate).props('rollenartForPerson')).toBe(RollenArt.Lern);
     });
 
     test('it excludes Rollen already assigned at the selected organisation without filtering by rollenart', async () => {
