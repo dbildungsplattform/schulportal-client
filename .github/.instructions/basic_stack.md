@@ -10,11 +10,11 @@
 ## Global Rules
 
 - **Language:** All code, comments, commit messages, and agent instructions are in **English**. Exception: domain object names and route paths that reflect official German administrative terminology (e.g. `Personenkontext`, `Schulstrukturknoten`, `Befristung`) are kept in German.
-- **Node.js version:** `24.x` across all three repositories (pinned to `24.16.0` in Docker images).
+- **Node.js version:** `24.x` across all three repositories (pinned to `24.22.1` in Docker images).
 - **Package manager:** `npm` (npm `>=11.10.0`). Never use `yarn` or `pnpm`.
 - **License:** EUPL-1.2 across all repos.
 - **Code quality:** SonarCloud is used for static analysis. Coverage reports use Istanbul/lcov.
-- **Container runtime:** All services are containerised with Docker; images are based on `node:24.16.0-alpine3.24`.
+- **Container runtime:** All services are containerised with Docker; images are based on `node:24.22.1-alpine3.24`.
 - **Orchestration:** Kubernetes via Helm charts (one chart per repo under `charts/`).
 - **CI/CD:** GitHub Actions. Shared workflows are consumed from `dBildungsplattform/dbp-github-workflows`.
 
@@ -56,7 +56,7 @@
 
 | Category | Technology |
 |---|---|
-| Runtime | Node.js `24.16.0` |
+| Runtime | Node.js `24.22.1` |
 | Framework | NestJS `^11` (monorepo, multiple apps) |
 | Language | TypeScript `^5` (ESM, `"type": "module"`) |
 | HTTP server | Express `^5` via `@nestjs/platform-express` |
@@ -142,7 +142,7 @@
 
 | Component | Technology | Notes |
 |---|---|---|
-| Container images | Docker (Alpine-based) | `node:24.16.0-alpine3.24` builder; `nginx:1.31.1-alpine` frontend server |
+| Container images | Docker (Alpine-based) | `node:24.22.1-alpine3.24` builder; `nginx:1.31.1-alpine` frontend server |
 | Orchestration | Kubernetes + Helm | Charts under `charts/` in each repo |
 | Image registry | GitHub Container Registry (`ghcr.io/dbildungsplattform/`) | |
 | CI/CD | GitHub Actions | Shared workflows from `dBildungsplattform/dbp-github-workflows@8` |
