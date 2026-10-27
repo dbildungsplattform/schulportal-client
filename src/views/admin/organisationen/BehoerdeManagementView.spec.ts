@@ -51,7 +51,7 @@ describe('BehoerdeManagementView', (): void => {
     expect(wrapper.getComponent({ name: 'ResultTable' }).props()).toMatchObject({
       headers: [{ title: 'Behördenname', key: 'name', align: 'start', sortable: false }],
       hideSelect: true,
-      disableRowClick: true,
+      disableRowClick: false,
     });
     expect(wrapper.text()).not.toContain('Dienststellennummer');
   });
