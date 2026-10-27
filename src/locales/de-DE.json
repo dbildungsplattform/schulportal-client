@@ -218,6 +218,9 @@
     "behoerde": {
       "name": "Behördenname",
       "showAll": "Alle Behörden anzeigen",
+      "edit": "Behörde bearbeiten",
+      "detailsLoadingErrorTitle": "Fehler beim Laden der Behörde",
+      "detailsLoadingErrorText": "Die Daten der Behörde konnten nicht geladen werden.",
       "loadingErrorTitle": "Fehler beim Laden der Behörden",
       "loadingErrorText": "Die Behörden konnten nicht geladen werden.",
       "addNew": "Neue Behörde hinzufügen",
@@ -454,7 +457,6 @@
       "create": "Benutzer anlegen",
       "createAnother": "Weiteren Benutzer anlegen",
       "createNew": "Neue Benutzer anlegen",
-
       "creationErrorText": "",
       "creationErrorTitle": "Fehler beim Anlegen des Benutzers",
       "deletePerson": "Benutzer löschen",
