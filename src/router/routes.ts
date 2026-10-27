@@ -1,6 +1,6 @@
 import { StepUpLevel } from '@/stores/AuthStore';
 import type { RouteRecordRaw } from 'vue-router';
-import type { AppRoute, AppRouteMeta } from '.';
+import type { AppRoute } from '.';
 
 const routes: readonly RouteRecordRaw[] = [
   {
@@ -339,12 +339,23 @@ const routes: readonly RouteRecordRaw[] = [
       requiresAuth: true,
       requiredStepUpLevel: StepUpLevel.GOLD,
       requiresPermission: 'behoerdenverwaltung',
-    } satisfies AppRouteMeta,
+    },
   },
   {
     path: '/admin/behoerden/new',
     name: 'create-behoerde',
     component: () => import('../views/admin/organisationen/BehoerdeCreationView.vue'),
+    meta: {
+      layout: 'AdminLayout',
+      requiresAuth: true,
+      requiredStepUpLevel: StepUpLevel.GOLD,
+      requiresPermission: 'behoerdenverwaltung',
+    },
+  },
+  {
+    path: '/admin/behoerden/:id',
+    name: 'behoerde-details',
+    component: () => import('../views/admin/organisationen/BehoerdeDetailsView.vue'),
     meta: {
       layout: 'AdminLayout',
       requiresAuth: true,

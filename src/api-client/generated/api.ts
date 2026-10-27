@@ -199,7 +199,7 @@ export interface CreateOrganisationBodyParams {
      */
     'zugehoerigZu': string;
     /**
-     * Required, if `typ` is equal to `SCHULE`
+     * Only allowed for SCHULE. Required when creating a SCHULE.
      * @type {string}
      * @memberof CreateOrganisationBodyParams
      */
@@ -873,6 +873,7 @@ export interface DbiamOrganisationError {
 export const DbiamOrganisationErrorI18nKeyEnum = {
     OrganisationSpecificationError: 'ORGANISATION_SPECIFICATION_ERROR',
     KennungRequiredForSchule: 'KENNUNG_REQUIRED_FOR_SCHULE',
+    KennungOnlyForSchule: 'KENNUNG_ONLY_FOR_SCHULE',
     NameRequiredForSchule: 'NAME_REQUIRED_FOR_SCHULE',
     SchuleKennungEindeutig: 'SCHULE_KENNUNG_EINDEUTIG',
     SchuleUnterTraeger: 'SCHULE_UNTER_TRAEGER',
@@ -896,7 +897,9 @@ export const DbiamOrganisationErrorI18nKeyEnum = {
     OrganisationHatRollen: 'ORGANISATION_HAT_ROLLEN',
     OrganisationHatPersonenkontexte: 'ORGANISATION_HAT_PERSONENKONTEXTE',
     OrganisationHatAngebote: 'ORGANISATION_HAT_ANGEBOTE',
-    OrganisationHatRollenerweiterungen: 'ORGANISATION_HAT_ROLLENERWEITERUNGEN'
+    OrganisationHatRollenerweiterungen: 'ORGANISATION_HAT_ROLLENERWEITERUNGEN',
+    BehoerdeNameEindeutig: 'BEHOERDE_NAME_EINDEUTIG',
+    BehoerdeAdministriertVon: 'BEHOERDE_ADMINISTRIERT_VON'
 } as const;
 
 export type DbiamOrganisationErrorI18nKeyEnum = typeof DbiamOrganisationErrorI18nKeyEnum[keyof typeof DbiamOrganisationErrorI18nKeyEnum];
@@ -4264,7 +4267,7 @@ export interface UpdateOrganisationBodyParams {
      */
     'zugehoerigZu': string;
     /**
-     * Required, if `typ` is equal to `SCHULE`
+     * Only allowed for SCHULE. Required when creating a SCHULE.
      * @type {string}
      * @memberof UpdateOrganisationBodyParams
      */
@@ -4777,7 +4780,7 @@ export interface UserExternalDataV2PersonenkontextResponse {
      * @type {string}
      * @memberof UserExternalDataV2PersonenkontextResponse
      */
-    'dienststellennr': string;
+    'dstNr': string;
     /**
      * 
      * @type {string}
