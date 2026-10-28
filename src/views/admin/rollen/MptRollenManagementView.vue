@@ -8,8 +8,8 @@
   import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
   import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
   import {
+    RollenForMptZuordnungFilter,
     useRolleStore,
-    type RolleFilter,
     type RolleStore,
     type RolleWithServiceProvidersResponse,
   } from '@/stores/RolleStore';
@@ -42,19 +42,20 @@
   const selectedOrganisation: Ref<Organisation | null> = ref(searchFilterStore.selectedSchuleForMptRollen);
   const selectedOrganisationId: ComputedRef<string | undefined> = computed(() => selectedOrganisation.value?.id);
 
-  const mptRollenFilter: ComputedRef<RolleFilter | null> = computed((): RolleFilter | null => {
-    if (!selectedOrganisationId.value) {
-      return null;
-    }
+  const mptRollenFilter: ComputedRef<RollenForMptZuordnungFilter | null> = computed(
+    (): RollenForMptZuordnungFilter | null => {
+      if (!selectedOrganisationId.value) {
+        return null;
+      }
 
-    return {
-      offset: (searchFilterStore.mptRollenPage - 1) * searchFilterStore.mptRollenPerPage,
-      limit: searchFilterStore.mptRollenPerPage,
-      searchString: '',
-      organisationIds: [selectedOrganisationId.value],
-      systemrechte: [RollenSystemRechtEnum.MptRollenZuordnen],
-    };
-  });
+      return {
+        offset: (searchFilterStore.mptRollenPage - 1) * searchFilterStore.mptRollenPerPage,
+        limit: searchFilterStore.mptRollenPerPage,
+        searchString: '',
+        organisationIds: [selectedOrganisationId.value],
+      };
+    },
+  );
 
   const headers: Headers = [
     { title: t('admin.rolle.rollenname'), key: 'name', align: 'start' },
@@ -116,7 +117,7 @@
 
   watch(
     mptRollenFilter,
-    async (filter: RolleFilter | null): Promise<void> => {
+    async (filter: RollenForMptZuordnungFilter | null): Promise<void> => {
       if (filter) {
         await rolleStore.getRollenForMptZuordnung(filter);
       }

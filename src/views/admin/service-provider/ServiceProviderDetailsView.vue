@@ -58,7 +58,6 @@
     init: initRollen,
   }: UseRollenAutocompleteReturn = useRollenAutocomplete({
     limit: 25,
-    systemrechte: [RollenSystemRecht.RollenVerwalten, RollenSystemRecht.RollenErweitern],
   });
 
   type ReadonlyHeaders = Headers;

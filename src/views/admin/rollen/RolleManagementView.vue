@@ -115,8 +115,6 @@
     );
   });
 
-  const systemrechte: RollenSystemRecht[] = [RollenSystemRecht.RollenVerwalten];
-
   function navigateToRolleDetails(_$event: PointerEvent, { item }: { item: RolleTableItem }): void {
     router.push({ name: 'rolle-details', params: { id: item.id } });
   }
@@ -126,7 +124,6 @@
       offset: (searchFilterStore.rollenPage - 1) * searchFilterStore.rollenPerPage,
       limit: searchFilterStore.rollenPerPage,
       searchString: searchFilterStore.searchStringForRollen ?? undefined,
-      systemrechte,
       organisationIds: searchFilterStore.selectedOrganisationenForRollen?.length
         ? searchFilterStore.selectedOrganisationenForRollen.map((organisation: Organisation) => organisation.id)
         : undefined,

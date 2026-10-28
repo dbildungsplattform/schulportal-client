@@ -5,7 +5,6 @@ import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
 import {
   RollenArt,
-  RollenSystemRecht,
   useRolleStore,
   type RolleStore,
   type RolleWithServiceProvidersResponse,
@@ -133,7 +132,6 @@ describe('ServiceProviderDetailsView', () => {
     expect(getAllRollenSpy).toHaveBeenCalledOnce();
     expect(getAllRollenSpy).toHaveBeenCalledWith({
       limit: 25,
-      systemrechte: [RollenSystemRecht.RollenVerwalten, RollenSystemRecht.RollenErweitern],
     });
     expect(getRollenerweiterungenByIdSpy).toHaveBeenCalledOnce();
   });
@@ -456,7 +454,7 @@ describe('ServiceProviderDetailsView', () => {
 
     const schulenFilter: VueWrapper | undefined = wrapper?.findComponent(SchulenFilter);
     const rollenFilter: VueWrapper | undefined = wrapper?.findComponent({ ref: 'rolle-select' });
-    const selectedRolle: RolleWithServiceProvidersResponse = rolleStore.allRollen[0];
+    const selectedRolle: RolleWithServiceProvidersResponse = rolleStore.allRollen[0]!;
     schulenFilter?.vm.$emit('update:selectedSchulen', [DoFactory.getSchule({ id: 'schule-1' })]);
     rollenFilter?.vm.$emit('update:model-value', [selectedRolle]);
     await flushPromises();
@@ -503,7 +501,6 @@ describe('ServiceProviderDetailsView', () => {
     expect(getAllRollenSpy).toHaveBeenLastCalledWith({
       limit: 25,
       searchString: 'Lehrer',
-      systemrechte: [RollenSystemRecht.RollenVerwalten, RollenSystemRecht.RollenErweitern],
     });
 
     vi.useRealTimers();
@@ -537,7 +534,6 @@ describe('ServiceProviderDetailsView', () => {
     expect(getAllRollenSpy).toHaveBeenLastCalledWith({
       limit: 25,
       searchString: 'Lehrer',
-      systemrechte: [RollenSystemRecht.RollenVerwalten, RollenSystemRecht.RollenErweitern],
     });
 
     vi.useRealTimers();

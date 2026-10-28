@@ -2,7 +2,7 @@ import SchulenFilter from '@/components/filter/SchulenFilter.vue';
 import type { Organisation } from '@/stores/OrganisationStore';
 import routes from '@/router/routes';
 import { AuthStore, useAuthStore } from '@/stores/AuthStore';
-import { RollenArt, RollenMerkmal, useRolleStore, type RolleStore } from '@/stores/RolleStore';
+import { RolleFilter, RollenArt, RollenMerkmal, useRolleStore, type RolleStore } from '@/stores/RolleStore';
 import { rollenPerPageDefault, useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
 import {
   useServiceProviderStore,
@@ -188,7 +188,8 @@ describe('RolleManagementView', () => {
   });
 
   test('reset button is enabled when angebote filter is active', async () => {
-    searchFilterStore.selectedServiceProvidersForRollen = [serviceProviderStore.serviceProvidersForRollenVerwaltung[0]];
+    searchFilterStore.selectedServiceProvidersForRollen =
+      serviceProviderStore.serviceProvidersForRollenVerwaltung.slice(0, 1);
     await nextTick();
     expect(wrapper?.find('[data-testid="reset-filter-button"]').classes()).not.toContain('v-btn--disabled');
   });
@@ -221,12 +222,11 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
       merkmale: [RollenMerkmal.KopersPflicht],
       rollenarten: undefined,
       organisationIds: undefined,
       serviceProviderIds: undefined,
-    });
+    } satisfies RolleFilter);
   });
 
   test('requests only RollenVerwalten even when the user has gated systemrechte', async () => {
@@ -244,12 +244,11 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
       merkmale: undefined,
       rollenarten: [RollenArt.Lehr],
       organisationIds: undefined,
       serviceProviderIds: undefined,
-    });
+    } satisfies RolleFilter);
   });
 
   test('rollenarten filter change calls store action and reloads rollen', async () => {
@@ -263,12 +262,11 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
       merkmale: undefined,
       rollenarten: [RollenArt.Lehr],
       organisationIds: undefined,
       serviceProviderIds: undefined,
-    });
+    } satisfies RolleFilter);
   });
 
   test('organisationen filter change calls store action and reloads rollen', async () => {
@@ -286,12 +284,11 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
       merkmale: undefined,
       rollenarten: undefined,
       organisationIds: orgs.map((org: Organisation) => org.id),
       serviceProviderIds: undefined,
-    });
+    } satisfies RolleFilter);
   });
 
   test('angebote filter is visible when user has AngeboteVerwalten permission', async () => {
@@ -341,12 +338,11 @@ describe('RolleManagementView', () => {
         offset: 0,
         limit: 30,
         searchString: '',
-        systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
         merkmale: undefined,
         rollenarten: undefined,
         organisationIds: undefined,
         serviceProviderIds: ['sp1'],
-      });
+      } satisfies RolleFilter);
     });
 
     test('angebote filter shows selected items', async () => {
@@ -363,7 +359,7 @@ describe('RolleManagementView', () => {
         '[data-testid="angebote-filter-select"]',
       );
       const selectedServiceProvider: ServiceProviderIdNameResponse =
-        serviceProviderStore.serviceProvidersForRollenVerwaltung[0];
+        serviceProviderStore.serviceProvidersForRollenVerwaltung[0]!;
       await angeboteSelect?.setValue([selectedServiceProvider]);
 
       expect(searchFilterStore.setServiceProvidersFilterForRollen).toHaveBeenCalledWith([selectedServiceProvider]);
@@ -372,9 +368,8 @@ describe('RolleManagementView', () => {
 
   describe('when selected angebot is not in current search results', () => {
     test('chip still displays the selected provider after search filters it out', async () => {
-      searchFilterStore.selectedServiceProvidersForRollen = [
-        serviceProviderStore.serviceProvidersForRollenVerwaltung[0],
-      ];
+      searchFilterStore.selectedServiceProvidersForRollen =
+        serviceProviderStore.serviceProvidersForRollenVerwaltung.slice(0, 1);
       await nextTick();
 
       serviceProviderStore.serviceProvidersForRollenVerwaltung = [];
@@ -451,8 +446,7 @@ describe('RolleManagementView', () => {
       merkmale: undefined,
       rollenarten: undefined,
       organisationIds: undefined,
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
-    });
+    } satisfies RolleFilter);
   });
 
   test('reset button is enabled when rollen filter is active', async () => {

@@ -302,7 +302,6 @@ describe('MptRollenManagementView', () => {
         limit,
         searchString: '',
         organisationIds: [schuleId],
-        systemrechte: [RollenSystemRechtEnum.MptRollenZuordnen],
       });
       expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
     },
