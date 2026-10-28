@@ -27,6 +27,9 @@ RUN npm run build
 # Deployment Stage
 FROM $BASE_IMAGE AS deployment
 
+# Pull in all available Alpine security fixes (e.g. curl/libcurl, brotli-libs, c-ares)
+RUN apk upgrade --no-cache
+
 # Patch CVE-2026-6732
 RUN apk upgrade -U libxml2>=2.13.9-r1
 
