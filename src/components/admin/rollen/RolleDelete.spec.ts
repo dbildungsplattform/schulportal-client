@@ -1,6 +1,6 @@
-import { expect, test, type MockInstance } from 'vitest';
+import { afterEach, expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
-import { VueWrapper, mount } from '@vue/test-utils';
+import { VueWrapper, flushPromises, mount } from '@vue/test-utils';
 import RolleDelete from './RolleDelete.vue';
 import { RollenMerkmal, RollenSystemRecht } from '@/stores/RolleStore';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
@@ -32,10 +32,10 @@ beforeEach(async () => {
       rolle: {
         id: '1',
         administeredBySchulstrukturknoten: '3',
-        merkmale: ['KOPERS_PFLICHT'] as unknown as Set<RollenMerkmal>,
+        merkmale: [RollenMerkmal.KopersPflicht],
         name: 'Rolle 1',
         rollenart: 'LERN',
-        systemrechte: ['ROLLEN_VERWALTEN'] as unknown as Set<RollenSystemRecht>,
+        systemrechte: new Set<RollenSystemRecht>(),
         version: 1,
       },
     },
@@ -46,12 +46,18 @@ beforeEach(async () => {
       plugins: [router],
     },
   });
+  await flushPromises();
+});
+
+afterEach(() => {
+  wrapper?.unmount();
+  wrapper = null;
 });
 
 describe('delete rolle', () => {
   test('it opens and closes the dialog', async () => {
-    wrapper?.find('[data-testid="open-rolle-delete-dialog-button"]').trigger('click');
-    await nextTick();
+    await wrapper?.find('[data-testid="open-rolle-delete-dialog-button"]').trigger('click');
+    await flushPromises();
 
     document.querySelector('[data-testid="rolle-delete-confirmation-text"]');
     expect(document.querySelector('[data-testid="rolle-delete-confirmation-text"]')).not.toBeNull();
@@ -68,8 +74,8 @@ describe('delete rolle', () => {
   test('it deletes a rolle and navigates back to management', async () => {
     const push: MockInstance = vi.spyOn(router, 'push');
 
-    wrapper?.find('[data-testid="open-rolle-delete-dialog-button"]').trigger('click');
-    await nextTick();
+    await wrapper?.find('[data-testid="open-rolle-delete-dialog-button"]').trigger('click');
+    await flushPromises();
 
     document.querySelector('[data-testid="rolle-delete-confirmation-text"]');
     expect(document.querySelector('[data-testid="rolle-delete-confirmation-text"]')).not.toBeNull();

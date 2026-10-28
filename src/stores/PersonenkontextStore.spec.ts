@@ -51,17 +51,13 @@ describe('PersonenkontextStore', () => {
 
   describe('processWorkflowStep', () => {
     const getUrl = (filter: WorkflowFilter): string => {
-      const { operationContext, organisationId, rollenIds, rolleName, organisationName, limit }: WorkflowFilter =
-        filter;
+      const { operationContext, organisationId, rollenIds, organisationName, limit }: WorkflowFilter = filter;
       let url: string = `/api/personenkontext-workflow/step?operationContext=${operationContext}`;
       if (organisationId) {
         url += `&organisationId=${organisationId}`;
       }
       if (rollenIds) {
         rollenIds.forEach((rolleId: string) => (url += `&rollenIds=${rolleId}`));
-      }
-      if (rolleName) {
-        url += `&rolleName=${rolleName}`;
       }
       if (organisationName) {
         url += `&organisationName=${organisationName}`;
@@ -87,7 +83,6 @@ describe('PersonenkontextStore', () => {
               typ: OrganisationsTyp.Schule,
             },
           ],
-          rollen: [],
           selectedOrganisation: '1',
           selectedRollen: ['1'],
           canCommit: true,
@@ -144,8 +139,14 @@ describe('PersonenkontextStore', () => {
   });
 
   describe('processWorkflowStepLandesbedienstete', () => {
-    const getUrl = (filter: WorkflowFilter): string => {
-      const { organisationId, rollenIds, rolleName, organisationName, limit }: WorkflowFilter = filter;
+    const getUrl = (filter: Parameters<PersonenkontextStore['processWorkflowStepLandesbedienstete']>[0]): string => {
+      const {
+        organisationId,
+        rollenIds,
+        rolleName,
+        organisationName,
+        limit,
+      }: Parameters<PersonenkontextStore['processWorkflowStepLandesbedienstete']>[0] = filter;
       let url: string = '/api/landesbediensteter/step';
       const params: string[] = [];
 
@@ -184,14 +185,15 @@ describe('PersonenkontextStore', () => {
           typ: OrganisationsTyp.Schule,
         },
       ],
-      rollen: [],
       selectedOrganisation: '1',
       selectedRollen: ['1'],
       canCommit: true,
     };
 
     it('should get step successfully', async () => {
-      const filter: WorkflowFilter = { organisationId: '1' };
+      const filter: Parameters<PersonenkontextStore['processWorkflowStepLandesbedienstete']>[0] = {
+        organisationId: '1',
+      };
       mockadapter.onGet(getUrl(filter)).replyOnce(200, mockResponse);
 
       const processWorkflowStep: Promise<void> = personenkontextStore.processWorkflowStepLandesbedienstete(filter);
@@ -203,7 +205,7 @@ describe('PersonenkontextStore', () => {
     });
 
     it('should get step with multiple parameters', async () => {
-      const filter: WorkflowFilter = {
+      const filter: Parameters<PersonenkontextStore['processWorkflowStepLandesbedienstete']>[0] = {
         organisationId: '1',
         rollenIds: ['role1', 'role2'],
         rolleName: 'TestRole',
@@ -221,7 +223,9 @@ describe('PersonenkontextStore', () => {
     });
 
     it('should handle string error', async () => {
-      const filter: WorkflowFilter = { organisationId: '1' };
+      const filter: Parameters<PersonenkontextStore['processWorkflowStepLandesbedienstete']>[0] = {
+        organisationId: '1',
+      };
       mockadapter.onGet(getUrl(filter)).replyOnce(500, 'some error');
 
       const processWorkflowStep: Promise<void> = personenkontextStore.processWorkflowStepLandesbedienstete(filter);
