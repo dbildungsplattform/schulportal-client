@@ -7,7 +7,7 @@ import {
 } from '@/stores/OrganisationStore';
 import { DOMWrapper, VueWrapper, flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import { expect, test, type MockInstance } from 'vitest';
+import { afterEach, expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import KlassenDetailsView from './KlasseDetailsView.vue';
@@ -80,6 +80,12 @@ beforeEach(async () => {
       plugins: [router],
     },
   });
+  await flushPromises();
+});
+
+afterEach(() => {
+  wrapper?.unmount();
+  wrapper = null;
 });
 
 describe('KlassenDetailsView', () => {
@@ -194,8 +200,9 @@ describe('KlassenDetailsView', () => {
     await wrapper?.find('[data-testid="klasse-edit-button"]').trigger('click');
     await nextTick();
 
-    await wrapper?.find('#klassenname-input').setValue('1b');
-    expect(wrapper?.find('#klassenname-input').attributes('value')).toEqual('1b');
+    const klassennameInput: DOMWrapper<HTMLInputElement> = wrapper!.find<HTMLInputElement>('#klassenname-input');
+    await klassennameInput.setValue('1b');
+    expect(klassennameInput.element.value).toEqual('1b');
 
     await wrapper?.find('[data-testid="klasse-form-submit-button"]').trigger('click');
     await flushPromises();

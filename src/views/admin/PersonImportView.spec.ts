@@ -460,7 +460,9 @@ describe('PersonImportView', () => {
     expect(fileContent.match(/alpha/g)?.length).toBe(1);
     expect(fileContent.match(/charlie/g)?.length).toBe(1);
     // The failed middle page must be retried, not silently reused from stale state.
-    expect(getImportedPersonsSpy.mock.calls.filter(([, offset]: [string, number]) => offset === 1)).toHaveLength(3);
+    const importedPersonCalls: unknown[][] = getImportedPersonsSpy.mock.calls;
+    const failedPageCallCount: number = importedPersonCalls.filter((call: unknown[]) => call[1] === 1).length;
+    expect(failedPageCallCount).toBe(3);
   });
 
   test('it shows loading bar', async () => {

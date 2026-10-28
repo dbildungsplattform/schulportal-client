@@ -1,12 +1,12 @@
+import ResultTable from '@/components/admin/ResultTable.vue';
+import routes from '@/router/routes';
+import { OrganisationsTyp, useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
+import { OrganisationSortField, SortOrder } from '@/utils/sorting';
 import { enableAutoUnmount, flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import type { ComponentInstance } from 'vue';
+import { createMemoryHistory, createRouter, RouterView, type Router } from 'vue-router';
 import { VDataTableServer } from 'vuetify/components';
-import { createRouter, createMemoryHistory, RouterView, type Router } from 'vue-router';
-import routes from '@/router/routes';
-import ResultTable from '@/components/admin/ResultTable.vue';
-import { OrganisationsTyp, useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
-import { OrganisationSortField, SortOrder } from '@/utils/sorting';
 import BehoerdeManagementView from './BehoerdeManagementView.vue';
 
 enableAutoUnmount(afterEach);
@@ -48,11 +48,11 @@ describe('BehoerdeManagementView', (): void => {
     await flushPromises();
 
     expect(wrapper.text()).toContain(organisationStore.allOrganisationen[0]!.name);
-    expect(wrapper.getComponent(ResultTable).props('headers')).toEqual([
-      { title: 'Behördenname', key: 'name', align: 'start', sortable: false },
-    ]);
-    expect(wrapper.getComponent(ResultTable).props('hideSelect')).toBe(true);
-    expect(wrapper.getComponent(ResultTable).props('disableRowClick')).toBe(false);
+    expect(wrapper.getComponent({ name: 'ResultTable' }).props()).toMatchObject({
+      headers: [{ title: 'Behördenname', key: 'name', align: 'start', sortable: false }],
+      hideSelect: true,
+      disableRowClick: false,
+    });
     expect(wrapper.text()).not.toContain('Dienststellennummer');
   });
 
@@ -64,7 +64,7 @@ describe('BehoerdeManagementView', (): void => {
       router.afterEach((): void => resolve());
     });
     await wrapper.get('tbody tr.v-data-table__tr').trigger(event, { key: 'Enter' });
-    expect(wrapper.getComponent(ResultTable).emitted('onHandleRowClick')).toBeTruthy();
+    expect(wrapper.getComponent({ name: 'ResultTable' }).emitted('onHandleRowClick')).toBeTruthy();
     await navigation;
     await flushPromises();
     expect(router.currentRoute.value.name).toBe('behoerde-details');
@@ -85,7 +85,7 @@ describe('BehoerdeManagementView', (): void => {
     expect(organisationStore.getAllOrganisationen).toHaveBeenLastCalledWith(
       expect.objectContaining({ offset: 0, limit: 50 }),
     );
-    expect(wrapper.getComponent(ResultTable).props('currentPage')).toBe(1);
+    expect(wrapper.getComponent({ name: 'ResultTable' }).props()).toMatchObject({ currentPage: 1 });
   });
 
   it('should clear loading errors when navigating to another administration view', async (): Promise<void> => {
