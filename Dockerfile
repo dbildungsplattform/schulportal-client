@@ -4,13 +4,6 @@ ARG BASE_IMAGE=nginx:1.31.8-alpine3.24
 # Build Stage
 FROM $BASE_IMAGE_BUILDER AS build
 
-RUN apk add openjdk17-jre>=17.0.10_p7-r0
-# CVE-2026-45447
-RUN apk upgrade -U libcrypto3>=3.5.7-r0 libssl3>=3.5.7-r0
-
-# CVE-2026-56405
-RUN apk update -U libexpat>=2.8.2-r0
-
 WORKDIR /app
 COPY tsconfig*.json ./
 COPY package*.json ./
@@ -29,15 +22,6 @@ FROM $BASE_IMAGE AS deployment
 
 # Pull in all available Alpine security fixes (e.g. curl/libcurl, brotli-libs, c-ares)
 RUN apk upgrade --no-cache
-
-# Patch CVE-2026-6732
-RUN apk upgrade -U libxml2>=2.13.9-r1
-
-# CVE-2026-45447
-RUN apk upgrade -U libcrypto3>=3.5.7-r0 libssl3>=3.5.7-r0
-
-# CVE-2026-56405
-RUN apk update -U libexpat>=2.8.2-r0
 
 COPY --from=build /app/dist/ /usr/share/nginx/html/
 
