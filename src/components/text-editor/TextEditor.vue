@@ -3,7 +3,7 @@
   import { CharacterCount } from '@tiptap/extensions';
   import StarterKit from '@tiptap/starter-kit';
   import { Editor, EditorContent } from '@tiptap/vue-3';
-  import { defineEmits, onBeforeUnmount, onMounted, watch } from 'vue';
+  import { onBeforeUnmount, onMounted, watch } from 'vue';
   import BoldButton from './button/BoldButton.vue';
   import BulletListButton from './button/BulletListButton.vue';
   import HeadingMenuButton from './button/HeadingMenuButton.vue';

@@ -47,10 +47,8 @@
     validateOnMount: false,
   });
 
-  const [meldungText, meldungTextProps]: [
-    Ref<string>,
-    Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
-  ] = defineField('meldungText', vuetifyConfig);
+  const [meldungText]: [Ref<string>, Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>] =
+    defineField('meldungText', vuetifyConfig);
 
   const publishOrUnpublishButton: ComputedRef<string> = computed(() => {
     return !newsboxMeldung.value || newsboxMeldung.value.status === MeldungStatus.NICHT_VEROEFFENTLICHT
