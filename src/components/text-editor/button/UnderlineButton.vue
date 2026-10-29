@@ -5,7 +5,7 @@
   defineProps<{ editor: Editor }>();
 </script>
 <template>
-  <text-editor-base-button
+  <TextEditorBaseButton
     icon="mdi-format-underline"
     :tooltip="$t('textEditor.button.underline')"
     testId="underline-button"

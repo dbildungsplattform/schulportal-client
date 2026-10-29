@@ -5,7 +5,7 @@
   defineProps<{ editor: Editor }>();
 </script>
 <template>
-  <text-editor-base-button
+  <TextEditorBaseButton
     icon="mdi-format-list-bulleted"
     :tooltip="$t('textEditor.button.bulletList')"
     testId="bullet-list-button"

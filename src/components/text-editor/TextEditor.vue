@@ -81,23 +81,23 @@
       <v-card>
         <v-toolbar density="compact">
           <v-toolbar-items>
-            <bold-button :editor="editor" />
-            <italic-button :editor="editor" />
-            <underline-button :editor="editor" />
-            <strike-button :editor="editor" />
+            <BoldButton :editor="editor" />
+            <ItalicButton :editor="editor" />
+            <UnderlineButton :editor="editor" />
+            <StrikeButton :editor="editor" />
             <v-divider vertical />
-            <bullet-list-button :editor="editor" />
-            <ordered-list-button :editor="editor" />
+            <BulletListButton :editor="editor" />
+            <OrderedListButton :editor="editor" />
             <v-divider vertical />
-            <heading-menu-button :editor="editor" />
+            <HeadingMenuButton :editor="editor" />
             <v-divider vertical />
-            <link-element-button :editor="editor" />
+            <LinkElementButton :editor="editor" />
           </v-toolbar-items>
         </v-toolbar>
         <v-card-text>
-          <editor-content :editor="editor" />
+          <EditorContent :editor="editor" />
           <v-divider class="my-2" />
-          <text-editor-character-count
+          <TextEditorCharacterCount
             :editor="editor"
             :limit="limit"
           />

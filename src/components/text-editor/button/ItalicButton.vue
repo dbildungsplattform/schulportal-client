@@ -5,7 +5,7 @@
   defineProps<{ editor: Editor }>();
 </script>
 <template>
-  <text-editor-base-button
+  <TextEditorBaseButton
     icon="mdi-format-italic"
     :tooltip="$t('textEditor.button.italic')"
     testId="italic-button"

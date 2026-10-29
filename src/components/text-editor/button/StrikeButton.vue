@@ -5,7 +5,7 @@
   defineProps<{ editor: Editor }>();
 </script>
 <template>
-  <text-editor-base-button
+  <TextEditorBaseButton
     icon="mdi-format-strikethrough"
     :tooltip="$t('textEditor.button.strike')"
     testId="strike-button"
