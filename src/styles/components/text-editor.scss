@@ -1,4 +1,8 @@
 .tiptap {
+  height: 20rem;
+  overflow: auto;
+  display: block;
+
   :first-child {
     margin-top: 0;
   }
@@ -89,18 +93,18 @@
     border-top: 1px solid var(--gray-2);
     margin: 2rem 0;
   }
-}
 
-a {
-  color: var(--blue);
-  text-decoration: underline;
-}
+  a {
+    color: var(--blue);
+    text-decoration: underline;
+  }
 
-a[target='_blank']::after {
-  content: '\F03CC';
-  font-family: 'Material Design Icons', sans-serif;
-  font-size: 0.85em;
-  margin-left: 0.25em;
-  text-decoration: none;
-  display: inline-block;
+  a[target='_blank']::after {
+    content: '\F03CC';
+    font-family: 'Material Design Icons', sans-serif;
+    font-size: 0.85em;
+    margin-left: 0.25em;
+    text-decoration: none;
+    display: inline-block;
+  }
 }
