@@ -76,7 +76,9 @@
   );
 </script>
 <template>
+  TextEditor: Hier soll der Text für die Newsbox eingegeben werden. {{ JSON.stringify(editor) }}
   <div v-if="editor">
+    Nach If: Editor ist vorhanden.
     <v-container class="text-editor">
       <v-card>
         <v-toolbar density="compact">
