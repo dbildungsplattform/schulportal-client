@@ -41,7 +41,7 @@
 | Test data      | `@faker-js/faker` via `test/DoFactory.ts`                                                        |
 | Linting        | ESLint 9 flat config + `eslint-plugin-vue` + `typescript-eslint`                                 |
 | Formatting     | Prettier `^3.8`                                                                                  |
-| Web server     | Nginx `1.31.1-alpine` (serves static build; proxies `/api` to backend)                           |
+| Web server     | Nginx `1.31.8-alpine3.24` (serves static build; proxies `/api` to backend)                       |
 | API contract   | OpenAPI spec auto-generated client under `src/api-client/generated/` via `openapi-generator-cli` |
 
 **Key architecture notes:**
