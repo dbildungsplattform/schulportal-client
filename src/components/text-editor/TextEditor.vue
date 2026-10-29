@@ -75,7 +75,7 @@
 <template>
   <div v-if="editor">
     <v-container class="text-editor">
-      <v-card>
+      <v-card variant="outlined">
         <v-toolbar density="compact">
           <v-toolbar-items>
             <BoldButton :editor="editor" />
