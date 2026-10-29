@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": ["env.d.ts", "src/**/*.spec.ts", "test/**/*.ts"],
+  "compilerOptions": {
+    "types": ["vite/client", "vitest/globals"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "test/*": ["./test/*"]
+    }
+  }
+}
