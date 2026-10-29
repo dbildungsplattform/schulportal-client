@@ -10,7 +10,7 @@
     "npm": ">=11.10.0"
   },
   "scripts": {
-    "build": "npm run type-check && npm run build-only",
+    "build": "npm run type-check-build && npm run build-only",
     "build-only": "vite build",
     "coverage": "vitest run --coverage",
     "dev": "vite",
@@ -19,9 +19,11 @@
     "generate-client": "openapi-generator-cli generate --generator-key backend --openapi-normalizer REFACTOR_ALLOF_WITH_PROPERTIES_ONLY=true",
     "lint": "eslint . --fix --ignore-pattern .gitignore",
     "preview": "vite preview",
-    "test": "vitest",
-    "test:ci": "vitest run --coverage",
-    "type-check": "vue-tsc --noEmit -p tsconfig.app.json --composite false"
+    "test": "npm run type-check-test && vitest",
+    "test:ci": "npm run type-check-test && vitest run --coverage",
+    "type-check": "npm run type-check-build && npm run type-check-test",
+    "type-check-build": "vue-tsc --noEmit -p tsconfig.app.json --composite false",
+    "type-check-test": "vue-tsc --noEmit -p tsconfig.test.json --composite false"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
