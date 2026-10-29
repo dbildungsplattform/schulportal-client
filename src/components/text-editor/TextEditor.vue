@@ -2,8 +2,8 @@
   import Link from '@tiptap/extension-link';
   import { CharacterCount } from '@tiptap/extensions';
   import StarterKit from '@tiptap/starter-kit';
-  import { Editor, EditorContent } from '@tiptap/vue-3';
-  import { onBeforeUnmount, onMounted, watch } from 'vue';
+  import { EditorContent, useEditor } from '@tiptap/vue-3';
+  import { onBeforeUnmount, watch } from 'vue';
   import BoldButton from './button/BoldButton.vue';
   import BulletListButton from './button/BulletListButton.vue';
   import HeadingMenuButton from './button/HeadingMenuButton.vue';
@@ -26,44 +26,42 @@
   const props: Props = defineProps<Props>();
   const emit: Emits = defineEmits<Emits>();
 
-  let editor!: Editor;
-
-  onMounted(() => {
-    editor = new Editor({
-      content: props.modelValue,
-      // Tiptap's default CSS is injected as an inline <style> tag, which the CSP blocks
-      // the rules are defined in the static stylesheet below.
-      injectCSS: false,
-      extensions: [
-        StarterKit,
-        CharacterCount.configure({
-          limit: props.limit,
-        }),
-        Link.configure({
-          openOnClick: false,
-          markdownLinks: true,
-          defaultProtocol: 'https',
-        }),
-      ],
-      onUpdate: (): void => {
-        emit('update:modelValue', editor.getHTML());
-      },
-    });
+  const editor: ReturnType<typeof useEditor> = useEditor({
+    content: props.modelValue,
+    // Tiptap's default CSS is injected as an inline <style> tag, which the CSP blocks
+    // the rules are defined in the static stylesheet below.
+    injectCSS: false,
+    extensions: [
+      StarterKit,
+      CharacterCount.configure({
+        limit: props.limit,
+      }),
+      Link.configure({
+        openOnClick: false,
+        markdownLinks: true,
+        defaultProtocol: 'https',
+      }),
+    ],
+    // eslint-disable-next-line @typescript-eslint/typedef
+    onUpdate: ({ editor }): void => {
+      emit('update:modelValue', editor.getHTML());
+    },
   });
+  console.log(editor);
 
   onBeforeUnmount(() => {
-    if (editor) {
-      editor.destroy();
+    if (editor.value) {
+      editor.value.destroy();
     }
   });
 
   watch(
     () => props.modelValue,
     (newValue: string) => {
-      if (!editor) {
+      if (!editor.value) {
         return;
       }
-      const isSame: boolean = editor.getHTML() === newValue;
+      const isSame: boolean = editor.value.getHTML() === newValue;
       // JSON
       // const isSame = JSON.stringify(this.editor.getJSON()) === JSON.stringify(value)
 
@@ -71,12 +69,12 @@
         return;
       }
 
-      editor.commands.setContent(newValue);
+      editor.value.commands.setContent(newValue);
     },
   );
 </script>
 <template>
-  TextEditor: Hier soll der Text für die Newsbox eingegeben werden. {{ JSON.stringify(editor) }}
+  TextEditor: Hier soll der Text für die Newsbox eingegeben werden.
   <div v-if="editor">
     Nach If: Editor ist vorhanden.
     <v-container class="text-editor">
