@@ -599,9 +599,9 @@ describe('SchulenFilter', () => {
           await autocomplete.setValue([second]);
           const results: Organisation[] = [result, second];
           const workflowResults: OrganisationResponseLegacy[] = [
-                DoFactory.getOrganisationenResponseLegacy(result),
-                DoFactory.getOrganisationenResponseLegacy(second),
-              ];
+            DoFactory.getOrganisationenResponseLegacy(result),
+            DoFactory.getOrganisationenResponseLegacy(second),
+          ];
           if (useWorkflowEndpoints) {
             personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
               organisations: workflowResults,
@@ -612,7 +612,10 @@ describe('SchulenFilter', () => {
           await nextTick();
 
           expect(autocomplete.props()).toHaveProperty('returnObject', true);
-          expect(autocomplete.props()).toHaveProperty('items', useWorkflowEndpoints ? workflowResults : [result, second]);
+          expect(autocomplete.props()).toHaveProperty(
+            'items',
+            useWorkflowEndpoints ? workflowResults : [result, second],
+          );
           expect(results).toEqual([result, second]);
           expect(wrapper.emitted('update:selectedSchulen')?.at(-1)).toEqual([[second]]);
           expect(wrapper.emitted('update:selectedSchulenObjects')).toBeUndefined();
