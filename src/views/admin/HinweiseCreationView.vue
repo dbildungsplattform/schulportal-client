@@ -164,7 +164,6 @@
             <h3 class="headline-3 mb-4">
               {{ $t('admin.hinweise.newsbox') }}
             </h3>
-            In HinweiseCreationView soll der TextEditor zu sehen sein.
             <TextEditor
               :limit="2000"
               v-model="meldungText"
