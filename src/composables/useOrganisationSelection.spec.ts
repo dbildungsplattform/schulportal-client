@@ -25,7 +25,7 @@ describe('useOrganisationSelection', () => {
   it('should display the initial object without updating the ID or requesting it', async () => {
     const organisation: Organisation = DoFactory.getSchule();
     const id: Ref<string | undefined> = ref(organisation.id);
-    const onIdChange: ReturnType<typeof vi.fn> = vi.fn();
+    const onIdChange: (value: string | undefined) => void = vi.fn();
     scope.run(() => watch(id, onIdChange));
     const selection: ReturnType<typeof useOrganisationSelection> = createSelection(id, ref(organisation));
     await nextTick();

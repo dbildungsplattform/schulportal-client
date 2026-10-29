@@ -1,7 +1,7 @@
 import routes from '@/router/routes';
 import { useBulkOperationStore, type BulkOperationStore } from '@/stores/BulkOperationStore';
 import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
-import { RollenArt, RollenMerkmal, type RolleResponse, type TranslatedRolleWithAttrs } from '@/stores/RolleStore';
+import { RollenArt, type RolleResponse, type TranslatedRolleWithAttrs } from '@/stores/RolleStore';
 import type { Person } from '@/stores/types/Person';
 import { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
 import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
@@ -42,8 +42,8 @@ function mountComponent(partialProps: Partial<Props> = {}): VueWrapper<InstanceT
       updatedAt: '',
       administeredBySchulstrukturknoten: '1',
       rollenart: RollenArt.Lehr,
-      merkmale: new Set<RollenMerkmal>(),
-      systemrechte: new Set(),
+      merkmale: [],
+      systemrechte: [],
       administeredBySchulstrukturknotenName: null,
       administeredBySchulstrukturknotenKennung: null,
       version: 0,
@@ -103,7 +103,8 @@ describe('RolleUnassign.vue', () => {
 
     const personenkontextCreate: VueWrapper = wrapper.findComponent({ ref: 'personenkontext-create' });
     const rolleAutocomplete: VueWrapper = personenkontextCreate.findComponent({ ref: 'rolle-select' });
-    expect(personenkontextCreate.props('selectedRolle')).toEqual(
+    expect(personenkontextCreate.props()).toHaveProperty(
+      'selectedRolle',
       expect.objectContaining({ value: 'rolle-id-123', title: 'Lehrer' }),
     );
 
@@ -112,10 +113,11 @@ describe('RolleUnassign.vue', () => {
     submitButton?.dispatchEvent(new Event('click'));
     await flushPromises();
 
-    expect(personenkontextCreate.props('selectedRolle')).toEqual(
+    expect(personenkontextCreate.props()).toHaveProperty(
+      'selectedRolle',
       expect.objectContaining({ value: 'rolle-id-123', title: 'Lehrer' }),
     );
-    expect(rolleAutocomplete.props('error')).toBe(false);
+    expect(rolleAutocomplete.props()).toHaveProperty('error', false);
     await vi.waitFor(() => expect(unassignSpy).toHaveBeenCalledTimes(1));
   });
 
@@ -125,29 +127,31 @@ describe('RolleUnassign.vue', () => {
     const rolleAutocomplete: VueWrapper = personenkontextCreate.findComponent({ ref: 'rolle-select' });
     const replacementRolle: TranslatedRolleWithAttrs = DoFactory.getTranslatedRolleWithAttrs();
 
-    expect(personenkontextCreate.props('selectedRolle')).toEqual(
+    expect(personenkontextCreate.props()).toHaveProperty(
+      'selectedRolle',
       expect.objectContaining({ value: 'rolle-id-123', title: 'Lehrer' }),
     );
-    expect(rolleAutocomplete.props('modelValue')).toEqual(
+    expect(rolleAutocomplete.props()).toHaveProperty(
+      'modelValue',
       expect.objectContaining({ value: 'rolle-id-123', title: 'Lehrer' }),
     );
 
     await rolleAutocomplete.setValue(replacementRolle);
     await flushPromises();
-    expect(personenkontextCreate.props('selectedRolle')).toEqual(replacementRolle);
-    expect(rolleAutocomplete.props('modelValue')).toEqual(replacementRolle);
+    expect(personenkontextCreate.props()).toHaveProperty('selectedRolle', replacementRolle);
+    expect(rolleAutocomplete.props()).toHaveProperty('modelValue', replacementRolle);
 
     await rolleAutocomplete.get('.v-field__clearable .v-icon').trigger('click');
     await flushPromises();
-    expect(personenkontextCreate.props('selectedRolle')).toBeNull();
-    expect(rolleAutocomplete.props('modelValue')).toBeNull();
+    expect(personenkontextCreate.props()).toHaveProperty('selectedRolle', null);
+    expect(rolleAutocomplete.props()).toHaveProperty('modelValue', null);
 
     const unassignSpy: MockInstance = vi.spyOn(bulkOperationStore, 'bulkUnassignPersonenFromRolle');
     const submitButton: Element | null = document.body.querySelector('[data-testid="rolle-unassign-submit-button"]');
     submitButton?.dispatchEvent(new Event('click'));
     await flushPromises();
 
-    await vi.waitFor(() => expect(rolleAutocomplete.props('error')).toBe(true));
+    await vi.waitFor(() => expect(rolleAutocomplete.props()).toHaveProperty('error', true));
     expect(unassignSpy).not.toHaveBeenCalled();
   });
 

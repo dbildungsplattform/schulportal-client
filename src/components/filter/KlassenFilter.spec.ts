@@ -11,7 +11,7 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import type { BaseFieldProps } from 'vee-validate';
 import type { MockInstance } from 'vitest';
-import { nextTick } from 'vue';
+import { nextTick, type DefineComponent } from 'vue';
 import KlassenFilter from './KlassenFilter.vue';
 
 type Props = {
@@ -27,8 +27,8 @@ type Props = {
   parentId?: string;
 };
 
-function mountComponent(props: Partial<Props> = {}): VueWrapper<InstanceType<typeof KlassenFilter>> {
-  return mount(KlassenFilter, {
+function mountComponent(props: Partial<Props> = {}): VueWrapper {
+  return mount(KlassenFilter as unknown as DefineComponent<Props>, {
     attachTo: document.getElementById('app') || '',
     props: {
       multiple: false,
@@ -67,13 +67,13 @@ describe('KlassenFilter', () => {
         const testId: string = storeKey ? `${storeKey}-klasse-select` : 'klasse-select';
 
         test('it renders', () => {
-          const wrapper: VueWrapper = mountComponent(defaultProps) as VueWrapper;
+          const wrapper: VueWrapper = mountComponent(defaultProps);
           expect(wrapper.exists()).toBe(true);
           expect(wrapper.find(`[data-testid="${testId}"]`).isVisible()).toBe(true);
         });
 
         test('it displays the correct placeholder', () => {
-          const wrapper: VueWrapper = mountComponent({ ...defaultProps }) as VueWrapper;
+          const wrapper: VueWrapper = mountComponent({ ...defaultProps });
           const placeholder: string | undefined = wrapper
             .find(`[data-testid="${testId}"] input`)
             .attributes('placeholder');
@@ -110,7 +110,7 @@ describe('KlassenFilter', () => {
               const wrapper: VueWrapper = mountComponent({
                 ...defaultProps,
                 systemrechteForSearch,
-              }) as VueWrapper;
+              });
               // clear initial loading from mock
               vi.runAllTimers();
               loadSpy.mockClear();
@@ -133,7 +133,7 @@ describe('KlassenFilter', () => {
               const wrapper: VueWrapper = mountComponent({
                 ...defaultProps,
                 systemrechteForSearch,
-              }) as VueWrapper;
+              });
               const klasseSearchInput: ReturnType<VueWrapper['findComponent']> = wrapper.find(`#${testId}`);
               await klasseSearchInput.setValue(searchString);
               vi.runAllTimers();
@@ -147,7 +147,7 @@ describe('KlassenFilter', () => {
               const wrapper: VueWrapper = mountComponent({
                 ...defaultProps,
                 systemrechteForSearch,
-              }) as VueWrapper;
+              });
               vi.runAllTimers();
               await flushPromises();
               return wrapper;
@@ -212,7 +212,7 @@ describe('KlassenFilter', () => {
               organisationStore.klassenFilters.get(storeKey ?? '')!.filterResult = [mockKlasse];
               return Promise.resolve();
             });
-            const wrapper: VueWrapper = mountComponent({ ...defaultProps }) as VueWrapper;
+            const wrapper: VueWrapper = mountComponent({ ...defaultProps });
             vi.runAllTimers();
             const selectedKlassen: Props['selectedKlassen'] = id
               ? multiple
@@ -240,7 +240,7 @@ describe('KlassenFilter', () => {
             const wrapper: VueWrapper = mountComponent({
               ...defaultProps,
               highlightSelection,
-            }) as VueWrapper;
+            });
             await wrapper
               .findComponent({
                 name: 'v-autocomplete',
@@ -292,7 +292,7 @@ describe('KlassenFilter', () => {
       await flushPromises();
 
       const emittedSelection: Organisation[] | undefined =
-        wrapper.emitted<Organisation[]>('update:selectedKlassen')?.[0]?.[0];
+        wrapper.emitted<Organisation[][]>('update:selectedKlassen')?.[0]?.[0];
       expect(emittedSelection).toEqual(selection);
       await wrapper.setProps({ selectedKlassen: emittedSelection });
       await flushPromises();
@@ -306,12 +306,12 @@ describe('KlassenFilter', () => {
       const autocomplete: VueWrapper = wrapper.findComponent({ name: 'v-autocomplete' });
       autocomplete.vm.$emit('update:search', 'Klasse');
       await flushPromises();
-      expect(autocomplete.props('search')).toBe('Klasse');
+      expect(autocomplete.props()).toHaveProperty('search', 'Klasse');
 
       autocomplete.vm.$emit('update:focused', false);
       await flushPromises();
 
-      expect(autocomplete.props('search')).toBe('');
+      expect(autocomplete.props()).toHaveProperty('search', '');
     });
   });
 });

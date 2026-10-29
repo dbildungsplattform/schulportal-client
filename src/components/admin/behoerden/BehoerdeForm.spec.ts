@@ -87,11 +87,13 @@ describe('BehoerdeForm', () => {
     const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof BehoerdeForm>> } = setup();
 
     await wrapper.get('[data-testid="behoerdenname-input"] input').setValue('Test Behoerde');
-    await flushPromises();
-    expect(wrapper.emitted('update:dirty')?.at(-1)).toEqual([true]);
+    await vi.waitFor(() => {
+      expect(wrapper.emitted('update:dirty')?.at(-1)).toEqual([true]);
+    });
     await wrapper.get('[data-testid="behoerdenname-input"] input').setValue('');
-    await flushPromises();
-    expect(wrapper.emitted('update:dirty')?.at(-1)).toEqual([false]);
+    await vi.waitFor(() => {
+      expect(wrapper.emitted('update:dirty')?.at(-1)).toEqual([false]);
+    });
   });
 
   test('submits validated values without a Dienststellennummer', async (): Promise<void> => {

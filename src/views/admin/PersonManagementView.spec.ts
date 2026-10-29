@@ -621,7 +621,7 @@ describe('PersonManagementView', () => {
 
     const filter: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
     const autocomplete: VueWrapper = filter.findComponent({ name: 'v-autocomplete' });
-    expect(autocomplete.props('modelValue')).toEqual([selected]);
+    expect(autocomplete.props()).toHaveProperty('modelValue', [selected]);
     expect(autocomplete.text()).toContain(selected.name);
     expect(personStore.getAllPersons).toHaveBeenLastCalledWith(
       expect.objectContaining({ organisationIDs: [selected.id] }),

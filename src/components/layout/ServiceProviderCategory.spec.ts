@@ -4,6 +4,7 @@ import { VApp } from 'vuetify/components';
 import { h, type Component } from 'vue';
 import ServiceProviderCategory from '@/components/layout/ServiceProviderCategory.vue';
 import ServiceProviderCard from '@/components/cards/ServiceProviderCard.vue';
+import { ServiceProviderSystem } from '@/api-client/generated';
 import { ServiceProviderKategorie, type StartPageServiceProvider } from '@/stores/ServiceProviderStore';
 
 let wrapper: VueWrapper | null = null;
@@ -15,6 +16,7 @@ const mockServiceProviders: Array<StartPageServiceProvider> = [
     url: 'https://service-a.com',
     target: 'URL',
     requires2fa: true,
+    externalSystem: ServiceProviderSystem.None,
     logoUrl: '/logo-a.png',
     kategorie: ServiceProviderKategorie.Hinweise,
     hasLogo: false,
@@ -24,6 +26,7 @@ const mockServiceProviders: Array<StartPageServiceProvider> = [
     name: 'Service B',
     target: 'URL',
     requires2fa: false,
+    externalSystem: ServiceProviderSystem.None,
     logoUrl: '/logo-b.png',
     url: 'https://service-b.com',
     kategorie: ServiceProviderKategorie.Hinweise,
@@ -34,6 +37,7 @@ const mockServiceProviders: Array<StartPageServiceProvider> = [
     name: 'Service C',
     target: 'SCHULPORTAL_ADMINISTRATION',
     requires2fa: true,
+    externalSystem: ServiceProviderSystem.None,
     logoUrl: '/logo-c.png',
     url: '',
     kategorie: ServiceProviderKategorie.Hinweise,

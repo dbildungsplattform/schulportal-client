@@ -305,7 +305,7 @@ describe('PersonCreationView', () => {
     expect(wrapper.find('[data-testid="person-creation-form-discard-button"]').text()).toBe('Abbrechen');
     expect(wrapper.find('[data-testid="person-creation-form-submit-button"]').text()).toBe('Person anlegen');
 
-    expect(wrapper.findComponent({ name: 'PersonenkontextCreate' }).props('createType')).toBe('limited');
+    expect(wrapper.findComponent({ name: 'PersonenkontextCreate' }).props()).toHaveProperty('createType', 'limited');
   });
 
   it('emits update:calculatedBefristungOption event with a value', async () => {
@@ -377,7 +377,7 @@ describe('PersonCreationView', () => {
     rolleStore.rollenForPersonenkontextCreation = [mockRolleForPersonenkontextCreation, lehrRolle];
 
     const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
-    expect(personenkontextCreate.props('rollenartForPerson')).toBeUndefined();
+    expect(personenkontextCreate.props()).toHaveProperty('rollenartForPerson', undefined);
 
     await personenkontextCreate
       .findComponent({ ref: 'schulenFilter' })
@@ -386,11 +386,11 @@ describe('PersonCreationView', () => {
     await personenkontextCreate.findComponent({ ref: 'rollen-select' }).setValue([mockRolleForPersonenkontextCreation]);
     await flushPromises();
 
-    expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lern);
+    expect(personenkontextCreate.props()).toHaveProperty('rollenartForPerson', RollenArt.Lern);
     expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenLastCalledWith(
       expect.objectContaining({ organisationId: ORGANISATION_ID, rollenartForPerson: RollenArt.Lern }),
     );
-    expect(personenkontextCreate.props('rollen')).toEqual([mockRolleForPersonenkontextCreation, lehrRolle]);
+    expect(personenkontextCreate.props()).toHaveProperty('rollen', [mockRolleForPersonenkontextCreation, lehrRolle]);
   });
 
   test('should request Rollen without the previous rollenart after clearing the multiple Rolle autocomplete', async () => {
@@ -405,7 +405,7 @@ describe('PersonCreationView', () => {
     await rollenSelect.setValue([mockRolleForPersonenkontextCreation]);
     await flushPromises();
 
-    expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lern);
+    expect(personenkontextCreate.props()).toHaveProperty('rollenartForPerson', RollenArt.Lern);
     expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenLastCalledWith(
       expect.objectContaining({ organisationId: ORGANISATION_ID, rollenartForPerson: RollenArt.Lern }),
     );
@@ -415,8 +415,8 @@ describe('PersonCreationView', () => {
     await flushPromises();
 
     expect(personenkontextCreate.emitted('fieldReset')).toContainEqual(['selectedRollen']);
-    expect(personenkontextCreate.props('selectedRollen') ?? []).toEqual([]);
-    expect(personenkontextCreate.props('rollenartForPerson')).toBeUndefined();
+    expect(personenkontextCreate.props()).toHaveProperty('selectedRollen', undefined);
+    expect(personenkontextCreate.props()).toHaveProperty('rollenartForPerson', undefined);
 
     await rollenSelect.get('input').setValue('another Rolle');
     await flushPromises();
@@ -452,20 +452,24 @@ describe('PersonCreationView', () => {
     rolleStore.rollenForPersonenkontextCreation = [];
     await flushPromises();
 
-    expect(personenkontextCreate.props('selectedRollen')).toEqual([rolle]);
+    expect(personenkontextCreate.props()).toHaveProperty('selectedRollen', [rolle]);
     expect(personenkontextCreate.findComponent({ ref: 'rollen-select' }).text()).toContain(rolle.title);
     expect(wrapper!.findComponent({ ref: 'kopers-input' }).exists()).toBe(true);
-    expect(personenkontextCreate.findComponent({ name: 'BefristungInput' }).props('isUnbefristetDisabled')).toBe(true);
+    expect(personenkontextCreate.findComponent({ name: 'BefristungInput' }).props()).toHaveProperty(
+      'isUnbefristetDisabled',
+      true,
+    );
     expect(rolleStore.getRolleById).not.toHaveBeenCalled();
 
     await wrapper!.get('[data-testid="person-creation-form"]').trigger('submit');
     await flushPromises();
     await vi.waitFor((): void => {
-      const klasseProps: { error: boolean } = personenkontextCreate.props('selectedKlasseProps');
       const kopersInput: VueWrapper = wrapper!.findComponent({ ref: 'kopers-input' });
-      const kopersProps: { error: boolean } = kopersInput.props('selectedKopersNrProps');
-      expect(klasseProps.error).toBe(true);
-      expect(kopersProps.error).toBe(true);
+      expect(personenkontextCreate.props()).toHaveProperty(
+        'selectedKlasseProps',
+        expect.objectContaining({ error: true }),
+      );
+      expect(kopersInput.props()).toHaveProperty('selectedKopersNrProps', expect.objectContaining({ error: true }));
     });
 
     const klasse: Organisation = DoFactory.getKlasse(undefined, { name: '9a' });
@@ -937,11 +941,12 @@ describe('PersonCreationView', () => {
       await nextTick();
 
       expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('modelValue')).toBe(true);
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty('modelValue', true);
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+        'title',
         wrapper?.vm.$t('admin.person.creationErrorTitle'),
       );
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe('');
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty('text', '');
 
       const push: MockInstance = vi.spyOn(router, 'push');
       await wrapper?.find('[data-testid$="alert-button"]').trigger('click');
@@ -949,7 +954,7 @@ describe('PersonCreationView', () => {
 
       expect(push).toHaveBeenCalledTimes(1);
       expect(personStore.errorCode).toBe('');
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('modelValue')).toBe(false);
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty('modelValue', false);
     });
 
     test('prioritizes Personenkontext errors in the single alert', async () => {
@@ -957,11 +962,13 @@ describe('PersonCreationView', () => {
       await nextTick();
 
       expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('modelValue')).toBe(true);
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty('modelValue', true);
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+        'title',
         wrapper?.vm.$t('admin.personenkontext.title.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
       );
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe(
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+        'text',
         wrapper?.vm.$t('admin.personenkontext.errors.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
       );
 
@@ -970,10 +977,12 @@ describe('PersonCreationView', () => {
       await nextTick();
 
       expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+        'title',
         wrapper?.vm.$t('admin.personenkontext.title.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
       );
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe(
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+        'text',
         wrapper?.vm.$t('admin.personenkontext.errors.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
       );
     });
@@ -983,31 +992,36 @@ describe('PersonCreationView', () => {
       await nextTick();
 
       expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('modelValue')).toBe(true);
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty('modelValue', true);
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+        'title',
         wrapper?.vm.$t('admin.rolle.title.ROLLE_ERROR'),
       );
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe(
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+        'text',
         wrapper?.vm.$t('admin.rolle.errors.ROLLE_ERROR'),
       );
 
       personStore.errorCode = 'ERROR_ERROR';
       await nextTick();
 
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+        'title',
         wrapper?.vm.$t('admin.rolle.title.ROLLE_ERROR'),
       );
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe(
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+        'text',
         wrapper?.vm.$t('admin.rolle.errors.ROLLE_ERROR'),
       );
 
       rolleStore.errorCode = '';
       await nextTick();
 
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+        'title',
         wrapper?.vm.$t('admin.person.creationErrorTitle'),
       );
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe('');
+      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty('text', '');
     });
 
     test('shows error message if REQUIRED_STEP_UP_LEVEL_NOT_MET error is present and click close button', async () => {
@@ -1140,7 +1154,7 @@ describe('PersonCreationView', () => {
 
     test('it passes the rollenart of the existing person to the Rollen query', async () => {
       const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
-      expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lehr);
+      expect(personenkontextCreate.props()).toHaveProperty('rollenartForPerson', RollenArt.Lehr);
 
       await personenkontextCreate
         .findComponent({ ref: 'schulenFilter' })
@@ -1160,7 +1174,8 @@ describe('PersonCreationView', () => {
       );
       await nextTick();
 
-      expect(wrapper!.findComponent({ ref: 'personenkontext-create' }).props('rollenartForPerson')).toBe(
+      expect(wrapper!.findComponent({ ref: 'personenkontext-create' }).props()).toHaveProperty(
+        'rollenartForPerson',
         RollenArt.Lern,
       );
     });
@@ -1185,7 +1200,7 @@ describe('PersonCreationView', () => {
         .setValue(workflowOrganisation);
       await flushPromises();
 
-      expect(personenkontextCreate.props('rollen')).toEqual([lernRolle]);
+      expect(personenkontextCreate.props()).toHaveProperty('rollen', [lernRolle]);
     });
   });
 });

@@ -341,7 +341,7 @@
     item-value="id"
     :item-title="getDisplayNameForOrg"
     return-object
-    :multiple="props.multiple"
+    :multiple="Boolean(props.multiple)"
     :no-data-text="'noDataFound'"
     :placeholder="props.placeholderText ?? t('admin.schule.assignSchule')"
     required="true"

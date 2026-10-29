@@ -219,6 +219,7 @@ export class DoFactory {
       kennung: faker.string.numeric(7),
       kuerzel: 'Schulkürzel',
       itslearningEnabled: true,
+      emailAdress: '',
       namensergaenzung: null,
       version: 1,
       ...props,
@@ -637,6 +638,7 @@ export class DoFactory {
       requires2fa: faker.datatype.boolean(),
       hasLogo: faker.datatype.boolean(),
       target: ServiceProviderTarget.Url,
+      externalSystem: ServiceProviderSystem.None,
       ...props,
     };
   }

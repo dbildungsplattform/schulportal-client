@@ -1,12 +1,12 @@
 import {
   useRolleStore,
-  RollenSystemRecht,
   type RolleFilter,
   type RolleStore,
   type RolleWithServiceProvidersResponse,
 } from '@/stores/RolleStore';
 import { DoFactory } from 'test/DoFactory';
 import { flushPromises } from '@vue/test-utils';
+import type { MockInstance } from 'vitest';
 import { effectScope, nextTick, type EffectScope } from 'vue';
 import { useRollenAutocomplete, type UseRollenAutocompleteReturn } from './useRollenAutocomplete';
 
@@ -18,7 +18,6 @@ describe('useRollenAutocomplete', () => {
   function getInitialFilter(): RolleFilter {
     return {
       limit: 25,
-      systemrechte: [RollenSystemRecht.RollenVerwalten, RollenSystemRecht.RollenErweitern],
     };
   }
 

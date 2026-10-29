@@ -1,5 +1,5 @@
 import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
-import { expect, test, type MockInstance } from 'vitest';
+import { afterEach, expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component, type ComputedRef, type DefineComponent } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 
@@ -254,6 +254,12 @@ describe('PersonDetailsView', () => {
         plugins: [router],
       },
     });
+    await flushPromises();
+  });
+
+  afterEach(() => {
+    wrapper?.unmount();
+    wrapper = null;
   });
 
   const setCurrentPerson = (emailStatus: EmailAddressStatus): void => {
@@ -338,6 +344,7 @@ describe('PersonDetailsView', () => {
   test('it navigates back to user table', async () => {
     const push: MockInstance = vi.spyOn(router, 'push');
     await wrapper?.find('[data-testid="close-layout-card-button"]').trigger('click');
+    await flushPromises();
     expect(push).toHaveBeenCalledTimes(1);
   });
 
@@ -467,10 +474,6 @@ describe('PersonDetailsView', () => {
       await flushPromises();
     });
 
-    afterEach(() => {
-      wrapper?.unmount();
-    });
-
     async function openZuordnungCreationForm(): Promise<VueWrapper> {
       await wrapper?.find('[data-testid="zuordnung-edit-button"]').trigger('click');
       await nextTick();
@@ -485,12 +488,12 @@ describe('PersonDetailsView', () => {
         .getComponent({ ref: 'personenkontext-create-organisation-select' })
         .setValue(organisation);
       await flushPromises();
-      expect(personenkontextCreate.props().selectedOrganisation).toBe(organisation.id);
+      expect(personenkontextCreate.props()).toHaveProperty('selectedOrganisation', organisation.id);
     }
 
     test('it passes the existing rollenart to the Rollen query', async () => {
       const personenkontextCreate: VueWrapper = await openZuordnungCreationForm();
-      expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lern);
+      expect(personenkontextCreate.props()).toHaveProperty('rollenartForPerson', RollenArt.Lern);
 
       await selectOrganisation(personenkontextCreate, mockOrganisation);
 
@@ -507,7 +510,7 @@ describe('PersonDetailsView', () => {
       const personenkontextCreate: VueWrapper = await openZuordnungCreationForm();
       await selectOrganisation(personenkontextCreate, mockOrganisation);
 
-      expect(personenkontextCreate.props('rollen')).toEqual([
+      expect(personenkontextCreate.props()).toHaveProperty('rollen', [
         {
           value: '54321',
           title: 'Lehrkraft',
@@ -772,10 +775,10 @@ describe('PersonDetailsView', () => {
     const mockPersonenuebersichtForAddZuordnung: PersonenUebersicht = DoFactory.getPersonenUebersicht(undefined, []);
     personStore.personenuebersicht = mockPersonenuebersichtForAddZuordnung;
 
-    wrapper?.find('[data-testid="zuordnung-edit-button"]').trigger('click');
-    await nextTick();
+    await wrapper?.find('[data-testid="zuordnung-edit-button"]').trigger('click');
+    await flushPromises();
 
-    wrapper?.find('[data-testid="zuordnung-create-button"]').trigger('click');
+    await wrapper?.find('[data-testid="zuordnung-create-button"]').trigger('click');
 
     await flushPromises();
 
@@ -822,8 +825,10 @@ describe('PersonDetailsView', () => {
     await wrapper!.get('[data-testid="zuordnung-creation-submit-button"]').trigger('click');
     await flushPromises();
     await vi.waitFor(() => {
-      const fieldProps: { error: boolean } = personenkontextCreate.props('selectedKlasseProps');
-      expect(fieldProps.error).toBe(true);
+      expect(personenkontextCreate.props()).toHaveProperty(
+        'selectedKlasseProps',
+        expect.objectContaining({ error: true }),
+      );
     });
     expect(document.body.querySelector('[data-testid="confirm-zuordnung-dialog-addition"]')).toBeNull();
 
@@ -1025,7 +1030,7 @@ describe('PersonDetailsView', () => {
       await nextTick();
       await flushPromises();
       personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-        organisations: [schule],
+        organisations: [DoFactory.getOrganisationenResponseLegacy({ id: schule.id, name: schule.name })],
         canCommit: true,
       });
       rolleStore.rollenForPersonenkontextCreation = [];
@@ -1044,8 +1049,12 @@ describe('PersonDetailsView', () => {
       });
       const klassenFilter: VueWrapper = wrapper!
         .findComponent({ ref: 'klasse-change-form' })
-        .getComponent({ name: 'KlassenFilter' });
-      klassenFilter.vm.$emit('update:selectedKlassen', newKlasse);
+        .findComponent({ name: 'KlassenFilter' });
+      (
+        klassenFilter.vm as {
+          $emit: (event: 'update:selectedKlassen', value: Organisation | undefined) => void;
+        }
+      ).$emit('update:selectedKlassen', newKlasse);
       await flushPromises();
       if (!retainSelection) {
         organisationStore.klassenFilters.set('klasse-change', {
@@ -1065,8 +1074,11 @@ describe('PersonDetailsView', () => {
       await flushPromises();
 
       const pendingItems: VueWrapper<InstanceType<typeof PersonenkontextItem>>[] = wrapper!
-        .findAllComponents<typeof PersonenkontextItem>(PersonenkontextItem)
-        .filter((item: VueWrapper) => item.props('pendingState') === PendingState.CREATED);
+        .findAllComponents(PersonenkontextItem)
+        .filter(
+          (item: VueWrapper<InstanceType<typeof PersonenkontextItem>>) =>
+            item.props('pendingState') === PendingState.CREATED,
+        );
       expect(pendingItems).toHaveLength(1);
       expect.soft(pendingItems[0]!.props('zuordnung')).toMatchObject({
         sskId: schule.id,
@@ -1109,6 +1121,7 @@ describe('PersonDetailsView', () => {
 
     await wrapper?.find('[data-testid="zuordnung-edit-button"]').trigger('click');
     await nextTick();
+    await flushPromises();
 
     const checkbox: DOMWrapper<HTMLInputElement> | undefined = wrapper?.find(
       '[data-testid="person-zuordnung-1"] input[type="checkbox"]',
@@ -1128,7 +1141,7 @@ describe('PersonDetailsView', () => {
     klasseInput?.vm.$emit('update:selectedKlassen', newKlasse);
     await flushPromises();
 
-    const submitButton: DOMWrapper<HTMLButtonElement> = wrapper!.get<HTMLButtonElement>(
+    const submitButton: DOMWrapper<HTMLButtonElement> = wrapper!.find<HTMLButtonElement>(
       '[data-testid="klasse-change-submit-button"]',
     );
     expect(submitButton.element.disabled).toBe(false);
@@ -1367,7 +1380,9 @@ describe('PersonDetailsView', () => {
           test('renders form to change befristung and triggers submit', async () => {
             await flushPromises();
             await wrapper?.find('[data-testid="zuordnung-edit-button"]').trigger('click');
-            await nextTick();
+            await vi.waitFor(() => {
+              expect(wrapper?.find('[data-testid="befristung-change-button"]').exists()).toBe(true);
+            });
             expect(wrapper?.find('[data-testid="befristung-change-button"]').attributes('disabled')).toBeDefined();
 
             const checkbox1: DOMWrapper<HTMLInputElement> | undefined = wrapper?.find(

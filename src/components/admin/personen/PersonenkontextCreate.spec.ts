@@ -199,7 +199,7 @@ describe('PersonenkontextCreate', () => {
       const autocomplete: VueWrapper = wrapper.findComponent({
         ref: allowMultipleRollen ? 'rollen-select' : 'rolle-select',
       });
-      expect(autocomplete.props('returnObject')).toBe(true);
+      expect(autocomplete.props()).toHaveProperty('returnObject', true);
 
       await autocomplete.setValue(allowMultipleRollen ? [selected] : selected);
       await flushPromises();
@@ -212,7 +212,7 @@ describe('PersonenkontextCreate', () => {
 
       await wrapper.setProps({ rollen: [result] });
       await flushPromises();
-      expect(autocomplete.props('items')).toEqual([result, selected]);
+      expect(autocomplete.props()).toHaveProperty('items', [result, selected]);
       expect(autocomplete.text()).toContain(selected.title);
       expect(wrapper.findComponent({ name: 'KlassenFilter' }).exists()).toBe(true);
       expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenLastCalledWith(
@@ -223,7 +223,7 @@ describe('PersonenkontextCreate', () => {
       );
 
       await wrapper.setProps({ rollen: [result, { ...selected }] });
-      expect(autocomplete.props('items')).toEqual([result, selected]);
+      expect(autocomplete.props()).toHaveProperty('items', [result, selected]);
     });
 
     test('should display initial objects missing from results and synchronize parent resets', async () => {
@@ -239,18 +239,18 @@ describe('PersonenkontextCreate', () => {
       const autocomplete: VueWrapper = wrapper.findComponent({
         ref: allowMultipleRollen ? 'rollen-select' : 'rolle-select',
       });
-      expect(autocomplete.props('items')).toEqual([selected]);
+      expect(autocomplete.props()).toHaveProperty('items', [selected]);
       expect(autocomplete.text()).toContain(selected.title);
 
       await wrapper.setProps(allowMultipleRollen ? { selectedRollen: [replacement] } : { selectedRolle: replacement });
       await flushPromises();
-      expect(autocomplete.props('items')).toEqual([replacement]);
+      expect(autocomplete.props()).toHaveProperty('items', [replacement]);
       expect(autocomplete.text()).toContain(replacement.title);
 
       await wrapper.setProps(allowMultipleRollen ? { selectedRollen: undefined } : { selectedRolle: undefined });
       await flushPromises();
-      expect(autocomplete.props('items')).toEqual([]);
-      expect(autocomplete.props('modelValue')).toBeNull();
+      expect(autocomplete.props()).toHaveProperty('items', []);
+      expect(autocomplete.props()).toHaveProperty('modelValue', null);
     });
   });
 

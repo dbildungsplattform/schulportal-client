@@ -193,10 +193,12 @@ describe('ServiceProviderDetailsBySchuleView', () => {
       await nextTick();
       await wrapper?.find('[data-testid="service-provider-bearbeiten-button"]').trigger('click');
 
-      expect(push).toHaveBeenCalledWith({
-        name: 'angebot-edit',
-        params: { id: mockServiceProvider.id },
-        query: { orga: 'some-org-id' },
+      await vi.waitFor(() => {
+        expect(push).toHaveBeenCalledWith({
+          name: 'angebot-edit',
+          params: { id: mockServiceProvider.id },
+          query: { orga: 'some-org-id' },
+        });
       });
     });
 

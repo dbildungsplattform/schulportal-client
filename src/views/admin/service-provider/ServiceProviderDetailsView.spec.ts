@@ -1,5 +1,4 @@
 import type { RollenerweiterungWithExtendedDataResponse } from '@/api-client/generated';
-import SchulenFilter from '@/components/filter/SchulenFilter.vue';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
@@ -268,7 +267,7 @@ describe('ServiceProviderDetailsView', () => {
       .mockResolvedValue();
     await openRollenerweiterungenSection();
 
-    const schulenFilter: VueWrapper | undefined = wrapper?.findComponent(SchulenFilter);
+    const schulenFilter: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchulenFilter' });
     schulenFilter?.vm.$emit('update:selectedSchulen', [
       DoFactory.getSchule({ id: 'schule-1' }),
       DoFactory.getSchule({ id: 'schule-2' }),
@@ -312,7 +311,7 @@ describe('ServiceProviderDetailsView', () => {
       .mockResolvedValue();
     await openRollenerweiterungenSection();
 
-    const schulenFilter: VueWrapper | undefined = wrapper?.findComponent(SchulenFilter);
+    const schulenFilter: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchulenFilter' });
     const rollenFilter: VueWrapper | undefined = wrapper?.findComponent({ ref: 'rolle-select' });
     const selectedRolle: RolleWithServiceProvidersResponse = DoFactory.getRolleWithServiceProviders({ id: 'rolle-1' });
 
@@ -452,7 +451,7 @@ describe('ServiceProviderDetailsView', () => {
       .mockResolvedValue();
     await openRollenerweiterungenSection();
 
-    const schulenFilter: VueWrapper | undefined = wrapper?.findComponent(SchulenFilter);
+    const schulenFilter: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchulenFilter' });
     const rollenFilter: VueWrapper | undefined = wrapper?.findComponent({ ref: 'rolle-select' });
     const selectedRolle: RolleWithServiceProvidersResponse = rolleStore.allRollen[0]!;
     schulenFilter?.vm.$emit('update:selectedSchulen', [DoFactory.getSchule({ id: 'schule-1' })]);
