@@ -4866,7 +4866,7 @@ export interface UserExternalDataV2PersonenkontextResponse {
      * @type {string}
      * @memberof UserExternalDataV2PersonenkontextResponse
      */
-    'dienststellennr': string;
+    'dstNr': string;
     /**
      * 
      * @type {string}
