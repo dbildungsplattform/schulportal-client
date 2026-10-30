@@ -174,7 +174,7 @@
           :error-code="organisationStore.errorCode"
           :edit-mode="false"
           :initial-values="initialFormValues"
-          :initial-schule="autoselectedSchule"
+          :initial-schule="selectedSchuleObject ?? autoselectedSchule"
           :is-loading="organisationStore.loading"
           :show-unsaved-changes-dialog="showUnsavedChangesDialog"
           :on-handle-confirm-unsaved-changes="handleConfirmUnsavedChanges"
