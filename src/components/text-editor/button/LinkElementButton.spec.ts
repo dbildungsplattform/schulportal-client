@@ -1,12 +1,14 @@
+/* eslint-disable @typescript-eslint/typedef */
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { type Editor } from '@tiptap/vue-3';
 import { enableAutoUnmount, mount, type VueWrapper } from '@vue/test-utils';
 import type { ComponentInstance } from 'vue';
 import LinkElementButton from './LinkElementButton.vue';
 
 enableAutoUnmount(afterEach);
 
-const createMockEditor = (hasLink: boolean = false, linkHref: string = ''): any => {
+const createMockEditor = (hasLink: boolean = false, linkHref: string = ''): Partial<Editor> => {
   return {
     isActive: (format: string): boolean => format === 'link' && hasLink,
     getAttributes: (format: string): any => {
@@ -32,7 +34,10 @@ const createMockEditor = (hasLink: boolean = false, linkHref: string = ''): any 
   };
 };
 
-const setup = (hasLink: boolean = false, linkHref: string = ''): {
+const setup = (
+  hasLink: boolean = false,
+  linkHref: string = '',
+): {
   wrapper: VueWrapper<ComponentInstance<typeof LinkElementButton>>;
 } => {
   const mockEditor: any = createMockEditor(hasLink, linkHref);
@@ -80,7 +85,7 @@ describe('LinkElementButton.vue', (): void => {
       'https://example.com',
     );
 
-    const editor: any = (wrapper.props('editor'));
+    const editor = wrapper.props('editor');
     expect(editor.isActive('link')).toBe(true);
   });
 
@@ -114,7 +119,7 @@ describe('LinkElementButton.vue', (): void => {
     const button = wrapper.find('[data-testid="link-button"]');
     await button.trigger('click');
 
-    const editor: any = (wrapper.props('editor'));
+    const editor = wrapper.props('editor');
     expect(editor.getAttributes('link')).toEqual({ href: 'https://example.com' });
   });
 });

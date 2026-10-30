@@ -1,12 +1,13 @@
- 
+/* eslint-disable @typescript-eslint/typedef */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Editor } from '@tiptap/vue-3';
 import { enableAutoUnmount, mount, type VueWrapper } from '@vue/test-utils';
 import type { ComponentInstance } from 'vue';
 import TextEditorCharacterCount from './TextEditorCharacterCount.vue';
 
 enableAutoUnmount(afterEach);
 
-const createMockEditor = (charCount: number = 10, wordCount: number = 2): any => {
+const createMockEditor = (charCount: number = 10, wordCount: number = 2): Partial<Editor> => {
   return {
     storage: {
       characterCount: {
@@ -17,20 +18,21 @@ const createMockEditor = (charCount: number = 10, wordCount: number = 2): any =>
   };
 };
 
-const setup = (charCount: number = 10, wordCount: number = 2, limit: number = 100): {
+const setup = (
+  charCount: number = 10,
+  wordCount: number = 2,
+  limit: number = 100,
+): {
   wrapper: VueWrapper<ComponentInstance<typeof TextEditorCharacterCount>>;
 } => {
-  const mockEditor: any = createMockEditor(charCount, wordCount);
-  const wrapper: VueWrapper<ComponentInstance<typeof TextEditorCharacterCount>> = mount(
-    TextEditorCharacterCount,
-    {
-      attachTo: document.getElementById('app') || '',
-      props: {
-        editor: mockEditor,
-        limit,
-      },
+  const mockEditor = createMockEditor(charCount, wordCount);
+  const wrapper: VueWrapper<ComponentInstance<typeof TextEditorCharacterCount>> = mount(TextEditorCharacterCount, {
+    attachTo: document.getElementById('app') || '',
+    props: {
+      editor: mockEditor,
+      limit,
     },
-  );
+  });
   return { wrapper };
 };
 
@@ -44,19 +46,13 @@ describe('TextEditorCharacterCount.vue', (): void => {
   });
 
   test('should mount successfully with required props', (): void => {
-    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditorCharacterCount>> } = setup(
-      5,
-      1,
-    );
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditorCharacterCount>> } = setup(5, 1);
 
     expect(wrapper.exists()).toBe(true);
   });
 
   test('should render character count information', (): void => {
-    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditorCharacterCount>> } = setup(
-      15,
-      3,
-    );
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditorCharacterCount>> } = setup(15, 3);
 
     const text: string = wrapper.text();
     expect(text).toContain('15');
@@ -64,10 +60,7 @@ describe('TextEditorCharacterCount.vue', (): void => {
   });
 
   test('should render word count information', (): void => {
-    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditorCharacterCount>> } = setup(
-      20,
-      4,
-    );
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditorCharacterCount>> } = setup(20, 4);
 
     const text: string = wrapper.text();
     expect(text).toContain('4');

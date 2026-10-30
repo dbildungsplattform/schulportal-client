@@ -1,12 +1,14 @@
+/* eslint-disable @typescript-eslint/typedef */
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { type Editor } from '@tiptap/vue-3';
 import { enableAutoUnmount, mount, type VueWrapper } from '@vue/test-utils';
 import type { ComponentInstance } from 'vue';
 import HeadingMenuButton from './HeadingMenuButton.vue';
 
 enableAutoUnmount(afterEach);
 
-const createMockEditor = (activeLevel: number | null = null): any => {
+const createMockEditor = (activeLevel: number | null = null): Partial<Editor> => {
   return {
     isActive: (format: string, options?: { level: number }): boolean => {
       if (format === 'heading' && options?.level) {
@@ -24,10 +26,12 @@ const createMockEditor = (activeLevel: number | null = null): any => {
   };
 };
 
-const setup = (activeLevel: number | null = null): {
+const setup = (
+  activeLevel: number | null = null,
+): {
   wrapper: VueWrapper<ComponentInstance<typeof HeadingMenuButton>>;
 } => {
-  const mockEditor: any = createMockEditor(activeLevel);
+  const mockEditor = createMockEditor(activeLevel);
   const wrapper: VueWrapper<ComponentInstance<typeof HeadingMenuButton>> = mount(HeadingMenuButton, {
     attachTo: document.getElementById('app') || '',
     props: {
@@ -38,14 +42,6 @@ const setup = (activeLevel: number | null = null): {
 };
 
 describe('HeadingMenuButton.vue', (): void => {
-  beforeEach((): void => {
-    document.body.innerHTML = `
-      <div>
-        <div id="app"></div>
-      </div>
-    `;
-  });
-
   test('should mount successfully with editor prop', (): void => {
     const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof HeadingMenuButton>> } = setup();
 
@@ -69,7 +65,7 @@ describe('HeadingMenuButton.vue', (): void => {
   test('should check for active heading state', (): void => {
     const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof HeadingMenuButton>> } = setup(1);
 
-    const editor: any = (wrapper.props('editor'));
+    const editor = wrapper.props('editor');
     expect(editor.isActive('heading')).toBe(true);
   });
 

@@ -18,14 +18,6 @@ const setup = () => {
 };
 
 describe('TextEditor.vue', (): void => {
-  beforeEach((): void => {
-    document.body.innerHTML = `
-      <div>
-        <div id="app"></div>
-      </div>
-    `;
-  });
-
   test('should mount successfully with required props', (): void => {
     const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> } = setup();
 
@@ -105,7 +97,7 @@ describe('TextEditor.vue', (): void => {
 
     await flushPromises();
 
-    const initialContent: string = ((wrapper.vm as any).editor)?.getHTML();
+    const initialContent: string = (wrapper.vm as any).editor?.getHTML();
     expect(initialContent).toContain('');
 
     await wrapper.setProps({
@@ -114,7 +106,7 @@ describe('TextEditor.vue', (): void => {
 
     await flushPromises();
 
-    const updatedContent: string = ((wrapper.vm as any).editor)?.getHTML();
+    const updatedContent: string = (wrapper.vm as any).editor?.getHTML();
     expect(updatedContent).toContain('Updated content');
   });
 
@@ -163,7 +155,7 @@ describe('TextEditor.vue', (): void => {
 
     await flushPromises();
 
-    const editorContent: string = ((wrapper.vm as any).editor)?.getHTML();
+    const editorContent: string = (wrapper.vm as any).editor?.getHTML();
     expect(editorContent).toContain('Heading');
     expect(editorContent).toContain('Paragraph');
   });
