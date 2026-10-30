@@ -1,8 +1,13 @@
 <script setup lang="ts">
+  import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
+  import FormWrapper from '@/components/form/FormWrapper.vue';
+  import TextEditor from '@/components/text-editor/TextEditor.vue';
   import { MeldungStatus, useMeldungStore, type Meldung, type MeldungStore } from '@/stores/MeldungStore';
+  import { toTypedSchema } from '@vee-validate/yup';
+  import { useForm, type BaseFieldProps, type FormContext, type TypedSchema } from 'vee-validate';
   import { computed, onBeforeMount, onUnmounted, ref, type ComputedRef, type Ref } from 'vue';
-  import { type Composer, useI18n } from 'vue-i18n';
+  import { useI18n, type Composer } from 'vue-i18n';
   import {
     onBeforeRouteLeave,
     useRouter,
@@ -11,18 +16,13 @@
     type Router,
   } from 'vue-router';
   import { useDisplay } from 'vuetify';
-  import SpshAlert from '@/components/alert/SpshAlert.vue';
-  import { useForm, type BaseFieldProps, type FormContext, type TypedSchema } from 'vee-validate';
   import { object, string } from 'yup';
-  import { toTypedSchema } from '@vee-validate/yup';
-  import FormWrapper from '@/components/form/FormWrapper.vue';
 
   const router: Router = useRouter();
   const { t }: Composer = useI18n({ useScope: 'global' });
   const { smAndDown }: { smAndDown: Ref<boolean> } = useDisplay();
   const meldungStore: MeldungStore = useMeldungStore();
   const newsboxMeldung: ComputedRef<Meldung | undefined> = computed(() => meldungStore.meldungen[0]);
-
   const validationSchema: TypedSchema = toTypedSchema(
     object({
       meldungText: string().max(2000, t('admin.hinweise.rules.max')).min(1, t('admin.hinweise.rules.min')),
@@ -47,10 +47,8 @@
     validateOnMount: false,
   });
 
-  const [meldungText, meldungTextProps]: [
-    Ref<string>,
-    Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
-  ] = defineField('meldungText', vuetifyConfig);
+  const [meldungText]: [Ref<string>, Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>] =
+    defineField('meldungText', vuetifyConfig);
 
   const publishOrUnpublishButton: ComputedRef<string> = computed(() => {
     return !newsboxMeldung.value || newsboxMeldung.value.status === MeldungStatus.NICHT_VEROEFFENTLICHT
@@ -166,17 +164,9 @@
             <h3 class="headline-3 mb-4">
               {{ $t('admin.hinweise.newsbox') }}
             </h3>
-            <v-textarea
-              ref="newsbox-text"
-              v-bind="meldungTextProps"
+            <TextEditor
+              :limit="2000"
               v-model="meldungText"
-              data-testid="newsbox-text"
-              variant="outlined"
-              rows="5"
-              placeholder="Newsbox"
-              auto-grow
-              counter
-              maxlength="2000"
             />
           </v-col>
         </v-row>

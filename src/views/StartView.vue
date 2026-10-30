@@ -192,6 +192,10 @@
     closedAlerts.value.add(id);
     sessionStorage.setItem('closedAlerts', JSON.stringify(Array.from(closedAlerts.value)));
   };
+
+  const parseHinweise = (text: string): string => {
+    return text;
+  };
 </script>
 
 <template>
@@ -223,16 +227,10 @@
           :dismissable="false"
         >
           <template #text>
-            <span class="text-body">
-              <v-textarea
-                v-model="hinweis.text"
-                variant="plain"
-                :hide-details="true"
-                readonly
-                auto-grow
-                rows="1"
-              />
-            </span>
+            <span
+              class="tiptap"
+              v-html="parseHinweise(hinweis.text)"
+            ></span>
           </template>
         </SpshBanner>
 

@@ -32,7 +32,7 @@
     <v-row class="align-center justify-space-between">
       <v-col
         :class="[
-          'text-center primary-text-color',
+          'primary-text-color',
           {
             'mr-8': dismissable,
           },
