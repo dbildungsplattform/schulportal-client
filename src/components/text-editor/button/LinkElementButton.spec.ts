@@ -141,7 +141,7 @@ describe('LinkElementButton.vue', (): void => {
         mockEditor: any;
       } = setup(true, 'https://example.com');
 
-      vi.mocked(mockEditor.getAttributes as any).mockReturnValue({ href: 'https://example.com' });
+      vi.mocked(mockEditor.getAttributes).mockReturnValue({ href: 'https://example.com' });
 
       const button = wrapper.find('[data-testid="link-button"]');
       await button.trigger('click');
@@ -160,7 +160,7 @@ describe('LinkElementButton.vue', (): void => {
         mockEditor: any;
       } = setup();
 
-      vi.mocked(mockEditor.getAttributes as any).mockReturnValue({ href: null });
+      vi.mocked(mockEditor.getAttributes).mockReturnValue({ href: null });
 
       const button = wrapper.find('[data-testid="link-button"]');
       await button.trigger('click');
@@ -179,7 +179,7 @@ describe('LinkElementButton.vue', (): void => {
         mockEditor: any;
       } = setup();
 
-      vi.mocked(mockEditor.getAttributes as any).mockReturnValue({ href: undefined });
+      vi.mocked(mockEditor.getAttributes).mockReturnValue({ href: undefined });
 
       const button = wrapper.find('[data-testid="link-button"]');
       await button.trigger('click');
@@ -198,7 +198,7 @@ describe('LinkElementButton.vue', (): void => {
         mockEditor: any;
       } = setup();
 
-      vi.mocked(mockEditor.getAttributes as any).mockReturnValue({ href: 123 });
+      vi.mocked(mockEditor.getAttributes).mockReturnValue({ href: 123 });
 
       const button = wrapper.find('[data-testid="link-button"]');
       await button.trigger('click');
@@ -250,10 +250,10 @@ describe('LinkElementButton.vue', (): void => {
       } = setup();
 
       mockEditor.state.selection.empty = true;
-      vi.mocked(mockEditor.isActive as any).mockReturnValue(false);
+      vi.mocked(mockEditor.isActive).mockReturnValue(false);
 
       const insertContentMock = vi.fn(() => ({ run: vi.fn() }));
-      vi.mocked(mockEditor.chain as any).mockReturnValue({
+      vi.mocked(mockEditor.chain).mockReturnValue({
         focus: vi.fn().mockReturnValue({
           insertContent: insertContentMock,
         }),
@@ -278,10 +278,10 @@ describe('LinkElementButton.vue', (): void => {
       } = setup();
 
       mockEditor.state.selection.empty = false;
-      vi.mocked(mockEditor.isActive as any).mockReturnValue(true);
+      vi.mocked(mockEditor.isActive).mockReturnValue(true);
 
       const setLinkMock = vi.fn(() => ({ run: vi.fn() }));
-      vi.mocked(mockEditor.chain as any).mockReturnValue({
+      vi.mocked(mockEditor.chain).mockReturnValue({
         focus: vi.fn().mockReturnValue({
           extendMarkRange: vi.fn().mockReturnValue({
             setLink: setLinkMock,
@@ -307,7 +307,7 @@ describe('LinkElementButton.vue', (): void => {
         vm: any;
       } = setup();
 
-      vi.mocked(mockEditor.chain as any).mockReturnValue({
+      vi.mocked(mockEditor.chain).mockReturnValue({
         focus: vi.fn().mockReturnValue({
           unsetLink: vi.fn().mockReturnValue({
             run: vi.fn(),
@@ -330,7 +330,7 @@ describe('LinkElementButton.vue', (): void => {
         vm: any;
       } = setup();
 
-      vi.mocked(mockEditor.chain as any).mockReturnValue({
+      vi.mocked(mockEditor.chain).mockReturnValue({
         focus: vi.fn().mockReturnValue({
           unsetLink: vi.fn().mockReturnValue({
             run: vi.fn(),
@@ -361,7 +361,7 @@ describe('LinkElementButton.vue', (): void => {
         unsetLink: unsetLinkMock,
       });
 
-      vi.mocked(mockEditor.chain as any).mockReturnValue({
+      vi.mocked(mockEditor.chain).mockReturnValue({
         focus: focusMock,
       });
 

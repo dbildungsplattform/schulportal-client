@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/typedef */
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type */
+import { MeldungStatus, useMeldungStore, type MeldungStore } from '@/stores/MeldungStore';
 import { enableAutoUnmount, flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import type { ComponentInstance } from 'vue';
-import { MeldungStatus, useMeldungStore, type MeldungStore } from '@/stores/MeldungStore';
 import HinweiseCreationView from './HinweiseCreationView.vue';
 
 enableAutoUnmount(afterEach);
@@ -79,7 +81,10 @@ describe('HinweiseCreationView', (): void => {
   });
 
   test('should show SpshAlert when errorCode is set', async (): Promise<void> => {
-    const { wrapper, meldungStore }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
+    const {
+      wrapper,
+      meldungStore,
+    }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
 
     meldungStore.errorCode = 'MELDUNG_ERROR';
     await flushPromises();
@@ -94,7 +99,10 @@ describe('HinweiseCreationView', (): void => {
   });
 
   test('should render submit button with publish label for unpublished meldung', async (): Promise<void> => {
-    const { wrapper, meldungStore }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
+    const {
+      wrapper,
+      meldungStore,
+    }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
 
     meldungStore.meldungen = [
       {
@@ -112,7 +120,10 @@ describe('HinweiseCreationView', (): void => {
   });
 
   test('should render submit button with unpublish label for published meldung', async (): Promise<void> => {
-    const { wrapper, meldungStore }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
+    const {
+      wrapper,
+      meldungStore,
+    }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
 
     meldungStore.meldungen = [
       {
@@ -149,7 +160,10 @@ describe('HinweiseCreationView', (): void => {
   });
 
   test('should disable submit button when store is loading', async (): Promise<void> => {
-    const { wrapper, meldungStore }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
+    const {
+      wrapper,
+      meldungStore,
+    }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
 
     meldungStore.loading = true;
     await flushPromises();
@@ -190,7 +204,10 @@ describe('HinweiseCreationView', (): void => {
   });
 
   test('should handle empty meldungen array', async (): Promise<void> => {
-    const { wrapper, meldungStore }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
+    const {
+      wrapper,
+      meldungStore,
+    }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
 
     meldungStore.meldungen = [];
     await flushPromises();
@@ -208,7 +225,10 @@ describe('HinweiseCreationView', (): void => {
   });
 
   test('should show error alert with correct information', async (): Promise<void> => {
-    const { wrapper, meldungStore }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
+    const {
+      wrapper,
+      meldungStore,
+    }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
 
     meldungStore.errorCode = 'MELDUNG_ERROR';
     await flushPromises();
@@ -243,7 +263,10 @@ describe('HinweiseCreationView', (): void => {
   });
 
   test('should handle refresh page action', async (): Promise<void> => {
-    const { wrapper, meldungStore }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
+    const {
+      wrapper,
+      meldungStore,
+    }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
 
     meldungStore.errorCode = 'MELDUNG_ERROR';
     await flushPromises();
@@ -253,7 +276,10 @@ describe('HinweiseCreationView', (): void => {
   });
 
   test('should clear error code after user confirms unsaved changes', async (): Promise<void> => {
-    const { wrapper, meldungStore }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
+    const {
+      wrapper,
+      meldungStore,
+    }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
 
     meldungStore.errorCode = 'TEST_ERROR';
     await flushPromises();
