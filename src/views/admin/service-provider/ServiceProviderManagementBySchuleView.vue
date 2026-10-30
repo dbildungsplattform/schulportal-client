@@ -122,7 +122,6 @@
     selectedOrganisation.value = null;
     serviceProviderStore.manageableServiceProvidersForOrganisation = [];
     serviceProviderStore.totalManageableServiceProvidersForOrganisation = 0;
-    organisationStore.currentOrganisation = null;
     searchFilterStore.setSchuleForSchulischeServiceProvider(null);
     searchFilterStore.serviceProviderSchulePage = 1;
     searchFilterStore.serviceProviderSchulePerPage = 30;
@@ -389,7 +388,7 @@
         v-model="isVidisSyncDialogOpen"
         :error-code="serviceProviderStore.errorCode"
         :is-loading="isVidisSyncing"
-        :schule-name="organisationStore.currentOrganisation?.name ?? ''"
+        :schule-name="searchFilterStore.selectedSchuleForSchulischeServiceProvider?.name ?? ''"
         @on-sync-vidis="onSyncVidis"
         @on-close="onCloseSyncDialog"
       />
