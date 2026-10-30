@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/typedef */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Editor } from '@tiptap/vue-3';
 import { enableAutoUnmount, mount, type VueWrapper } from '@vue/test-utils';
 import type { ComponentInstance } from 'vue';

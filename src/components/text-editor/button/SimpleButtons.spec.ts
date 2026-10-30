@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/typedef */
-/* eslint-disable @typescript-eslint/no-empty-function */
 import { Editor } from '@tiptap/vue-3';
 import { enableAutoUnmount, mount, type VueWrapper } from '@vue/test-utils';
 import BoldButton from './BoldButton.vue';
@@ -17,12 +16,12 @@ const createMockEditor = (activeFormat: string = ''): Partial<Editor> => {
     isActive: (format: string): boolean => format === activeFormat,
     chain: (): any => ({
       focus: (): any => ({
-        toggleBold: (): any => ({ run: (): void => {} }),
-        toggleItalic: (): any => ({ run: (): void => {} }),
-        toggleUnderline: (): any => ({ run: (): void => {} }),
-        toggleStrike: (): any => ({ run: (): void => {} }),
-        toggleBulletList: (): any => ({ run: (): void => {} }),
-        toggleOrderedList: (): any => ({ run: (): void => {} }),
+        toggleBold: (): any => ({ run: () => vi.fn() }),
+        toggleItalic: (): any => ({ run: () => vi.fn() }),
+        toggleUnderline: (): any => ({ run: () => vi.fn() }),
+        toggleStrike: (): any => ({ run: () => vi.fn() }),
+        toggleBulletList: (): any => ({ run: () => vi.fn() }),
+        toggleOrderedList: (): any => ({ run: () => vi.fn() }),
       }),
     }),
   };

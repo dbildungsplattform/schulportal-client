@@ -5,33 +5,24 @@ import TextEditorBaseButton from './TextEditorBaseButton.vue';
 
 enableAutoUnmount(afterEach);
 
-const setup = (active: boolean = false): {
+const setup = (
+  active: boolean = false,
+): {
   wrapper: VueWrapper<ComponentInstance<typeof TextEditorBaseButton>>;
 } => {
-  const wrapper: VueWrapper<ComponentInstance<typeof TextEditorBaseButton>> = mount(
-    TextEditorBaseButton,
-    {
-      attachTo: document.getElementById('app') || '',
-      props: {
-        icon: 'mdi-format-bold',
-        tooltip: 'Bold',
-        testId: 'bold-button',
-        active,
-      },
+  const wrapper: VueWrapper<ComponentInstance<typeof TextEditorBaseButton>> = mount(TextEditorBaseButton, {
+    attachTo: document.getElementById('app') || '',
+    props: {
+      icon: 'mdi-format-bold',
+      tooltip: 'Bold',
+      testId: 'bold-button',
+      active,
     },
-  );
+  });
   return { wrapper };
 };
 
 describe('TextEditorBaseButton.vue', (): void => {
-  beforeEach((): void => {
-    document.body.innerHTML = `
-      <div>
-        <div id="app"></div>
-      </div>
-    `;
-  });
-
   test('should mount successfully', (): void => {
     const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditorBaseButton>> } = setup();
 
@@ -45,17 +36,12 @@ describe('TextEditorBaseButton.vue', (): void => {
     expect(button.exists()).toBe(true);
   });
 
-  test.each([true, false])(
-    'should have correct aria-pressed when %s',
-    (active: boolean): void => {
-      const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditorBaseButton>> } = setup(
-        active,
-      );
+  test.each([true, false])('should have correct aria-pressed when %s', (active: boolean): void => {
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditorBaseButton>> } = setup(active);
 
-      const button = wrapper.find('[data-testid="bold-button"]');
-      expect(button.attributes('aria-pressed')).toBe(active.toString());
-    },
-  );
+    const button = wrapper.find('[data-testid="bold-button"]');
+    expect(button.attributes('aria-pressed')).toBe(active.toString());
+  });
 
   test('should emit click event on button click', async (): Promise<void> => {
     const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditorBaseButton>> } = setup();
@@ -67,27 +53,22 @@ describe('TextEditorBaseButton.vue', (): void => {
   });
 
   test('should have correct aria-label', (): void => {
-    const wrapper: VueWrapper<ComponentInstance<typeof TextEditorBaseButton>> = mount(
-      TextEditorBaseButton,
-      {
-        attachTo: document.getElementById('app') || '',
-        props: {
-          icon: 'mdi-format-bold',
-          tooltip: 'Make text bold',
-          testId: 'bold-button',
-          active: false,
-        },
+    const wrapper: VueWrapper<ComponentInstance<typeof TextEditorBaseButton>> = mount(TextEditorBaseButton, {
+      attachTo: document.getElementById('app') || '',
+      props: {
+        icon: 'mdi-format-bold',
+        tooltip: 'Make text bold',
+        testId: 'bold-button',
+        active: false,
       },
-    );
+    });
 
     const button = wrapper.find('[data-testid="bold-button"]');
     expect(button.attributes('aria-label')).toBe('Make text bold');
   });
 
   test('should update active state when prop changes', async (): Promise<void> => {
-    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditorBaseButton>> } = setup(
-      false,
-    );
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditorBaseButton>> } = setup(false);
 
     await wrapper.setProps({ active: true });
 
