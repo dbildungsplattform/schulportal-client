@@ -8,7 +8,7 @@
 
 | Requirement | Version | Notes |
 |---|---|---|
-| Node.js | `24.x` (exact: `24.16.0`) | Check with `node -v` |
+| Node.js | `24.x` (exact: `24.22.1`) | Check with `node -v` |
 | npm | `>=11.10.0` | Check with `npm -v` |
 | Docker + Docker Compose | any recent version | Required for all local backing services |
 | git `autocrlf` | MUST be `false` | Kafka will not run correctly otherwise — set with `git config --global core.autocrlf false` |
