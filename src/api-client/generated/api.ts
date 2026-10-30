@@ -246,6 +246,33 @@ export interface CreateOrganisationBodyParams {
 /**
  * 
  * @export
+ * @interface CreateOrganisationsbeziehungBodyParams
+ */
+export interface CreateOrganisationsbeziehungBodyParams {
+    /**
+     * ID der Quellorganisation.
+     * @type {string}
+     * @memberof CreateOrganisationsbeziehungBodyParams
+     */
+    'quellOrganisationId': string;
+    /**
+     * ID der Zielorganisation.
+     * @type {string}
+     * @memberof CreateOrganisationsbeziehungBodyParams
+     */
+    'zielOrganisationId': string;
+    /**
+     * 
+     * @type {OrganisationsbeziehungsTyp}
+     * @memberof CreateOrganisationsbeziehungBodyParams
+     */
+    'typ': OrganisationsbeziehungsTyp;
+}
+
+
+/**
+ * 
+ * @export
  * @interface CreateRolleBodyParams
  */
 export interface CreateRolleBodyParams {
@@ -2169,6 +2196,65 @@ export const OrganisationsTyp = {
 } as const;
 
 export type OrganisationsTyp = typeof OrganisationsTyp[keyof typeof OrganisationsTyp];
+
+
+/**
+ * 
+ * @export
+ * @interface OrganisationsbeziehungResponse
+ */
+export interface OrganisationsbeziehungResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganisationsbeziehungResponse
+     */
+    'id': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganisationsbeziehungResponse
+     */
+    'createdAt': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganisationsbeziehungResponse
+     */
+    'updatedAt': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganisationsbeziehungResponse
+     */
+    'quellOrganisationId': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganisationsbeziehungResponse
+     */
+    'zielOrganisationId': string;
+    /**
+     * 
+     * @type {OrganisationsbeziehungsTyp}
+     * @memberof OrganisationsbeziehungResponse
+     */
+    'typ': OrganisationsbeziehungsTyp;
+}
+
+
+/**
+ * Typ der Organisationsbeziehung.
+ * @export
+ * @enum {string}
+ */
+
+export const OrganisationsbeziehungsTyp = {
+    Schultraeger: 'SCHULTRAEGER',
+    Schulaufsicht: 'SCHULAUFSICHT'
+} as const;
+
+export type OrganisationsbeziehungsTyp = typeof OrganisationsbeziehungsTyp[keyof typeof OrganisationsbeziehungsTyp];
 
 
 /**
@@ -8616,6 +8702,50 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
             };
         },
         /**
+         * Create a relationship between two organisations.
+         * @summary 
+         * @param {CreateOrganisationsbeziehungBodyParams} createOrganisationsbeziehungBodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        organisationControllerCreateOrganisationsbeziehung: async (createOrganisationsbeziehungBodyParams: CreateOrganisationsbeziehungBodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'createOrganisationsbeziehungBodyParams' is not null or undefined
+            assertParamExists('organisationControllerCreateOrganisationsbeziehung', 'createOrganisationsbeziehungBodyParams', createOrganisationsbeziehungBodyParams)
+            const localVarPath = `/api/organisationen/beziehungen`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            // authentication oauth2 required
+            // oauth required
+            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(createOrganisationsbeziehungBodyParams, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * Delete an organisation by id.
          * @summary 
          * @param {string} organisationId The id of an organization
@@ -8627,6 +8757,48 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
             assertParamExists('organisationControllerDeleteOrganisation', 'organisationId', organisationId)
             const localVarPath = `/api/organisationen/{organisationId}`
                 .replace(`{${"organisationId"}}`, encodeURIComponent(String(organisationId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            // authentication oauth2 required
+            // oauth required
+            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Delete an organisation relationship by id.
+         * @summary 
+         * @param {string} organisationsbeziehungId ID der Organisationsbeziehung.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        organisationControllerDeleteOrganisationsbeziehung: async (organisationsbeziehungId: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'organisationsbeziehungId' is not null or undefined
+            assertParamExists('organisationControllerDeleteOrganisationsbeziehung', 'organisationsbeziehungId', organisationsbeziehungId)
+            const localVarPath = `/api/organisationen/beziehungen/{organisationsbeziehungId}`
+                .replace(`{${"organisationsbeziehungId"}}`, encodeURIComponent(String(organisationsbeziehungId)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -9186,6 +9358,17 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
+         * Create a relationship between two organisations.
+         * @summary 
+         * @param {CreateOrganisationsbeziehungBodyParams} createOrganisationsbeziehungBodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async organisationControllerCreateOrganisationsbeziehung(createOrganisationsbeziehungBodyParams: CreateOrganisationsbeziehungBodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<OrganisationsbeziehungResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerCreateOrganisationsbeziehung(createOrganisationsbeziehungBodyParams, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
          * Delete an organisation by id.
          * @summary 
          * @param {string} organisationId The id of an organization
@@ -9194,6 +9377,17 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
          */
         async organisationControllerDeleteOrganisation(organisationId: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerDeleteOrganisation(organisationId, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * Delete an organisation relationship by id.
+         * @summary 
+         * @param {string} organisationsbeziehungId ID der Organisationsbeziehung.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async organisationControllerDeleteOrganisationsbeziehung(organisationsbeziehungId: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerDeleteOrganisationsbeziehung(organisationsbeziehungId, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -9342,6 +9536,16 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
             return localVarFp.organisationControllerCreateOrganisation(createOrganisationBodyParams, options).then((request) => request(axios, basePath));
         },
         /**
+         * Create a relationship between two organisations.
+         * @summary 
+         * @param {CreateOrganisationsbeziehungBodyParams} createOrganisationsbeziehungBodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        organisationControllerCreateOrganisationsbeziehung(createOrganisationsbeziehungBodyParams: CreateOrganisationsbeziehungBodyParams, options?: any): AxiosPromise<OrganisationsbeziehungResponse> {
+            return localVarFp.organisationControllerCreateOrganisationsbeziehung(createOrganisationsbeziehungBodyParams, options).then((request) => request(axios, basePath));
+        },
+        /**
          * Delete an organisation by id.
          * @summary 
          * @param {string} organisationId The id of an organization
@@ -9350,6 +9554,16 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
          */
         organisationControllerDeleteOrganisation(organisationId: string, options?: any): AxiosPromise<void> {
             return localVarFp.organisationControllerDeleteOrganisation(organisationId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Delete an organisation relationship by id.
+         * @summary 
+         * @param {string} organisationsbeziehungId ID der Organisationsbeziehung.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        organisationControllerDeleteOrganisationsbeziehung(organisationsbeziehungId: string, options?: any): AxiosPromise<void> {
+            return localVarFp.organisationControllerDeleteOrganisationsbeziehung(organisationsbeziehungId, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -9486,6 +9700,16 @@ export interface OrganisationenApiInterface {
     organisationControllerCreateOrganisation(createOrganisationBodyParams: CreateOrganisationBodyParams, options?: AxiosRequestConfig): AxiosPromise<OrganisationResponse>;
 
     /**
+     * Create a relationship between two organisations.
+     * @summary 
+     * @param {CreateOrganisationsbeziehungBodyParams} createOrganisationsbeziehungBodyParams 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganisationenApiInterface
+     */
+    organisationControllerCreateOrganisationsbeziehung(createOrganisationsbeziehungBodyParams: CreateOrganisationsbeziehungBodyParams, options?: AxiosRequestConfig): AxiosPromise<OrganisationsbeziehungResponse>;
+
+    /**
      * Delete an organisation by id.
      * @summary 
      * @param {string} organisationId The id of an organization
@@ -9494,6 +9718,16 @@ export interface OrganisationenApiInterface {
      * @memberof OrganisationenApiInterface
      */
     organisationControllerDeleteOrganisation(organisationId: string, options?: AxiosRequestConfig): AxiosPromise<void>;
+
+    /**
+     * Delete an organisation relationship by id.
+     * @summary 
+     * @param {string} organisationsbeziehungId ID der Organisationsbeziehung.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganisationenApiInterface
+     */
+    organisationControllerDeleteOrganisationsbeziehung(organisationsbeziehungId: string, options?: AxiosRequestConfig): AxiosPromise<void>;
 
     /**
      * 
@@ -9634,6 +9868,18 @@ export class OrganisationenApi extends BaseAPI implements OrganisationenApiInter
     }
 
     /**
+     * Create a relationship between two organisations.
+     * @summary 
+     * @param {CreateOrganisationsbeziehungBodyParams} createOrganisationsbeziehungBodyParams 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganisationenApi
+     */
+    public organisationControllerCreateOrganisationsbeziehung(createOrganisationsbeziehungBodyParams: CreateOrganisationsbeziehungBodyParams, options?: AxiosRequestConfig) {
+        return OrganisationenApiFp(this.configuration).organisationControllerCreateOrganisationsbeziehung(createOrganisationsbeziehungBodyParams, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
      * Delete an organisation by id.
      * @summary 
      * @param {string} organisationId The id of an organization
@@ -9643,6 +9889,18 @@ export class OrganisationenApi extends BaseAPI implements OrganisationenApiInter
      */
     public organisationControllerDeleteOrganisation(organisationId: string, options?: AxiosRequestConfig) {
         return OrganisationenApiFp(this.configuration).organisationControllerDeleteOrganisation(organisationId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Delete an organisation relationship by id.
+     * @summary 
+     * @param {string} organisationsbeziehungId ID der Organisationsbeziehung.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganisationenApi
+     */
+    public organisationControllerDeleteOrganisationsbeziehung(organisationsbeziehungId: string, options?: AxiosRequestConfig) {
+        return OrganisationenApiFp(this.configuration).organisationControllerDeleteOrganisationsbeziehung(organisationsbeziehungId, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
