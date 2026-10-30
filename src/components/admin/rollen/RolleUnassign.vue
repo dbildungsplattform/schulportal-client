@@ -54,7 +54,7 @@
   const showErrorDialog: Ref<boolean, boolean> = ref(false);
 
   // Local state for selectedOrganisation to avoid mutating the prop directly
-  const selectedOrganisationFromFilterId: Ref<string> = ref<string>(props.selectedOrganisationFromFilter.id);
+  const selectedOrganisationFromFilter: Ref<Organisation> = ref<Organisation>(props.selectedOrganisationFromFilter);
 
   // Define the error list for the selected persons using the useBulkErrors composable
   const bulkErrorList: ComputedRef<BulkErrorList[]> = computed(() => useBulkErrors(t, props.selectedPersonen));
@@ -109,7 +109,7 @@
     async (values: RolleUnassignForm): Promise<void> => {
       const selectedRolleValue: TranslatedRolleWithAttrs = values.selectedRolle;
       await bulkOperationStore.bulkUnassignPersonenFromRolle(
-        selectedOrganisationFromFilterId.value,
+        selectedOrganisationFromFilter.value.id,
         selectedRolleValue.value,
         [...props.selectedPersonen.keys()],
         selectedRolleValue.rollenart === RollenArt.Lern,
@@ -157,7 +157,7 @@
             :operation-context="OperationContext.PERSON_BEARBEITEN"
             :rolleDialogMode="RolleDialogMode.UNASSIGN"
             :show-headline="false"
-            :selected-organisation="selectedOrganisationFromFilterId"
+            :selected-organisation="selectedOrganisationFromFilter"
             :initial-organisation="props.selectedOrganisationFromFilter"
             :rollen="rolleStore.rollenForPersonenkontextCreation"
             :selected-rolle-props="selectedRolleProps"

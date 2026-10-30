@@ -488,7 +488,7 @@ describe('PersonDetailsView', () => {
         .getComponent({ ref: 'personenkontext-create-organisation-select' })
         .setValue(organisation);
       await flushPromises();
-      expect(personenkontextCreate.props()).toHaveProperty('selectedOrganisation', organisation.id);
+      expect(personenkontextCreate.props()).toHaveProperty('selectedOrganisation', organisation);
     }
 
     test('it passes the existing rollenart to the Rollen query', async () => {
@@ -789,7 +789,9 @@ describe('PersonDetailsView', () => {
       .findComponent({ ref: 'personenkontext-create-organisation-select' });
     await organisationAutocomplete?.setValue(mockOrganisation);
     await flushPromises();
-    expect(wrapper?.getComponent({ ref: 'personenkontext-create' }).props('selectedOrganisation')).toBe('O1');
+    expect(wrapper?.getComponent({ ref: 'personenkontext-create' }).props('selectedOrganisation')).toEqual(
+      mockOrganisation,
+    );
 
     // Set rolle value
     const rolleAutocomplete: VueWrapper | undefined = wrapper
@@ -907,7 +909,9 @@ describe('PersonDetailsView', () => {
       .findComponent({ ref: 'personenkontext-create-organisation-select' });
     await organisationAutocomplete?.setValue(mockOrganisation);
     await flushPromises();
-    expect(wrapper?.getComponent({ ref: 'personenkontext-create' }).props('selectedOrganisation')).toBe('O1');
+    expect(wrapper?.getComponent({ ref: 'personenkontext-create' }).props('selectedOrganisation')).toEqual(
+      mockOrganisation,
+    );
 
     // Set rolle value
     const rolleAutocomplete: VueWrapper | undefined = wrapper

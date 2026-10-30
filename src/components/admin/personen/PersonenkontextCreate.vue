@@ -5,7 +5,6 @@
   import FormRow from '@/components/form/FormRow.vue';
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
   import { useDebouncedSearch } from '@/composables/useDebouncedSearch';
-  import { useOrganisationSelection } from '@/composables/useOrganisationSelection';
   import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
   import {
     CreationType,
@@ -57,8 +56,6 @@
 
   type Props = {
     rollen: TranslatedRolleWithAttrs[];
-    selectedOrganisation: string | undefined;
-    initialOrganisation?: Organisation | null;
     createType?: CreationType;
     showHeadline: boolean;
     personId?: string;
@@ -92,8 +89,6 @@
   type Emits = {
     (e: 'update:befristung', value: string | undefined): void;
     (e: 'update:calculatedBefristungOption', value: string | undefined): void;
-    (event: 'update:selectedOrganisation', value: string | undefined): void;
-    (event: 'update:organisationObject', value: Organisation | undefined): void;
     (event: 'update:selectedKlasse', value: Organisation | undefined): void;
     (event: 'update:selectedKlasseForRadio', value: Organisation | undefined): void;
     (event: 'update:selectedKlassenOption', value: string | null): void;
@@ -102,10 +97,8 @@
   };
   const emits: Emits = defineEmits<Emits>();
 
-  const selectedOrganisation: Ref<string | undefined> = ref(props.selectedOrganisation);
-  const selectedOrganisationObject: ReturnType<typeof useOrganisationSelection> = useOrganisationSelection(
-    selectedOrganisation,
-    () => props.initialOrganisation ?? autoselectedSchule.value,
+  const selectedOrganisation: Ref<Organisation | undefined> = defineModel<Organisation | undefined>(
+    'selectedOrganisation',
   );
   const selectedRolle: Ref<TranslatedRolleWithAttrs | undefined> =
     defineModel<TranslatedRolleWithAttrs>('selectedRolle');
@@ -145,7 +138,7 @@
       return;
     }
     const filter: RollenForPersonenkontextCreationQuery = {
-      organisationId: selectedOrganisation.value,
+      organisationId: selectedOrganisation.value.id,
       limit: 25,
       rollenartForPerson: props.rollenartForPerson ?? selectedRollenart.value,
     };
@@ -247,7 +240,7 @@
   };
 
   function updateSchuleSelection(selection: SelectedSchulen<false>): void {
-    selectedOrganisationObject.value = selection;
+    selectedOrganisation.value = selection;
   }
 
   function handleKlassenOption(value: string | null): void {
@@ -265,9 +258,9 @@
   // Watcher for selectedOrganisation to fetch Rollen and Klassen
   watch(
     selectedOrganisation,
-    (newSelectedOrganisationId: string | undefined, oldSelectedOrganisationId: string | undefined) => {
-      // Reset selected Rollen if oldSelectedOrganisationId existed (change event)
-      if (oldSelectedOrganisationId !== undefined) {
+    (newSelectedOrganisation: Organisation | undefined, oldSelectedOrganisation: Organisation | undefined) => {
+      // Reset selected Rollen if oldSelectedOrganisation existed (change event)
+      if (oldSelectedOrganisation !== undefined) {
         if (selectedRolle.value) {
           selectedRolle.value = undefined;
           emits('fieldReset', 'selectedRolle');
@@ -277,16 +270,16 @@
           emits('fieldReset', 'selectedRollen');
         }
       }
-      emits('update:selectedOrganisation', newSelectedOrganisationId);
+      // emits('update:selectedOrganisation', newSelectedOrganisation);
 
-      if (newSelectedOrganisationId && newSelectedOrganisationId !== oldSelectedOrganisationId) {
+      if (newSelectedOrganisation && newSelectedOrganisation.id !== oldSelectedOrganisation?.id) {
         administriertVon.value?.pop();
-        administriertVon.value?.push(newSelectedOrganisationId);
+        administriertVon.value?.push(newSelectedOrganisation.id);
 
         // Check if all Klassen for this orga are the same
         const klassenZuordnungen: Zuordnung[] | undefined = personStore.personenuebersicht?.zuordnungen.filter(
           (zuordnung: Zuordnung) =>
-            zuordnung.typ === OrganisationsTyp.Klasse && zuordnung.administriertVon === newSelectedOrganisationId,
+            zuordnung.typ === OrganisationsTyp.Klasse && zuordnung.administriertVon === newSelectedOrganisation.id,
         );
         const uniqueKlassenZuordnungen: Zuordnung[] = dedup(klassenZuordnungen ?? [], (z: Zuordnung) => z.sskId);
 
@@ -298,7 +291,7 @@
           selectedKlasse.value = undefined;
           emits('fieldReset', 'selectedKlasse');
         }
-      } else if (!newSelectedOrganisationId) {
+      } else if (!newSelectedOrganisation?.id) {
         // Clear selections if orga was cleared
         administriertVon.value?.pop();
         selectedRolle.value = undefined;
@@ -314,7 +307,7 @@
     async (newValue: SelectedRollen, oldValue: SelectedRollen) => {
       const filter: WorkflowFilter = {
         personId: props.personId,
-        organisationId: selectedOrganisation.value,
+        organisationId: selectedOrganisation.value?.id,
         limit: 25,
       };
 
@@ -364,26 +357,10 @@
   );
 
   watch(
-    selectedOrganisationObject,
-    (organisation: Organisation | null | undefined): void => {
-      emits('update:organisationObject', organisation ?? undefined);
-    },
-    { immediate: true },
-  );
-
-  watch(
-    () => props.selectedOrganisation,
-    (organisationId: string | undefined): void => {
-      selectedOrganisation.value = organisationId;
-    },
-  );
-
-  watch(
     autoselectedSchule,
     (newAutoselectedSchule: Organisation | null) => {
       if (newAutoselectedSchule) {
-        selectedOrganisationObject.value = newAutoselectedSchule;
-        emits('update:selectedOrganisation', newAutoselectedSchule.id);
+        selectedOrganisation.value = newAutoselectedSchule;
       }
     },
     { immediate: true },
@@ -425,7 +402,7 @@
       <SchulenFilter
         ref="schulenFilter"
         parentId="personenkontext-create"
-        :selectedSchulen="selectedOrganisationObject ?? undefined"
+        :selectedSchulen="selectedOrganisation ?? undefined"
         :selectedRollen="selectedRollenIds"
         :multiple="false"
         :systemrechteForSearch="[requestedWithSystemrecht].filter((v): v is RollenSystemRecht => v !== undefined)"

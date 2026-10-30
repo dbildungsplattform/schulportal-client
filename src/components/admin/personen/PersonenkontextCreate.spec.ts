@@ -3,18 +3,49 @@ import { useOrganisationStore, type Organisation, type OrganisationStore } from 
 import {
   CreationType,
   OperationContext,
+  RolleDialogMode,
   usePersonenkontextStore,
   type PersonenkontextStore,
 } from '@/stores/PersonenkontextStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import { useRolleStore, type RolleStore, type TranslatedRolleWithAttrs } from '@/stores/RolleStore';
 import { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
-import { flushPromises, VueWrapper, mount, enableAutoUnmount } from '@vue/test-utils';
+import { enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import type { BefristungProps } from './BefristungInput.vue';
 import PersonenkontextCreate from './PersonenkontextCreate.vue';
+import { BaseFieldProps } from 'vee-validate';
+
+interface MountComponentProps {
+  rollen: TranslatedRolleWithAttrs[];
+  createType?: CreationType;
+  showHeadline: boolean;
+  personId?: string;
+  operationContext: OperationContext;
+  selectedKlassenOption?: string | null;
+  selectedKlasse?: Organisation;
+  selectedKlasseForRadio?: Organisation;
+  selectedOrganisationProps?: BaseFieldProps & { error: boolean; 'error-messages': Array<string> };
+  selectedKlasseProps?: BaseFieldProps & { error: boolean; 'error-messages': Array<string> };
+  selectedKlasseForRadioProps?: BaseFieldProps & { error: boolean; 'error-messages': Array<string> };
+  selectedRolleProps?: BaseFieldProps & { error: boolean; 'error-messages': Array<string> };
+  selectedRollenProps?: BaseFieldProps & { error: boolean; 'error-messages': Array<string> };
+  selectedKlassenOptionProps?: BaseFieldProps & { error: boolean; 'error-messages': Array<string> };
+  befristungInputProps?: BefristungProps;
+  headlineNumbers?: {
+    org: string;
+    rolle: string;
+    befristung: string;
+  };
+  allowMultipleRollen?: boolean;
+  rolleDialogMode?: RolleDialogMode;
+  rollenartForPerson?: RollenArt;
+  selectedOrganisation?: Organisation;
+  selectedRolle?: TranslatedRolleWithAttrs;
+  selectedRollen?: TranslatedRolleWithAttrs[];
+}
 
 let wrapper: VueWrapper | null = null;
 let personenkontextStore: PersonenkontextStore;
@@ -26,7 +57,7 @@ vi.useFakeTimers();
 enableAutoUnmount(afterEach);
 
 const mountComponent = (
-  props: Record<string, unknown> = {},
+  props: Partial<MountComponentProps> = {},
 ): VueWrapper<InstanceType<typeof PersonenkontextCreate>> => {
   return mount(PersonenkontextCreate, {
     attachTo: document.getElementById('app') || '',
@@ -68,7 +99,7 @@ const mountComponent = (
         onChange: () => vi.fn(),
         onInput: () => vi.fn(),
       },
-      selectedOrganisation: '',
+      selectedOrganisation: undefined,
       selectedRolle: undefined,
       selectedKlasse: undefined,
       showHeadline: true,
@@ -103,39 +134,6 @@ const mountComponent = (
   });
 };
 
-test('it retains the existing Landesbediensteter Rollenart filter after clearing selected Rollen', async () => {
-  wrapper = mountComponent({
-    operationContext: OperationContext.PERSON_ANLEGEN,
-    allowMultipleRollen: true,
-    createType: CreationType.AddPersonToOwnSchule,
-    personId: '1',
-    rollenartForPerson: RollenArt.Lehr,
-    selectedOrganisation: '1133',
-  });
-  await flushPromises();
-
-  const getRollenForPersonenkontextCreationSpy: MockInstance = vi.mocked(
-    rolleStore.getRollenForPersonenkontextCreation,
-  );
-  getRollenForPersonenkontextCreationSpy.mockClear();
-
-  const rollenAutocomplete: VueWrapper = wrapper.findComponent({ ref: 'rollen-select' });
-  await rollenAutocomplete.setValue([
-    DoFactory.getTranslatedRolleWithAttrs({ value: '54321', rollenart: RollenArt.Lern }),
-  ]);
-  await flushPromises();
-
-  await rollenAutocomplete.get('.v-field__clearable .v-icon').trigger('click');
-  await flushPromises();
-
-  expect(getRollenForPersonenkontextCreationSpy).toHaveBeenLastCalledWith(
-    expect.objectContaining({
-      organisationId: '1133',
-      rollenartForPerson: RollenArt.Lehr,
-    }),
-  );
-  expect(getRollenForPersonenkontextCreationSpy.mock.calls.at(-1)?.[0]).not.toHaveProperty('rollenIds');
-});
 beforeEach(() => {
   document.body.innerHTML = `
     <div>
@@ -185,6 +183,40 @@ beforeEach(() => {
 });
 
 describe('PersonenkontextCreate', () => {
+  test('it retains the existing Landesbediensteter Rollenart filter after clearing selected Rollen', async () => {
+    wrapper = mountComponent({
+      operationContext: OperationContext.PERSON_ANLEGEN,
+      allowMultipleRollen: true,
+      createType: CreationType.AddPersonToOwnSchule,
+      personId: '1',
+      rollenartForPerson: RollenArt.Lehr,
+      selectedOrganisation: DoFactory.getOrganisation({ id: '1133' }),
+    });
+    await flushPromises();
+
+    const getRollenForPersonenkontextCreationSpy: MockInstance = vi.mocked(
+      rolleStore.getRollenForPersonenkontextCreation,
+    );
+    getRollenForPersonenkontextCreationSpy.mockClear();
+
+    const rollenAutocomplete: VueWrapper = wrapper.findComponent({ ref: 'rollen-select' });
+    await rollenAutocomplete.setValue([
+      DoFactory.getTranslatedRolleWithAttrs({ value: '54321', rollenart: RollenArt.Lern }),
+    ]);
+    await flushPromises();
+
+    await rollenAutocomplete.get('.v-field__clearable .v-icon').trigger('click');
+    await flushPromises();
+
+    expect(getRollenForPersonenkontextCreationSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        organisationId: '1133',
+        rollenartForPerson: RollenArt.Lehr,
+      }),
+    );
+    expect(getRollenForPersonenkontextCreationSpy.mock.calls.at(-1)?.[0]).not.toHaveProperty('rollenIds');
+  });
+
   describe.each([true, false])('object selections with allowMultipleRollen=%s', (allowMultipleRollen: boolean) => {
     test('should retain selected objects and their attributes when search results change', async () => {
       const selected: TranslatedRolleWithAttrs = DoFactory.getTranslatedRolleWithAttrs({
@@ -193,7 +225,7 @@ describe('PersonenkontextCreate', () => {
       const result: TranslatedRolleWithAttrs = DoFactory.getTranslatedRolleWithAttrs();
       wrapper = mountComponent({
         allowMultipleRollen,
-        selectedOrganisation: '1133',
+        selectedOrganisation: DoFactory.getOrganisation({ id: '1133' }),
         rollen: [selected],
       });
       const autocomplete: VueWrapper = wrapper.findComponent({
@@ -231,7 +263,7 @@ describe('PersonenkontextCreate', () => {
       const replacement: TranslatedRolleWithAttrs = DoFactory.getTranslatedRolleWithAttrs();
       wrapper = mountComponent({
         allowMultipleRollen,
-        selectedOrganisation: '1133',
+        selectedOrganisation: DoFactory.getOrganisation({ id: '1133' }),
         rollen: [],
         ...(allowMultipleRollen ? { selectedRollen: [selected] } : { selectedRolle: selected }),
       });
@@ -568,7 +600,7 @@ describe('PersonenkontextCreate', () => {
           wrapper = mountComponent({
             operationContext,
             allowMultipleRollen,
-            selectedOrganisation: '1133',
+            selectedOrganisation: DoFactory.getOrganisation({ id: '1133' }),
           });
           await flushPromises();
 
@@ -600,7 +632,7 @@ describe('PersonenkontextCreate', () => {
               createType,
               personId,
               rollenartForPerson,
-              selectedOrganisation: '1133',
+              selectedOrganisation: DoFactory.getOrganisation({ id: '1133' }),
             });
             await flushPromises();
 
@@ -624,7 +656,7 @@ describe('PersonenkontextCreate', () => {
             operationContext,
             allowMultipleRollen,
             personId: '1',
-            selectedOrganisation: '1133',
+            selectedOrganisation: DoFactory.getOrganisation({ id: '1133' }),
           });
           await flushPromises();
 
@@ -648,7 +680,7 @@ describe('PersonenkontextCreate', () => {
             allowMultipleRollen,
             createType: CreationType.AddPersonToOwnSchule,
             rollenartForPerson: RollenArt.Lehr,
-            selectedOrganisation: '1133',
+            selectedOrganisation: DoFactory.getOrganisation({ id: '1133' }),
           });
           await flushPromises();
 
@@ -714,7 +746,11 @@ describe('PersonenkontextCreate', () => {
         });
 
         test('it cancels a pending Rolle search on unmount', async (): Promise<void> => {
-          wrapper = mountComponent({ operationContext, allowMultipleRollen, selectedOrganisation: '1133' });
+          wrapper = mountComponent({
+            operationContext,
+            allowMultipleRollen,
+            selectedOrganisation: DoFactory.getOrganisation({ id: '1133' }),
+          });
           await flushPromises();
           vi.mocked(rolleStore.getRollenForPersonenkontextCreation).mockClear();
           const autocomplete: VueWrapper = wrapper.findComponent({

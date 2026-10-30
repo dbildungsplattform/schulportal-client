@@ -6,11 +6,12 @@ import type { Ref } from 'vue';
 import { mixed, object, string, StringSchema, type AnyObject } from 'yup';
 import { isBefristungspflichtRolle } from './befristung';
 import { isValidDate, notInPast } from './date';
+import { Organisation } from '@/stores/OrganisationStore';
 
 // Define the form validation schema for the Personenkontext
 export type ZuordnungCreationForm = {
   selectedRolle: TranslatedRolleWithAttrs;
-  selectedOrganisation: string;
+  selectedOrganisation: Organisation;
   selectedKlasse: string;
   selectedBefristung: Date;
   selectedBefristungOption: string;
@@ -29,7 +30,7 @@ export function isLernRolle(selectedRolleId: string, rollen: TranslatedRolleWith
 export type PersonenkontextFieldDefinitions = {
   selectedRolle: Ref<TranslatedRolleWithAttrs | undefined>;
   selectedRolleProps: Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>;
-  selectedOrganisation: Ref<string | undefined>;
+  selectedOrganisation: Ref<Organisation | undefined>;
   selectedOrganisationProps: Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>;
   selectedKlasse: Ref<string | undefined>;
   selectedKlasseProps: Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>;
@@ -100,7 +101,7 @@ export const getValidationSchema = (
   return toTypedSchema(
     object({
       selectedRolle: mixed<TranslatedRolleWithAttrs>().required(t('admin.rolle.rules.rolle.required')),
-      selectedOrganisation: string().required(t('admin.organisation.rules.organisation.required')),
+      selectedOrganisation: mixed<Organisation>().required(t('admin.organisation.rules.organisation.required')),
       selectedKlasse: string().when('selectedRolle', {
         is: (selectedRolle: TranslatedRolleWithAttrs | undefined) => selectedRolle?.rollenart === RollenArt.Lern,
         then: (schema: Schema) => schema.required(t('admin.klasse.rules.klasse.required')),
@@ -159,7 +160,7 @@ export const getPersonenkontextFieldDefinitions = (
   ] = defineField('selectedRolle', getVuetifyConfig);
 
   const [selectedOrganisation, selectedOrganisationProps]: [
-    Ref<string | undefined>,
+    Ref<Organisation | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = defineField('selectedOrganisation', getVuetifyConfig);
 

@@ -62,7 +62,7 @@
   // Define the form validation schema for the Personenkontext
   export type ZuordnungCreationForm = {
     selectedRolle: TranslatedRolleWithAttrs;
-    selectedOrganisation: string;
+    selectedOrganisation: Organisation;
     selectedKlassenOption: string;
     selectedKlasseForRadio: string;
     selectedBefristung: Date;
@@ -73,7 +73,7 @@
     return toTypedSchema(
       object({
         selectedRolle: mixed<TranslatedRolleWithAttrs>().required(t('admin.rolle.rules.rolle.required')),
-        selectedOrganisation: string().required(t('admin.organisation.rules.organisation.required')),
+        selectedOrganisation: mixed<Organisation>().required(t('admin.organisation.rules.organisation.required')),
         selectedKlassenOption: string(),
         selectedKlasseForRadio: string().when('selectedKlassenOption', {
           is: (selectedKlassenOption: string) => selectedKlassenOption === KlassenOption.SELECT_NEW_KLASSE.toString(),
@@ -99,7 +99,7 @@
   });
 
   const [selectedOrganisation, selectedOrganisationProps]: [
-    Ref<string | undefined>,
+    Ref<Organisation | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedOrganisation', getVuetifyConfig);
 
@@ -196,7 +196,7 @@
 
     await bulkOperationStore.bulkModifyPersonenRolle(
       personIDs,
-      selectedOrganisation.value!,
+      selectedOrganisation.value!.id,
       selectedRolle.value!.value,
       personenkontextStore.workflowStepResponse?.organisations || [],
       formattedBefristung,

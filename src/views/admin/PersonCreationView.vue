@@ -67,7 +67,7 @@
 
   const calculatedBefristung: Ref<string | undefined> = ref('');
 
-  const selectedOrgaCache: Ref<string | undefined> = ref(undefined);
+  const selectedOrgaCache: Ref<Organisation | undefined> = ref(undefined);
   const selectedOrganisationObject: Ref<Organisation | undefined> = ref();
   const selectedKlasseCache: Ref<TranslatedObject | undefined> = ref(undefined);
   const selectedRolleCache: Ref<string[] | undefined> = ref(undefined);
@@ -198,6 +198,7 @@
 
   const validationSchema: TypedSchema = toTypedSchema(
     object({
+      selectedOrganisation: mixed<Organisation>().required(t('admin.organisation.rules.organisation.required')),
       selectedRollen: array(mixed<TranslatedRolleWithAttrs>().required(t('admin.rolle.rules.rolle.required'))).when(
         'selectedOrganisation',
         {
@@ -216,7 +217,6 @@
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.person.rules.familienname.noLeadingTrailingSpaces'))
         .min(2, t('admin.person.rules.familienname.min'))
         .required(t('admin.person.rules.familienname.required')),
-      selectedOrganisation: string().required(t('admin.organisation.rules.organisation.required')),
       selectedKlasse: string().when('selectedRollen', {
         is: (rollen: TranslatedRolleWithAttrs[] | undefined) =>
           rollen?.some((rolle: TranslatedRolleWithAttrs) => rolle.rollenart === RollenArt.Lern),
@@ -247,7 +247,7 @@
   });
 
   type PersonCreationForm = {
-    selectedOrganisation: string;
+    selectedOrganisation: Organisation;
     selectedRollen: TranslatedRolleWithAttrs[];
     selectedVorname: string;
     selectedFamilienname: string;
@@ -262,11 +262,11 @@
   });
 
   const [selectedOrganisation, selectedOrganisationProps]: [
-    Ref<string | undefined>,
+    Ref<Organisation>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedOrganisation', vuetifyConfig);
   const [selectedRollen, selectedRollenProps]: [
-    Ref<TranslatedRolleWithAttrs[] | undefined>,
+    Ref<TranslatedRolleWithAttrs[]>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedRollen', vuetifyConfig);
   const [selectedVorname, selectedVornameProps]: [
@@ -295,7 +295,7 @@
   ] = formContext.defineField('selectedKopersNr', vuetifyConfig);
 
   const filteredRollen: ComputedRef<TranslatedRolleWithAttrs[]> = computed(() => {
-    return getFilteredRollen(selectedOrganisation.value);
+    return getFilteredRollen(selectedOrganisation.value?.id);
   });
 
   // This primitive value is load-bearing: equal store replacements must not invalidate the Rollen query.
@@ -348,7 +348,7 @@
   const schuleZuordnungFromCreatedKontext: ComputedRef<DBiamPersonenkontextResponse[]> = computed(() => {
     return createdKontextResponses.value.filter(
       (kontext: DBiamPersonenkontextResponse) =>
-        kontext.organisationId === selectedOrgaCache.value && selectedRolleCache.value?.includes(kontext.rolleId),
+        kontext.organisationId === selectedOrgaCache.value?.id && selectedRolleCache.value?.includes(kontext.rolleId),
     );
   });
 
@@ -461,7 +461,7 @@
 
   function handleFieldReset(field: string): void {
     if (field === 'selectedRollen') {
-      selectedRollen.value = undefined;
+      formContext.resetField('selectedRollen');
     } else if (field === 'selectedKlasse') {
       if (selectedKlasse.value) {
         selectedKlasse.value = undefined;
@@ -492,7 +492,7 @@
       befristung: formattedBefristung,
       createPersonenkontexte:
         selectedRollen.value?.map((rolle: TranslatedRolleWithAttrs) => ({
-          organisationId: selectedOrganisation.value as string,
+          organisationId: selectedOrganisation.value.id,
           rolleId: rolle.value,
         })) || [],
     };
@@ -511,7 +511,7 @@
     }
     // We save a copy of the selected values because they are not available anymore since we reset the form right after submitting
     // This will then be used to display the organisation again in the success template after receiving the orga ID and rolle ID back from the BE.
-    selectedOrgaCache.value = JSON.parse(JSON.stringify(selectedOrganisation.value)) as string | undefined;
+    selectedOrgaCache.value = selectedOrganisation.value;
     selectedRolleCache.value = selectedRollen.value?.map((rolle: TranslatedRolleWithAttrs) => rolle.value);
     await personenkontextStore.createPersonWithKontexte(bodyParams);
     formContext.resetForm();
@@ -541,7 +541,7 @@
     filteredRollenCache.value = selectedRollen.value ?? [];
     const newKontexte: PersonenkontextUpdate[] | undefined = selectedRollen.value?.map(
       (rolle: TranslatedRolleWithAttrs) => ({
-        organisationId: selectedOrganisation.value as string,
+        organisationId: selectedOrganisation.value.id,
         rolleId: rolle.value,
         befristung: formattedBefristung,
       }),
@@ -852,18 +852,13 @@
                 ref="personenkontext-create"
                 v-model:selected-organisation="selectedOrganisation"
                 :initial-organisation="selectedOrganisationObject"
-                @update:organisation-object="selectedOrganisationObject = $event"
                 v-model:selected-rollen="selectedRollen"
                 :operation-context="OperationContext.PERSON_ANLEGEN"
                 :allow-multiple-rollen="true"
                 :create-type="createType"
                 :rollenart-for-person="rollenartForPerson"
                 :show-headline="true"
-                :rollen="
-                  createType === CreationType.AddPersonToOwnSchule || (filteredRollen?.length ?? 0) > 0
-                    ? filteredRollen
-                    : rolleStore.rollenForPersonenkontextCreation
-                "
+                :rollen="filteredRollen"
                 :selected-organisation-props="selectedOrganisationProps"
                 :selected-rollen-props="selectedRollenProps"
                 :selected-klasse-props="selectedKlasseProps"

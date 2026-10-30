@@ -156,7 +156,7 @@
   const creationErrorText: Ref<string> = ref('');
   const creationErrorTitle: Ref<string> = ref('');
 
-  const cachedSelectedOrganisation: Ref<string> = ref('');
+  const cachedSelectedOrganisation: Ref<Organisation | undefined> = ref();
   const cachedSelectedRolle: Ref<TranslatedRolleWithAttrs | undefined> = ref();
   const cachedSelectedKopersNr: Ref<string> = ref('');
 
@@ -540,7 +540,7 @@
 
   type ZuordnungCreationForm = {
     selectedRolle: TranslatedRolleWithAttrs;
-    selectedOrganisation: string;
+    selectedOrganisation: Organisation;
     selectedKlasse: string;
     selectedBefristung: Date;
     selectedBefristungOption: string;
@@ -812,7 +812,9 @@
     personenkontextStore.errorCode = '';
     pendingCreation.value = false;
     isZuordnungFormActive.value = true;
-    formContext.setFieldValue('selectedOrganisation', cachedSelectedOrganisation.value);
+    if (cachedSelectedOrganisation.value) {
+      formContext.setFieldValue('selectedOrganisation', cachedSelectedOrganisation.value);
+    }
     if (cachedSelectedRolle.value) {
       formContext.setFieldValue('selectedRolle', cachedSelectedRolle.value);
     }
@@ -923,7 +925,7 @@
     );
     createSuccessDialogVisible.value = !personenkontextStore.errorCode;
     // Cache the selected values to avoid losing them on form reset (Useful for when Kopers is already assigned and we want to redirect back to form)
-    cachedSelectedOrganisation.value = selectedOrganisation.value!;
+    cachedSelectedOrganisation.value = selectedOrganisation.value;
     cachedSelectedRolle.value = selectedRolle.value!;
     cachedSelectedKopersNr.value = selectedKopersNr.value!;
     formContext.resetForm();
@@ -975,7 +977,7 @@
       return rolleStore.rollenForPersonenkontextCreation;
     }
 
-    const selectedOrgaId: string | undefined = selectedOrganisation.value;
+    const selectedOrgaId: string | undefined = selectedOrganisation.value.id;
 
     // Filter out Rollen that the user already has in the selected organization
     return rolleStore.rollenForPersonenkontextCreation?.filter(
@@ -1078,7 +1080,7 @@
     createZuordnungConfirmationDialogVisible.value = false;
     hasNoKopersNr.value = false;
     const organisation: Organisation | undefined = personenkontextStore.workflowStepResponse?.organisations.find(
-      (orga: Organisation) => orga.id === selectedOrganisation.value,
+      (orga: Organisation) => orga.id === selectedOrganisation.value?.id,
     );
 
     // The existing Klassenzuordnungen that the person has already
