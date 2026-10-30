@@ -15,7 +15,7 @@ type Props = {
   selectedBefristungOption: Ref<string | undefined>;
   calculatedBefristung: Ref<string | undefined>;
   formContext: ReturnType<typeof useForm>;
-  selectedRollen: Ref<string[] | undefined>;
+  selectedRollen: Ref<Array<string | TranslatedRolleWithAttrs> | undefined>;
 };
 
 export type BefristungUtilsType = {
@@ -26,22 +26,25 @@ export type BefristungUtilsType = {
 };
 
 // Checks if the selected Rolle has Befristungspflicht
-export async function isBefristungspflichtRolle(selectedRolleIds: string[] | undefined): Promise<boolean> {
-  if (!selectedRolleIds || selectedRolleIds.length === 0) {
+export async function isBefristungspflichtRolle(
+  selectedRollen: Array<string | TranslatedRolleWithAttrs> | undefined,
+): Promise<boolean> {
+  if (!selectedRollen || selectedRollen.length === 0) {
     return false;
   }
 
   const existingRollen: TranslatedRolleWithAttrs[] = rolleStore.rollenForPersonenkontextCreation ?? [];
 
-  for (const rolleId of selectedRolleIds) {
-    let rolle: TranslatedRolleWithAttrs | undefined = existingRollen.find(
-      (r: TranslatedRolleWithAttrs) => r.value === rolleId,
-    );
+  for (const selection of selectedRollen) {
+    let rolle: TranslatedRolleWithAttrs | undefined =
+      typeof selection === 'string'
+        ? existingRollen.find((r: TranslatedRolleWithAttrs) => r.value === selection)
+        : selection;
 
     // Load missing rolle
-    if (!rolle) {
+    if (!rolle && typeof selection === 'string') {
       // eslint-disable-next-line no-await-in-loop
-      await rolleStore.getRolleById(rolleId);
+      await rolleStore.getRolleById(selection);
       if (rolleStore.currentRolle) {
         // Map currentRolle to TranslatedRolleWithAttrs
         rolle = {
@@ -68,7 +71,7 @@ export function useBefristungUtils(props: {
   selectedBefristung: Ref<string | undefined>;
   selectedBefristungOption: Ref<string | undefined>;
   calculatedBefristung: Ref<string | undefined>;
-  selectedRollen: Ref<string[] | undefined>;
+  selectedRollen: Ref<Array<string | TranslatedRolleWithAttrs> | undefined>;
 }): BefristungUtilsType {
   const { selectedBefristung, selectedBefristungOption, calculatedBefristung, selectedRollen, formContext }: Props =
     props;
@@ -90,7 +93,7 @@ export function useBefristungUtils(props: {
   const setupRolleWatcher = (): void => {
     watch(
       selectedRollen,
-      async (newValue: string[] | undefined) => {
+      async (newValue: Array<string | TranslatedRolleWithAttrs> | undefined) => {
         if (newValue) {
           if (await isBefristungspflichtRolle(newValue)) {
             selectedBefristungOption.value = BefristungOption.SCHULJAHRESENDE;

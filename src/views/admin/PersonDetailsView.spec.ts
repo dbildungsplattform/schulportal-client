@@ -3,10 +3,9 @@ import { afterEach, expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component, type ComputedRef, type DefineComponent } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 
-import { EmailAddressStatus, ServiceProviderSystem } from '@/api-client/generated';
+import { EmailAddressStatus, ServiceProviderSystem, type OrganisationResponse } from '@/api-client/generated';
 import { PendingState } from '@/components/admin/personen/details/PersonenkontextItem.types';
 import PersonenkontextItem from '@/components/admin/personen/details/PersonenkontextItem.vue';
-import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore, type PersonenkontextRolleFields, type UserInfo } from '@/stores/AuthStore';
 import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
@@ -41,6 +40,7 @@ import PersonDetailsView from './PersonDetailsView.vue';
 
 let wrapper: VueWrapper | null = null;
 let router: Router;
+let mockOrganisation: OrganisationResponse;
 
 const authStore: AuthStore = useAuthStore();
 const configStore: ConfigStore = useConfigStore();
@@ -67,7 +67,7 @@ const mockCurrentUser: UserInfo = {
   sub: 'c71be903-d0ec-4207-b653-40c114680b63',
   personenkontexte: [
     {
-      organisation: DoFactory.getOrganisationResponse(),
+      organisation: DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Root }),
       rolle: {
         systemrechte: ['ROLLEN_VERWALTEN', 'SCHULEN_VERWALTEN'],
         serviceProviderIds: ['789897798'],
@@ -186,43 +186,13 @@ describe('PersonDetailsView', () => {
       },
     ];
 
+    mockOrganisation = DoFactory.getOrganisationResponse({ id: 'O1', typ: OrganisationsTyp.Schule });
     personenkontextStore.workflowStepResponse = {
-      organisations: [
-        {
-          id: 'O1',
-          administriertVon: 'string',
-          kennung: 'string',
-          name: 'string',
-          namensergaenzung: 'string',
-          kuerzel: 'string',
-          typ: 'ROOT',
-        },
-      ],
+      organisations: [mockOrganisation],
       selectedOrganisation: 'string',
       selectedRollen: ['string'],
       canCommit: true,
     };
-
-    organisationStore.klassen = [
-      {
-        id: '1',
-        kennung: '1234567',
-        name: 'Klasse 1',
-        namensergaenzung: 'Ergänzung',
-        kuerzel: 'K1',
-        typ: OrganisationsTyp.Klasse,
-        administriertVon: '1',
-      },
-      {
-        id: '9a',
-        kennung: '1234567',
-        name: 'Klasse 2',
-        namensergaenzung: 'Ergänzung',
-        kuerzel: 'K1',
-        typ: OrganisationsTyp.Klasse,
-        administriertVon: 'O1',
-      },
-    ];
 
     organisationStore.getParentOrganisationsByIds = (_organisationIds: string[]): Promise<void> => {
       return Promise.resolve();
@@ -504,31 +474,28 @@ describe('PersonDetailsView', () => {
       await flushPromises();
     });
 
-    async function openZuordnungCreationForm(): Promise<VueWrapper<InstanceType<typeof PersonenkontextCreate>>> {
+    async function openZuordnungCreationForm(): Promise<VueWrapper> {
       await wrapper?.find('[data-testid="zuordnung-edit-button"]').trigger('click');
       await nextTick();
       await wrapper?.find('[data-testid="zuordnung-create-button"]').trigger('click');
       await flushPromises();
-      return wrapper!.findComponent(PersonenkontextCreate);
+      return wrapper!.findComponent({ ref: 'personenkontext-create' });
     }
 
-    async function selectOrganisation(
-      personenkontextCreate: VueWrapper<InstanceType<typeof PersonenkontextCreate>>,
-      organisationId: string,
-    ): Promise<void> {
+    async function selectOrganisation(personenkontextCreate: VueWrapper, organisation: Organisation): Promise<void> {
       await personenkontextCreate
-        .findComponent({ ref: 'schulenFilter' })
-        .findComponent({ ref: 'personenkontext-create-organisation-select' })
-        .setValue(organisationId);
+        .getComponent({ ref: 'schulenFilter' })
+        .getComponent({ ref: 'personenkontext-create-organisation-select' })
+        .setValue(organisation);
       await flushPromises();
+      expect(personenkontextCreate.props()).toHaveProperty('selectedOrganisation', organisation);
     }
 
     test('it passes the existing rollenart to the Rollen query', async () => {
-      const personenkontextCreate: VueWrapper<InstanceType<typeof PersonenkontextCreate>> =
-        await openZuordnungCreationForm();
-      expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lern);
+      const personenkontextCreate: VueWrapper = await openZuordnungCreationForm();
+      expect(personenkontextCreate.props()).toHaveProperty('rollenartForPerson', RollenArt.Lern);
 
-      await selectOrganisation(personenkontextCreate, 'O1');
+      await selectOrganisation(personenkontextCreate, mockOrganisation);
 
       expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenLastCalledWith(
         expect.objectContaining({ organisationId: 'O1', rollenartForPerson: RollenArt.Lern }),
@@ -540,11 +507,10 @@ describe('PersonDetailsView', () => {
         DoFactory.getZuordnung({ sskId: 'O1', rolleId: '1', rollenArt: RollenArt.Lern }),
       ]);
 
-      const personenkontextCreate: VueWrapper<InstanceType<typeof PersonenkontextCreate>> =
-        await openZuordnungCreationForm();
-      await selectOrganisation(personenkontextCreate, 'O1');
+      const personenkontextCreate: VueWrapper = await openZuordnungCreationForm();
+      await selectOrganisation(personenkontextCreate, mockOrganisation);
 
-      expect(personenkontextCreate.props('rollen')).toEqual([
+      expect(personenkontextCreate.props()).toHaveProperty('rollen', [
         {
           value: '54321',
           title: 'Lehrkraft',
@@ -800,7 +766,6 @@ describe('PersonDetailsView', () => {
 
   test('renders form to add Zuordnung and triggers submit', async () => {
     organisationStore.getAllOrganisationen = vi.fn().mockResolvedValue(undefined);
-    organisationStore.getKlassenByOrganisationId = vi.fn().mockResolvedValue(undefined);
     organisationStore.fetchSchuleDetailsForKlassen = vi.fn().mockResolvedValue(undefined);
     personenkontextStore.processWorkflowStep = vi.fn().mockResolvedValue(undefined);
     personenkontextStore.updatePersonenkontexte = vi.fn().mockResolvedValue(undefined);
@@ -822,15 +787,17 @@ describe('PersonDetailsView', () => {
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'schulenFilter' })
       .findComponent({ ref: 'personenkontext-create-organisation-select' });
-    await organisationAutocomplete?.setValue('O1');
-    organisationAutocomplete?.vm.$emit('update:search', 'O1');
-    await nextTick();
+    await organisationAutocomplete?.setValue(mockOrganisation);
+    await flushPromises();
+    expect(wrapper?.getComponent({ ref: 'personenkontext-create' }).props('selectedOrganisation')).toEqual(
+      mockOrganisation,
+    );
 
     // Set rolle value
     const rolleAutocomplete: VueWrapper | undefined = wrapper
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'rolle-select' });
-    await rolleAutocomplete?.setValue('1');
+    await rolleAutocomplete?.setValue(DoFactory.getTranslatedRolleWithAttrs({ value: '1', rollenart: RollenArt.Lern }));
     rolleAutocomplete?.vm.$emit('update:search', '1');
     await nextTick();
     // Set klasse value
@@ -838,7 +805,12 @@ describe('PersonDetailsView', () => {
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ name: 'KlassenFilter' })
       .findComponent({ ref: 'personenkontext-create-klasse-select' });
-    await klasseAutocomplete?.setValue('9a');
+    const klasse: Organisation = DoFactory.getKlasse(undefined, {
+      id: '9a',
+      name: 'Klasse 2',
+      administriertVon: 'O1',
+    });
+    await klasseAutocomplete?.setValue(klasse);
     klasseAutocomplete?.vm.$emit('update:search', '9a');
     await nextTick();
 
@@ -848,6 +820,22 @@ describe('PersonDetailsView', () => {
       .findComponent({ ref: 'befristung-input' });
     await befristungInput?.setValue('12.08.2099');
     await nextTick();
+
+    const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
+    personenkontextCreate.vm.$emit('fieldReset', 'selectedKlasse');
+    await flushPromises();
+    await wrapper!.get('[data-testid="zuordnung-creation-submit-button"]').trigger('click');
+    await flushPromises();
+    await vi.waitFor(() => {
+      expect(personenkontextCreate.props()).toHaveProperty(
+        'selectedKlasseProps',
+        expect.objectContaining({ error: true }),
+      );
+    });
+    expect(document.body.querySelector('[data-testid="confirm-zuordnung-dialog-addition"]')).toBeNull();
+
+    personenkontextCreate.vm.$emit('update:selectedKlasse', klasse);
+    await flushPromises();
 
     const submitButton: Element | null = document.body.querySelector(
       '[data-testid="zuordnung-creation-submit-button"]',
@@ -900,7 +888,6 @@ describe('PersonDetailsView', () => {
 
   test('renders form to add Zuordnung, triggers submit that results in an error and then navigates back to form and resets errorCode', async () => {
     organisationStore.getAllOrganisationen = vi.fn().mockResolvedValue(undefined);
-    organisationStore.getKlassenByOrganisationId = vi.fn().mockResolvedValue(undefined);
     organisationStore.fetchSchuleDetailsForKlassen = vi.fn().mockResolvedValue(undefined);
     personenkontextStore.processWorkflowStep = vi.fn().mockResolvedValue(undefined);
 
@@ -920,15 +907,17 @@ describe('PersonDetailsView', () => {
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'schulenFilter' })
       .findComponent({ ref: 'personenkontext-create-organisation-select' });
-    await organisationAutocomplete?.setValue('O1');
-    organisationAutocomplete?.vm.$emit('update:search', 'O1');
-    await nextTick();
+    await organisationAutocomplete?.setValue(mockOrganisation);
+    await flushPromises();
+    expect(wrapper?.getComponent({ ref: 'personenkontext-create' }).props('selectedOrganisation')).toEqual(
+      mockOrganisation,
+    );
 
     // Set rolle value
     const rolleAutocomplete: VueWrapper | undefined = wrapper
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'rolle-select' });
-    await rolleAutocomplete?.setValue('1');
+    await rolleAutocomplete?.setValue(DoFactory.getTranslatedRolleWithAttrs({ value: '1', rollenart: RollenArt.Lern }));
     rolleAutocomplete?.vm.$emit('update:search', '1');
     await nextTick();
     // Set klasse value
@@ -936,7 +925,12 @@ describe('PersonDetailsView', () => {
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ name: 'KlassenFilter' })
       .findComponent({ ref: 'personenkontext-create-klasse-select' });
-    await klasseAutocomplete?.setValue('9a');
+    const klasse: Organisation = DoFactory.getKlasse(undefined, {
+      id: '9a',
+      name: 'Klasse 2',
+      administriertVon: 'O1',
+    });
+    await klasseAutocomplete?.setValue(klasse);
     klasseAutocomplete?.vm.$emit('update:search', '9a');
     await nextTick();
 
@@ -997,7 +991,11 @@ describe('PersonDetailsView', () => {
     expect(personenkontextStore.errorCode).toBe('');
   });
 
-  describe('Rolle metadata when changing Klasse', () => {
+  describe.each([true, false])('selected Klasse remains in results: %s', (retainSelection: boolean) => {
+    afterEach(() => {
+      wrapper?.unmount();
+    });
+
     test('preserves existing Rolle metadata when changing Klasse with no creation Rollen available', async () => {
       const schule: Organisation = DoFactory.getSchule({ id: 'schule-id' });
       const oldKlasse: Organisation = DoFactory.getSchule({
@@ -1033,6 +1031,8 @@ describe('PersonDetailsView', () => {
           administriertVon: schule.id,
         }),
       ]);
+      await nextTick();
+      await flushPromises();
       personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
         organisations: [DoFactory.getOrganisationenResponseLegacy({ id: schule.id, name: schule.name })],
         canCommit: true,
@@ -1056,10 +1056,18 @@ describe('PersonDetailsView', () => {
         .findComponent({ name: 'KlassenFilter' });
       (
         klassenFilter.vm as {
-          $emit: (event: 'update:selectedKlassen', value: string | string[] | undefined) => void;
+          $emit: (event: 'update:selectedKlassen', value: Organisation | undefined) => void;
         }
-      ).$emit('update:selectedKlassen', newKlasse.id);
+      ).$emit('update:selectedKlassen', newKlasse);
       await flushPromises();
+      if (!retainSelection) {
+        organisationStore.klassenFilters.set('klasse-change', {
+          filterResult: [oldKlasse],
+          total: 1,
+          loading: false,
+        });
+        await flushPromises();
+      }
       await wrapper!.get('[data-testid="klasse-change-submit-button"]').trigger('click');
       await flushPromises();
 
@@ -1104,7 +1112,6 @@ describe('PersonDetailsView', () => {
 
   test('renders form to change Klasse and triggers submit', async () => {
     organisationStore.getAllOrganisationen = vi.fn().mockResolvedValue(undefined);
-    organisationStore.getKlassenByOrganisationId = vi.fn().mockResolvedValue(undefined);
     organisationStore.fetchSchuleDetailsForKlassen = vi.fn().mockResolvedValue(undefined);
     personenkontextStore.processWorkflowStep = vi.fn().mockResolvedValue(undefined);
     personenkontextStore.updatePersonenkontexte = vi.fn().mockResolvedValue(undefined);
@@ -1134,10 +1141,15 @@ describe('PersonDetailsView', () => {
     const klasseInput: VueWrapper | undefined = wrapper
       ?.findComponent({ ref: 'klasse-change-form' })
       .findComponent({ name: 'KlassenFilter' });
-    await klasseInput?.setValue('9a');
-    await nextTick();
+    const newKlasse: Organisation = DoFactory.getKlasse(undefined, { name: '9b' });
+    klasseInput?.vm.$emit('update:selectedKlassen', newKlasse);
+    await flushPromises();
 
-    await wrapper?.find('[data-testid="klasse-change-submit-button"]').trigger('click');
+    const submitButton: DOMWrapper<HTMLButtonElement> = wrapper!.find<HTMLButtonElement>(
+      '[data-testid="klasse-change-submit-button"]',
+    );
+    expect(submitButton.element.disabled).toBe(false);
+    await submitButton.trigger('click');
     await nextTick();
 
     await flushPromises();

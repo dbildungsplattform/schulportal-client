@@ -4,11 +4,12 @@ import {
   type RolleResponse,
   type DBiamPersonResponse,
   type PersonLandesbediensteterSearchResponse,
+  DbiamCreatePersonWithPersonenkontexteBodyParams,
 } from '@/api-client/generated';
-import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
 import routes from '@/router/routes';
-import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
+import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
 import {
+  CreationType,
   usePersonenkontextStore,
   type PersonenkontextStore,
   type PersonenkontextWorkflowResponse,
@@ -178,7 +179,9 @@ async function fillForm(args: Partial<FormFields>): Promise<Partial<FormSelector
     .findComponent({ ref: 'personenkontext-create-organisation-select' });
   expect(organisationsebeneSelect?.exists()).toBe(true);
 
-  await organisationsebeneSelect?.setValue(organisationsebene);
+  await organisationsebeneSelect?.setValue(
+    organisationsebene ? DoFactory.getSchule({ id: organisationsebene }) : undefined,
+  );
   await nextTick();
   selectors.organisationsebeneSelect = organisationsebeneSelect;
 
@@ -187,7 +190,11 @@ async function fillForm(args: Partial<FormFields>): Promise<Partial<FormSelector
     .findComponent({ ref: 'rollen-select' });
   expect(rollenSelect?.exists()).toBe(true);
 
-  await rollenSelect?.setValue(rollen);
+  await rollenSelect?.setValue(
+    rollen?.map((id: string) =>
+      rolleStore.rollenForPersonenkontextCreation.find((rolle: TranslatedRolleWithAttrs) => rolle.value === id),
+    ),
+  );
   await nextTick();
   selectors.rollenSelect = rollenSelect;
 
@@ -196,8 +203,11 @@ async function fillForm(args: Partial<FormFields>): Promise<Partial<FormSelector
     .findComponent({ ref: 'klasse-select' });
   expect(klasseSelect?.exists()).toBe(true);
 
-  await klasseSelect?.setValue(klasse);
-  klasseSelect?.vm.$emit('update:selectedKlassen', klasse);
+  const selectedKlasse: Organisation | undefined = klasse
+    ? DoFactory.getKlasse(undefined, { name: klasse })
+    : undefined;
+  await klasseSelect?.setValue(selectedKlasse);
+  klasseSelect?.vm.$emit('update:selectedKlassen', selectedKlasse);
   await nextTick();
   selectors.klasseSelect = klasseSelect;
 
@@ -263,514 +273,487 @@ beforeEach(async () => {
 });
 
 describe('PersonCreationView', () => {
-  test('it renders the person creation form and its child components', () => {
-    expect(wrapper).toBeTruthy();
-    expect(wrapper?.find('[data-testid="person-creation-form"]').isVisible()).toBe(true);
-    expect(wrapper?.getComponent({ name: 'LayoutCard' })).toBeTruthy();
-    expect(wrapper?.getComponent({ name: 'SpshAlert' })).toBeTruthy();
-    expect(wrapper?.getComponent({ name: 'FormWrapper' })).toBeTruthy();
-    expect(wrapper?.getComponent({ name: 'FormRow' })).toBeTruthy();
-    expect(wrapper?.getComponent({ name: 'PersonenkontextCreate' })).toBeTruthy();
-  });
-
-  test('onBeforeMount sets labels and systemrecht for createType limited', async () => {
-    await router.push({ name: 'create-person-limited' });
-    await router.isReady();
-
-    wrapper = mount(PersonCreationView, {
-      attachTo: document.getElementById('app') || '',
-      global: {
-        components: {
-          PersonCreationView: PersonCreationView as Component,
-        },
-        plugins: [router],
-      },
+  describe(`${CreationType.Full}`, () => {
+    test('it renders the person creation form and its child components', () => {
+      expect(wrapper).toBeTruthy();
+      expect(wrapper?.find('[data-testid="person-creation-form"]').isVisible()).toBe(true);
+      expect(wrapper?.getComponent({ name: 'LayoutCard' })).toBeTruthy();
+      expect(wrapper?.getComponent({ name: 'SpshAlert' })).toBeTruthy();
+      expect(wrapper?.getComponent({ name: 'FormWrapper' })).toBeTruthy();
+      expect(wrapper?.getComponent({ name: 'FormRow' })).toBeTruthy();
+      expect(wrapper?.getComponent({ name: 'PersonenkontextCreate' })).toBeTruthy();
     });
 
-    await nextTick();
+    it('emits update:calculatedBefristungOption event with a value', async () => {
+      const organisationSelect: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'schulenFilter' })
+        .findComponent({ ref: 'personenkontext-create-organisation-select' });
+      await organisationSelect?.setValue(workflowOrganisation);
+      await nextTick();
 
-    expect(wrapper.find('[data-testid="admin-headline"]').text()).toBe('Andere Person (neu anlegen)');
-    expect(wrapper.find('[data-testid="add-another-state-employee-headline"]').text()).toBe(
-      'Andere Person (neu anlegen)',
-    );
-    expect(wrapper.find('[data-testid="person-creation-form-discard-button"]').text()).toBe('Abbrechen');
-    expect(wrapper.find('[data-testid="person-creation-form-submit-button"]').text()).toBe('Person anlegen');
+      const rolleSelect: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'rollen-select' });
+      await rolleSelect?.setValue([mockRolleForPersonenkontextCreation]);
+      await nextTick();
 
-    expect(wrapper.findComponent({ name: 'PersonenkontextCreate' }).props('createType')).toBe('limited');
-  });
+      // Get the BefristungInput component
+      const personenkontextCreate: VueWrapper | undefined = wrapper?.findComponent({ name: 'PersonenkontextCreate' });
 
-  it('emits update:calculatedBefristungOption event with a value', async () => {
-    const organisationSelect: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'schulenFilter' })
-      .findComponent({ ref: 'personenkontext-create-organisation-select' });
-    await organisationSelect?.setValue(ORGANISATION_ID);
-    await nextTick();
+      // Emit the event from the child component
+      personenkontextCreate?.vm.$emit('update:calculatedBefristungOption', 'someOption');
 
-    const rolleSelect: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'rollen-select' });
-    await rolleSelect?.setValue([ROLLE_ID]);
-    await nextTick();
-
-    // Get the BefristungInput component
-    const personenkontextCreate: VueWrapper | undefined = wrapper?.findComponent({ name: 'PersonenkontextCreate' });
-
-    // Emit the event from the child component
-    personenkontextCreate?.vm.$emit('update:calculatedBefristungOption', 'someOption');
-
-    // Assert that the parent component emitted the event
-    expect(
-      wrapper?.findComponent({ ref: 'personenkontext-create' }).emitted('update:calculatedBefristungOption'),
-    ).toBeTruthy();
-    expect(
-      wrapper?.findComponent({ ref: 'personenkontext-create' }).emitted('update:calculatedBefristungOption')![0],
-    ).toEqual(['someOption']);
-  });
-
-  it('emits update:calculatedBefristungOption event with no value', async () => {
-    const organisationSelect: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'schulenFilter' })
-      .findComponent({ ref: 'personenkontext-create-organisation-select' });
-    await organisationSelect?.setValue(ORGANISATION_ID);
-    await nextTick();
-
-    const rolleSelect: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'rollen-select' });
-    await rolleSelect?.setValue([ROLLE_ID]);
-    await nextTick();
-
-    // Get the BefristungInput component
-    const personenkontextCreate: VueWrapper | undefined = wrapper?.findComponent({ name: 'PersonenkontextCreate' });
-
-    // Emit the event from the child component
-    personenkontextCreate?.vm.$emit('update:calculatedBefristungOption', undefined);
-
-    // Assert that the parent component emitted the event
-    expect(
-      wrapper?.findComponent({ ref: 'personenkontext-create' }).emitted('update:calculatedBefristungOption'),
-    ).toBeTruthy();
-    expect(
-      wrapper?.findComponent({ ref: 'personenkontext-create' }).emitted('update:calculatedBefristungOption')![0],
-    ).toEqual([undefined]);
-  });
-
-  test('it passes the rollenart of the selected Rolle to the Rollen query without filtering Rollen by rollenart', async () => {
-    const lehrRolleResponse: RolleResponse = DoFactory.getRolleResponse({ rollenart: 'LEHR' });
-    const lehrRolle: TranslatedRolleWithAttrs = {
-      value: lehrRolleResponse.id,
-      title: lehrRolleResponse.name,
-      merkmale: lehrRolleResponse.merkmale,
-      rollenart: lehrRolleResponse.rollenart,
-    };
-    rolleStore.rollenForPersonenkontextCreation = [mockRolleForPersonenkontextCreation, lehrRolle];
-
-    const personenkontextCreate: VueWrapper<InstanceType<typeof PersonenkontextCreate>> =
-      wrapper!.findComponent(PersonenkontextCreate);
-    expect(personenkontextCreate.props('rollenartForPerson')).toBeUndefined();
-
-    await personenkontextCreate
-      .findComponent({ ref: 'schulenFilter' })
-      .findComponent({ ref: 'personenkontext-create-organisation-select' })
-      .setValue(ORGANISATION_ID);
-    await personenkontextCreate.findComponent({ ref: 'rollen-select' }).setValue([ROLLE_ID]);
-    await flushPromises();
-
-    expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lern);
-    expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenLastCalledWith(
-      expect.objectContaining({ organisationId: ORGANISATION_ID, rollenartForPerson: RollenArt.Lern }),
-    );
-    expect(personenkontextCreate.props('rollen')).toEqual([mockRolleForPersonenkontextCreation, lehrRolle]);
-  });
-
-  test('should request Rollen without the previous rollenart after clearing the multiple Rolle autocomplete', async () => {
-    const personenkontextCreate: VueWrapper<InstanceType<typeof PersonenkontextCreate>> =
-      wrapper!.findComponent(PersonenkontextCreate);
-
-    await personenkontextCreate
-      .findComponent({ ref: 'schulenFilter' })
-      .findComponent({ ref: 'personenkontext-create-organisation-select' })
-      .setValue(ORGANISATION_ID);
-
-    const rollenSelect: VueWrapper = personenkontextCreate.findComponent({ ref: 'rollen-select' });
-    await rollenSelect.setValue([ROLLE_ID]);
-    await flushPromises();
-
-    expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lern);
-    expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenLastCalledWith(
-      expect.objectContaining({ organisationId: ORGANISATION_ID, rollenartForPerson: RollenArt.Lern }),
-    );
-    vi.mocked(rolleStore.getRollenForPersonenkontextCreation).mockClear();
-
-    await rollenSelect.get('.v-field__clearable .v-icon').trigger('click');
-    await flushPromises();
-
-    expect(personenkontextCreate.emitted('fieldReset')).toContainEqual(['selectedRollen']);
-    expect(personenkontextCreate.props('selectedRollen') ?? []).toEqual([]);
-    expect(personenkontextCreate.props('rollenartForPerson')).toBeUndefined();
-
-    await rollenSelect.get('input').setValue('another Rolle');
-    await flushPromises();
-    await vi.waitFor((): void => {
-      expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenCalled();
+      // Assert that the parent component emitted the event
+      expect(
+        wrapper?.findComponent({ ref: 'personenkontext-create' }).emitted('update:calculatedBefristungOption'),
+      ).toBeTruthy();
+      expect(
+        wrapper?.findComponent({ ref: 'personenkontext-create' }).emitted('update:calculatedBefristungOption')![0],
+      ).toEqual(['someOption']);
     });
 
-    expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenLastCalledWith(
-      expect.objectContaining({ organisationId: ORGANISATION_ID, rollenartForPerson: undefined }),
-    );
-  });
+    it('emits update:calculatedBefristungOption event with no value', async () => {
+      const organisationSelect: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'schulenFilter' })
+        .findComponent({ ref: 'personenkontext-create-organisation-select' });
+      await organisationSelect?.setValue(workflowOrganisation);
+      await nextTick();
 
-  test('it navigates back to personen table', async () => {
-    const push: MockInstance = vi.spyOn(router, 'push');
-    await wrapper?.find('[data-testid="close-layout-card-button"]').trigger('click');
-    expect(push).toHaveBeenCalledTimes(1);
-    expect(personenkontextStore.createdPersonWithKontext).toBe(null);
-  });
+      const rolleSelect: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'rollen-select' });
+      await rolleSelect?.setValue([mockRolleForPersonenkontextCreation]);
+      await nextTick();
 
-  test('it fills form and triggers submit', async () => {
-    personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
+      // Get the BefristungInput component
+      const personenkontextCreate: VueWrapper | undefined = wrapper?.findComponent({ name: 'PersonenkontextCreate' });
 
-    const organisationSelect: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'schulenFilter' })
-      .findComponent({ ref: 'personenkontext-create-organisation-select' });
-    await organisationSelect?.setValue(ORGANISATION_ID);
-    await nextTick();
+      // Emit the event from the child component
+      personenkontextCreate?.vm.$emit('update:calculatedBefristungOption', undefined);
 
-    const rollenSelect: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'rollen-select' });
-    await rollenSelect?.setValue([ROLLE_ID]);
-    await nextTick();
+      // Assert that the parent component emitted the event
+      expect(
+        wrapper?.findComponent({ ref: 'personenkontext-create' }).emitted('update:calculatedBefristungOption'),
+      ).toBeTruthy();
+      expect(
+        wrapper?.findComponent({ ref: 'personenkontext-create' }).emitted('update:calculatedBefristungOption')![0],
+      ).toEqual([undefined]);
+    });
 
-    const klasseSelect: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'klasse-select' });
-    await klasseSelect?.setValue('9a');
-    await nextTick();
+    test('it passes the rollenart of the selected Rolle to the Rollen query without filtering Rollen by rollenart', async () => {
+      const lehrRolleResponse: RolleResponse = DoFactory.getRolleResponse({ rollenart: 'LEHR' });
+      const lehrRolle: TranslatedRolleWithAttrs = {
+        value: lehrRolleResponse.id,
+        title: lehrRolleResponse.name,
+        merkmale: lehrRolleResponse.merkmale,
+        rollenart: lehrRolleResponse.rollenart,
+      };
+      rolleStore.rollenForPersonenkontextCreation = [mockRolleForPersonenkontextCreation, lehrRolle];
 
-    const befristungInput: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'befristung-input-wrapper' })
-      .findComponent({ ref: 'befristung-input' });
-    await befristungInput?.setValue('12.08.2099');
-    await nextTick();
+      const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
+      expect(personenkontextCreate.props()).toHaveProperty('rollenartForPerson', undefined);
 
-    const vornameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'vorname-input' });
-    await vornameInput?.setValue('Randy');
-    await nextTick();
+      await personenkontextCreate
+        .findComponent({ ref: 'schulenFilter' })
+        .findComponent({ ref: 'personenkontext-create-organisation-select' })
+        .setValue(workflowOrganisation);
+      await personenkontextCreate
+        .findComponent({ ref: 'rollen-select' })
+        .setValue([mockRolleForPersonenkontextCreation]);
+      await flushPromises();
 
-    const nachnameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'familienname-input' });
-    await nachnameInput?.setValue('Cena');
-    await nextTick();
+      expect(personenkontextCreate.props()).toHaveProperty('rollenartForPerson', RollenArt.Lern);
+      expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenLastCalledWith(
+        expect.objectContaining({ organisationId: ORGANISATION_ID, rollenartForPerson: RollenArt.Lern }),
+      );
+      expect(personenkontextCreate.props()).toHaveProperty('rollen', [mockRolleForPersonenkontextCreation, lehrRolle]);
+    });
 
-    const kopersInput: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'kopers-input' })
-      .findComponent({ ref: 'kopersnr-input' });
-    await kopersInput?.setValue('23234');
-    await nextTick();
+    test('should request Rollen without the previous rollenart after clearing the multiple Rolle autocomplete', async () => {
+      const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
 
-    await wrapper?.find('[data-testid="person-creation-form-submit-button"]').trigger('click');
-    await nextTick();
-    await flushPromises();
+      await personenkontextCreate
+        .findComponent({ ref: 'schulenFilter' })
+        .findComponent({ ref: 'personenkontext-create-organisation-select' })
+        .setValue(workflowOrganisation);
 
-    // Form is resetting after submit so orga should be undefined
-    expect(organisationSelect?.vm.$data).toStrictEqual({});
-  });
+      const rollenSelect: VueWrapper = personenkontextCreate.findComponent({ ref: 'rollen-select' });
+      await rollenSelect.setValue([mockRolleForPersonenkontextCreation]);
+      await flushPromises();
 
-  test('it fills form, triggers submit and then show success template', async () => {
-    personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
+      expect(personenkontextCreate.props()).toHaveProperty('rollenartForPerson', RollenArt.Lern);
+      expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenLastCalledWith(
+        expect.objectContaining({ organisationId: ORGANISATION_ID, rollenartForPerson: RollenArt.Lern }),
+      );
+      vi.mocked(rolleStore.getRollenForPersonenkontextCreation).mockClear();
 
-    const organisationSelect: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'schulenFilter' })
-      .findComponent({ ref: 'personenkontext-create-organisation-select' });
-    await organisationSelect?.setValue(ORGANISATION_ID);
-    await nextTick();
+      await rollenSelect.get('.v-field__clearable .v-icon').trigger('click');
+      await flushPromises();
 
-    const rollenSelect: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'rollen-select' });
-    await rollenSelect?.setValue([ROLLE_ID]);
-    await nextTick();
+      expect(personenkontextCreate.emitted('fieldReset')).toContainEqual(['selectedRollen']);
+      expect(personenkontextCreate.props()).toHaveProperty('selectedRollen', undefined);
+      expect(personenkontextCreate.props()).toHaveProperty('rollenartForPerson', undefined);
 
-    const klasseSelect: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'klasse-select' });
-    await klasseSelect?.setValue('9a');
-    await nextTick();
+      await rollenSelect.get('input').setValue('another Rolle');
+      await flushPromises();
+      await vi.waitFor((): void => {
+        expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenCalled();
+      });
 
-    const befristungInput: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'befristung-input-wrapper' })
-      .findComponent({ ref: 'befristung-input' });
-    await befristungInput?.setValue('12.08.2099');
-    await nextTick();
+      expect(rolleStore.getRollenForPersonenkontextCreation).toHaveBeenLastCalledWith(
+        expect.objectContaining({ organisationId: ORGANISATION_ID, rollenartForPerson: undefined }),
+      );
+    });
 
-    const vornameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'vorname-input' });
-    await vornameInput?.setValue('Randy');
-    await nextTick();
+    test('it navigates back to personen table', async () => {
+      const push: MockInstance = vi.spyOn(router, 'push');
+      await wrapper?.find('[data-testid="close-layout-card-button"]').trigger('click');
+      expect(push).toHaveBeenCalledTimes(1);
+      expect(personenkontextStore.createdPersonWithKontext).toBe(null);
+    });
 
-    const nachnameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'familienname-input' });
-    await nachnameInput?.setValue('Cena');
-    await nextTick();
+    test('should retain Rolle attributes for validation and Befristung after search results change', async () => {
+      const rolle: TranslatedRolleWithAttrs = DoFactory.getTranslatedRolleWithAttrs({
+        rollenart: RollenArt.Lern,
+        merkmale: [RollenMerkmal.KopersPflicht, RollenMerkmal.BefristungPflicht],
+      });
+      const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
+      await personenkontextCreate
+        .findComponent({ ref: 'schulenFilter' })
+        .findComponent({ ref: 'personenkontext-create-organisation-select' })
+        .setValue(DoFactory.getOrganisation({ id: ORGANISATION_ID }));
+      await personenkontextCreate.findComponent({ ref: 'rollen-select' }).setValue([rolle]);
+      await flushPromises();
 
-    const kopersInput: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'kopers-input' })
-      .findComponent({ ref: 'kopersnr-input' });
-    await kopersInput?.setValue('23234');
-    await nextTick();
+      rolleStore.rollenForPersonenkontextCreation = [];
+      await flushPromises();
 
-    await wrapper?.find('[data-testid="person-creation-form-submit-button"]').trigger('click');
-    await nextTick();
-    await flushPromises();
+      expect(personenkontextCreate.props()).toHaveProperty('selectedRollen', [rolle]);
+      expect(personenkontextCreate.findComponent({ ref: 'rollen-select' }).text()).toContain(rolle.title);
+      expect(wrapper!.findComponent({ ref: 'kopers-input' }).exists()).toBe(true);
+      expect(personenkontextCreate.findComponent({ name: 'BefristungInput' }).props()).toHaveProperty(
+        'isUnbefristetDisabled',
+        true,
+      );
+      expect(rolleStore.getRolleById).not.toHaveBeenCalled();
 
-    // Form is resetting after submit so orga should be undefined
-    expect(organisationSelect?.vm.$data).toStrictEqual({});
+      await wrapper!.get('[data-testid="person-creation-form"]').trigger('submit');
+      await flushPromises();
+      await vi.waitFor((): void => {
+        const kopersInput: VueWrapper = wrapper!.findComponent({ ref: 'kopers-input' });
+        expect(kopersInput.props()).toHaveProperty('selectedKopersNrProps', expect.objectContaining({ error: true }));
+        expect(personenkontextCreate.props()).toHaveProperty(
+          'selectedKlasseProps',
+          expect.objectContaining({ error: true }),
+        );
+      });
 
-    personenkontextStore.createdPersonWithKontext = mockCreatedPersonWithKontext;
+      const klasse: Organisation = DoFactory.getKlasse(undefined, { name: '9a' });
+      const klasseSelect: VueWrapper = personenkontextCreate.findComponent({ ref: 'klasse-select' });
+      await klasseSelect.setValue(klasse);
+      klasseSelect.vm.$emit('update:selectedKlassen', klasse);
 
-    await nextTick();
-    expect(wrapper?.find('[data-testid="person-success-text"]').isVisible()).toBe(true);
-  });
+      await personenkontextCreate
+        .findComponent({ ref: 'befristung-input-wrapper' })
+        .findComponent({ ref: 'befristung-input' })
+        .setValue('12.08.2099');
+      await wrapper!.findComponent({ ref: 'vorname-input' }).setValue('Randy');
+      await wrapper!.findComponent({ ref: 'familienname-input' }).setValue('Cena');
+      await wrapper!.findComponent({ ref: 'kopers-input' }).findComponent({ ref: 'kopersnr-input' }).setValue('23234');
+      await flushPromises();
 
-  test('it fills form, triggers submit and then shows success template with new methods', async () => {
-    personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
+      const createPersonSpy: Mock = vi
+        .spyOn(personenkontextStore, 'createPersonWithKontexte')
+        .mockImplementationOnce((): Promise<void> => {
+          personenkontextStore.createdPersonWithKontext = DoFactory.getDBiamPersonResponse({
+            ...mockCreatedPersonWithKontext,
+            dBiamPersonenkontextResponses: [
+              DoFactory.getDBiamPersonenkontextResponse({
+                personId: PERSON_ID,
+                organisationId: ORGANISATION_ID,
+                rolleId: rolle.value,
+              }),
+              DoFactory.getDBiamPersonenkontextResponse({
+                personId: PERSON_ID,
+                organisationId: klasse.id,
+                rolleId: rolle.value,
+              }),
+            ],
+          });
+          return Promise.resolve();
+        });
 
-    const spy: Mock = vi.spyOn(personenkontextStore, 'createPersonWithKontexte').mockImplementationOnce(async () => {
+      await wrapper!.get('[data-testid="person-creation-form"]').trigger('submit');
+      await flushPromises();
+
+      await vi.waitFor((): void => expect(createPersonSpy).toHaveBeenCalledOnce());
+      expect(wrapper!.find('[data-testid="person-success-text"]').isVisible()).toBe(true);
+      expect(wrapper!.get('[data-testid="created-person-rolle"]').text()).toBe(rolle.title);
+    });
+
+    test('it fills form and triggers submit', async () => {
+      personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
+
+      const organisationSelect: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'schulenFilter' })
+        .findComponent({ ref: 'personenkontext-create-organisation-select' });
+      await organisationSelect?.setValue(workflowOrganisation);
+      await nextTick();
+
+      const rollenSelect: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'rollen-select' });
+      await rollenSelect?.setValue([mockRolleForPersonenkontextCreation]);
+      await nextTick();
+
+      const klasseSelect: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'klasse-select' });
+      await klasseSelect?.setValue('9a');
+      await nextTick();
+
+      const befristungInput: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'befristung-input-wrapper' })
+        .findComponent({ ref: 'befristung-input' });
+      await befristungInput?.setValue('12.08.2099');
+      await nextTick();
+
+      const vornameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'vorname-input' });
+      await vornameInput?.setValue('Randy');
+      await nextTick();
+
+      const nachnameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'familienname-input' });
+      await nachnameInput?.setValue('Cena');
+      await nextTick();
+
+      const kopersInput: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'kopers-input' })
+        .findComponent({ ref: 'kopersnr-input' });
+      await kopersInput?.setValue('23234');
+      await nextTick();
+
+      await wrapper?.find('[data-testid="person-creation-form-submit-button"]').trigger('click');
+      await nextTick();
+      await flushPromises();
+
+      // Form is resetting after submit so orga should be undefined
+      expect(organisationSelect?.vm.$data).toStrictEqual({});
+    });
+
+    test('it fills form, triggers submit and then show success template', async () => {
+      personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
+
+      const organisationSelect: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'schulenFilter' })
+        .findComponent({ ref: 'personenkontext-create-organisation-select' });
+      await organisationSelect?.setValue(workflowOrganisation);
+      await nextTick();
+
+      const rollenSelect: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'rollen-select' });
+      await rollenSelect?.setValue([mockRolleForPersonenkontextCreation]);
+      await nextTick();
+
+      const klasseSelect: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'klasse-select' });
+      await klasseSelect?.setValue('9a');
+      await nextTick();
+
+      const befristungInput: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'befristung-input-wrapper' })
+        .findComponent({ ref: 'befristung-input' });
+      await befristungInput?.setValue('12.08.2099');
+      await nextTick();
+
+      const vornameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'vorname-input' });
+      await vornameInput?.setValue('Randy');
+      await nextTick();
+
+      const nachnameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'familienname-input' });
+      await nachnameInput?.setValue('Cena');
+      await nextTick();
+
+      const kopersInput: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'kopers-input' })
+        .findComponent({ ref: 'kopersnr-input' });
+      await kopersInput?.setValue('23234');
+      await nextTick();
+
+      await wrapper?.find('[data-testid="person-creation-form-submit-button"]').trigger('click');
+      await nextTick();
+      await flushPromises();
+
+      // Form is resetting after submit so orga should be undefined
+      expect(organisationSelect?.vm.$data).toStrictEqual({});
+
       personenkontextStore.createdPersonWithKontext = mockCreatedPersonWithKontext;
-      return Promise.resolve();
+
+      await nextTick();
+      expect(wrapper?.find('[data-testid="person-success-text"]').isVisible()).toBe(true);
     });
 
-    const selectors: Partial<FormSelectors> = await fillForm({
-      organisationsebene: ORGANISATION_ID,
-      rollen: [ROLLE_ID],
-      befristung: '12.08.2099',
-      vorname: 'Randy',
-      nachname: 'Cena',
-      kopersNr: '23234',
-      klasse: '9a',
-    });
-    await flushPromises();
+    test('it retains the selected Klasse in the request and success screen after search results change', async () => {
+      personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
+      const klasse: Organisation = DoFactory.getKlasse(undefined, { name: '9a' });
 
-    await wrapper?.find('[data-testid="person-creation-form"]').trigger('submit');
-    await flushPromises();
+      const spy: Mock = vi.spyOn(personenkontextStore, 'createPersonWithKontexte').mockImplementationOnce(async () => {
+        personenkontextStore.createdPersonWithKontext = DoFactory.getDBiamPersonResponse({
+          ...mockCreatedPersonWithKontext,
+          dBiamPersonenkontextResponses: [
+            ...mockCreatedPersonWithKontext.dBiamPersonenkontextResponses,
+            DoFactory.getDBiamPersonenkontextResponse({
+              personId: PERSON_ID,
+              organisationId: klasse.id,
+              rolleId: ROLLE_ID,
+            }),
+          ],
+        });
+        return Promise.resolve();
+      });
 
-    // Form is resetting after submit so orga should be undefined
-    expect(selectors.organisationsebeneSelect?.vm.$data).toStrictEqual({});
-
-    await vi.waitFor(() => expect(spy).toHaveBeenCalledOnce());
-    expect(wrapper?.find('[data-testid="person-success-text"]').isVisible()).toBe(true);
-  });
-
-  test('it fills form for role with Koperspflicht, then clears Kopersnummer when role is removed', async () => {
-    personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
-
-    const organisationSelect: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'schulenFilter' })
-      .findComponent({ ref: 'personenkontext-create-organisation-select' });
-    await organisationSelect?.setValue(ORGANISATION_ID);
-    await nextTick();
-
-    const rollenSelect: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'rollen-select' });
-    await rollenSelect?.setValue([ROLLE_ID]);
-    await nextTick();
-
-    const klasseSelect: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'klasse-select' });
-    await klasseSelect?.setValue('9a');
-    await nextTick();
-
-    const befristungInput: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'befristung-input-wrapper' })
-      .findComponent({ ref: 'befristung-input' });
-    await befristungInput?.setValue('12.08.2099');
-    await nextTick();
-
-    const vornameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'vorname-input' });
-    await vornameInput?.setValue('Randy');
-    await nextTick();
-
-    const nachnameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'familienname-input' });
-    await nachnameInput?.setValue('Cena');
-    await nextTick();
-
-    const kopersInput: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'kopers-input' })
-      .findComponent({ ref: 'kopersnr-input' });
-    await kopersInput?.setValue('23234');
-    await nextTick();
-
-    const kopersValue: string = (kopersInput?.find('input').element as HTMLInputElement).value;
-    expect(kopersValue).toBe('23234');
-
-    await rollenSelect?.setValue([]);
-    await nextTick();
-
-    const removedKopersInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'kopers-input' });
-
-    expect(removedKopersInput?.exists()).toBe(false);
-
-    await rollenSelect?.setValue([ROLLE_ID]);
-    await nextTick();
-    await flushPromises();
-
-    const recreatedKopersInput: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'kopers-input' })
-      .findComponent({ ref: 'kopersnr-input' });
-    expect(removedKopersInput?.exists()).toBe(false);
-
-    const readdedKopersValue: string = (recreatedKopersInput?.find('input').element as HTMLInputElement).value;
-    expect(readdedKopersValue).toBe('');
-  });
-
-  test('it renders success template for created user and navigates back to form', async () => {
-    personenkontextStore.createdPersonWithKontext = mockCreatedPersonWithKontext;
-    await nextTick();
-
-    expect(wrapper?.find('[data-testid="person-success-text"]').isVisible()).toBe(true);
-
-    expect(wrapper?.find('[data-testid="create-another-person-button"]').isVisible()).toBe(true);
-
-    await wrapper?.find('[data-testid="create-another-person-button"]').trigger('click');
-
-    expect(wrapper?.find('[data-testid="person-success-text"]').exists()).toBe(false);
-  });
-
-  test('it fills form for Landesbediensteter, triggers submit and then shows success template', async () => {
-    const mockLandesbedienstetePersonen: PersonLandesbediensteterSearchResponse[] = [
-      DoFactory.getPersonLandesbediensteterSearchResponse(),
-    ];
-    const organisationId: string = ORGANISATION_ID;
-    const rolleId: string = ROLLE_ID;
-
-    personStore.allLandesbedienstetePersonen = mockLandesbedienstetePersonen;
-    rolleStore.rollenForPersonenkontextCreation = [{ ...mockRolleForPersonenkontextCreation, rollenart: 'LEHR' }];
-    wrapper?.unmount();
-    await router.push({ name: 'add-person-to-own-schule' });
-    await router.isReady();
-
-    wrapper = await mountComponent();
-    await nextTick();
-    personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-      organisations: [
-        DoFactory.getOrganisationResponse({
-          id: organisationId,
-        }),
-      ],
-      canCommit: true,
-    });
-
-    const organisationSelect: VueWrapper | undefined = wrapper
-      .findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'schulenFilter' })
-      .findComponent({ ref: 'personenkontext-create-organisation-select' });
-    await organisationSelect.setValue(organisationId);
-    await nextTick();
-
-    const rollenSelect: VueWrapper | undefined = wrapper
-      .findComponent({ ref: 'personenkontext-create' })
-      .findComponent({ ref: 'rollen-select' });
-    await rollenSelect.setValue([rolleId]);
-    await nextTick();
-
-    await wrapper.find('[data-testid="person-creation-form-submit-button"]').trigger('click');
-    await nextTick();
-    await flushPromises();
-
-    const confirmButton: Element = await vi.waitUntil(() =>
-      document.querySelector('[data-testid="confirm-add-person-button"]'),
-    );
-    await nextTick();
-
-    confirmButton.dispatchEvent(new Event('click'));
-
-    // Form is resetting after submit so orga should be undefined
-    expect(organisationSelect.vm.$data).toStrictEqual({});
-
-    personenkontextStore.landesbediensteteCommitResponse = mockLandesbediensteteCommitResponse;
-
-    await nextTick();
-    expect(wrapper.find('[data-testid="state-employee-success-text"]').isVisible()).toBe(true);
-  });
-
-  test('it renders success template for added Landesbediensteter and navigates back to person management', async () => {
-    wrapper?.unmount();
-    await router.push({ name: 'add-person-to-own-schule' });
-    await router.isReady();
-
-    wrapper = await mountComponent();
-
-    await nextTick();
-    personenkontextStore.landesbediensteteCommitResponse = mockLandesbediensteteCommitResponse;
-    await nextTick();
-
-    expect(wrapper.find('[data-testid="state-employee-success-text"]').isVisible()).toBe(true);
-
-    expect(wrapper.find('[data-testid="search-another-state-employee-button"]').isVisible()).toBe(true);
-
-    await wrapper.find('[data-testid="search-another-state-employee-button"]').trigger('click');
-
-    expect(wrapper.find('[data-testid="state-employee-success-text"]').exists()).toBe(false);
-  });
-
-  test('it navigates to person details when clicking on btn in success template', async () => {
-    personenkontextStore.createdPersonWithKontext = mockCreatedPersonWithKontext;
-    await nextTick();
-    expect(wrapper?.find('[data-testid="go-to-details-button"]').isVisible()).toBe(true);
-
-    const push: MockInstance = vi.spyOn(router, 'push');
-    await wrapper?.find('[data-testid="go-to-details-button"]').trigger('click');
-    await nextTick();
-    expect(push).toHaveBeenCalledWith({ name: 'person-details', params: { id: PERSON_ID } });
-  });
-
-  describe('navigation interception', () => {
-    test('it triggers if form is dirty', async () => {
-      const expectedCallsToNext: number = 0;
-
-      wrapper = await mountComponent();
-      await fillForm({
+      const selectors: Partial<FormSelectors> = await fillForm({
         organisationsebene: ORGANISATION_ID,
         rollen: [ROLLE_ID],
         befristung: '12.08.2099',
-        vorname: 'John',
-        nachname: 'Orton',
-        kopersNr: '14614',
+        vorname: 'Randy',
+        nachname: 'Cena',
+        kopersNr: '23234',
+        klasse: '9a',
       });
-      await nextTick();
+      selectors.klasseSelect?.vm.$emit('update:selectedKlassen', klasse);
+      organisationStore.klassenFilters.set('personenkontext-create', {
+        filterResult: [DoFactory.getKlasse()],
+        total: 1,
+        loading: false,
+      });
+      await flushPromises();
 
-      const spy: Mock = vi.fn();
-      storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, spy);
-      expect(spy).toHaveBeenCalledTimes(expectedCallsToNext);
-      await nextTick();
+      await wrapper?.find('[data-testid="person-creation-form"]').trigger('submit');
+      await flushPromises();
 
-      const confirmButton: Element | null = document.querySelector('[data-testid="confirm-unsaved-changes-button"]');
-      expect(confirmButton).not.toBeNull();
-      confirmButton!.dispatchEvent(new Event('click'));
-      expect(spy).toHaveBeenCalledOnce();
+      // Form is resetting after submit so orga should be undefined
+      expect(selectors.organisationsebeneSelect?.vm.$data).toStrictEqual({});
+
+      await vi.waitFor(() => expect(spy).toHaveBeenCalledOnce());
+      expect(spy).toHaveBeenCalledWith(
+        expect.objectContaining<Partial<DbiamCreatePersonWithPersonenkontexteBodyParams>>({
+          createPersonenkontexte: expect.arrayContaining<
+            DbiamCreatePersonWithPersonenkontexteBodyParams['createPersonenkontexte'][number]
+          >([
+            {
+              organisationId: klasse.id,
+              rolleId: ROLLE_ID,
+            },
+          ]) as DbiamCreatePersonWithPersonenkontexteBodyParams['createPersonenkontexte'],
+        }),
+      );
+      expect(wrapper?.find('[data-testid="person-success-text"]').isVisible()).toBe(true);
+      expect(wrapper?.get('[data-testid="created-person-klasse"]').text()).toBe(klasse.name);
     });
 
-    test('it does not trigger if form is not dirty', async () => {
-      // autoselected orgnisation doesnt count as dirty
-      const expectedCallsToNext: number = 1;
-      wrapper = await mountComponent();
-      const spy: Mock = vi.fn();
-      storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, spy);
-      expect(spy).toHaveBeenCalledTimes(expectedCallsToNext);
-    });
-  });
+    test('it fills form for role with Koperspflicht, then clears Kopersnummer when role is removed', async () => {
+      personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
 
-  describe.each([[true], [false]])('when form is dirty:%s', (isFormDirty: boolean) => {
-    beforeEach(async () => {
-      if (isFormDirty) {
+      const organisationSelect: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'schulenFilter' })
+        .findComponent({ ref: 'personenkontext-create-organisation-select' });
+      await organisationSelect?.setValue(workflowOrganisation);
+      await nextTick();
+
+      const rollenSelect: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'rollen-select' });
+      await rollenSelect?.setValue([mockRolleForPersonenkontextCreation]);
+      await nextTick();
+
+      const klasseSelect: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'klasse-select' });
+      await klasseSelect?.setValue('9a');
+      await nextTick();
+
+      const befristungInput: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'befristung-input-wrapper' })
+        .findComponent({ ref: 'befristung-input' });
+      await befristungInput?.setValue('12.08.2099');
+      await nextTick();
+
+      const vornameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'vorname-input' });
+      await vornameInput?.setValue('Randy');
+      await nextTick();
+
+      const nachnameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'familienname-input' });
+      await nachnameInput?.setValue('Cena');
+      await nextTick();
+
+      const kopersInput: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'kopers-input' })
+        .findComponent({ ref: 'kopersnr-input' });
+      await kopersInput?.setValue('23234');
+      await nextTick();
+
+      const kopersValue: string = (kopersInput?.find('input').element as HTMLInputElement).value;
+      expect(kopersValue).toBe('23234');
+
+      await rollenSelect?.setValue([]);
+      await nextTick();
+
+      const removedKopersInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'kopers-input' });
+
+      expect(removedKopersInput?.exists()).toBe(false);
+
+      await rollenSelect?.setValue([mockRolleForPersonenkontextCreation]);
+      await nextTick();
+      await flushPromises();
+
+      const recreatedKopersInput: VueWrapper | undefined = wrapper
+        ?.findComponent({ ref: 'kopers-input' })
+        .findComponent({ ref: 'kopersnr-input' });
+      expect(removedKopersInput?.exists()).toBe(false);
+
+      const readdedKopersValue: string = (recreatedKopersInput?.find('input').element as HTMLInputElement).value;
+      expect(readdedKopersValue).toBe('');
+    });
+
+    test('it renders success template for created user and navigates back to form', async () => {
+      personenkontextStore.createdPersonWithKontext = mockCreatedPersonWithKontext;
+      await nextTick();
+
+      expect(wrapper?.find('[data-testid="person-success-text"]').isVisible()).toBe(true);
+
+      expect(wrapper?.find('[data-testid="create-another-person-button"]').isVisible()).toBe(true);
+
+      await wrapper?.find('[data-testid="create-another-person-button"]').trigger('click');
+
+      expect(wrapper?.find('[data-testid="person-success-text"]').exists()).toBe(false);
+    });
+
+    test('it navigates to person details when clicking on btn in success template', async () => {
+      personenkontextStore.createdPersonWithKontext = mockCreatedPersonWithKontext;
+      await nextTick();
+      expect(wrapper?.find('[data-testid="go-to-details-button"]').isVisible()).toBe(true);
+
+      const push: MockInstance = vi.spyOn(router, 'push');
+      await wrapper?.find('[data-testid="go-to-details-button"]').trigger('click');
+      await nextTick();
+      expect(push).toHaveBeenCalledWith({ name: 'person-details', params: { id: PERSON_ID } });
+    });
+
+    describe('navigation interception', () => {
+      test('it triggers if form is dirty', async () => {
+        const expectedCallsToNext: number = 0;
+
+        wrapper = await mountComponent();
         await fillForm({
           organisationsebene: ORGANISATION_ID,
           rollen: [ROLLE_ID],
@@ -779,288 +762,456 @@ describe('PersonCreationView', () => {
           nachname: 'Orton',
           kopersNr: '14614',
         });
-      }
-      await nextTick();
-    });
+        await nextTick();
 
-    test('it handles unloading', () => {
-      const event: Event = new Event('beforeunload');
-      const spy: MockInstance = vi.spyOn(event, 'preventDefault');
-      spy.mockClear();
-      window.dispatchEvent(event);
-      // TODO: why is spy called 12 times?
-      // if (isFormDirty) expect(spy).toHaveBeenCalledOnce();
-      if (isFormDirty) {
-        expect(spy).toHaveBeenCalled();
-      } else {
-        expect(spy).not.toHaveBeenCalledOnce();
-      }
-    });
-  });
+        const spy: Mock = vi.fn();
+        storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, spy);
+        expect(spy).toHaveBeenCalledTimes(expectedCallsToNext);
+        await nextTick();
 
-  describe('error handling', () => {
-    beforeEach((): void => {
-      rolleStore.errorCode = '';
-    });
-
-    afterEach((): void => {
-      rolleStore.errorCode = '';
-    });
-
-    test('it renders an error', async () => {
-      personStore.errorCode = 'ERROR_ERROR';
-      await nextTick();
-
-      expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('modelValue')).toBe(true);
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
-        wrapper?.vm.$t('admin.person.creationErrorTitle'),
-      );
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe('');
-
-      const push: MockInstance = vi.spyOn(router, 'push');
-      await wrapper?.find('[data-testid$="alert-button"]').trigger('click');
-      await nextTick();
-
-      expect(push).toHaveBeenCalledTimes(1);
-      expect(personStore.errorCode).toBe('');
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('modelValue')).toBe(false);
-    });
-
-    test('prioritizes Personenkontext errors in the single alert', async () => {
-      personenkontextStore.errorCode = 'REQUIRED_STEP_UP_LEVEL_NOT_MET';
-      await nextTick();
-
-      expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('modelValue')).toBe(true);
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
-        wrapper?.vm.$t('admin.personenkontext.title.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
-      );
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe(
-        wrapper?.vm.$t('admin.personenkontext.errors.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
-      );
-
-      personStore.errorCode = 'ERROR_ERROR';
-      rolleStore.errorCode = 'ROLLE_ERROR';
-      await nextTick();
-
-      expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
-        wrapper?.vm.$t('admin.personenkontext.title.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
-      );
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe(
-        wrapper?.vm.$t('admin.personenkontext.errors.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
-      );
-    });
-
-    test('maps Rolle errors and prioritizes them over Person errors', async () => {
-      rolleStore.errorCode = 'ROLLE_ERROR';
-      await nextTick();
-
-      expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('modelValue')).toBe(true);
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
-        wrapper?.vm.$t('admin.rolle.title.ROLLE_ERROR'),
-      );
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe(
-        wrapper?.vm.$t('admin.rolle.errors.ROLLE_ERROR'),
-      );
-
-      personStore.errorCode = 'ERROR_ERROR';
-      await nextTick();
-
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
-        wrapper?.vm.$t('admin.rolle.title.ROLLE_ERROR'),
-      );
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe(
-        wrapper?.vm.$t('admin.rolle.errors.ROLLE_ERROR'),
-      );
-
-      rolleStore.errorCode = '';
-      await nextTick();
-
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('title')).toBe(
-        wrapper?.vm.$t('admin.person.creationErrorTitle'),
-      );
-      expect(wrapper?.findComponent({ name: 'SpshAlert' }).props('text')).toBe('');
-    });
-
-    test('shows error message if REQUIRED_STEP_UP_LEVEL_NOT_MET error is present and click close button', async () => {
-      personenkontextStore.errorCode = 'REQUIRED_STEP_UP_LEVEL_NOT_MET';
-      await nextTick();
-
-      const push: MockInstance = vi.spyOn(router, 'push');
-      vi.spyOn(router, 'go').mockImplementationOnce(noop);
-      expect(wrapper?.find('[data-testid$="alert-title"]').isVisible()).toBe(true);
-
-      await wrapper?.find('[data-testid$="alert-button"]').trigger('click');
-      await nextTick();
-
-      expect(push).toHaveBeenCalledTimes(1);
-      await nextTick();
-
-      personenkontextStore.errorCode = '';
-    });
-  });
-
-  describe('rollen refresh loop', () => {
-    const MAX_ROLLEN_REQUESTS: number = 20;
-    const SETTLE_ITERATIONS: number = 15;
-
-    let landesbediensteter: PersonLandesbediensteterSearchResponse;
-    let lehrRolle: TranslatedRolleWithAttrs;
-    let rollenRequestSpy: MockInstance | undefined;
-    let uebersichtRequestSpy: MockInstance | undefined;
-
-    function buildPersonenuebersicht(personId: string = landesbediensteter.id): PersonenUebersicht {
-      return DoFactory.getPersonenUebersicht(DoFactory.getPerson({ id: personId }), [
-        DoFactory.getZuordnung({ sskId: ORGANISATION_ID, rolleId: ROLLE_ID, rollenArt: RollenArt.Lehr }),
-      ]);
-    }
-
-    beforeEach(async () => {
-      landesbediensteter = DoFactory.getPersonLandesbediensteterSearchResponse({ id: PERSON_ID });
-      const lehrRolleResponse: RolleResponse = DoFactory.getRolleResponse({ id: ROLLE_ID, rollenart: 'LEHR' });
-      lehrRolle = {
-        value: lehrRolleResponse.id,
-        title: lehrRolleResponse.name,
-        merkmale: lehrRolleResponse.merkmale,
-        rollenart: lehrRolleResponse.rollenart,
-      };
-
-      personStore.allLandesbedienstetePersonen = [landesbediensteter];
-      personStore.personenuebersicht = buildPersonenuebersicht();
-      rolleStore.rollenForPersonenkontextCreation = [lehrRolle];
-      personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-        organisations: [DoFactory.getOrganisationResponse({ id: ORGANISATION_ID })],
-        canCommit: true,
+        const confirmButton: Element | null = document.querySelector('[data-testid="confirm-unsaved-changes-button"]');
+        expect(confirmButton).not.toBeNull();
+        confirmButton!.dispatchEvent(new Event('click'));
+        expect(spy).toHaveBeenCalledOnce();
       });
 
+      test('it does not trigger if form is not dirty', async () => {
+        // autoselected orgnisation doesnt count as dirty
+        const expectedCallsToNext: number = 1;
+        wrapper = await mountComponent();
+        const spy: Mock = vi.fn();
+        storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, spy);
+        expect(spy).toHaveBeenCalledTimes(expectedCallsToNext);
+      });
+    });
+
+    describe.each([[true], [false]])('when form is dirty:%s', (isFormDirty: boolean) => {
+      beforeEach(async () => {
+        if (isFormDirty) {
+          await fillForm({
+            organisationsebene: ORGANISATION_ID,
+            rollen: [ROLLE_ID],
+            befristung: '12.08.2099',
+            vorname: 'John',
+            nachname: 'Orton',
+            kopersNr: '14614',
+          });
+        }
+        await nextTick();
+      });
+
+      test('it handles unloading', () => {
+        const event: Event = new Event('beforeunload');
+        const spy: MockInstance = vi.spyOn(event, 'preventDefault');
+        spy.mockClear();
+        window.dispatchEvent(event);
+        // TODO: why is spy called 12 times?
+        // if (isFormDirty) expect(spy).toHaveBeenCalledOnce();
+        if (isFormDirty) {
+          expect(spy).toHaveBeenCalled();
+        } else {
+          expect(spy).not.toHaveBeenCalledOnce();
+        }
+      });
+    });
+
+    describe('error handling', () => {
+      beforeEach((): void => {
+        rolleStore.errorCode = '';
+      });
+
+      afterEach((): void => {
+        rolleStore.errorCode = '';
+      });
+
+      test('it renders an error', async () => {
+        personStore.errorCode = 'ERROR_ERROR';
+        await nextTick();
+
+        expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty('modelValue', true);
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+          'title',
+          wrapper?.vm.$t('admin.person.creationErrorTitle'),
+        );
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty('text', '');
+
+        const push: MockInstance = vi.spyOn(router, 'push');
+        await wrapper?.find('[data-testid$="alert-button"]').trigger('click');
+        await nextTick();
+
+        expect(push).toHaveBeenCalledTimes(1);
+        expect(personStore.errorCode).toBe('');
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty('modelValue', false);
+      });
+
+      test('prioritizes Personenkontext errors in the single alert', async () => {
+        personenkontextStore.errorCode = 'REQUIRED_STEP_UP_LEVEL_NOT_MET';
+        await nextTick();
+
+        expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty('modelValue', true);
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+          'title',
+          wrapper?.vm.$t('admin.personenkontext.title.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
+        );
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+          'text',
+          wrapper?.vm.$t('admin.personenkontext.errors.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
+        );
+
+        personStore.errorCode = 'ERROR_ERROR';
+        rolleStore.errorCode = 'ROLLE_ERROR';
+        await nextTick();
+
+        expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+          'title',
+          wrapper?.vm.$t('admin.personenkontext.title.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
+        );
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+          'text',
+          wrapper?.vm.$t('admin.personenkontext.errors.REQUIRED_STEP_UP_LEVEL_NOT_MET'),
+        );
+      });
+
+      test('maps Rolle errors and prioritizes them over Person errors', async () => {
+        rolleStore.errorCode = 'ROLLE_ERROR';
+        await nextTick();
+
+        expect(wrapper?.findAllComponents({ name: 'SpshAlert' })).toHaveLength(1);
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty('modelValue', true);
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+          'title',
+          wrapper?.vm.$t('admin.rolle.title.ROLLE_ERROR'),
+        );
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+          'text',
+          wrapper?.vm.$t('admin.rolle.errors.ROLLE_ERROR'),
+        );
+
+        personStore.errorCode = 'ERROR_ERROR';
+        await nextTick();
+
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+          'title',
+          wrapper?.vm.$t('admin.rolle.title.ROLLE_ERROR'),
+        );
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+          'text',
+          wrapper?.vm.$t('admin.rolle.errors.ROLLE_ERROR'),
+        );
+
+        rolleStore.errorCode = '';
+        await nextTick();
+
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty(
+          'title',
+          wrapper?.vm.$t('admin.person.creationErrorTitle'),
+        );
+        expect(wrapper?.findComponent({ name: 'SpshAlert' }).props()).toHaveProperty('text', '');
+      });
+
+      test('shows error message if REQUIRED_STEP_UP_LEVEL_NOT_MET error is present and click close button', async () => {
+        personenkontextStore.errorCode = 'REQUIRED_STEP_UP_LEVEL_NOT_MET';
+        await nextTick();
+
+        const push: MockInstance = vi.spyOn(router, 'push');
+        vi.spyOn(router, 'go').mockImplementationOnce(noop);
+        expect(wrapper?.find('[data-testid$="alert-title"]').isVisible()).toBe(true);
+
+        await wrapper?.find('[data-testid$="alert-button"]').trigger('click');
+        await nextTick();
+
+        expect(push).toHaveBeenCalledTimes(1);
+        await nextTick();
+
+        personenkontextStore.errorCode = '';
+      });
+    });
+  });
+
+  describe(`${CreationType.Limited}`, () => {
+    test('onBeforeMount sets labels and systemrecht for createType limited', async () => {
+      await router.push({ name: 'create-person-limited' });
+      await router.isReady();
+
+      wrapper = mount(PersonCreationView, {
+        attachTo: document.getElementById('app') || '',
+        global: {
+          components: {
+            PersonCreationView: PersonCreationView as Component,
+          },
+          plugins: [router],
+        },
+      });
+
+      await nextTick();
+
+      expect(wrapper.find('[data-testid="admin-headline"]').text()).toBe('Andere Person (neu anlegen)');
+      expect(wrapper.find('[data-testid="add-another-state-employee-headline"]').text()).toBe(
+        'Andere Person (neu anlegen)',
+      );
+      expect(wrapper.find('[data-testid="person-creation-form-discard-button"]').text()).toBe('Abbrechen');
+      expect(wrapper.find('[data-testid="person-creation-form-submit-button"]').text()).toBe('Person anlegen');
+
+      expect(wrapper.findComponent({ name: 'PersonenkontextCreate' }).props()).toHaveProperty('createType', 'limited');
+    });
+  });
+
+  describe(`${CreationType.AddPersonToOwnSchule}`, () => {
+    test('it retains the selected Rolle in the Landesbediensteter success template after search results change', async () => {
+      const landesbediensteter: PersonLandesbediensteterSearchResponse =
+        DoFactory.getPersonLandesbediensteterSearchResponse();
+      const mockLandesbedienstetePersonen: PersonLandesbediensteterSearchResponse[] = [landesbediensteter];
+      const organisationId: string = ORGANISATION_ID;
+      const rolle: TranslatedRolleWithAttrs = { ...mockRolleForPersonenkontextCreation, rollenart: 'LEHR' };
+
+      personStore.allLandesbedienstetePersonen = mockLandesbedienstetePersonen;
+      rolleStore.rollenForPersonenkontextCreation = [rolle];
       wrapper?.unmount();
       await router.push({ name: 'add-person-to-own-schule' });
       await router.isReady();
 
-      // Both responses replace the state with a fresh object carrying identical content, as the real stores do.
-      uebersichtRequestSpy = vi.mocked(personStore.getPersonenuebersichtById).mockImplementation((personId: string) => {
-        personStore.personenuebersicht = buildPersonenuebersicht(personId);
-        return Promise.resolve();
-      });
-      rollenRequestSpy = vi.mocked(rolleStore.getRollenForPersonenkontextCreation).mockImplementation(() => {
-        // Safety cap so a runaway loop fails the assertion instead of hanging the suite.
-        if ((rollenRequestSpy?.mock.calls.length ?? 0) > MAX_ROLLEN_REQUESTS) {
-          return Promise.resolve();
-        }
-        rolleStore.rollenForPersonenkontextCreation = [{ ...lehrRolle }];
-        return Promise.resolve();
-      });
-
       wrapper = await mountComponent();
       await nextTick();
-      await flushPromises();
-      rollenRequestSpy.mockClear();
-    });
-
-    afterEach(() => {
-      rollenRequestSpy?.mockReset();
-      uebersichtRequestSpy?.mockReset();
-    });
-
-    test('it fetches the overview immediately for the existing person', () => {
-      expect(uebersichtRequestSpy?.mock.calls).toEqual([[landesbediensteter.id]]);
-    });
-
-    test('it fetches the overview again when the existing person ID changes', async () => {
-      const nextPerson: PersonLandesbediensteterSearchResponse = DoFactory.getPersonLandesbediensteterSearchResponse({
-        id: 'next-person-id',
+      personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
+        organisations: [
+          DoFactory.getOrganisationResponse({
+            id: organisationId,
+          }),
+        ],
+        canCommit: true,
       });
-      personStore.allLandesbedienstetePersonen = [nextPerson];
 
-      await nextTick();
-      await flushPromises();
-
-      expect(uebersichtRequestSpy?.mock.calls).toEqual([[landesbediensteter.id], [nextPerson.id]]);
-    });
-
-    test('it does not fetch the overview outside the add-to-own-school flow', async () => {
-      wrapper?.unmount();
-      await router.push({ name: 'create-person' });
-      await router.isReady();
-      uebersichtRequestSpy?.mockClear();
-
-      wrapper = await mountComponent();
-      await nextTick();
-      await flushPromises();
-
-      expect(uebersichtRequestSpy).not.toHaveBeenCalled();
-    });
-
-    test('it fetches Rollen once without refetching the overview when the organisation changes', async () => {
-      uebersichtRequestSpy?.mockClear();
-      const organisationSelect: VueWrapper = wrapper!
+      const organisationSelect: VueWrapper | undefined = wrapper
         .findComponent({ ref: 'personenkontext-create' })
         .findComponent({ ref: 'schulenFilter' })
         .findComponent({ ref: 'personenkontext-create-organisation-select' });
-      await organisationSelect.setValue(ORGANISATION_ID);
+      await organisationSelect.setValue(DoFactory.getSchule({ id: organisationId }));
+      await nextTick();
 
-      await Promise.all(
-        Array.from({ length: SETTLE_ITERATIONS }, async () => {
-          await nextTick();
-          await flushPromises();
-        }),
-      );
+      const rollenSelect: VueWrapper | undefined = wrapper
+        .findComponent({ ref: 'personenkontext-create' })
+        .findComponent({ ref: 'rollen-select' });
+      await rollenSelect.setValue([rolle]);
+      await nextTick();
 
-      expect(rollenRequestSpy).toHaveBeenCalledTimes(1);
-      expect(uebersichtRequestSpy).not.toHaveBeenCalled();
-    });
-
-    test('it passes the rollenart of the existing person to the Rollen query', async () => {
-      const personenkontextCreate: VueWrapper<InstanceType<typeof PersonenkontextCreate>> =
-        wrapper!.findComponent(PersonenkontextCreate);
-      expect(personenkontextCreate.props('rollenartForPerson')).toBe(RollenArt.Lehr);
-
-      await personenkontextCreate
-        .findComponent({ ref: 'schulenFilter' })
-        .findComponent({ ref: 'personenkontext-create-organisation-select' })
-        .setValue(ORGANISATION_ID);
+      rolleStore.rollenForPersonenkontextCreation = [];
       await flushPromises();
 
-      expect(rollenRequestSpy).toHaveBeenLastCalledWith(
-        expect.objectContaining({ organisationId: ORGANISATION_ID, rollenartForPerson: RollenArt.Lehr }),
-      );
-    });
+      await wrapper.find('[data-testid="person-creation-form-submit-button"]').trigger('click');
+      await nextTick();
+      await flushPromises();
 
-    test('it updates rollenartForPerson when the rollenart of the existing person changes', async () => {
-      personStore.personenuebersicht = DoFactory.getPersonenUebersicht(
-        DoFactory.getPerson({ id: landesbediensteter.id }),
-        [DoFactory.getZuordnung({ sskId: ORGANISATION_ID, rolleId: ROLLE_ID, rollenArt: RollenArt.Lern })],
+      const confirmButton: Element = await vi.waitUntil(() =>
+        document.querySelector('[data-testid="confirm-add-person-button"]'),
       );
       await nextTick();
 
-      expect(wrapper!.findComponent(PersonenkontextCreate).props('rollenartForPerson')).toBe(RollenArt.Lern);
-    });
-
-    test('it excludes Rollen already assigned at the selected organisation without filtering by rollenart', async () => {
-      const lernRolleResponse: RolleResponse = DoFactory.getRolleResponse({ rollenart: 'LERN' });
-      const lernRolle: TranslatedRolleWithAttrs = {
-        value: lernRolleResponse.id,
-        title: lernRolleResponse.name,
-        merkmale: lernRolleResponse.merkmale,
-        rollenart: lernRolleResponse.rollenart,
-      };
-      rollenRequestSpy?.mockImplementation(() => {
-        rolleStore.rollenForPersonenkontextCreation = [{ ...lehrRolle }, lernRolle];
-        return Promise.resolve();
-      });
-
-      const personenkontextCreate: VueWrapper<InstanceType<typeof PersonenkontextCreate>> =
-        wrapper!.findComponent(PersonenkontextCreate);
-      await personenkontextCreate
-        .findComponent({ ref: 'schulenFilter' })
-        .findComponent({ ref: 'personenkontext-create-organisation-select' })
-        .setValue(ORGANISATION_ID);
+      confirmButton.dispatchEvent(new Event('click'));
       await flushPromises();
 
-      expect(personenkontextCreate.props('rollen')).toEqual([lernRolle]);
+      // Form is resetting after submit so orga should be undefined
+      expect(organisationSelect.vm.$data).toStrictEqual({});
+
+      personenkontextStore.landesbediensteteCommitResponse = DoFactory.getPersonenkontextUpdateResponse({
+        dBiamPersonenkontextResponses: [
+          DoFactory.getDBiamPersonenkontextResponse({
+            personId: landesbediensteter.id,
+            organisationId,
+            rolleId: rolle.value,
+          }),
+        ],
+      });
+
+      await nextTick();
+      expect(wrapper.find('[data-testid="state-employee-success-text"]').isVisible()).toBe(true);
+      expect(wrapper.find('[data-testid="added-state-employee-rolle"]').text()).toBe(rolle.title);
+    });
+
+    test('it renders success template for added Landesbediensteter and navigates back to person management', async () => {
+      wrapper?.unmount();
+      await router.push({ name: 'add-person-to-own-schule' });
+      await router.isReady();
+
+      wrapper = await mountComponent();
+
+      await nextTick();
+      personenkontextStore.landesbediensteteCommitResponse = mockLandesbediensteteCommitResponse;
+      await nextTick();
+
+      expect(wrapper.find('[data-testid="state-employee-success-text"]').isVisible()).toBe(true);
+
+      expect(wrapper.find('[data-testid="search-another-state-employee-button"]').isVisible()).toBe(true);
+
+      await wrapper.find('[data-testid="search-another-state-employee-button"]').trigger('click');
+
+      expect(wrapper.find('[data-testid="state-employee-success-text"]').exists()).toBe(false);
+    });
+
+    describe('rollen refresh loop', () => {
+      const MAX_ROLLEN_REQUESTS: number = 20;
+      const SETTLE_ITERATIONS: number = 15;
+
+      let landesbediensteter: PersonLandesbediensteterSearchResponse;
+      let lehrRolle: TranslatedRolleWithAttrs;
+      let rollenRequestSpy: MockInstance | undefined;
+      let uebersichtRequestSpy: MockInstance | undefined;
+
+      function buildPersonenuebersicht(personId: string = landesbediensteter.id): PersonenUebersicht {
+        return DoFactory.getPersonenUebersicht(DoFactory.getPerson({ id: personId }), [
+          DoFactory.getZuordnung({ sskId: ORGANISATION_ID, rolleId: ROLLE_ID, rollenArt: RollenArt.Lehr }),
+        ]);
+      }
+
+      beforeEach(async () => {
+        landesbediensteter = DoFactory.getPersonLandesbediensteterSearchResponse({ id: PERSON_ID });
+        const lehrRolleResponse: RolleResponse = DoFactory.getRolleResponse({ id: ROLLE_ID, rollenart: 'LEHR' });
+        lehrRolle = {
+          value: lehrRolleResponse.id,
+          title: lehrRolleResponse.name,
+          merkmale: lehrRolleResponse.merkmale,
+          rollenart: lehrRolleResponse.rollenart,
+        };
+
+        personStore.allLandesbedienstetePersonen = [landesbediensteter];
+        personStore.personenuebersicht = buildPersonenuebersicht();
+        rolleStore.rollenForPersonenkontextCreation = [lehrRolle];
+        personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
+          organisations: [DoFactory.getOrganisationResponse({ id: ORGANISATION_ID })],
+          canCommit: true,
+        });
+
+        wrapper?.unmount();
+        await router.push({ name: 'add-person-to-own-schule' });
+        await router.isReady();
+
+        // Both responses replace the state with a fresh object carrying identical content, as the real stores do.
+        uebersichtRequestSpy = vi
+          .mocked(personStore.getPersonenuebersichtById)
+          .mockImplementation((personId: string) => {
+            personStore.personenuebersicht = buildPersonenuebersicht(personId);
+            return Promise.resolve();
+          });
+        rollenRequestSpy = vi.mocked(rolleStore.getRollenForPersonenkontextCreation).mockImplementation(() => {
+          // Safety cap so a runaway loop fails the assertion instead of hanging the suite.
+          if ((rollenRequestSpy?.mock.calls.length ?? 0) > MAX_ROLLEN_REQUESTS) {
+            return Promise.resolve();
+          }
+          rolleStore.rollenForPersonenkontextCreation = [{ ...lehrRolle }];
+          return Promise.resolve();
+        });
+
+        wrapper = await mountComponent();
+        await nextTick();
+        await flushPromises();
+        rollenRequestSpy.mockClear();
+      });
+
+      afterEach(() => {
+        rollenRequestSpy?.mockReset();
+        uebersichtRequestSpy?.mockReset();
+      });
+
+      test('it fetches the overview immediately for the existing person', () => {
+        expect(uebersichtRequestSpy?.mock.calls).toEqual([[landesbediensteter.id]]);
+      });
+
+      test('it fetches the overview again when the existing person ID changes', async () => {
+        const nextPerson: PersonLandesbediensteterSearchResponse = DoFactory.getPersonLandesbediensteterSearchResponse({
+          id: 'next-person-id',
+        });
+        personStore.allLandesbedienstetePersonen = [nextPerson];
+
+        await nextTick();
+        await flushPromises();
+
+        expect(uebersichtRequestSpy?.mock.calls).toEqual([[landesbediensteter.id], [nextPerson.id]]);
+      });
+
+      test('it does not fetch the overview outside the add-to-own-school flow', async () => {
+        wrapper?.unmount();
+        await router.push({ name: 'create-person' });
+        await router.isReady();
+        uebersichtRequestSpy?.mockClear();
+
+        wrapper = await mountComponent();
+        await nextTick();
+        await flushPromises();
+
+        expect(uebersichtRequestSpy).not.toHaveBeenCalled();
+      });
+
+      test('it fetches Rollen once without refetching the overview when the organisation changes', async () => {
+        uebersichtRequestSpy?.mockClear();
+        const organisationSelect: VueWrapper = wrapper!
+          .findComponent({ ref: 'personenkontext-create' })
+          .findComponent({ ref: 'schulenFilter' })
+          .findComponent({ ref: 'personenkontext-create-organisation-select' });
+        await organisationSelect.setValue(workflowOrganisation);
+
+        await Promise.all(
+          Array.from({ length: SETTLE_ITERATIONS }, async () => {
+            await nextTick();
+            await flushPromises();
+          }),
+        );
+
+        expect(rollenRequestSpy).toHaveBeenCalledTimes(1);
+        expect(uebersichtRequestSpy).not.toHaveBeenCalled();
+      });
+
+      test('it passes the rollenart of the existing person to the Rollen query', async () => {
+        const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
+        expect(personenkontextCreate.props()).toHaveProperty('rollenartForPerson', RollenArt.Lehr);
+
+        await personenkontextCreate
+          .findComponent({ ref: 'schulenFilter' })
+          .findComponent({ ref: 'personenkontext-create-organisation-select' })
+          .setValue(workflowOrganisation);
+        await flushPromises();
+
+        expect(rollenRequestSpy).toHaveBeenLastCalledWith(
+          expect.objectContaining({ organisationId: ORGANISATION_ID, rollenartForPerson: RollenArt.Lehr }),
+        );
+      });
+
+      test('it updates rollenartForPerson when the rollenart of the existing person changes', async () => {
+        personStore.personenuebersicht = DoFactory.getPersonenUebersicht(
+          DoFactory.getPerson({ id: landesbediensteter.id }),
+          [DoFactory.getZuordnung({ sskId: ORGANISATION_ID, rolleId: ROLLE_ID, rollenArt: RollenArt.Lern })],
+        );
+        await nextTick();
+
+        expect(wrapper!.findComponent({ ref: 'personenkontext-create' }).props()).toHaveProperty(
+          'rollenartForPerson',
+          RollenArt.Lern,
+        );
+      });
+
+      test('it excludes Rollen already assigned at the selected organisation without filtering by rollenart', async () => {
+        const lernRolleResponse: RolleResponse = DoFactory.getRolleResponse({ rollenart: 'LERN' });
+        const lernRolle: TranslatedRolleWithAttrs = {
+          value: lernRolleResponse.id,
+          title: lernRolleResponse.name,
+          merkmale: lernRolleResponse.merkmale,
+          rollenart: lernRolleResponse.rollenart,
+        };
+        rollenRequestSpy?.mockImplementation(() => {
+          rolleStore.rollenForPersonenkontextCreation = [{ ...lehrRolle }, lernRolle];
+          return Promise.resolve();
+        });
+
+        const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
+        await personenkontextCreate
+          .findComponent({ ref: 'schulenFilter' })
+          .findComponent({ ref: 'personenkontext-create-organisation-select' })
+          .setValue(workflowOrganisation);
+        await flushPromises();
+
+        expect(personenkontextCreate.props()).toHaveProperty('rollen', [lernRolle]);
+      });
     });
   });
 });

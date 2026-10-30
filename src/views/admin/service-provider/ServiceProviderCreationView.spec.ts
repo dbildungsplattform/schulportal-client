@@ -114,11 +114,11 @@ async function fillForm(args: Partial<FormFields>): Promise<Partial<FormSelector
 
   if (organisation) {
     const orgSelect: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchulenFilter' });
-    await orgSelect?.setValue(organisation);
+    await orgSelect?.setValue(DoFactory.getSchule({ id: organisation }));
     const schulenFilterComponent: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchulenFilter' });
     (schulenFilterComponent?.vm as unknown as { $emit: (event: string, ...args: unknown[]) => void }).$emit(
       'update:selectedSchulen',
-      organisation,
+      [DoFactory.getSchule({ id: organisation })],
     );
     await nextTick();
     selectors.orgSelect = orgSelect;

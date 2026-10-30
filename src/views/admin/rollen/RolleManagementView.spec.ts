@@ -1,9 +1,14 @@
 import SchulenFilter from '@/components/filter/SchulenFilter.vue';
+import type { Organisation } from '@/stores/OrganisationStore';
 import routes from '@/router/routes';
 import { AuthStore, useAuthStore } from '@/stores/AuthStore';
-import { RollenArt, RollenMerkmal, useRolleStore, type RolleStore } from '@/stores/RolleStore';
+import { RolleFilter, RollenArt, RollenMerkmal, useRolleStore, type RolleStore } from '@/stores/RolleStore';
 import { rollenPerPageDefault, useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
-import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
+import {
+  useServiceProviderStore,
+  type ServiceProviderIdNameResponse,
+  type ServiceProviderStore,
+} from '@/stores/ServiceProviderStore';
 import { VueWrapper, flushPromises, mount } from '@vue/test-utils';
 import { expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
@@ -43,7 +48,7 @@ beforeEach(async (): Promise<void> => {
   searchFilterStore.selectedMerkmaleForRollen = [];
   searchFilterStore.selectedRollenartenForRollen = [];
   searchFilterStore.selectedOrganisationenForRollen = [];
-  searchFilterStore.selectedAngeboteForRollen = [];
+  searchFilterStore.selectedServiceProvidersForRollen = [];
 
   serviceProviderStore.serviceProvidersForRollenVerwaltung = [
     { id: 'sp1', name: 'Service Provider 1' },
@@ -177,13 +182,14 @@ describe('RolleManagementView', () => {
   });
 
   test('reset button is enabled when organisationen filter is active', async () => {
-    searchFilterStore.selectedOrganisationenForRollen = ['org1'];
+    searchFilterStore.selectedOrganisationenForRollen = [DoFactory.getSchule()];
     await nextTick();
     expect(wrapper?.find('[data-testid="reset-filter-button"]').classes()).not.toContain('v-btn--disabled');
   });
 
   test('reset button is enabled when angebote filter is active', async () => {
-    searchFilterStore.selectedAngeboteForRollen = ['sp1'];
+    searchFilterStore.selectedServiceProvidersForRollen =
+      serviceProviderStore.serviceProvidersForRollenVerwaltung.slice(0, 1);
     await nextTick();
     expect(wrapper?.find('[data-testid="reset-filter-button"]').classes()).not.toContain('v-btn--disabled');
   });
@@ -198,8 +204,7 @@ describe('RolleManagementView', () => {
     expect(searchFilterStore.setMerkmaleFilterForRollen).toHaveBeenCalledWith([]);
     expect(searchFilterStore.setRollenartenFilterForRollen).toHaveBeenCalledWith([]);
     expect(searchFilterStore.setOrganisationenFilterForRollen).toHaveBeenCalledWith([]);
-    expect(searchFilterStore.setAngeboteFilterForRollen).toHaveBeenCalledWith([]);
-    expect(searchFilterStore.setAngeboteNamesForRollen).toHaveBeenCalledWith({});
+    expect(searchFilterStore.setServiceProvidersFilterForRollen).toHaveBeenCalledWith([]);
     expect(searchFilterStore.searchStringForRollen).toEqual('');
     expect(searchFilterStore.rollenPage).toEqual(1);
     expect(searchFilterStore.rollenPerPage).toEqual(rollenPerPageDefault);
@@ -217,12 +222,11 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
       merkmale: [RollenMerkmal.KopersPflicht],
       rollenarten: undefined,
       organisationIds: undefined,
       serviceProviderIds: undefined,
-    });
+    } satisfies RolleFilter);
   });
 
   test('requests only RollenVerwalten even when the user has gated systemrechte', async () => {
@@ -240,12 +244,11 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
       merkmale: undefined,
       rollenarten: [RollenArt.Lehr],
       organisationIds: undefined,
       serviceProviderIds: undefined,
-    });
+    } satisfies RolleFilter);
   });
 
   test('rollenarten filter change calls store action and reloads rollen', async () => {
@@ -259,35 +262,33 @@ describe('RolleManagementView', () => {
       offset: 0,
       limit: 30,
       searchString: '',
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
       merkmale: undefined,
       rollenarten: [RollenArt.Lehr],
       organisationIds: undefined,
       serviceProviderIds: undefined,
-    });
+    } satisfies RolleFilter);
   });
 
   test('organisationen filter change calls store action and reloads rollen', async () => {
     const schulenFilter: VueWrapper | undefined = wrapper?.findComponent({
       name: 'SchulenFilter',
     });
-    const orgs: Array<string> = ['org1', 'org2'];
+    const orgs: Array<Organisation> = [DoFactory.getSchule(), DoFactory.getSchule()];
     searchFilterStore.selectedOrganisationenForRollen = orgs;
     await schulenFilter?.setValue(orgs);
     schulenFilter?.vm.$emit('update:selectedSchulen', orgs);
     await flushPromises();
 
-    expect(searchFilterStore.setOrganisationenFilterForRollen).toHaveBeenCalledWith(['org1', 'org2']);
+    expect(searchFilterStore.setOrganisationenFilterForRollen).toHaveBeenCalledWith(orgs);
     expect(rolleStore.getAllRollen).toHaveBeenLastCalledWith({
       offset: 0,
       limit: 30,
       searchString: '',
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
       merkmale: undefined,
       rollenarten: undefined,
-      organisationIds: orgs,
+      organisationIds: orgs.map((org: Organisation) => org.id),
       serviceProviderIds: undefined,
-    });
+    } satisfies RolleFilter);
   });
 
   test('angebote filter is visible when user has AngeboteVerwalten permission', async () => {
@@ -328,50 +329,47 @@ describe('RolleManagementView', () => {
       const angeboteSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
         '[data-testid="angebote-filter-select"]',
       );
-      await angeboteSelect?.setValue(['sp1']);
+      await angeboteSelect?.setValue([serviceProviderStore.serviceProvidersForRollenVerwaltung[0]]);
 
-      expect(searchFilterStore.setAngeboteFilterForRollen).toHaveBeenCalledWith(['sp1']);
+      expect(searchFilterStore.setServiceProvidersFilterForRollen).toHaveBeenCalledWith([
+        serviceProviderStore.serviceProvidersForRollenVerwaltung[0],
+      ]);
       expect(rolleStore.getAllRollen).toHaveBeenLastCalledWith({
         offset: 0,
         limit: 30,
         searchString: '',
-        systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
         merkmale: undefined,
         rollenarten: undefined,
         organisationIds: undefined,
         serviceProviderIds: ['sp1'],
-      });
+      } satisfies RolleFilter);
     });
 
     test('angebote filter shows selected items', async () => {
       serviceProviderStore.loading = false;
       serviceProviderStore.totalServiceProvidersForRollenVerwaltung = 5;
-      searchFilterStore.selectedAngeboteForRollen = ['sp1', 'sp2'];
+      searchFilterStore.selectedServiceProvidersForRollen = serviceProviderStore.serviceProvidersForRollenVerwaltung;
       await nextTick();
 
       expect(wrapper?.find('[data-testid="angebote-filter-select"]').text()).toContain('Landesangebote ausgewählt');
     });
 
-    test('selecting an angebot stores its name in the cache', async () => {
+    test('selecting an angebot stores the selected service-provider object', async () => {
       const angeboteSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
         '[data-testid="angebote-filter-select"]',
       );
-      await angeboteSelect?.setValue(['sp1']);
+      const selectedServiceProvider: ServiceProviderIdNameResponse =
+        serviceProviderStore.serviceProvidersForRollenVerwaltung[0]!;
+      await angeboteSelect?.setValue([selectedServiceProvider]);
 
-      expect(searchFilterStore.setAngeboteNamesForRollen).toHaveBeenCalledWith({ sp1: 'Service Provider 1' });
+      expect(searchFilterStore.setServiceProvidersFilterForRollen).toHaveBeenCalledWith([selectedServiceProvider]);
     });
   });
 
   describe('when selected angebot is not in current search results', () => {
-    test('chip still displays provider name from cache after search filters it out', async () => {
-      vi.mocked(searchFilterStore.setAngeboteNamesForRollen).mockImplementation((names: Record<string, string>) => {
-        searchFilterStore.selectedAngeboteNamesForRollen = names;
-      });
-
-      const angeboteSelect: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
-        '[data-testid="angebote-filter-select"]',
-      );
-      await angeboteSelect?.setValue(['sp1']);
+    test('chip still displays the selected provider after search filters it out', async () => {
+      searchFilterStore.selectedServiceProvidersForRollen =
+        serviceProviderStore.serviceProvidersForRollenVerwaltung.slice(0, 1);
       await nextTick();
 
       serviceProviderStore.serviceProvidersForRollenVerwaltung = [];
@@ -382,14 +380,16 @@ describe('RolleManagementView', () => {
   });
 
   describe('when typing string in angebote filter', () => {
-    test('triggers debounced server search', () => {
+    test('triggers debounced server search', async () => {
       vi.useFakeTimers();
       vi.mocked(serviceProviderStore.getServiceProvidersForRollenVerwaltung).mockClear();
 
       const angeboteSelect: VueWrapper | undefined = wrapper?.findComponent({ ref: 'angeboteFilterSelect' });
       angeboteSelect?.vm.$emit('update:search', 'test');
+      await nextTick();
 
-      vi.runAllTimers();
+      vi.advanceTimersByTime(500);
+      await flushPromises();
       vi.runAllTicks();
 
       expect(serviceProviderStore.getServiceProvidersForRollenVerwaltung).toHaveBeenCalledWith({
@@ -402,14 +402,18 @@ describe('RolleManagementView', () => {
   });
 
   describe('when typing empty string in angebote filter', () => {
-    test('angebote filter passes undefined as searchStr', () => {
+    test('angebote filter passes undefined as searchStr', async () => {
       vi.useFakeTimers();
       vi.mocked(serviceProviderStore.getServiceProvidersForRollenVerwaltung).mockClear();
 
       const angeboteSelect: VueWrapper | undefined = wrapper?.findComponent({ ref: 'angeboteFilterSelect' });
+      angeboteSelect?.vm.$emit('update:search', 'test');
+      await nextTick();
       angeboteSelect?.vm.$emit('update:search', '');
+      await nextTick();
 
-      vi.runAllTimers();
+      vi.advanceTimersByTime(500);
+      await flushPromises();
       vi.runAllTicks();
 
       expect(serviceProviderStore.getServiceProvidersForRollenVerwaltung).toHaveBeenCalledWith({
@@ -442,8 +446,7 @@ describe('RolleManagementView', () => {
       merkmale: undefined,
       rollenarten: undefined,
       organisationIds: undefined,
-      systemrechte: [RollenSystemRechtEnum.RollenVerwalten],
-    });
+    } satisfies RolleFilter);
   });
 
   test('reset button is enabled when rollen filter is active', async () => {

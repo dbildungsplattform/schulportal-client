@@ -1,7 +1,7 @@
 import { RollenSystemRechtEnum } from '@/api-client/generated/api';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
-import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
+import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
 import { RollenArt, useRolleStore, type RolleStore } from '@/stores/RolleStore';
 import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
@@ -58,8 +58,8 @@ beforeEach(async (): Promise<void> => {
 
   vi.spyOn(rolleStore, 'getRollenForMptZuordnung').mockResolvedValue();
   vi.spyOn(organisationStore, 'getOrganisationById').mockResolvedValue();
-  vi.spyOn(searchFilterStore, 'setSchuleForMptRollen').mockImplementation((schuleId: string | null): void => {
-    searchFilterStore.selectedSchuleForMptRollen = schuleId;
+  vi.spyOn(searchFilterStore, 'setSchuleForMptRollen').mockImplementation((schule: Organisation | null): void => {
+    searchFilterStore.selectedSchuleForMptRollen = schule;
   });
 });
 
@@ -84,12 +84,12 @@ describe('MptRollenManagementView', () => {
     const schuleId: string = DoFactory.getSchule().id;
     const schuleFilter: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
 
-    schuleFilter.vm.$emit('update:selectedSchulen', schuleId);
+    schuleFilter.vm.$emit('update:selectedSchulen', DoFactory.getSchule({ id: schuleId }));
     await nextTick();
     await flushPromises();
 
     expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledOnce();
-    expect(organisationStore.getOrganisationById).toHaveBeenCalledExactlyOnceWith(schuleId);
+    expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
     expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledWith(
       expect.objectContaining({
         organisationIds: [schuleId],
@@ -115,7 +115,7 @@ describe('MptRollenManagementView', () => {
   it('navigates to the role details with the selected school', async () => {
     const schuleId: string = DoFactory.getSchule().id;
     const rolle: ReturnType<typeof DoFactory.getRolleWithServiceProviders> = DoFactory.getRolleWithServiceProviders();
-    searchFilterStore.selectedSchuleForMptRollen = schuleId;
+    searchFilterStore.selectedSchuleForMptRollen = DoFactory.getSchule({ id: schuleId });
     rolleStore.allRollen = [rolle];
     rolleStore.totalRollen = 1;
     const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
@@ -142,7 +142,7 @@ describe('MptRollenManagementView', () => {
   it('disables role navigation without permission to extend roles', async () => {
     authStore.hasRollenerweiternPermission = false;
     const rolle: ReturnType<typeof DoFactory.getRolleWithServiceProviders> = DoFactory.getRolleWithServiceProviders();
-    searchFilterStore.selectedSchuleForMptRollen = DoFactory.getSchule().id;
+    searchFilterStore.selectedSchuleForMptRollen = DoFactory.getSchule();
     const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
     await flushPromises();
     const routerPushSpy: ReturnType<typeof vi.spyOn> = vi.spyOn(router, 'push').mockResolvedValue();
@@ -180,7 +180,7 @@ describe('MptRollenManagementView', () => {
     const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
     const schuleId: string = DoFactory.getSchule().id;
     const schuleFilter: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
-    schuleFilter.vm.$emit('update:selectedSchulen', schuleId);
+    schuleFilter.vm.$emit('update:selectedSchulen', DoFactory.getSchule({ id: schuleId }));
     await nextTick();
     await flushPromises();
 
@@ -203,7 +203,7 @@ describe('MptRollenManagementView', () => {
     const schuleId: string = DoFactory.getSchule().id;
     const schuleFilter: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
 
-    schuleFilter.vm.$emit('update:selectedSchulen', schuleId);
+    schuleFilter.vm.$emit('update:selectedSchulen', DoFactory.getSchule({ id: schuleId }));
     await nextTick();
     await flushPromises();
 
@@ -229,7 +229,7 @@ describe('MptRollenManagementView', () => {
     rolleStore.allRollen = [DoFactory.getRolleWithServiceProviders()];
     rolleStore.totalRollen = 1;
 
-    schuleFilter.vm.$emit('update:selectedSchulen', schuleId);
+    schuleFilter.vm.$emit('update:selectedSchulen', DoFactory.getSchule({ id: schuleId }));
     await nextTick();
     await flushPromises();
 
@@ -257,16 +257,17 @@ describe('MptRollenManagementView', () => {
 
   it('restores selected school from search filter store on mount', async () => {
     const schuleId: string = DoFactory.getSchule().id;
-    searchFilterStore.selectedSchuleForMptRollen = schuleId;
     searchFilterStore.mptRollenPage = 2;
     searchFilterStore.mptRollenPerPage = 50;
+    const schule: Organisation = DoFactory.getSchule({ id: schuleId });
+    searchFilterStore.selectedSchuleForMptRollen = schule;
 
     const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
     await flushPromises();
 
     const schuleFilter: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
-    expect(schuleFilter.props()).toEqual(expect.objectContaining({ selectedSchulen: [schuleId] }));
-    expect(organisationStore.getOrganisationById).toHaveBeenCalledExactlyOnceWith(schuleId);
+    expect(schuleFilter.props()).toEqual(expect.objectContaining({ selectedSchulen: schule }));
+    expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
     expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         organisationIds: [schuleId],
@@ -284,7 +285,7 @@ describe('MptRollenManagementView', () => {
     'dispatches once when reactive pagination changes to page $page and limit $limit',
     async ({ page, limit, offset }: { page: number; limit: number; offset: number }): Promise<void> => {
       const schuleId: string = DoFactory.getSchule().id;
-      searchFilterStore.selectedSchuleForMptRollen = schuleId;
+      searchFilterStore.selectedSchuleForMptRollen = DoFactory.getSchule({ id: schuleId });
       rolleStore.totalRollen = 100;
       mountComponent();
       await flushPromises();
@@ -301,7 +302,6 @@ describe('MptRollenManagementView', () => {
         limit,
         searchString: '',
         organisationIds: [schuleId],
-        systemrechte: [RollenSystemRechtEnum.MptRollenZuordnen],
       });
       expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
     },
@@ -322,7 +322,7 @@ describe('MptRollenManagementView', () => {
       expectedOffset: number;
     }): Promise<void> => {
       const schuleId: string = DoFactory.getSchule().id;
-      searchFilterStore.selectedSchuleForMptRollen = schuleId;
+      searchFilterStore.selectedSchuleForMptRollen = DoFactory.getSchule({ id: schuleId });
       searchFilterStore.mptRollenPage = 2;
       rolleStore.totalRollen = total;
       const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
@@ -345,7 +345,7 @@ describe('MptRollenManagementView', () => {
 
   it('does not dispatch when the filter inputs are unchanged', async () => {
     const schuleId: string = DoFactory.getSchule().id;
-    searchFilterStore.selectedSchuleForMptRollen = schuleId;
+    searchFilterStore.selectedSchuleForMptRollen = DoFactory.getSchule({ id: schuleId });
     const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
     await flushPromises();
     vi.mocked(rolleStore.getRollenForMptZuordnung).mockClear();
@@ -353,7 +353,7 @@ describe('MptRollenManagementView', () => {
 
     const schuleFilter: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
     const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' });
-    schuleFilter.vm.$emit('update:selectedSchulen', schuleId);
+    schuleFilter.vm.$emit('update:selectedSchulen', DoFactory.getSchule({ id: schuleId }));
     resultTable.vm.$emit('onPageUpdate', 1);
     resultTable.vm.$emit('onItemsPerPageUpdate', 30);
     await nextTick();
@@ -378,7 +378,7 @@ describe('MptRollenManagementView', () => {
   });
 
   it('reloads rollen and organisation details once when the school changes', async () => {
-    searchFilterStore.selectedSchuleForMptRollen = DoFactory.getSchule().id;
+    searchFilterStore.selectedSchuleForMptRollen = DoFactory.getSchule();
     searchFilterStore.mptRollenPage = 2;
     rolleStore.totalRollen = 100;
     const wrapper: VueWrapper<InstanceType<typeof MptRollenManagementView>> = mountComponent();
@@ -388,15 +388,15 @@ describe('MptRollenManagementView', () => {
     const schuleId: string = DoFactory.getSchule().id;
 
     const schuleFilter: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
-    schuleFilter.vm.$emit('update:selectedSchulen', schuleId);
+    schuleFilter.vm.$emit('update:selectedSchulen', DoFactory.getSchule({ id: schuleId }));
     await nextTick();
     await flushPromises();
 
-    expect(searchFilterStore.selectedSchuleForMptRollen).toBe(schuleId);
+    expect(searchFilterStore.selectedSchuleForMptRollen?.id).toBe(schuleId);
     expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ organisationIds: [schuleId], offset: 30 }),
     );
-    expect(organisationStore.getOrganisationById).toHaveBeenCalledExactlyOnceWith(schuleId);
+    expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
   });
 
   it('dispatches once for an autoselected school on mount', async () => {
@@ -417,10 +417,10 @@ describe('MptRollenManagementView', () => {
     mountComponent();
     await flushPromises();
 
-    expect(searchFilterStore.selectedSchuleForMptRollen).toBe(schule.id);
+    expect(searchFilterStore.selectedSchuleForMptRollen).toEqual(schule);
     expect(rolleStore.getRollenForMptZuordnung).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ organisationIds: [schule.id], offset: 0, limit: 30 }),
     );
-    expect(organisationStore.getOrganisationById).toHaveBeenCalledExactlyOnceWith(schule.id);
+    expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
   });
 });

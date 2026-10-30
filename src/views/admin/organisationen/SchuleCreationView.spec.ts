@@ -144,7 +144,7 @@ beforeEach(async () => {
   wrapper = await mountComponent();
 
   organisationStore.errorCode = '';
-  organisationStore.schultraeger = [schultraegerOrganisation];
+  organisationStore.rootChildren = [schultraegerOrganisation];
 });
 
 afterEach(() => {
@@ -166,7 +166,7 @@ describe('SchuleCreationView', () => {
 
   test('it passes initial form values with default schulform to SchuleForm', async () => {
     // Make sure schultraeger is set before component mounts
-    organisationStore.schultraeger = [schultraegerOrganisation];
+    organisationStore.rootChildren = [schultraegerOrganisation];
     wrapper = await mountComponent();
     await flushPromises();
 
@@ -181,9 +181,9 @@ describe('SchuleCreationView', () => {
   });
 
   test('it initializes SchuleForm with the first schultraeger fetched after mounting', async () => {
-    organisationStore.schultraeger = [];
-    vi.spyOn(organisationStore, 'getRootKinderSchultraeger').mockImplementation(async () => {
-      organisationStore.schultraeger = [schultraegerOrganisation];
+    organisationStore.rootChildren = [];
+    vi.spyOn(organisationStore, 'getRootChildren').mockImplementation(async () => {
+      organisationStore.rootChildren = [schultraegerOrganisation];
       await flushPromises();
     });
 
@@ -384,7 +384,7 @@ describe('SchuleCreationView', () => {
 
     test('triggers unsaved changes dialog if form is dirty', async () => {
       const expectedCallsToNext: number = 0;
-      organisationStore.schultraeger = [schultraegerOrganisation];
+      organisationStore.rootChildren = [schultraegerOrganisation];
       wrapper = await mountComponent();
       await flushPromises();
 
@@ -449,9 +449,9 @@ describe('SchuleCreationView', () => {
   });
 
   test('it initializes with no schultraeger as default when schultraeger list is empty', async () => {
-    organisationStore.schultraeger = [];
-    vi.spyOn(organisationStore, 'getRootKinderSchultraeger').mockImplementation(async () => {
-      organisationStore.schultraeger = [];
+    organisationStore.rootChildren = [];
+    vi.spyOn(organisationStore, 'getRootChildren').mockImplementation(async () => {
+      organisationStore.rootChildren = [];
       await flushPromises();
     });
     wrapper = await mountComponent();
@@ -464,16 +464,16 @@ describe('SchuleCreationView', () => {
     });
   });
 
-  test('it calls getRootKinderSchultraeger on mount', async () => {
+  test('it calls getRootChildren on mount', async () => {
     vi.clearAllMocks();
     organisationStore.$reset();
-    const getRootKinderSchultraegerSpy: MockInstance = vi.spyOn(organisationStore, 'getRootKinderSchultraeger');
+    const getRootChildrenSpy: MockInstance = vi.spyOn(organisationStore, 'getRootChildren');
 
     wrapper?.unmount();
     wrapper = await mountComponent();
     await flushPromises();
 
-    expect(getRootKinderSchultraegerSpy).toHaveBeenCalledOnce();
+    expect(getRootChildrenSpy).toHaveBeenCalledOnce();
   });
 
   test('it clears errorCode and createdSchule on mount', async () => {

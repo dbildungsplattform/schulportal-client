@@ -5,12 +5,14 @@ import {
   type Organisation,
   type OrganisationStore,
 } from '@/stores/OrganisationStore';
-import { DOMWrapper, VueWrapper, flushPromises, mount } from '@vue/test-utils';
+import { DOMWrapper, VueWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, expect, test, type MockInstance } from 'vitest';
-import { nextTick, type Component } from 'vue';
-import { createRouter, createWebHistory, type Router } from 'vue-router';
+import { nextTick } from 'vue';
+import { RouterView, createRouter, createWebHistory, type Router } from 'vue-router';
 import KlassenDetailsView from './KlasseDetailsView.vue';
+
+enableAutoUnmount(afterEach);
 
 let wrapper: VueWrapper | null = null;
 let router: Router;
@@ -47,7 +49,7 @@ beforeEach(async () => {
     routes,
   });
 
-  router.push('/');
+  await router.push({ name: 'klasse-details', params: { id: mockCurrentKlasse.id } });
   await router.isReady();
 
   organisationStore.currentOrganisation = mockCurrentOrganisation;
@@ -66,29 +68,22 @@ beforeEach(async () => {
     },
   );
 
-  wrapper = mount(KlassenDetailsView, {
+  const routerWrapper: VueWrapper = mount(RouterView, {
     attachTo: document.getElementById('app') || '',
     global: {
-      components: {
-        KlassenDetailsView: KlassenDetailsView as Component,
-      },
-      mocks: {
-        route: {
-          fullPath: 'full/path',
-        },
-      },
       plugins: [router],
     },
   });
-  await flushPromises();
-});
 
-afterEach(() => {
-  wrapper?.unmount();
-  wrapper = null;
+  await flushPromises();
+  wrapper = routerWrapper.findComponent(KlassenDetailsView);
 });
 
 describe('KlassenDetailsView', () => {
+  test('it loads the klasse selected by the route', () => {
+    expect(organisationStore.getOrganisationById).toHaveBeenCalledWith(mockCurrentKlasse.id, OrganisationsTyp.Klasse);
+  });
+
   test('it renders the klasse details view and its components', () => {
     expect(wrapper?.find('[data-testid="klasse-details-headline"]').isVisible()).toBe(true);
     expect(wrapper?.findComponent({ ref: 'klasse-creation-form' }).isVisible()).toBe(true);
@@ -133,9 +128,9 @@ describe('KlassenDetailsView', () => {
   });
 
   test('it navigates back to klassen table', async () => {
-    const push: MockInstance = vi.spyOn(router, 'push');
+    const push: MockInstance = vi.spyOn(router, 'push').mockResolvedValue();
     await wrapper?.find('[data-testid="close-layout-card-button"]').trigger('click');
-    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledExactlyOnceWith({ name: 'klasse-management' });
   });
 
   test('it activates and cancels editing', async () => {
@@ -222,7 +217,7 @@ describe('KlassenDetailsView', () => {
   });
 
   test('it deletes a klasse', async () => {
-    const push: MockInstance = vi.spyOn(router, 'push');
+    const push: MockInstance = vi.spyOn(router, 'push').mockResolvedValue();
     await wrapper?.find('[data-testid="open-klasse-delete-dialog-button"]').trigger('click');
     await flushPromises();
 
@@ -243,7 +238,7 @@ describe('KlassenDetailsView', () => {
     )[0];
     closeDialogButton?.click();
     await nextTick();
-    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledExactlyOnceWith({ name: 'klasse-management' });
   });
 
   test('displays error message correctly', async () => {

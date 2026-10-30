@@ -9,6 +9,7 @@ import { VueWrapper, flushPromises, mount } from '@vue/test-utils';
 import { expect, test, type Mock } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import KlasseForm from './KlasseForm.vue';
+import { DoFactory } from 'test/DoFactory';
 
 const organisationStore: OrganisationStore = useOrganisationStore();
 const parentId: string = 'klasse-form';
@@ -22,6 +23,11 @@ const newValues: KlasseFormSchema = {
   selectedKlassenname: '9z',
 };
 const mountComponent = (props?: object): VueWrapper<InstanceType<typeof KlasseForm>> => {
+  organisationStore.currentOrganisation = DoFactory.getSchule({
+    id: initialValues.selectedSchule,
+    name: initialValues.selectedSchule,
+    kennung: null,
+  });
   return mount(KlasseForm, {
     attachTo: document.getElementById('app') || '',
     props: {
@@ -63,6 +69,11 @@ describe('KlasseForm', () => {
       editMode,
       errorCode: '',
       initialValues,
+      initialSchule: DoFactory.getSchule({
+        id: initialValues.selectedSchule,
+        name: initialValues.selectedSchule,
+        kennung: null,
+      }),
     };
 
     test('it renders the Klasse form', () => {
@@ -82,11 +93,15 @@ describe('KlasseForm', () => {
       expect(wrapper.find('#klassenname-input').exists()).toBe(false);
     });
 
-    test('it contains initial values', () => {
+    test('it contains initial values without making the form dirty or resolving the ID', async () => {
       const wrapper: VueWrapper = mountComponent(defaultProps) as VueWrapper;
+      await flushPromises();
       expect(wrapper.find('[data-testid="klasse-form"]').isVisible()).toBe(true);
       expect(wrapper.find(`[data-testid="${schulenFilterTestId}"]`).text()).toContain(initialValues.selectedSchule);
       expect(wrapper.find('#klassenname-input').attributes('value')).toBe(initialValues.selectedKlassenname);
+      expect(wrapper.emitted('formStateChanged')?.at(-1)).toEqual([expect.objectContaining({ dirty: false })]);
+      expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
+      expect(organisationStore.loadOrganisationForSelection).not.toHaveBeenCalled();
     });
 
     test('it handles changing props', async () => {
@@ -97,7 +112,15 @@ describe('KlasseForm', () => {
       expect(wrapper.find(`[data-testid="${schulenFilterTestId}"]`).text()).toContain(initialValues.selectedSchule);
       expect(wrapper.find('#klassenname-input').attributes('value')).toBe(initialValues.selectedKlassenname);
 
-      await wrapper.setProps({ initialValues: newValues });
+      await wrapper.setProps({
+        initialValues: newValues,
+        initialSchule: DoFactory.getSchule({
+          id: newValues.selectedSchule,
+          name: newValues.selectedSchule,
+          kennung: null,
+        }),
+      });
+      await flushPromises();
       expect(wrapper.find(`[data-testid="${schulenFilterTestId}"]`).text()).toContain(newValues.selectedSchule);
       expect(wrapper.find('#klassenname-input').attributes('value')).toBe(newValues.selectedKlassenname);
     });

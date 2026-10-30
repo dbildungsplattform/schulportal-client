@@ -97,7 +97,7 @@ beforeEach(async () => {
   };
 
   organisationStore.currentSchule = testSchule;
-  organisationStore.schultraeger = [DoFactory.getSchule()];
+  organisationStore.rootChildren = [DoFactory.getSchule()];
   organisationStore.loading = false;
   organisationStore.errorCode = '';
 
@@ -125,8 +125,8 @@ describe('SchuleDetailsEditView', () => {
     expect(fetchSpy).toHaveBeenCalledWith('test-schule-id');
   });
 
-  test('it fetches schultraeger on mount', async () => {
-    const fetchSpy: MockInstance = vi.spyOn(organisationStore, 'getRootKinderSchultraeger');
+  test('it fetches root children on mount', async () => {
+    const fetchSpy: MockInstance = vi.spyOn(organisationStore, 'getRootChildren');
     wrapper?.unmount();
     wrapper = await mountComponent('test-schule-id');
     expect(fetchSpy).toHaveBeenCalled();

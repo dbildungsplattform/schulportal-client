@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, onMounted, ref, watch, watchEffect, type ComputedRef, type Ref } from 'vue';
+  import { computed, ref, watchEffect, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
 
   import SpshAlert from '@/components/alert/SpshAlert.vue';
@@ -10,8 +10,9 @@
   import ServiceProviderDelete from '@/components/admin/service-provider/ServiceProviderDelete.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
+  import type { SelectedSchulen } from '@/types';
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
-  import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
+  import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
   import { RollenSystemRecht } from '@/stores/RolleStore';
   import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
   import {
@@ -21,14 +22,7 @@
   } from '@/stores/ServiceProviderStore';
   import { getDisplayNameForOrg } from '@/utils/formatting';
   import { SortOrder } from '@/utils/sorting';
-  import {
-    onBeforeRouteLeave,
-    useRoute,
-    useRouter,
-    type LocationQueryValue,
-    type RouteLocationNormalizedLoaded,
-    type Router,
-  } from 'vue-router';
+  import { onBeforeRouteLeave, useRouter, type Router } from 'vue-router';
   import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
   import SpshTooltip from '@/components/admin/SpshTooltip.vue';
 
@@ -42,16 +36,17 @@
     isVidisAngebot: boolean;
   };
 
-  const selectedOrganisationId: Ref<string> = ref('');
-
   const { t }: Composer = useI18n();
   const router: Router = useRouter();
-  const route: RouteLocationNormalizedLoaded = useRoute();
 
   const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
   const searchFilterStore: SearchFilterStore = useSearchFilterStore();
   const organisationStore: OrganisationStore = useOrganisationStore();
   const authStore: AuthStore = useAuthStore();
+  const selectedOrganisation: Ref<Organisation | null> = ref(
+    searchFilterStore.selectedSchuleForSchulischeServiceProvider,
+  );
+  const selectedOrganisationId: ComputedRef<string> = computed(() => selectedOrganisation.value?.id ?? '');
 
   const {
     hasAutoselectedSchule,
@@ -124,22 +119,21 @@
   });
 
   function resetSearchAndFilter(): void {
-    selectedOrganisationId.value = '';
+    selectedOrganisation.value = null;
     serviceProviderStore.manageableServiceProvidersForOrganisation = [];
     serviceProviderStore.totalManageableServiceProvidersForOrganisation = 0;
-    organisationStore.currentOrganisation = null;
     searchFilterStore.setSchuleForSchulischeServiceProvider(null);
     searchFilterStore.serviceProviderSchulePage = 1;
     searchFilterStore.serviceProviderSchulePerPage = 30;
   }
 
-  function setOrganisationFilter(newValue: string | undefined): void {
-    if (!newValue) {
+  function setOrganisationFilter(organisation: SelectedSchulen<false>): void {
+    if (!organisation) {
       resetSearchAndFilter();
       return;
     }
-    selectedOrganisationId.value = newValue;
-    searchFilterStore.setSchuleForSchulischeServiceProvider(newValue);
+    selectedOrganisation.value = organisation;
+    searchFilterStore.setSchuleForSchulischeServiceProvider(organisation);
   }
 
   async function reloadData(): Promise<void> {
@@ -154,26 +148,15 @@
 
   watchEffect(async () => {
     if (selectedOrganisationId.value) {
-      await Promise.all([reloadData(), organisationStore.getOrganisationById(selectedOrganisationId.value)]);
+      await reloadData();
     }
   });
-
-  watch(
-    () => route.query['orga'],
-    (orgaId: LocationQueryValue | LocationQueryValue[] | undefined) => {
-      if (!orgaId) {
-        // clears stale context
-        organisationStore.currentOrganisation = null;
-      }
-    },
-    { immediate: true },
-  );
 
   function navigateToServiceProviderDetails(_$event: PointerEvent, { item }: { item: ServiceProviderRow }): void {
     router.push({
       name: 'angebot-details-schulspezifisch',
       params: { id: item.id },
-      query: { orga: organisationStore.currentOrganisation?.id },
+      query: { orga: selectedOrganisationId.value },
     });
   }
 
@@ -226,12 +209,6 @@
     serviceProviderStore.errorCode = '';
     organisationStore.errorCode = '';
   });
-
-  onMounted(() => {
-    if (searchFilterStore.selectedSchuleForSchulischeServiceProvider) {
-      selectedOrganisationId.value = searchFilterStore.selectedSchuleForSchulischeServiceProvider;
-    }
-  });
 </script>
 
 <template>
@@ -242,8 +219,8 @@
     {{ $t('admin.headline') }}
   </h1>
   <LayoutCard
-    :header="`${t('admin.angebot.management.title')} ${organisationStore.currentOrganisation?.name ?? ''}`"
-    :header-hover-text="organisationStore.currentOrganisation?.name"
+    :header="`${t('admin.angebot.management.title')} ${selectedOrganisation?.name ?? ''}`"
+    :header-hover-text="selectedOrganisation?.name"
   >
     <SpshAlert
       :button-action="handleAlertCloseServiceProvider"
@@ -287,7 +264,7 @@
             parentId="service-provider-management-by-schule"
             ref="schulenFilter"
             :systemrechteForSearch="[RollenSystemRecht.RollenErweitern]"
-            :selectedSchulen="selectedOrganisationId ? [selectedOrganisationId] : []"
+            :selectedSchulen="selectedOrganisation ?? undefined"
             @update:selected-schulen="setOrganisationFilter"
             :placeholderText="$t('admin.schule.schule')"
             hideDetails
@@ -411,7 +388,7 @@
         v-model="isVidisSyncDialogOpen"
         :error-code="serviceProviderStore.errorCode"
         :is-loading="isVidisSyncing"
-        :schule-name="organisationStore.currentOrganisation?.name ?? ''"
+        :schule-name="searchFilterStore.selectedSchuleForSchulischeServiceProvider?.name ?? ''"
         @on-sync-vidis="onSyncVidis"
         @on-close="onCloseSyncDialog"
       />

@@ -21,8 +21,8 @@
   const organisationStore: OrganisationStore = useOrganisationStore();
 
   const defaultSchulform: ComputedRef<string | undefined> = computed(() => {
-    if (organisationStore.schultraeger && organisationStore.schultraeger.length > 0) {
-      return organisationStore?.schultraeger[0]?.id;
+    if (organisationStore.rootChildren && organisationStore.rootChildren.length > 0) {
+      return organisationStore?.rootChildren[0]?.id;
     }
     return undefined;
   });
@@ -44,7 +44,7 @@
   });
 
   const schultraegerList: ComputedRef<Organisation[] | undefined> = computed(() => {
-    return organisationStore.schultraeger;
+    return organisationStore.rootChildren;
   });
 
   let blockedNext = (): void => {
@@ -122,7 +122,7 @@
   onMounted(async () => {
     organisationStore.createdSchule = null;
     organisationStore.errorCode = '';
-    await organisationStore.getRootKinderSchultraeger();
+    await organisationStore.getRootChildren();
     initialFormValues.value.selectedSchulform = defaultSchulform.value;
     isSchultraegerLoaded.value = true;
 

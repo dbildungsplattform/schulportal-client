@@ -284,7 +284,7 @@ describe('ServiceProviderForm', () => {
       .findComponent({
         name: 'v-autocomplete',
       });
-    await schuleAutoComplete.setValue(org.id);
+    await schuleAutoComplete.setValue(org);
     // vi.runAllTimers();
     await flushPromises();
 
@@ -343,7 +343,7 @@ describe('ServiceProviderForm', () => {
       .findComponent({
         name: 'v-autocomplete',
       });
-    await schuleAutoComplete.setValue(org.id);
+    await schuleAutoComplete.setValue(org);
     await flushPromises();
 
     const submitBtn: DOMWrapper<Element> = wrapper.find(

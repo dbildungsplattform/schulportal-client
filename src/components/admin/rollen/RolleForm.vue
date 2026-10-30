@@ -2,13 +2,16 @@
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
   import FormRow from '@/components/form/FormRow.vue';
   import FormWrapper from '@/components/form/FormWrapper.vue';
+  import { useOrganisationSelection } from '@/composables/useOrganisationSelection';
+  import type { Organisation } from '@/stores/OrganisationStore';
   import { RollenSystemRecht, type RollenArt, type RollenMerkmal } from '@/stores/RolleStore';
-  import { type TranslatedObject } from '@/types.d';
+  import { type SelectedSchulen, type TranslatedObject } from '@/types.d';
   import type { BaseFieldProps } from 'vee-validate';
   import { type ModelRef } from 'vue';
 
   type Props = {
     readonly?: boolean;
+    initialOrganisation?: Organisation | null;
     errorCode?: string;
     selectedAdministrationsebeneProps?: BaseFieldProps & { error: boolean; 'error-messages': Array<string> };
     selectedRollenArtProps?: BaseFieldProps & { error: boolean; 'error-messages': Array<string> };
@@ -39,9 +42,13 @@
   const selectedMerkmale: ModelRef<RollenMerkmal[] | undefined, string> = defineModel('selectedMerkmale');
   const selectedServiceProviders: ModelRef<string[] | undefined, string> = defineModel('selectedServiceProviders');
   const selectedSystemRechte: ModelRef<RollenSystemRecht[] | undefined, string> = defineModel('selectedSystemRechte');
+  const selectedOrganisation: ReturnType<typeof useOrganisationSelection> = useOrganisationSelection(
+    selectedAdministrationsebene,
+    () => props.initialOrganisation,
+  );
 
-  function updateSelectedSchule(id: string | undefined): void {
-    selectedAdministrationsebene.value = id;
+  function updateSelectedSchule(selection: SelectedSchulen<false>): void {
+    selectedOrganisation.value = selection;
   }
 </script>
 
@@ -76,7 +83,7 @@
         <SchulenFilter
           :includeAll="true"
           :multiple="false"
-          :selectedSchulen="selectedAdministrationsebene"
+          :selectedSchulen="selectedOrganisation ?? undefined"
           :error="selectedAdministrationsebeneProps?.error"
           ref="schulenFilter"
           parentId="rolle-form"

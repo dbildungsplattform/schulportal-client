@@ -12,6 +12,7 @@
   } from '@/components/admin/service-provider/types';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
+  import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
   import { RollenSystemRecht } from '@/stores/RolleStore';
   import {
     ServiceProviderMerkmal,
@@ -32,6 +33,8 @@
   import SchulPortalLogo from '@/assets/logos/Schulportal_SH_Bildmarke_RGB_Anwendung_HG_Blau.svg';
 
   const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
+  const organisationStore: OrganisationStore = useOrganisationStore();
+  const initialOrganisation: Ref<Organisation | null> = ref(null);
   const route: RouteLocationNormalized = useRoute();
   const router: Router = useRouter();
   const { t }: Composer = useI18n({ useScope: 'global' });
@@ -141,8 +144,19 @@
     }
   }
 
-  function clearError(): void {
+  async function loadInitialOrganisation(organisationId: string): Promise<void> {
+    await organisationStore.loadOrganisationForSelection(organisationId);
+    initialOrganisation.value = organisationStore.organisationForSelection;
+    if (organisationStore.errorCode) {
+      serviceProviderStore.errorCode = organisationStore.errorCode;
+    }
+  }
+
+  async function clearError(): Promise<void> {
     serviceProviderStore.errorCode = '';
+    if (!initialOrganisation.value && serviceProviderStore.currentServiceProvider) {
+      await loadInitialOrganisation(serviceProviderStore.currentServiceProvider.administrationsebene.id);
+    }
   }
 
   async function navigateToServiceProviderList(): Promise<void> {
@@ -193,6 +207,9 @@
     serviceProviderStore.errorCode = '';
     if (serviceProviderId.value) {
       await serviceProviderStore.getManageableServiceProviderById(serviceProviderId.value);
+      if (!serviceProviderStore.errorCode && serviceProviderStore.currentServiceProvider) {
+        await loadInitialOrganisation(serviceProviderStore.currentServiceProvider.administrationsebene.id);
+      }
     }
     window.addEventListener('beforeunload', preventNavigation);
   });
@@ -334,9 +351,10 @@
             v-if="serviceProviderStore.currentServiceProvider"
             :is-edit-mode="true"
             :initialValues="initialValues ?? {}"
+            :initial-organisation="initialOrganisation"
             :cachedValues
             :systemrecht
-            :loading="serviceProviderStore.loading"
+            :loading="serviceProviderStore.loading || organisationStore.loading"
             :showUnsavedChangesDialog="showUnsavedChangesDialog"
             @update:dirty="(value: boolean) => (isDirty = value)"
             @click:submit="submit"

@@ -70,6 +70,8 @@ beforeEach(async () => {
   });
 
   rolleStore.currentRolle = mockCurrentRolle;
+  organisationStore.$reset();
+  organisationStore.organisationForSelection = mockOrga;
 
   router.push('/');
   await router.isReady();
@@ -155,6 +157,20 @@ describe('RolleDetailsView', () => {
         .findComponent({ ref: 'rolle-form-organisation-select' })
         .text(),
     ).toContain(mockOrga.name);
+    expect(organisationStore.loadOrganisationForSelection).toHaveBeenCalledWith(mockOrga.id);
+  });
+
+  test('it displays initialization lookup errors instead of an empty selection', async () => {
+    wrapper?.unmount();
+    vi.mocked(organisationStore.loadOrganisationForSelection).mockImplementationOnce((): Promise<void> => {
+      organisationStore.organisationForSelection = null;
+      organisationStore.errorCode = 'UNSPECIFIED_ERROR';
+      return Promise.resolve();
+    });
+    wrapper = await mountComponent();
+
+    expect(wrapper.find('[data-testid="rolle-details-error-alert"]').exists()).toBe(true);
+    expect(wrapper.findComponent({ name: 'SchulenFilter' }).exists()).toBe(false);
   });
 
   test('it renders data in success template', async () => {
@@ -213,8 +229,7 @@ describe('RolleDetailsView', () => {
       ?.findComponent({ ref: 'schulenFilter' })
       .findComponent({ ref: 'rolle-form-organisation-select' });
 
-    organisationAutocomplete?.setValue(['1']);
-    organisationAutocomplete?.vm.$emit('update:selectedSchulen', ['1']);
+    await organisationAutocomplete?.setValue(DoFactory.getSchule({ id: '1' }));
     await nextTick();
 
     await rolleFormWrapper?.findComponent({ ref: 'rollenart-select' }).setValue('LEHR');

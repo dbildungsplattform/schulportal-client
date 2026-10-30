@@ -35,7 +35,7 @@
   };
 
   const zustaendigkeitsbereichList: ComputedRef<Organisation[]> = computed(() => {
-    return organisationStore.schultraeger;
+    return organisationStore.rootChildren;
   });
   const creationErrorMessage: ComputedRef<string> = computed((): string => {
     if (!organisationStore.errorCode) {
@@ -110,7 +110,7 @@
   async function loadZustaendigkeitsbereiche(): Promise<void> {
     isZustaendigkeitsbereichLoaded.value = false;
     organisationStore.errorCode = '';
-    await organisationStore.getRootKinderSchultraeger();
+    await organisationStore.getRootChildren();
     if (organisationStore.errorCode) {
       return;
     }

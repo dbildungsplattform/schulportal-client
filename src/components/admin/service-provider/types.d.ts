@@ -42,6 +42,7 @@ export type ServiceProviderFormSubmitData = {
 
 export type ServiceProviderFormProps = {
   initialValues: Partial<ServiceProviderForm>;
+  initialOrganisation?: Organisation | null;
   /**
    * Sets fields into dirty states
    */

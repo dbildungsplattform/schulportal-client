@@ -61,8 +61,8 @@ async function selectSchule(schule?: Partial<Organisation> | null): Promise<Orga
     total: 1,
     loading: false,
   });
-  searchFilterStore.selectedSchuleForKlassen = schuleWithDefaults.id;
-  await schuleAutocomplete?.setValue(schuleWithDefaults.id);
+  searchFilterStore.selectedSchuleForKlassen = schuleWithDefaults;
+  await schuleAutocomplete?.setValue(schuleWithDefaults);
   return schuleWithDefaults;
 }
 
@@ -70,7 +70,7 @@ async function selectKlasse(
   klasse: Partial<Organisation> | null,
   schule?: Organisation,
 ): Promise<Organisation | undefined> {
-  const klasseFilterStoreKey: string = '';
+  const klasseFilterStoreKey: string = 'klassen-management';
   const klasseAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ ref: 'klasse-select' }).findComponent({
     name: 'v-autocomplete',
   });
@@ -87,7 +87,7 @@ async function selectKlasse(
   });
   const klasseWithDefaults: Organisation = DoFactory.getKlasse(schule, klasse);
   organisationStore.klassenFilters.get(klasseFilterStoreKey)!.filterResult = [klasseWithDefaults];
-  await klasseAutocomplete?.setValue([klasseWithDefaults.id]);
+  await klasseAutocomplete?.setValue([klasseWithDefaults]);
   return klasseWithDefaults;
 }
 
@@ -145,7 +145,6 @@ describe('KlassenManagementView', () => {
     organisationStore.totalKlassen = 2;
 
     organisationStore.getAllOrganisationen = vi.fn();
-    organisationStore.getKlassenByOrganisationId = vi.fn();
     organisationStore.deleteOrganisationById = vi.fn();
 
     authStore.currentUser = authUser;
@@ -215,7 +214,7 @@ describe('KlassenManagementView', () => {
   });
   describe.each([[true], [false]])('when searchFilterStore has data (%s)', (hasStoreData: boolean) => {
     test('it populates filter', async () => {
-      searchFilterStore.selectedSchuleForKlassen = hasStoreData ? schule1.id : null;
+      searchFilterStore.selectedSchuleForKlassen = hasStoreData ? schule1 : null;
       organisationStore.organisationenFilters.set('klassen-management', {
         filterResult: [schule1],
         total: 1,
@@ -246,7 +245,7 @@ describe('KlassenManagementView', () => {
     expect(wrapper?.find('.v-data-table-footer__info').text()).toContain('31-50');
 
     const organisationAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ ref: 'schule-select' });
-    await organisationAutocomplete?.setValue('O1');
+    await organisationAutocomplete?.setValue(DoFactory.getSchule({ id: 'O1' }));
     await nextTick();
     await wrapper?.find('.v-pagination__prev button:not(.v-btn--disabled)').trigger('click');
 
@@ -275,7 +274,7 @@ describe('KlassenManagementView', () => {
     organisationStore.totalOrganisationen = 2;
 
     const organisationAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ ref: 'schule-select' });
-    await organisationAutocomplete?.setValue('O1');
+    await organisationAutocomplete?.setValue(DoFactory.getSchule({ id: 'O1' }));
     await nextTick();
 
     await itemsPerPageSelection?.setValue(50);

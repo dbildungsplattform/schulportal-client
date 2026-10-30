@@ -12,8 +12,12 @@
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import KlassenFilter from '@/components/filter/KlassenFilter.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
+  import type { SelectedSchulen } from '@/types';
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
-  import { useOrganisationen } from '@/composables/useOrganisationen';
+  import {
+    useRollenForPersonAdministrationAutocomplete,
+    type UseRollenForPersonAdministrationAutocompleteReturn,
+  } from '@/composables/useRollenForPersonAdministrationAutocomplete';
   import { type AuthStore, useAuthStore } from '@/stores/AuthStore';
   import { type Organisation, type OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
   import { type PersonStore, SortField, usePersonStore } from '@/stores/PersonStore';
@@ -48,7 +52,6 @@
   const searchFilterStore: SearchFilterStore = useSearchFilterStore();
   const { t }: Composer = useI18n({ useScope: 'global' });
 
-  let timerId: ReturnType<typeof setTimeout>;
   const {
     hasAutoselectedSchule,
   }: {
@@ -111,17 +114,16 @@
     return rows;
   });
 
-  const searchInputRollen: Ref<string> = ref('');
   const searchInputOrganisationen: Ref<string> = ref('');
 
-  const selectedOrganisationen: Ref<Array<Organisation>> = ref([]);
-  const selectedKlassen: Ref<Array<string> | undefined> = ref(searchFilterStore.selectedKlassen ?? []);
-  const selectedRollen: Ref<Array<string>> = ref([]);
-  const selectedOrganisationIds: Ref<Array<string>> = ref([]);
+  const selectedOrganisationen: Ref<Array<Organisation>> = ref(searchFilterStore.selectedOrganisationen ?? []);
+  const selectedKlassen: Ref<Array<Organisation> | undefined> = ref(searchFilterStore.selectedKlassen ?? []);
+  const selectedOrganisationIds: ComputedRef<string[]> = computed(() =>
+    selectedOrganisationen.value.map((organisation: Organisation) => organisation.id),
+  );
   const selectedStatus: Ref<string | null> = ref(null);
   const searchFilter: Ref<string> = ref('');
 
-  const selectedRollenObjects: Ref<RolleResponse[]> = ref([]);
   const sortField: Ref<string | null> = ref(SortField.Familienname);
   const sortOrder: Ref<SortOrder | null> = ref(SortOrder.Asc);
 
@@ -144,14 +146,28 @@
     return [RollenSystemRecht.PersonenVerwalten, ...authStore.grantedGatedRollenSystemrechte];
   });
 
-  async function loadRollenForPersonAdministration(searchStr: string): Promise<void> {
-    await rolleStore.getRollenForPersonAdministration({
-      searchStr,
-      limit: 25,
-      organisationIds: selectedOrganisationIds.value,
-      systemrechte: rollenSystemrechteForPersonAdministration.value,
-    });
-  }
+  const {
+    selectedRollen,
+    searchInput: searchInputRollen,
+    filter: rollenFilter,
+    items: rollen,
+    init: initRollen,
+  }: UseRollenForPersonAdministrationAutocompleteReturn = useRollenForPersonAdministrationAutocomplete({
+    searchStr: '',
+    limit: 25,
+    organisationIds: selectedOrganisationIds.value,
+    systemrechte: rollenSystemrechteForPersonAdministration.value,
+  });
+  selectedRollen.value = searchFilterStore.selectedRollen ?? [];
+
+  watch(selectedOrganisationIds, (organisationIds: string[]): void => {
+    rollenFilter.organisationIds = organisationIds;
+    rollenFilter.searchStr = '';
+  });
+
+  watch(rollenSystemrechteForPersonAdministration, (systemrechte: RollenSystemRecht[]): void => {
+    rollenFilter.systemrechte = systemrechte;
+  });
 
   // Computed property for generating options dynamically for v-selects
   const actions: ComputedRef<TranslatedObject[]> = computed(() => {
@@ -194,24 +210,6 @@
     return organisation?.kennung ?? '';
   });
 
-  const rollen: ComputedRef<TranslatedObject[] | undefined> = computed(() => {
-    const filteredRollen: RolleResponse[] = rolleStore.rollenForPersonAdministration;
-    const uniqueRollenMap: Map<string, RolleResponse> = new Map();
-
-    [...filteredRollen, ...selectedRollenObjects.value].forEach((rolle: RolleResponse) => {
-      uniqueRollenMap.set(rolle.id, rolle);
-    });
-
-    return [...uniqueRollenMap.values()]
-      .map((rolle: RolleResponse) => ({
-        value: rolle.id,
-        title: rolle.name,
-      }))
-      .sort((a: TranslatedObject, b: TranslatedObject) => a.title.localeCompare(b.title));
-  });
-
-  const organisationenForForm: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
-
   // Only Rollen from type LEHR and LERN
   const rollenForRolleModify: ComputedRef<TranslatedRolleWithAttrs[]> = computed(() => {
     return rolleStore.rollenForPersonenkontextCreation.filter(
@@ -230,9 +228,9 @@
       offset: (searchFilterStore.personenPage - 1) * searchFilterStore.personenPerPage,
       limit: searchFilterStore.personenPerPage,
       organisationIDs: searchFilterStore.selectedKlassen?.length
-        ? searchFilterStore.selectedKlassen
-        : searchFilterStore.selectedOrganisationen || [],
-      rolleIDs: searchFilterStore.selectedRollen || [],
+        ? searchFilterStore.selectedKlassen.map((klasse: Organisation) => klasse.id)
+        : (searchFilterStore.selectedOrganisationen?.map((organisation: Organisation) => organisation.id) ?? []),
+      rolleIDs: searchFilterStore.selectedRollen?.map((rolle: RolleResponse): string => rolle.id) ?? [],
       searchFilter: searchFilterStore.searchStringForPersonen || '',
       sortField: searchFilterStore.personenSortField as SortField,
       sortOrder: searchFilterStore.personenSortOrder as SortOrder,
@@ -251,57 +249,26 @@
     }
 
     searchFilterStore.personenPerPage = limit;
-    await personStore.getAllPersons({
-      offset: (searchFilterStore.personenPage - 1) * searchFilterStore.personenPerPage,
-      limit: searchFilterStore.personenPerPage,
-      organisationIDs: searchFilterStore.selectedOrganisationen || selectedOrganisationIds.value,
-      rolleIDs: searchFilterStore.selectedRollen || selectedRollen.value,
-      searchFilter: searchFilterStore.searchStringForPersonen || searchFilter.value,
-    });
-
     await applySearchAndFilters();
   }
 
-  function updateKlassenSelection(newValue: Array<string>): void {
+  function updateKlassenSelection(newValue: Array<Organisation>): void {
     searchFilterStore.setKlasseFilterForPersonen(newValue);
     applySearchAndFilters();
     selectedKlassen.value = newValue;
   }
 
-  function setRolleFilter(newValue: Array<string>): void {
+  function setRolleFilter(newValue: RolleResponse[]): void {
     searchFilterStore.setRolleFilterForPersonen(newValue);
-    // Update selectedRollenObjects based on the new selection
-    selectedRollenObjects.value = newValue
-      .map((rolleId: string) => {
-        const existingRolle: RolleResponse | undefined = rolleStore.rollenForPersonAdministration.find(
-          (r: RolleResponse) => r.id === rolleId,
-        );
-        return existingRolle;
-      })
-      .filter((rolle: RolleResponse | undefined): rolle is RolleResponse => rolle !== undefined);
-
-    searchFilterStore.setRolleFilterWithObjectsForPersonen(newValue, selectedRollenObjects.value);
     applySearchAndFilters();
   }
 
-  function setSelectedOrganisationen(newValue: Array<Organisation> | Organisation): void {
-    searchFilterStore.setOrganisationFilterForPersonen(
-      selectedOrganisationIds.value,
-      searchFilterStore.selectedOrgaObjects && searchFilterStore.selectedOrgaObjects.length > 0
-        ? searchFilterStore.selectedOrgaObjects
-        : Array.isArray(newValue)
-          ? newValue
-          : [newValue],
-    );
-    selectedOrganisationen.value = searchFilterStore.selectedOrgaObjects ?? [];
-  }
-
-  async function setOrganisationFilter(newValue: Array<string> | undefined): Promise<void> {
-    selectedOrganisationIds.value = newValue ?? [];
-    searchFilterStore.setOrganisationFilterForPersonen(newValue ?? []);
+  async function setOrganisationFilter(newValue: SelectedSchulen<true>): Promise<void> {
+    selectedOrganisationen.value = newValue;
+    searchFilterStore.setOrganisationFilterForPersonen(newValue);
     searchFilterStore.setKlasseFilterForPersonen([]);
     selectedKlassen.value = [];
-    await Promise.all([applySearchAndFilters(), loadRollenForPersonAdministration('')]);
+    await applySearchAndFilters();
   }
 
   function navigateToPersonDetails(_$event: PointerEvent, { item }: { item: PersonRow }): void {
@@ -315,32 +282,30 @@
     }
     searchFilterStore.setKlasseFilterForPersonen([]);
     searchFilterStore.setRolleFilterForPersonen([]);
-    searchFilterStore.setRolleFilterWithObjectsForPersonen([], []);
     searchFilterStore.setSearchFilterForPersonen('');
     /* do not reset orgas if orga was autoselected */
     if (!hasAutoselectedSchule.value) {
-      selectedOrganisationIds.value = [];
+      selectedOrganisationen.value = [];
       searchFilterStore.setOrganisationFilterForPersonen([]);
     }
     searchInputOrganisationen.value = '';
     searchInputRollen.value = '';
+    rollenFilter.searchStr = '';
     selectedRollen.value = [];
     selectedKlassen.value = [];
     selectedStatus.value = null;
     searchFilterStore.personenPage = 1;
     searchFilterStore.personenPerPage = 30;
-    searchFilterStore.currentSort = null;
+    sortField.value = SortField.Familienname;
+    sortOrder.value = SortOrder.Asc;
+    searchFilterStore.personenSortField = SortField.Familienname;
+    searchFilterStore.personenSortOrder = SortOrder.Asc;
+    searchFilterStore.currentSort = {
+      key: SortField.Familienname,
+      order: SortOrder.Asc,
+    };
     selectedPersonIds.value = [];
-    await Promise.all([
-      personStore.getAllPersons({
-        offset: (searchFilterStore.personenPage - 1) * searchFilterStore.personenPerPage,
-        limit: searchFilterStore.personenPerPage,
-        searchFilter: '',
-        sortField: SortField.Familienname,
-        sortOrder: SortOrder.Asc,
-      }),
-      loadRollenForPersonAdministration(''),
-    ]);
+    await applySearchAndFilters();
   }
 
   async function handleSearchFilter(filter: string): Promise<void> {
@@ -349,32 +314,9 @@
     await applySearchAndFilters();
   }
 
-  function updateRollenSearch(searchValue: string): void {
-    clearTimeout(timerId);
-
-    timerId = setTimeout(async () => {
-      await loadRollenForPersonAdministration(searchValue);
-
-      // If there are selected rollen not in the search results, add them to the in-memory list.
-      const moeglicheRollen: RolleResponse[] = rolleStore.rollenForPersonAdministration;
-      const missingRollen: RolleResponse[] = searchFilterStore.selectedRollenObjects.filter(
-        (rolle: RolleResponse) => !moeglicheRollen.some((r: RolleResponse) => r.id === rolle.id),
-      );
-
-      if (missingRollen.length > 0) {
-        rolleStore.rollenForPersonAdministration = [...moeglicheRollen, ...missingRollen];
-        rolleStore.totalRollenForPersonAdministration = Math.max(
-          rolleStore.totalRollenForPersonAdministration,
-          rolleStore.rollenForPersonAdministration.length,
-        );
-      }
-    }, 500);
-  }
-
   const handleFocusChange = (focused: boolean): void => {
     if (!focused && searchInputRollen.value) {
       searchInputRollen.value = '';
-      updateRollenSearch(searchInputRollen.value);
     }
   };
 
@@ -443,7 +385,7 @@
   });
 
   const selectedRolle: ComputedRef<RolleResponse | undefined> = computed(() => {
-    return selectedRollenObjects.value.find((rolle: RolleResponse) => rolle.id === selectedRollen.value[0]);
+    return selectedRollen.value[0];
   });
 
   const checkSingleOrgAndOnlyLernDisplayDialog = (dialog: Ref<boolean>): void => {
@@ -606,15 +548,11 @@
 
   onMounted(async () => {
     if (filterOrSearchActive.value) {
-      selectedOrganisationIds.value = searchFilterStore.selectedOrganisationen || [];
-      selectedOrganisationen.value = searchFilterStore.selectedOrgaObjects || [];
-      selectedRollen.value = searchFilterStore.selectedRollen || [];
       selectedKlassen.value = searchFilterStore.selectedKlassen || [];
-      selectedRollenObjects.value = searchFilterStore.selectedRollenObjects;
     }
 
     await getPaginatedPersonen(searchFilterStore.personenPage);
-    await loadRollenForPersonAdministration('');
+    await initRollen();
   });
 </script>
 
@@ -654,15 +592,14 @@
           class="py-md-0"
         >
           <SchulenFilter
-            multiple
+            :multiple="true"
             includeAll
             highlightSelection
             parentId="person-management"
             ref="schulenFilter"
             :systemrechteForSearch="[RollenSystemRecht.PersonenVerwalten]"
-            :selectedSchulen="selectedOrganisationIds"
+            :selectedSchulen="selectedOrganisationen"
             @update:selectedSchulen="setOrganisationFilter"
-            @update:selectedSchulenObjects="setSelectedOrganisationen"
             :placeholderText="$t('admin.schule.schule')"
             hideDetails
           >
@@ -709,15 +646,15 @@
             density="compact"
             hide-details
             :items="rollen"
-            item-value="value"
-            item-text="title"
+            item-value="id"
+            item-title="name"
             multiple
             :no-data-text="$t('noDataFound')"
             :placeholder="$t('admin.rolle.rolle')"
             required="true"
+            return-object
             variant="outlined"
             @update:model-value="setRolleFilter"
-            @update:search="updateRollenSearch"
             @update:focused="handleFocusChange"
           >
             <template #prepend-item>
@@ -895,7 +832,6 @@
           <RolleModify
             v-if="rolleModifiyDialogVisible"
             ref="person-bulk-rolle-modify"
-            :organisationen="organisationenForForm"
             :rollen="rollenForRolleModify"
             :is-loading="personenkontextStore.loading"
             :is-dialog-visible="rolleModifiyDialogVisible"
@@ -935,10 +871,9 @@
             ref="rolle-unassign"
             v-if="rolleUnassignDialogVisible"
             :is-dialog-visible="rolleUnassignDialogVisible"
-            :organisationen="organisationenForForm"
-            :selected-personen="Array.isArray(selectedPersonen) ? selectedPersonen[0] : selectedPersonen"
+            :selected-personen="selectedPersonen"
             :selected-organisation-from-filter="selectedOrganisationen[0] ?? ({} as Organisation)"
-            :selected-rolle-from-filter="selectedRolle!"
+            :selected-rolle-from-filter="selectedRolle"
             @update:dialog-exit="handleUnassignRolleDialog($event)"
           >
           </RolleUnassign>

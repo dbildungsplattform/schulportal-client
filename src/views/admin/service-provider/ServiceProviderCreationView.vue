@@ -52,12 +52,13 @@
     }
     return RollenSystemRecht.AngeboteEingeschraenktVerwalten;
   });
-  const autoSelectedSchuleId: ComputedRef<string | undefined> = computed(() => {
+  const autoselectedOrganisation: ComputedRef<Organisation | null> = computed(() => {
     const { autoselectedSchule }: { autoselectedSchule: ComputedRef<Organisation | null> } = useAutoselectedSchule([
       relevantSystemrecht.value,
     ]);
-    return autoselectedSchule.value?.id;
+    return autoselectedSchule.value;
   });
+  const initialOrganisation: Ref<Organisation | undefined> = ref();
 
   const selectedOrganisationName: ComputedRef<string> = computed(() => selectedOrganisationNameCache.value || '');
   /**
@@ -65,6 +66,7 @@
    */
   const cachedValues: Ref<ServiceProviderFormType | undefined> = ref(undefined);
   function cacheSubmittedValues(values: ServiceProviderFormSubmitData): void {
+    initialOrganisation.value = values.selectedOrganisation;
     cachedValues.value = {
       selectedOrganisationId: values.selectedOrganisation?.id,
       name: values.name,
@@ -219,7 +221,7 @@
         <ServiceProviderForm
           v-if="!serviceProviderStore.errorCode"
           :initial-values="{
-            selectedOrganisationId: autoSelectedSchuleId,
+            selectedOrganisationId: autoselectedOrganisation?.id,
             name: '',
             url: '',
             logoId: undefined,
@@ -231,6 +233,7 @@
             requires2fa: false,
           }"
           :cached-values="cachedValues"
+          :initial-organisation="initialOrganisation ?? autoselectedOrganisation"
           :show-unsaved-changes-dialog="showUnsavedChangesDialog"
           :systemrecht="relevantSystemrecht"
           :error-code="serviceProviderStore.errorCode"

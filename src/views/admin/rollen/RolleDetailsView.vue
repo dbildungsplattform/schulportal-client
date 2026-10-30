@@ -5,6 +5,7 @@
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import { useMasterDataStore, type MasterDataStore } from '@/stores/MasterDataStore';
+  import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
   import {
     RollenMerkmal,
     RollenSystemRecht,
@@ -50,6 +51,8 @@
 
   const masterDataStore: MasterDataStore = useMasterDataStore();
   const rolleStore: RolleStore = useRolleStore();
+  const organisationStore: OrganisationStore = useOrganisationStore();
+  const initialOrganisation: Ref<Organisation | null> = ref(null);
   const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
 
   const currentRolleId: string = route.params['id'] as string;
@@ -242,6 +245,11 @@
     rolleStore.errorCode = '';
     await rolleStore.getRolleById(currentRolleId);
     if (rolleStore.currentRolle) {
+      await organisationStore.loadOrganisationForSelection(rolleStore.currentRolle.administeredBySchulstrukturknoten);
+      initialOrganisation.value = organisationStore.organisationForSelection;
+      if (organisationStore.errorCode) {
+        rolleStore.errorCode = organisationStore.errorCode;
+      }
       await serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
         rolleStore.currentRolle.administeredBySchulstrukturknoten,
         rolleStore.currentRolle.rollenart,
@@ -266,25 +274,16 @@
       }
     });
 
-    // Set the initial values using the computed properties
-    formContext.setFieldValue(
-      'selectedAdministrationsebene',
-      rolleStore.currentRolle?.administeredBySchulstrukturknoten,
-    );
-    formContext.setFieldValue('selectedRollenArt', translatedRollenart.value as RollenArt);
-    formContext.setFieldValue('selectedRollenName', rolleStore.currentRolle?.name);
-    formContext.setFieldValue(
-      'selectedMerkmale',
-      translatedMerkmale.value.map((obj: TranslatedObject) => obj.value),
-    );
-    formContext.setFieldValue(
-      'selectedServiceProviders',
-      translatedProviderNames.value.map((obj: TranslatedObject) => obj.value),
-    );
-    formContext.setFieldValue(
-      'selectedSystemRechte',
-      translatedSystemrechte.value.map((obj: TranslatedObject) => obj.value),
-    );
+    formContext.resetForm({
+      values: {
+        selectedAdministrationsebene: rolleStore.currentRolle?.administeredBySchulstrukturknoten,
+        selectedRollenArt: translatedRollenart.value as RollenArt,
+        selectedRollenName: rolleStore.currentRolle?.name,
+        selectedMerkmale: translatedMerkmale.value.map((obj: TranslatedObject) => obj.value),
+        selectedServiceProviders: translatedProviderNames.value.map((obj: TranslatedObject) => obj.value),
+        selectedSystemRechte: translatedSystemrechte.value.map((obj: TranslatedObject) => obj.value),
+      },
+    });
 
     /* listen for browser changes and prevent them when form is dirty */
     window.addEventListener('beforeunload', preventNavigation);
@@ -342,6 +341,7 @@
               v-model:selected-merkmale="selectedMerkmale"
               v-model:selected-service-providers="selectedServiceProviders"
               v-model:selected-system-rechte="selectedSystemRechte"
+              :initial-organisation="initialOrganisation"
               :error-code="rolleStore.errorCode"
               :on-handle-confirm-unsaved-changes="handleConfirmUnsavedChanges"
               :on-handle-discard="navigateToRolleTable"
