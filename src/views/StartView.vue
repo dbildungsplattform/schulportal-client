@@ -192,10 +192,6 @@
     closedAlerts.value.add(id);
     sessionStorage.setItem('closedAlerts', JSON.stringify(Array.from(closedAlerts.value)));
   };
-
-  const parseHinweise = (text: string): string => {
-    return text;
-  };
 </script>
 
 <template>
@@ -228,8 +224,8 @@
         >
           <template #text>
             <span
-              class="tiptap"
-              v-html="parseHinweise(hinweis.text)"
+              class="tiptap-content-preview"
+              v-html="hinweis.text"
             ></span>
           </template>
         </SpshBanner>
@@ -341,4 +337,10 @@
   </v-card>
 </template>
 
-<style></style>
+<style>
+  .tiptap-content-preview {
+    max-height: 20rem;
+    overflow: auto;
+    display: block;
+  }
+</style>

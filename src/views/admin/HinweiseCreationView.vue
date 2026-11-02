@@ -4,8 +4,7 @@
   import FormWrapper from '@/components/form/FormWrapper.vue';
   import TextEditor from '@/components/text-editor/TextEditor.vue';
   import { MeldungStatus, useMeldungStore, type Meldung, type MeldungStore } from '@/stores/MeldungStore';
-  import { toTypedSchema } from '@vee-validate/yup';
-  import { useForm, type BaseFieldProps, type FormContext, type TypedSchema } from 'vee-validate';
+  import { useForm, type BaseFieldProps, type FormContext } from 'vee-validate';
   import { computed, onBeforeMount, onUnmounted, ref, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
   import {
@@ -16,18 +15,14 @@
     type Router,
   } from 'vue-router';
   import { useDisplay } from 'vuetify';
-  import { object, string } from 'yup';
 
+  const maxLength: number = 20;
+  const contentToLong: Ref<boolean> = ref(false);
   const router: Router = useRouter();
   const { t }: Composer = useI18n({ useScope: 'global' });
   const { smAndDown }: { smAndDown: Ref<boolean> } = useDisplay();
   const meldungStore: MeldungStore = useMeldungStore();
   const newsboxMeldung: ComputedRef<Meldung | undefined> = computed(() => meldungStore.meldungen[0]);
-  const validationSchema: TypedSchema = toTypedSchema(
-    object({
-      meldungText: string().max(2000, t('admin.hinweise.rules.max')).min(1, t('admin.hinweise.rules.min')),
-    }),
-  );
 
   const vuetifyConfig = (state: {
     errors: Array<string>;
@@ -43,7 +38,6 @@
   };
 
   const { defineField, handleSubmit, resetForm }: FormContext = useForm<NewsboxForm>({
-    validationSchema,
     validateOnMount: false,
   });
 
@@ -57,6 +51,7 @@
   });
 
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
+  const hasUnsavedChanges: Ref<boolean> = ref(false);
   let blockedNext: () => void = () => {
     /* empty */
   };
@@ -70,6 +65,9 @@
           ? MeldungStatus.VEROEFFENTLICHT
           : MeldungStatus.NICHT_VEROEFFENTLICHT,
     });
+    if (!meldungStore.errorCode) {
+      hasUnsavedChanges.value = false;
+    }
     await meldungStore.getAllMeldungen();
   });
 
@@ -86,12 +84,18 @@
     router.go(0);
   };
 
-  const formWasChanged = (): boolean => {
-    return meldungText.value !== newsboxMeldung.value?.text;
+  const onEditorChanged = (payload: { contentLength: number }): void => {
+    hasUnsavedChanges.value = true;
+    if (payload.contentLength > maxLength) {
+      contentToLong.value = true;
+      console.log(`Content length exceeds max length of ${maxLength}`);
+    } else {
+      contentToLong.value = false;
+    }
   };
 
   function preventNavigation(event: BeforeUnloadEvent): void {
-    if (formWasChanged()) {
+    if (!hasUnsavedChanges.value) {
       return;
     }
     event.preventDefault();
@@ -109,7 +113,7 @@
   });
 
   onBeforeRouteLeave((_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
-    if (formWasChanged()) {
+    if (hasUnsavedChanges.value) {
       showUnsavedChangesDialog.value = true;
       blockedNext = next;
     } else {
@@ -165,8 +169,9 @@
               {{ $t('admin.hinweise.newsbox') }}
             </h3>
             <TextEditor
-              :limit="2000"
+              :limit="maxLength + 5"
               v-model="meldungText"
+              @changed="onEditorChanged"
             />
           </v-col>
         </v-row>
@@ -180,7 +185,7 @@
             <v-btn
               data-testid="submit-newsbox"
               :block="smAndDown"
-              :disabled="meldungStore.loading"
+              :disabled="meldungStore.loading || contentToLong"
               class="primary"
               type="submit"
               @click="onSubmit"

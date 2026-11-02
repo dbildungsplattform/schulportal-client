@@ -94,6 +94,30 @@ describe('TextEditor.vue', (): void => {
     expect(wrapper.emitted('update:modelValue')).toBeTruthy();
   });
 
+  test('should emit changed when editor content changes', async (): Promise<void> => {
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> } = setup();
+
+    await flushPromises();
+
+    const editor: any = (wrapper.vm as any).editor;
+    editor.commands.setContent('<p>User change</p>', { emitUpdate: true });
+
+    await flushPromises();
+
+    expect(wrapper.emitted('changed')).toBeTruthy();
+  });
+
+  test('should not emit changed when modelValue is set programmatically', async (): Promise<void> => {
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> } = setup();
+
+    await flushPromises();
+
+    await wrapper.setProps({ modelValue: '<p>From store</p>' });
+    await flushPromises();
+
+    expect(wrapper.emitted('changed')).toBeFalsy();
+  });
+
   test('should update editor content when modelValue prop changes', async (): Promise<void> => {
     const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> } = setup();
 

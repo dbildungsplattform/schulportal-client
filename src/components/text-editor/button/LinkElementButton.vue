@@ -14,6 +14,22 @@
 
   const linkText: Ref<string> = ref('');
 
+  /* A digit after the colon means host:port (e.g. example.com:8080), not a scheme. */
+  const normalizeHref = (input: string): string | null => {
+    const value: string = input.trim();
+
+    if (/^[a-z][a-z\d+\-.]*:\/\//i.test(value)) {
+      return /^https?:\/\//i.test(value) ? value : null;
+    }
+    if (/^(mailto|tel):/i.test(value)) {
+      return value;
+    }
+    if (/^[a-z][a-z\d+\-.]*:(?!\d)/i.test(value)) {
+      return null;
+    }
+    return `https://${value}`;
+  };
+
   const linkHandler = (): void => {
     const href: unknown = props.editor.getAttributes('link')['href'];
     linkText.value = typeof href === 'string' ? href : '';
@@ -30,10 +46,15 @@
       return;
     }
 
-    const attributes: { href: string; title: string; target: string } = {
-      href: linkText.value,
-      title: linkText.value,
+    const href: string | null = normalizeHref(linkText.value);
+    if (!href) {
+      return;
+    }
+
+    const attributes: { href: string; target: string; rel: string } = {
+      href,
       target: '_blank',
+      rel: 'noopener noreferrer',
     };
 
     if (props.editor.state.selection.empty && !props.editor.isActive('link')) {

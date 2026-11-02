@@ -2,7 +2,7 @@
   import Link from '@tiptap/extension-link';
   import { CharacterCount } from '@tiptap/extensions';
   import StarterKit from '@tiptap/starter-kit';
-  import { EditorContent, useEditor } from '@tiptap/vue-3';
+  import { EditorContent, useEditor, type Editor } from '@tiptap/vue-3';
   import { onBeforeUnmount, watch } from 'vue';
   import BoldButton from './button/BoldButton.vue';
   import BulletListButton from './button/BulletListButton.vue';
@@ -21,6 +21,7 @@
 
   type Emits = {
     (event: 'update:modelValue', content: string): void;
+    (event: 'changed', payload: { contentLength: number }): void;
   };
 
   const props: Props = defineProps<Props>();
@@ -32,7 +33,7 @@
     // the rules are defined in the static stylesheet below.
     injectCSS: false,
     extensions: [
-      StarterKit,
+      StarterKit.configure({ link: false }),
       CharacterCount.configure({
         limit: props.limit,
       }),
@@ -42,9 +43,9 @@
         defaultProtocol: 'https',
       }),
     ],
-    // eslint-disable-next-line @typescript-eslint/typedef
-    onUpdate: ({ editor }): void => {
-      emit('update:modelValue', editor.getHTML());
+    onUpdate: ({ editor }: { editor: Editor }): void => {
+      emit('update:modelValue', editor.isEmpty ? '' : editor.getHTML());
+      emit('changed', { contentLength: editor.storage.characterCount.characters() });
     },
   });
 
@@ -68,7 +69,7 @@
         return;
       }
 
-      editor.value.commands.setContent(newValue);
+      editor.value.commands.setContent(newValue, { emitUpdate: false });
     },
   );
 </script>

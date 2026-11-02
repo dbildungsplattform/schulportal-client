@@ -268,6 +268,107 @@ describe('LinkElementButton.vue', (): void => {
       expect(args?.text).toBe('https://example.com');
     });
 
+    test('should prefix scheme-less domains with https in inserted link', (): void => {
+      const {
+        mockEditor,
+        vm,
+      }: {
+        mockEditor: any;
+        vm: any;
+      } = setup();
+
+      mockEditor.state.selection.empty = true;
+      vi.mocked(mockEditor.isActive).mockReturnValue(false);
+
+      const insertContentMock = vi.fn(() => ({ run: vi.fn() }));
+      vi.mocked(mockEditor.chain).mockReturnValue({
+        focus: vi.fn().mockReturnValue({
+          insertContent: insertContentMock,
+        }),
+      });
+
+      vm.linkText = 'www.example.com';
+      vm.setLink();
+
+      const args: any = (insertContentMock.mock.calls as any[][])?.[0]?.[0];
+      expect(args?.marks?.[0]?.attrs?.href).toBe('https://www.example.com');
+      expect(args?.marks?.[0]?.attrs?.rel).toBe('noopener noreferrer');
+      expect(args?.text).toBe('www.example.com');
+    });
+
+    test('should prefix scheme-less domains with https when extending existing link', (): void => {
+      const {
+        mockEditor,
+        vm,
+      }: {
+        mockEditor: any;
+        vm: any;
+      } = setup();
+
+      mockEditor.state.selection.empty = false;
+      vi.mocked(mockEditor.isActive).mockReturnValue(true);
+
+      const setLinkMock = vi.fn(() => ({ run: vi.fn() }));
+      vi.mocked(mockEditor.chain).mockReturnValue({
+        focus: vi.fn().mockReturnValue({
+          extendMarkRange: vi.fn().mockReturnValue({
+            setLink: setLinkMock,
+          }),
+        }),
+      });
+
+      vm.linkText = 'example.com:8080/path';
+      vm.setLink();
+
+      expect(setLinkMock).toHaveBeenCalledWith({
+        href: 'https://example.com:8080/path',
+        target: '_blank',
+        rel: 'noopener noreferrer',
+      });
+    });
+
+    test('should keep explicit https url unchanged', (): void => {
+      const {
+        mockEditor,
+        vm,
+      }: {
+        mockEditor: any;
+        vm: any;
+      } = setup();
+
+      mockEditor.state.selection.empty = false;
+      vi.mocked(mockEditor.isActive).mockReturnValue(true);
+
+      const setLinkMock = vi.fn(() => ({ run: vi.fn() }));
+      vi.mocked(mockEditor.chain).mockReturnValue({
+        focus: vi.fn().mockReturnValue({
+          extendMarkRange: vi.fn().mockReturnValue({
+            setLink: setLinkMock,
+          }),
+        }),
+      });
+
+      vm.linkText = '  https://example.com/a  ';
+      vm.setLink();
+
+      expect(setLinkMock).toHaveBeenCalledWith(expect.objectContaining({ href: 'https://example.com/a' }));
+    });
+
+    test('should not set link for disallowed schemes', (): void => {
+      const {
+        mockEditor,
+        vm,
+      }: {
+        mockEditor: any;
+        vm: any;
+      } = setup();
+
+      vm.linkText = 'javascript:alert(1)';
+      vm.setLink();
+
+      expect(mockEditor.chain).not.toHaveBeenCalled();
+    });
+
     test('should close menu after setting link on existing selection', (): void => {
       const {
         mockEditor,

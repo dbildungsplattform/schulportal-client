@@ -189,6 +189,20 @@ describe('HinweiseCreationView', (): void => {
     expect(wrapper.exists()).toBe(true);
   });
 
+  test('should mark form as changed when TextEditor emits changed', async (): Promise<void> => {
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>> } = setup();
+
+    await flushPromises();
+
+    const vm = wrapper.vm as any;
+    expect(vm.hasUnsavedChanges).toBe(false);
+
+    wrapper.findComponent({ name: 'TextEditor' }).vm.$emit('changed');
+    await flushPromises();
+
+    expect(vm.hasUnsavedChanges).toBe(true);
+  });
+
   test('should update unsaved changes dialog visibility', async (): Promise<void> => {
     const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>> } = setup();
 
