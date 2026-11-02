@@ -16,8 +16,8 @@
   } from 'vue-router';
   import { useDisplay } from 'vuetify';
 
-  const maxLength: number = 20;
-  const contentToLong: Ref<boolean> = ref(false);
+  const maxLength: number = 2000;
+  const isContentLengthValid: Ref<boolean> = ref(false);
   const router: Router = useRouter();
   const { t }: Composer = useI18n({ useScope: 'global' });
   const { smAndDown }: { smAndDown: Ref<boolean> } = useDisplay();
@@ -57,15 +57,16 @@
   };
 
   const onSubmit: (e?: Event) => Promise<Promise<void> | undefined> = handleSubmit(async () => {
+    const submittedText: string = meldungText.value;
     await meldungStore.createOrUpdateMeldung({
       ...newsboxMeldung.value,
-      text: meldungText.value,
+      text: submittedText,
       status:
         !newsboxMeldung.value || newsboxMeldung.value.status === MeldungStatus.NICHT_VEROEFFENTLICHT
           ? MeldungStatus.VEROEFFENTLICHT
           : MeldungStatus.NICHT_VEROEFFENTLICHT,
     });
-    if (!meldungStore.errorCode) {
+    if (!meldungStore.errorCode && meldungText.value === submittedText) {
       hasUnsavedChanges.value = false;
     }
     await meldungStore.getAllMeldungen();
@@ -86,11 +87,10 @@
 
   const onEditorChanged = (payload: { contentLength: number }): void => {
     hasUnsavedChanges.value = true;
-    if (payload.contentLength > maxLength) {
-      contentToLong.value = true;
-      console.log(`Content length exceeds max length of ${maxLength}`);
+    if (payload.contentLength > maxLength || payload.contentLength <= 0) {
+      isContentLengthValid.value = true;
     } else {
-      contentToLong.value = false;
+      isContentLengthValid.value = false;
     }
   };
 
@@ -169,7 +169,7 @@
               {{ $t('admin.hinweise.newsbox') }}
             </h3>
             <TextEditor
-              :limit="maxLength + 5"
+              :limit="maxLength"
               v-model="meldungText"
               @changed="onEditorChanged"
             />
@@ -185,7 +185,7 @@
             <v-btn
               data-testid="submit-newsbox"
               :block="smAndDown"
-              :disabled="meldungStore.loading || contentToLong"
+              :disabled="meldungStore.loading || isContentLengthValid"
               class="primary"
               type="submit"
               @click="onSubmit"

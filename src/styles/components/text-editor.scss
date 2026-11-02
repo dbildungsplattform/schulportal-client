@@ -1,6 +1,10 @@
 .tiptap {
   height: 20rem;
   overflow: auto;
+}
+
+.tiptap,
+.tiptap-content-preview {
   display: block;
 
   :first-child {
