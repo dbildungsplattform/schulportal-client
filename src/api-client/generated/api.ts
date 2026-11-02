@@ -925,6 +925,7 @@ export const DbiamOrganisationErrorI18nKeyEnum = {
     OrganisationHatPersonenkontexte: 'ORGANISATION_HAT_PERSONENKONTEXTE',
     OrganisationHatAngebote: 'ORGANISATION_HAT_ANGEBOTE',
     OrganisationHatRollenerweiterungen: 'ORGANISATION_HAT_ROLLENERWEITERUNGEN',
+    OrganisationHatOrganisationsbeziehungen: 'ORGANISATION_HAT_ORGANISATIONSBEZIEHUNGEN',
     BehoerdeNameEindeutig: 'BEHOERDE_NAME_EINDEUTIG',
     BehoerdeAdministriertVon: 'BEHOERDE_ADMINISTRIERT_VON'
 } as const;
@@ -2395,6 +2396,132 @@ export interface PersonFrontendControllerFindPersons200ResponseAllOf {
 /**
  * 
  * @export
+ * @interface PersonInfoDtoV2
+ */
+export interface PersonInfoDtoV2 {
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoDtoV2
+     */
+    'pid': string;
+    /**
+     * 
+     * @type {PersonInfoPersonDtoV2}
+     * @memberof PersonInfoDtoV2
+     */
+    'person': PersonInfoPersonDtoV2;
+    /**
+     * 
+     * @type {Array<PersonInfoKontextDtoV2>}
+     * @memberof PersonInfoDtoV2
+     */
+    'personenkontexte': Array<PersonInfoKontextDtoV2>;
+    /**
+     * 
+     * @type {Array<object>}
+     * @memberof PersonInfoDtoV2
+     */
+    'beziehungen': Array<object>;
+}
+/**
+ * 
+ * @export
+ * @interface PersonInfoKontextDtoV2
+ */
+export interface PersonInfoKontextDtoV2 {
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoKontextDtoV2
+     */
+    'id': string;
+    /**
+     * 
+     * @type {PersonenInfoKontextOrganisationDtoV2}
+     * @memberof PersonInfoKontextDtoV2
+     */
+    'organisation': PersonenInfoKontextOrganisationDtoV2;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoKontextDtoV2
+     */
+    'rolle': PersonInfoKontextDtoV2RolleEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoKontextDtoV2
+     */
+    'spshRolleId': string;
+    /**
+     * 
+     * @type {Array<PersonInfoKontextErreichbarkeitDtoV2>}
+     * @memberof PersonInfoKontextDtoV2
+     */
+    'erreichbarkeiten': Array<PersonInfoKontextErreichbarkeitDtoV2>;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoKontextDtoV2
+     */
+    'personenstatus': PersonInfoKontextDtoV2PersonenstatusEnum;
+    /**
+     * 
+     * @type {Array<PersonenInfoKontextGruppeDtoV2>}
+     * @memberof PersonInfoKontextDtoV2
+     */
+    'gruppen': Array<PersonenInfoKontextGruppeDtoV2>;
+}
+
+export const PersonInfoKontextDtoV2RolleEnum = {
+    Lern: 'Lern',
+    Lehr: 'Lehr',
+    SorgBer: 'SorgBer',
+    Extern: 'Extern',
+    OrgAdmin: 'OrgAdmin',
+    Leit: 'Leit',
+    SysAdmin: 'SysAdmin',
+    SchB: 'SchB',
+    NLehr: 'NLehr'
+} as const;
+
+export type PersonInfoKontextDtoV2RolleEnum = typeof PersonInfoKontextDtoV2RolleEnum[keyof typeof PersonInfoKontextDtoV2RolleEnum];
+export const PersonInfoKontextDtoV2PersonenstatusEnum = {
+    Aktiv: 'Aktiv'
+} as const;
+
+export type PersonInfoKontextDtoV2PersonenstatusEnum = typeof PersonInfoKontextDtoV2PersonenstatusEnum[keyof typeof PersonInfoKontextDtoV2PersonenstatusEnum];
+
+/**
+ * 
+ * @export
+ * @interface PersonInfoKontextErreichbarkeitDtoV2
+ */
+export interface PersonInfoKontextErreichbarkeitDtoV2 {
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoKontextErreichbarkeitDtoV2
+     */
+    'typ': PersonInfoKontextErreichbarkeitDtoV2TypEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoKontextErreichbarkeitDtoV2
+     */
+    'kennung': string;
+}
+
+export const PersonInfoKontextErreichbarkeitDtoV2TypEnum = {
+    EMail: 'E-Mail'
+} as const;
+
+export type PersonInfoKontextErreichbarkeitDtoV2TypEnum = typeof PersonInfoKontextErreichbarkeitDtoV2TypEnum[keyof typeof PersonInfoKontextErreichbarkeitDtoV2TypEnum];
+
+/**
+ * 
+ * @export
  * @interface PersonInfoKontextErreichbarkeitResponseV1
  */
 export interface PersonInfoKontextErreichbarkeitResponseV1 {
@@ -2481,6 +2608,51 @@ export const PersonInfoKontextResponseV1PersonenstatusEnum = {
 
 export type PersonInfoKontextResponseV1PersonenstatusEnum = typeof PersonInfoKontextResponseV1PersonenstatusEnum[keyof typeof PersonInfoKontextResponseV1PersonenstatusEnum];
 
+/**
+ * 
+ * @export
+ * @interface PersonInfoPersonDtoV2
+ */
+export interface PersonInfoPersonDtoV2 {
+    /**
+     * 
+     * @type {object}
+     * @memberof PersonInfoPersonDtoV2
+     */
+    'stammorganisation': object | null;
+    /**
+     * 
+     * @type {PersonInfoPersonNameDtoV2}
+     * @memberof PersonInfoPersonDtoV2
+     */
+    'name': PersonInfoPersonNameDtoV2;
+}
+/**
+ * 
+ * @export
+ * @interface PersonInfoPersonNameDtoV2
+ */
+export interface PersonInfoPersonNameDtoV2 {
+    /**
+     * Deprecated, use `familienname` instead.
+     * @type {string}
+     * @memberof PersonInfoPersonNameDtoV2
+     * @deprecated
+     */
+    'familiennamen': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoPersonNameDtoV2
+     */
+    'familienname': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoPersonNameDtoV2
+     */
+    'vorname': string;
+}
 /**
  * 
  * @export
@@ -2950,6 +3122,38 @@ export interface PersonTimeLimitInfoResponse {
 /**
  * 
  * @export
+ * @interface PersonenInfoKontextGruppeDtoV2
+ */
+export interface PersonenInfoKontextGruppeDtoV2 {
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonenInfoKontextGruppeDtoV2
+     */
+    'id': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonenInfoKontextGruppeDtoV2
+     */
+    'bezeichnung': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonenInfoKontextGruppeDtoV2
+     */
+    'typ': PersonenInfoKontextGruppeDtoV2TypEnum;
+}
+
+export const PersonenInfoKontextGruppeDtoV2TypEnum = {
+    Klasse: 'Klasse'
+} as const;
+
+export type PersonenInfoKontextGruppeDtoV2TypEnum = typeof PersonenInfoKontextGruppeDtoV2TypEnum[keyof typeof PersonenInfoKontextGruppeDtoV2TypEnum];
+
+/**
+ * 
+ * @export
  * @interface PersonenInfoKontextGruppeResponseV1
  */
 export interface PersonenInfoKontextGruppeResponseV1 {
@@ -2978,6 +3182,45 @@ export const PersonenInfoKontextGruppeResponseV1TypEnum = {
 } as const;
 
 export type PersonenInfoKontextGruppeResponseV1TypEnum = typeof PersonenInfoKontextGruppeResponseV1TypEnum[keyof typeof PersonenInfoKontextGruppeResponseV1TypEnum];
+
+/**
+ * 
+ * @export
+ * @interface PersonenInfoKontextOrganisationDtoV2
+ */
+export interface PersonenInfoKontextOrganisationDtoV2 {
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonenInfoKontextOrganisationDtoV2
+     */
+    'id': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonenInfoKontextOrganisationDtoV2
+     */
+    'kennung': string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonenInfoKontextOrganisationDtoV2
+     */
+    'name': string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonenInfoKontextOrganisationDtoV2
+     */
+    'typ': PersonenInfoKontextOrganisationDtoV2TypEnum;
+}
+
+export const PersonenInfoKontextOrganisationDtoV2TypEnum = {
+    Schule: 'Schule',
+    Sonstige: 'Sonstige'
+} as const;
+
+export type PersonenInfoKontextOrganisationDtoV2TypEnum = typeof PersonenInfoKontextOrganisationDtoV2TypEnum[keyof typeof PersonenInfoKontextOrganisationDtoV2TypEnum];
 
 /**
  * 
@@ -10187,7 +10430,7 @@ export const PersonInfoApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async personInfoControllerInfoV2(options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PersonInfoResponseV1>> {
+        async personInfoControllerInfoV2(options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PersonInfoDtoV2>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.personInfoControllerInfoV2(options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -10225,7 +10468,7 @@ export const PersonInfoApiFactory = function (configuration?: Configuration, bas
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        personInfoControllerInfoV2(options?: any): AxiosPromise<PersonInfoResponseV1> {
+        personInfoControllerInfoV2(options?: any): AxiosPromise<PersonInfoDtoV2> {
             return localVarFp.personInfoControllerInfoV2(options).then((request) => request(axios, basePath));
         },
     };
@@ -10262,7 +10505,7 @@ export interface PersonInfoApiInterface {
      * @throws {RequiredError}
      * @memberof PersonInfoApiInterface
      */
-    personInfoControllerInfoV2(options?: AxiosRequestConfig): AxiosPromise<PersonInfoResponseV1>;
+    personInfoControllerInfoV2(options?: AxiosRequestConfig): AxiosPromise<PersonInfoDtoV2>;
 
 }
 
@@ -11786,7 +12029,7 @@ export const PersonenInfoApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async personenInfoControllerInfoV2(xOffset?: number, xLimit?: number, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PersonInfoResponseV1>> {
+        async personenInfoControllerInfoV2(xOffset?: number, xLimit?: number, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<PersonInfoDtoV2>>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.personenInfoControllerInfoV2(xOffset, xLimit, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -11819,7 +12062,7 @@ export const PersonenInfoApiFactory = function (configuration?: Configuration, b
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        personenInfoControllerInfoV2(xOffset?: number, xLimit?: number, options?: any): AxiosPromise<PersonInfoResponseV1> {
+        personenInfoControllerInfoV2(xOffset?: number, xLimit?: number, options?: any): AxiosPromise<Array<PersonInfoDtoV2>> {
             return localVarFp.personenInfoControllerInfoV2(xOffset, xLimit, options).then((request) => request(axios, basePath));
         },
     };
@@ -11851,7 +12094,7 @@ export interface PersonenInfoApiInterface {
      * @throws {RequiredError}
      * @memberof PersonenInfoApiInterface
      */
-    personenInfoControllerInfoV2(xOffset?: number, xLimit?: number, options?: AxiosRequestConfig): AxiosPromise<PersonInfoResponseV1>;
+    personenInfoControllerInfoV2(xOffset?: number, xLimit?: number, options?: AxiosRequestConfig): AxiosPromise<Array<PersonInfoDtoV2>>;
 
 }
 
