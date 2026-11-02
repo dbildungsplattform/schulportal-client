@@ -24,20 +24,11 @@
   const meldungStore: MeldungStore = useMeldungStore();
   const newsboxMeldung: ComputedRef<Meldung | undefined> = computed(() => meldungStore.meldungen[0]);
 
-  const vuetifyConfig = (state: {
-    errors: Array<string>;
-  }): { props: { error: boolean; 'error-messages': Array<string> } } => ({
-    props: {
-      error: !!state.errors.length,
-      'error-messages': state.errors,
-    },
-  });
-
   type NewsboxForm = {
     meldungText: string;
   };
 
-  const { defineField, handleSubmit, resetForm }: FormContext = useForm<NewsboxForm>({
+  const { handleSubmit, resetForm }: FormContext = useForm<NewsboxForm>({
     validateOnMount: false,
   });
 
@@ -171,6 +162,7 @@
               {{ $t('admin.hinweise.newsbox') }}
             </h3>
             <TextEditor
+              :label="$t('admin.hinweise.newsbox')"
               :limit="maxLength"
               v-model="meldungText"
               @changed="onEditorChanged"

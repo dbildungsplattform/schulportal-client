@@ -1,8 +1,9 @@
+<!-- eslint-disable @typescript-eslint/typedef -->
 <script setup lang="ts">
   import Link from '@tiptap/extension-link';
   import { CharacterCount } from '@tiptap/extensions';
   import StarterKit from '@tiptap/starter-kit';
-  import { EditorContent, useEditor, type Editor } from '@tiptap/vue-3';
+  import { EditorContent, useEditor } from '@tiptap/vue-3';
   import { onBeforeUnmount, watch } from 'vue';
   import BoldButton from './button/BoldButton.vue';
   import BulletListButton from './button/BulletListButton.vue';
@@ -15,6 +16,7 @@
   import TextEditorCharacterCount from './TextEditorCharacterCount.vue';
 
   type Props = {
+    label: string;
     limit: number;
     modelValue: string;
   };
@@ -29,6 +31,13 @@
 
   const editor: ReturnType<typeof useEditor> = useEditor({
     content: props.modelValue,
+    editorProps: {
+      attributes: {
+        role: 'textbox',
+        'aria-multiline': 'true',
+        'aria-label': props.label,
+      },
+    },
     // Tiptap's default CSS is injected as an inline <style> tag, which the CSP blocks
     // the rules are defined in the static stylesheet below.
     injectCSS: false,
@@ -43,7 +52,8 @@
         defaultProtocol: 'https',
       }),
     ],
-    onUpdate: ({ editor }: { editor: Editor }): void => {
+
+    onUpdate: ({ editor }): void => {
       emit('update:modelValue', editor.isEmpty ? '' : editor.getHTML());
       emit('changed', { contentLength: editor.storage.characterCount.characters() });
     },
@@ -54,6 +64,22 @@
       editor.value.destroy();
     }
   });
+
+  watch(
+    () => props.label,
+    (label: string) => {
+      editor.value?.setOptions({
+        editorProps: {
+          ...editor.value.options.editorProps,
+          attributes: {
+            role: 'textbox',
+            'aria-multiline': 'true',
+            'aria-label': label,
+          },
+        },
+      });
+    },
+  );
 
   watch(
     () => props.modelValue,

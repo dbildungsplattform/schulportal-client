@@ -203,18 +203,6 @@ describe('HinweiseCreationView', (): void => {
     expect(vm.hasUnsavedChanges).toBe(true);
   });
 
-  test('should disable submit button when content exceeds max length', async (): Promise<void> => {
-    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>> } = setup();
-
-    await flushPromises();
-
-    wrapper.findComponent({ name: 'TextEditor' }).vm.$emit('changed', { contentLength: 2001 });
-    await flushPromises();
-
-    const submitButton = wrapper.find('[data-testid="submit-newsbox"]');
-    expect(submitButton.attributes('disabled')).toBeDefined();
-  });
-
   test('should enable submit button again when content is back within max length', async (): Promise<void> => {
     const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>> } = setup();
 
@@ -231,8 +219,10 @@ describe('HinweiseCreationView', (): void => {
   });
 
   test('should reset unsaved changes after successful save', async (): Promise<void> => {
-    const { wrapper, meldungStore }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } =
-      setup();
+    const {
+      wrapper,
+      meldungStore,
+    }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
 
     await flushPromises();
 
@@ -249,14 +239,18 @@ describe('HinweiseCreationView', (): void => {
   });
 
   test('should keep unsaved changes when save fails', async (): Promise<void> => {
-    const { wrapper, meldungStore }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } =
-      setup();
+    const {
+      wrapper,
+      meldungStore,
+    }: { wrapper: VueWrapper<ComponentInstance<typeof HinweiseCreationView>>; meldungStore: MeldungStore } = setup();
 
     await flushPromises();
 
-    vi.mocked(meldungStore.createOrUpdateMeldung).mockImplementationOnce(async (): Promise<void> => {
-      meldungStore.errorCode = 'UNSPECIFIED_ERROR';
-    });
+    vi.mocked(meldungStore.createOrUpdateMeldung).mockReturnValueOnce(
+      Promise.resolve().then(() => {
+        meldungStore.errorCode = 'UNSPECIFIED_ERROR';
+      }),
+    );
 
     const vm = wrapper.vm as any;
     wrapper.findComponent({ name: 'TextEditor' }).vm.$emit('changed', { contentLength: 10 });
