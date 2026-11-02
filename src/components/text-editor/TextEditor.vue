@@ -75,7 +75,7 @@
 </script>
 <template>
   <div v-if="editor">
-    <v-container class="text-editor">
+    <v-container class="text-editor pa-0">
       <v-card variant="outlined">
         <v-toolbar density="compact">
           <v-toolbar-items>

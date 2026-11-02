@@ -4,7 +4,7 @@
   import FormWrapper from '@/components/form/FormWrapper.vue';
   import TextEditor from '@/components/text-editor/TextEditor.vue';
   import { MeldungStatus, useMeldungStore, type Meldung, type MeldungStore } from '@/stores/MeldungStore';
-  import { useForm, type BaseFieldProps, type FormContext } from 'vee-validate';
+  import { useForm, type FormContext } from 'vee-validate';
   import { computed, onBeforeMount, onUnmounted, ref, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
   import {
@@ -17,7 +17,7 @@
   import { useDisplay } from 'vuetify';
 
   const maxLength: number = 2000;
-  const isContentLengthValid: Ref<boolean> = ref(false);
+  const isContentLengthValid: Ref<boolean> = ref(true);
   const router: Router = useRouter();
   const { t }: Composer = useI18n({ useScope: 'global' });
   const { smAndDown }: { smAndDown: Ref<boolean> } = useDisplay();
@@ -41,8 +41,7 @@
     validateOnMount: false,
   });
 
-  const [meldungText]: [Ref<string>, Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>] =
-    defineField('meldungText', vuetifyConfig);
+  const meldungText: Ref<string> = ref('');
 
   const publishOrUnpublishButton: ComputedRef<string> = computed(() => {
     return !newsboxMeldung.value || newsboxMeldung.value.status === MeldungStatus.NICHT_VEROEFFENTLICHT
@@ -57,6 +56,9 @@
   };
 
   const onSubmit: (e?: Event) => Promise<Promise<void> | undefined> = handleSubmit(async () => {
+    if (!isContentLengthValid.value) {
+      return;
+    }
     const submittedText: string = meldungText.value;
     await meldungStore.createOrUpdateMeldung({
       ...newsboxMeldung.value,
@@ -88,9 +90,9 @@
   const onEditorChanged = (payload: { contentLength: number }): void => {
     hasUnsavedChanges.value = true;
     if (payload.contentLength > maxLength || payload.contentLength <= 0) {
-      isContentLengthValid.value = true;
-    } else {
       isContentLengthValid.value = false;
+    } else {
+      isContentLengthValid.value = true;
     }
   };
 
@@ -173,6 +175,12 @@
               v-model="meldungText"
               @changed="onEditorChanged"
             />
+            <div
+              v-if="!isContentLengthValid"
+              class="text-error text-label-medium pl-4 py-2"
+            >
+              {{ t('admin.hinweise.rules.min') }}
+            </div>
           </v-col>
         </v-row>
 
@@ -185,7 +193,7 @@
             <v-btn
               data-testid="submit-newsbox"
               :block="smAndDown"
-              :disabled="meldungStore.loading || isContentLengthValid"
+              :disabled="meldungStore.loading"
               class="primary"
               type="submit"
               @click="onSubmit"
