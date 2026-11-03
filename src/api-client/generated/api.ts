@@ -246,6 +246,33 @@ export interface CreateOrganisationBodyParams {
 /**
  * 
  * @export
+ * @interface CreateOrganisationsbeziehungBodyParams
+ */
+export interface CreateOrganisationsbeziehungBodyParams {
+    /**
+     * ID der Quellorganisation.
+     * @type {string}
+     * @memberof CreateOrganisationsbeziehungBodyParams
+     */
+    'quellOrganisationId': string;
+    /**
+     * ID der Zielorganisation.
+     * @type {string}
+     * @memberof CreateOrganisationsbeziehungBodyParams
+     */
+    'zielOrganisationId': string;
+    /**
+     * 
+     * @type {OrganisationsbeziehungsTyp}
+     * @memberof CreateOrganisationsbeziehungBodyParams
+     */
+    'typ': OrganisationsbeziehungsTyp;
+}
+
+
+/**
+ * 
+ * @export
  * @interface CreateRolleBodyParams
  */
 export interface CreateRolleBodyParams {
@@ -898,6 +925,7 @@ export const DbiamOrganisationErrorI18nKeyEnum = {
     OrganisationHatPersonenkontexte: 'ORGANISATION_HAT_PERSONENKONTEXTE',
     OrganisationHatAngebote: 'ORGANISATION_HAT_ANGEBOTE',
     OrganisationHatRollenerweiterungen: 'ORGANISATION_HAT_ROLLENERWEITERUNGEN',
+    OrganisationHatOrganisationsbeziehungen: 'ORGANISATION_HAT_ORGANISATIONSBEZIEHUNGEN',
     BehoerdeNameEindeutig: 'BEHOERDE_NAME_EINDEUTIG',
     BehoerdeAdministriertVon: 'BEHOERDE_ADMINISTRIERT_VON'
 } as const;
@@ -2174,6 +2202,65 @@ export type OrganisationsTyp = typeof OrganisationsTyp[keyof typeof Organisation
 /**
  * 
  * @export
+ * @interface OrganisationsbeziehungResponse
+ */
+export interface OrganisationsbeziehungResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganisationsbeziehungResponse
+     */
+    'id': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganisationsbeziehungResponse
+     */
+    'createdAt': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganisationsbeziehungResponse
+     */
+    'updatedAt': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganisationsbeziehungResponse
+     */
+    'quellOrganisationId': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganisationsbeziehungResponse
+     */
+    'zielOrganisationId': string;
+    /**
+     * 
+     * @type {OrganisationsbeziehungsTyp}
+     * @memberof OrganisationsbeziehungResponse
+     */
+    'typ': OrganisationsbeziehungsTyp;
+}
+
+
+/**
+ * Typ der Organisationsbeziehung.
+ * @export
+ * @enum {string}
+ */
+
+export const OrganisationsbeziehungsTyp = {
+    Schultraeger: 'SCHULTRAEGER',
+    Schulaufsicht: 'SCHULAUFSICHT'
+} as const;
+
+export type OrganisationsbeziehungsTyp = typeof OrganisationsbeziehungsTyp[keyof typeof OrganisationsbeziehungsTyp];
+
+
+/**
+ * 
+ * @export
  * @interface ParentOrganisationenResponse
  */
 export interface ParentOrganisationenResponse {
@@ -2309,6 +2396,132 @@ export interface PersonFrontendControllerFindPersons200ResponseAllOf {
 /**
  * 
  * @export
+ * @interface PersonInfoDtoV2
+ */
+export interface PersonInfoDtoV2 {
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoDtoV2
+     */
+    'pid': string;
+    /**
+     * 
+     * @type {PersonInfoPersonDtoV2}
+     * @memberof PersonInfoDtoV2
+     */
+    'person': PersonInfoPersonDtoV2;
+    /**
+     * 
+     * @type {Array<PersonInfoKontextDtoV2>}
+     * @memberof PersonInfoDtoV2
+     */
+    'personenkontexte': Array<PersonInfoKontextDtoV2>;
+    /**
+     * 
+     * @type {Array<object>}
+     * @memberof PersonInfoDtoV2
+     */
+    'beziehungen': Array<object>;
+}
+/**
+ * 
+ * @export
+ * @interface PersonInfoKontextDtoV2
+ */
+export interface PersonInfoKontextDtoV2 {
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoKontextDtoV2
+     */
+    'id': string;
+    /**
+     * 
+     * @type {PersonenInfoKontextOrganisationDtoV2}
+     * @memberof PersonInfoKontextDtoV2
+     */
+    'organisation': PersonenInfoKontextOrganisationDtoV2;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoKontextDtoV2
+     */
+    'rolle': PersonInfoKontextDtoV2RolleEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoKontextDtoV2
+     */
+    'spshRolleId': string;
+    /**
+     * 
+     * @type {Array<PersonInfoKontextErreichbarkeitDtoV2>}
+     * @memberof PersonInfoKontextDtoV2
+     */
+    'erreichbarkeiten': Array<PersonInfoKontextErreichbarkeitDtoV2>;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoKontextDtoV2
+     */
+    'personenstatus': PersonInfoKontextDtoV2PersonenstatusEnum;
+    /**
+     * 
+     * @type {Array<PersonenInfoKontextGruppeDtoV2>}
+     * @memberof PersonInfoKontextDtoV2
+     */
+    'gruppen': Array<PersonenInfoKontextGruppeDtoV2>;
+}
+
+export const PersonInfoKontextDtoV2RolleEnum = {
+    Lern: 'Lern',
+    Lehr: 'Lehr',
+    SorgBer: 'SorgBer',
+    Extern: 'Extern',
+    OrgAdmin: 'OrgAdmin',
+    Leit: 'Leit',
+    SysAdmin: 'SysAdmin',
+    SchB: 'SchB',
+    NLehr: 'NLehr'
+} as const;
+
+export type PersonInfoKontextDtoV2RolleEnum = typeof PersonInfoKontextDtoV2RolleEnum[keyof typeof PersonInfoKontextDtoV2RolleEnum];
+export const PersonInfoKontextDtoV2PersonenstatusEnum = {
+    Aktiv: 'Aktiv'
+} as const;
+
+export type PersonInfoKontextDtoV2PersonenstatusEnum = typeof PersonInfoKontextDtoV2PersonenstatusEnum[keyof typeof PersonInfoKontextDtoV2PersonenstatusEnum];
+
+/**
+ * 
+ * @export
+ * @interface PersonInfoKontextErreichbarkeitDtoV2
+ */
+export interface PersonInfoKontextErreichbarkeitDtoV2 {
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoKontextErreichbarkeitDtoV2
+     */
+    'typ': PersonInfoKontextErreichbarkeitDtoV2TypEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoKontextErreichbarkeitDtoV2
+     */
+    'kennung': string;
+}
+
+export const PersonInfoKontextErreichbarkeitDtoV2TypEnum = {
+    EMail: 'E-Mail'
+} as const;
+
+export type PersonInfoKontextErreichbarkeitDtoV2TypEnum = typeof PersonInfoKontextErreichbarkeitDtoV2TypEnum[keyof typeof PersonInfoKontextErreichbarkeitDtoV2TypEnum];
+
+/**
+ * 
+ * @export
  * @interface PersonInfoKontextErreichbarkeitResponseV1
  */
 export interface PersonInfoKontextErreichbarkeitResponseV1 {
@@ -2395,6 +2608,51 @@ export const PersonInfoKontextResponseV1PersonenstatusEnum = {
 
 export type PersonInfoKontextResponseV1PersonenstatusEnum = typeof PersonInfoKontextResponseV1PersonenstatusEnum[keyof typeof PersonInfoKontextResponseV1PersonenstatusEnum];
 
+/**
+ * 
+ * @export
+ * @interface PersonInfoPersonDtoV2
+ */
+export interface PersonInfoPersonDtoV2 {
+    /**
+     * 
+     * @type {object}
+     * @memberof PersonInfoPersonDtoV2
+     */
+    'stammorganisation': object | null;
+    /**
+     * 
+     * @type {PersonInfoPersonNameDtoV2}
+     * @memberof PersonInfoPersonDtoV2
+     */
+    'name': PersonInfoPersonNameDtoV2;
+}
+/**
+ * 
+ * @export
+ * @interface PersonInfoPersonNameDtoV2
+ */
+export interface PersonInfoPersonNameDtoV2 {
+    /**
+     * Deprecated, use `familienname` instead.
+     * @type {string}
+     * @memberof PersonInfoPersonNameDtoV2
+     * @deprecated
+     */
+    'familiennamen': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoPersonNameDtoV2
+     */
+    'familienname': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonInfoPersonNameDtoV2
+     */
+    'vorname': string;
+}
 /**
  * 
  * @export
@@ -2864,6 +3122,38 @@ export interface PersonTimeLimitInfoResponse {
 /**
  * 
  * @export
+ * @interface PersonenInfoKontextGruppeDtoV2
+ */
+export interface PersonenInfoKontextGruppeDtoV2 {
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonenInfoKontextGruppeDtoV2
+     */
+    'id': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonenInfoKontextGruppeDtoV2
+     */
+    'bezeichnung': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonenInfoKontextGruppeDtoV2
+     */
+    'typ': PersonenInfoKontextGruppeDtoV2TypEnum;
+}
+
+export const PersonenInfoKontextGruppeDtoV2TypEnum = {
+    Klasse: 'Klasse'
+} as const;
+
+export type PersonenInfoKontextGruppeDtoV2TypEnum = typeof PersonenInfoKontextGruppeDtoV2TypEnum[keyof typeof PersonenInfoKontextGruppeDtoV2TypEnum];
+
+/**
+ * 
+ * @export
  * @interface PersonenInfoKontextGruppeResponseV1
  */
 export interface PersonenInfoKontextGruppeResponseV1 {
@@ -2892,6 +3182,45 @@ export const PersonenInfoKontextGruppeResponseV1TypEnum = {
 } as const;
 
 export type PersonenInfoKontextGruppeResponseV1TypEnum = typeof PersonenInfoKontextGruppeResponseV1TypEnum[keyof typeof PersonenInfoKontextGruppeResponseV1TypEnum];
+
+/**
+ * 
+ * @export
+ * @interface PersonenInfoKontextOrganisationDtoV2
+ */
+export interface PersonenInfoKontextOrganisationDtoV2 {
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonenInfoKontextOrganisationDtoV2
+     */
+    'id': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonenInfoKontextOrganisationDtoV2
+     */
+    'kennung': string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonenInfoKontextOrganisationDtoV2
+     */
+    'name': string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonenInfoKontextOrganisationDtoV2
+     */
+    'typ': PersonenInfoKontextOrganisationDtoV2TypEnum;
+}
+
+export const PersonenInfoKontextOrganisationDtoV2TypEnum = {
+    Schule: 'Schule',
+    Sonstige: 'Sonstige'
+} as const;
+
+export type PersonenInfoKontextOrganisationDtoV2TypEnum = typeof PersonenInfoKontextOrganisationDtoV2TypEnum[keyof typeof PersonenInfoKontextOrganisationDtoV2TypEnum];
 
 /**
  * 
@@ -8616,6 +8945,50 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
             };
         },
         /**
+         * Create a relationship between two organisations.
+         * @summary 
+         * @param {CreateOrganisationsbeziehungBodyParams} createOrganisationsbeziehungBodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        organisationControllerCreateOrganisationsbeziehung: async (createOrganisationsbeziehungBodyParams: CreateOrganisationsbeziehungBodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'createOrganisationsbeziehungBodyParams' is not null or undefined
+            assertParamExists('organisationControllerCreateOrganisationsbeziehung', 'createOrganisationsbeziehungBodyParams', createOrganisationsbeziehungBodyParams)
+            const localVarPath = `/api/organisationen/beziehungen`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            // authentication oauth2 required
+            // oauth required
+            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(createOrganisationsbeziehungBodyParams, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * Delete an organisation by id.
          * @summary 
          * @param {string} organisationId The id of an organization
@@ -8627,6 +9000,48 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
             assertParamExists('organisationControllerDeleteOrganisation', 'organisationId', organisationId)
             const localVarPath = `/api/organisationen/{organisationId}`
                 .replace(`{${"organisationId"}}`, encodeURIComponent(String(organisationId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            // authentication oauth2 required
+            // oauth required
+            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Delete an organisation relationship by id.
+         * @summary 
+         * @param {string} organisationsbeziehungId ID der Organisationsbeziehung.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        organisationControllerDeleteOrganisationsbeziehung: async (organisationsbeziehungId: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'organisationsbeziehungId' is not null or undefined
+            assertParamExists('organisationControllerDeleteOrganisationsbeziehung', 'organisationsbeziehungId', organisationsbeziehungId)
+            const localVarPath = `/api/organisationen/beziehungen/{organisationsbeziehungId}`
+                .replace(`{${"organisationsbeziehungId"}}`, encodeURIComponent(String(organisationsbeziehungId)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -9186,6 +9601,17 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
+         * Create a relationship between two organisations.
+         * @summary 
+         * @param {CreateOrganisationsbeziehungBodyParams} createOrganisationsbeziehungBodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async organisationControllerCreateOrganisationsbeziehung(createOrganisationsbeziehungBodyParams: CreateOrganisationsbeziehungBodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<OrganisationsbeziehungResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerCreateOrganisationsbeziehung(createOrganisationsbeziehungBodyParams, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
          * Delete an organisation by id.
          * @summary 
          * @param {string} organisationId The id of an organization
@@ -9194,6 +9620,17 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
          */
         async organisationControllerDeleteOrganisation(organisationId: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerDeleteOrganisation(organisationId, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * Delete an organisation relationship by id.
+         * @summary 
+         * @param {string} organisationsbeziehungId ID der Organisationsbeziehung.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async organisationControllerDeleteOrganisationsbeziehung(organisationsbeziehungId: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerDeleteOrganisationsbeziehung(organisationsbeziehungId, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -9342,6 +9779,16 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
             return localVarFp.organisationControllerCreateOrganisation(createOrganisationBodyParams, options).then((request) => request(axios, basePath));
         },
         /**
+         * Create a relationship between two organisations.
+         * @summary 
+         * @param {CreateOrganisationsbeziehungBodyParams} createOrganisationsbeziehungBodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        organisationControllerCreateOrganisationsbeziehung(createOrganisationsbeziehungBodyParams: CreateOrganisationsbeziehungBodyParams, options?: any): AxiosPromise<OrganisationsbeziehungResponse> {
+            return localVarFp.organisationControllerCreateOrganisationsbeziehung(createOrganisationsbeziehungBodyParams, options).then((request) => request(axios, basePath));
+        },
+        /**
          * Delete an organisation by id.
          * @summary 
          * @param {string} organisationId The id of an organization
@@ -9350,6 +9797,16 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
          */
         organisationControllerDeleteOrganisation(organisationId: string, options?: any): AxiosPromise<void> {
             return localVarFp.organisationControllerDeleteOrganisation(organisationId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Delete an organisation relationship by id.
+         * @summary 
+         * @param {string} organisationsbeziehungId ID der Organisationsbeziehung.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        organisationControllerDeleteOrganisationsbeziehung(organisationsbeziehungId: string, options?: any): AxiosPromise<void> {
+            return localVarFp.organisationControllerDeleteOrganisationsbeziehung(organisationsbeziehungId, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -9486,6 +9943,16 @@ export interface OrganisationenApiInterface {
     organisationControllerCreateOrganisation(createOrganisationBodyParams: CreateOrganisationBodyParams, options?: AxiosRequestConfig): AxiosPromise<OrganisationResponse>;
 
     /**
+     * Create a relationship between two organisations.
+     * @summary 
+     * @param {CreateOrganisationsbeziehungBodyParams} createOrganisationsbeziehungBodyParams 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganisationenApiInterface
+     */
+    organisationControllerCreateOrganisationsbeziehung(createOrganisationsbeziehungBodyParams: CreateOrganisationsbeziehungBodyParams, options?: AxiosRequestConfig): AxiosPromise<OrganisationsbeziehungResponse>;
+
+    /**
      * Delete an organisation by id.
      * @summary 
      * @param {string} organisationId The id of an organization
@@ -9494,6 +9961,16 @@ export interface OrganisationenApiInterface {
      * @memberof OrganisationenApiInterface
      */
     organisationControllerDeleteOrganisation(organisationId: string, options?: AxiosRequestConfig): AxiosPromise<void>;
+
+    /**
+     * Delete an organisation relationship by id.
+     * @summary 
+     * @param {string} organisationsbeziehungId ID der Organisationsbeziehung.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganisationenApiInterface
+     */
+    organisationControllerDeleteOrganisationsbeziehung(organisationsbeziehungId: string, options?: AxiosRequestConfig): AxiosPromise<void>;
 
     /**
      * 
@@ -9634,6 +10111,18 @@ export class OrganisationenApi extends BaseAPI implements OrganisationenApiInter
     }
 
     /**
+     * Create a relationship between two organisations.
+     * @summary 
+     * @param {CreateOrganisationsbeziehungBodyParams} createOrganisationsbeziehungBodyParams 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganisationenApi
+     */
+    public organisationControllerCreateOrganisationsbeziehung(createOrganisationsbeziehungBodyParams: CreateOrganisationsbeziehungBodyParams, options?: AxiosRequestConfig) {
+        return OrganisationenApiFp(this.configuration).organisationControllerCreateOrganisationsbeziehung(createOrganisationsbeziehungBodyParams, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
      * Delete an organisation by id.
      * @summary 
      * @param {string} organisationId The id of an organization
@@ -9643,6 +10132,18 @@ export class OrganisationenApi extends BaseAPI implements OrganisationenApiInter
      */
     public organisationControllerDeleteOrganisation(organisationId: string, options?: AxiosRequestConfig) {
         return OrganisationenApiFp(this.configuration).organisationControllerDeleteOrganisation(organisationId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Delete an organisation relationship by id.
+     * @summary 
+     * @param {string} organisationsbeziehungId ID der Organisationsbeziehung.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganisationenApi
+     */
+    public organisationControllerDeleteOrganisationsbeziehung(organisationsbeziehungId: string, options?: AxiosRequestConfig) {
+        return OrganisationenApiFp(this.configuration).organisationControllerDeleteOrganisationsbeziehung(organisationsbeziehungId, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -9929,7 +10430,7 @@ export const PersonInfoApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async personInfoControllerInfoV2(options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PersonInfoResponseV1>> {
+        async personInfoControllerInfoV2(options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PersonInfoDtoV2>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.personInfoControllerInfoV2(options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -9967,7 +10468,7 @@ export const PersonInfoApiFactory = function (configuration?: Configuration, bas
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        personInfoControllerInfoV2(options?: any): AxiosPromise<PersonInfoResponseV1> {
+        personInfoControllerInfoV2(options?: any): AxiosPromise<PersonInfoDtoV2> {
             return localVarFp.personInfoControllerInfoV2(options).then((request) => request(axios, basePath));
         },
     };
@@ -10004,7 +10505,7 @@ export interface PersonInfoApiInterface {
      * @throws {RequiredError}
      * @memberof PersonInfoApiInterface
      */
-    personInfoControllerInfoV2(options?: AxiosRequestConfig): AxiosPromise<PersonInfoResponseV1>;
+    personInfoControllerInfoV2(options?: AxiosRequestConfig): AxiosPromise<PersonInfoDtoV2>;
 
 }
 
@@ -11528,7 +12029,7 @@ export const PersonenInfoApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async personenInfoControllerInfoV2(xOffset?: number, xLimit?: number, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PersonInfoResponseV1>> {
+        async personenInfoControllerInfoV2(xOffset?: number, xLimit?: number, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<PersonInfoDtoV2>>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.personenInfoControllerInfoV2(xOffset, xLimit, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -11561,7 +12062,7 @@ export const PersonenInfoApiFactory = function (configuration?: Configuration, b
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        personenInfoControllerInfoV2(xOffset?: number, xLimit?: number, options?: any): AxiosPromise<PersonInfoResponseV1> {
+        personenInfoControllerInfoV2(xOffset?: number, xLimit?: number, options?: any): AxiosPromise<Array<PersonInfoDtoV2>> {
             return localVarFp.personenInfoControllerInfoV2(xOffset, xLimit, options).then((request) => request(axios, basePath));
         },
     };
@@ -11593,7 +12094,7 @@ export interface PersonenInfoApiInterface {
      * @throws {RequiredError}
      * @memberof PersonenInfoApiInterface
      */
-    personenInfoControllerInfoV2(xOffset?: number, xLimit?: number, options?: AxiosRequestConfig): AxiosPromise<PersonInfoResponseV1>;
+    personenInfoControllerInfoV2(xOffset?: number, xLimit?: number, options?: AxiosRequestConfig): AxiosPromise<Array<PersonInfoDtoV2>>;
 
 }
 
