@@ -28,6 +28,7 @@ const setup = (
   const wrapper: VueWrapper<ComponentInstance<typeof TextEditorCharacterCount>> = mount(TextEditorCharacterCount, {
     attachTo: document.getElementById('app') || '',
     props: {
+      // @ts-expect-error Mock editor does not fully implement Editor interface
       editor: mockEditor,
       limit,
     },

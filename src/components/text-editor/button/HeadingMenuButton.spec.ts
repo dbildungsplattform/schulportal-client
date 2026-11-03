@@ -39,6 +39,7 @@ const setup = (
   const wrapper: VueWrapper<ComponentInstance<typeof HeadingMenuButton>> = mount(HeadingMenuButton, {
     attachTo: document.getElementById('app') || '',
     props: {
+      // @ts-expect-error Mock editor does not fully implement Editor interface
       editor: mockEditor,
     },
   });

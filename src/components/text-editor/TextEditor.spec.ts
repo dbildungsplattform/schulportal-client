@@ -8,12 +8,13 @@ import TextEditor from './TextEditor.vue';
 
 enableAutoUnmount(afterEach);
 
-const setup = () => {
+const setup = (props: { label?: string; modelValue?: string; limit?: number } = {}) => {
   const wrapper = mount(TextEditor, {
     attachTo: document.getElementById('app') || '',
     props: {
-      modelValue: '',
-      limit: 100,
+      label: props.label ?? 'Test Label',
+      modelValue: props.modelValue ?? '',
+      limit: props.limit ?? 100,
     },
   });
   return { wrapper };
@@ -63,13 +64,7 @@ describe('TextEditor.vue', (): void => {
   });
 
   test('should pass correct props to TextEditorCharacterCount', async (): Promise<void> => {
-    const wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> = mount(TextEditor, {
-      attachTo: document.getElementById('app') || '',
-      props: {
-        modelValue: '',
-        limit: 150,
-      },
-    });
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> } = setup({ limit: 150 });
 
     await flushPromises();
 
@@ -138,13 +133,7 @@ describe('TextEditor.vue', (): void => {
 
   test('should not update editor if new content is the same as current', async (): Promise<void> => {
     const content: string = '<p>Same content</p>';
-    const wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> = mount(TextEditor, {
-      attachTo: document.getElementById('app') || '',
-      props: {
-        modelValue: content,
-        limit: 100,
-      },
-    });
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> } = setup({ modelValue: content });
 
     await flushPromises();
 
@@ -185,12 +174,8 @@ describe('TextEditor.vue', (): void => {
   });
 
   test('should watch for modelValue changes and update editor content', async (): Promise<void> => {
-    const wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> = mount(TextEditor, {
-      attachTo: document.getElementById('app') || '',
-      props: {
-        modelValue: '<p>Initial content</p>',
-        limit: 100,
-      },
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> } = setup({
+      modelValue: '<p>Initial content</p>',
     });
 
     await flushPromises();
@@ -212,6 +197,7 @@ describe('TextEditor.vue', (): void => {
     const wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> = mount(TextEditor, {
       attachTo: document.getElementById('app') || '',
       props: {
+        label: 'Test Label',
         modelValue: content,
         limit: 100,
       },
@@ -234,12 +220,8 @@ describe('TextEditor.vue', (): void => {
   });
 
   test('should handle editor being undefined in watch', async (): Promise<void> => {
-    const wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> = mount(TextEditor, {
-      attachTo: document.getElementById('app') || '',
-      props: {
-        modelValue: '<p>Test</p>',
-        limit: 100,
-      },
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> } = setup({
+      modelValue: '<p>Test</p>',
     });
 
     // Force editor to undefined temporarily
@@ -305,12 +287,8 @@ describe('TextEditor.vue', (): void => {
 
   test('should correctly compare HTML content in watch', async (): Promise<void> => {
     const content: string = '<p>Test</p>';
-    const wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> = mount(TextEditor, {
-      attachTo: document.getElementById('app') || '',
-      props: {
-        modelValue: content,
-        limit: 100,
-      },
+    const { wrapper }: { wrapper: VueWrapper<ComponentInstance<typeof TextEditor>> } = setup({
+      modelValue: content,
     });
 
     await flushPromises();

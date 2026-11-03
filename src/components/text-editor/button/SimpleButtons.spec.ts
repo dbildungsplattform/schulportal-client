@@ -33,7 +33,7 @@ const setupButton = <T>(component: T, activeFormat: string = ''): { wrapper: Vue
     attachTo: document.getElementById('app') || '',
     props: {
       editor: mockEditor,
-    },
+    } as any,
   });
   return { wrapper };
 };
