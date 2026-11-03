@@ -1,8 +1,12 @@
 <script setup lang="ts">
+  import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
+  import FormWrapper from '@/components/form/FormWrapper.vue';
+  import TextEditor from '@/components/text-editor/TextEditor.vue';
   import { MeldungStatus, useMeldungStore, type Meldung, type MeldungStore } from '@/stores/MeldungStore';
+  import { useForm, type FormContext } from 'vee-validate';
   import { computed, onBeforeMount, onUnmounted, ref, type ComputedRef, type Ref } from 'vue';
-  import { type Composer, useI18n } from 'vue-i18n';
+  import { useI18n, type Composer } from 'vue-i18n';
   import {
     onBeforeRouteLeave,
     useRouter,
@@ -11,46 +15,24 @@
     type Router,
   } from 'vue-router';
   import { useDisplay } from 'vuetify';
-  import SpshAlert from '@/components/alert/SpshAlert.vue';
-  import { useForm, type BaseFieldProps, type FormContext, type TypedSchema } from 'vee-validate';
-  import { object, string } from 'yup';
-  import { toTypedSchema } from '@vee-validate/yup';
-  import FormWrapper from '@/components/form/FormWrapper.vue';
 
+  const maxLength: number = 2000;
+  const isContentLengthValid: Ref<boolean> = ref(true);
   const router: Router = useRouter();
   const { t }: Composer = useI18n({ useScope: 'global' });
   const { smAndDown }: { smAndDown: Ref<boolean> } = useDisplay();
   const meldungStore: MeldungStore = useMeldungStore();
   const newsboxMeldung: ComputedRef<Meldung | undefined> = computed(() => meldungStore.meldungen[0]);
 
-  const validationSchema: TypedSchema = toTypedSchema(
-    object({
-      meldungText: string().max(2000, t('admin.hinweise.rules.max')).min(1, t('admin.hinweise.rules.min')),
-    }),
-  );
-
-  const vuetifyConfig = (state: {
-    errors: Array<string>;
-  }): { props: { error: boolean; 'error-messages': Array<string> } } => ({
-    props: {
-      error: !!state.errors.length,
-      'error-messages': state.errors,
-    },
-  });
-
   type NewsboxForm = {
     meldungText: string;
   };
 
-  const { defineField, handleSubmit, resetForm }: FormContext = useForm<NewsboxForm>({
-    validationSchema,
+  const { handleSubmit, resetForm }: FormContext = useForm<NewsboxForm>({
     validateOnMount: false,
   });
 
-  const [meldungText, meldungTextProps]: [
-    Ref<string>,
-    Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
-  ] = defineField('meldungText', vuetifyConfig);
+  const meldungText: Ref<string> = ref('');
 
   const publishOrUnpublishButton: ComputedRef<string> = computed(() => {
     return !newsboxMeldung.value || newsboxMeldung.value.status === MeldungStatus.NICHT_VEROEFFENTLICHT
@@ -59,19 +41,27 @@
   });
 
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
+  const hasUnsavedChanges: Ref<boolean> = ref(false);
   let blockedNext: () => void = () => {
     /* empty */
   };
 
   const onSubmit: (e?: Event) => Promise<Promise<void> | undefined> = handleSubmit(async () => {
+    if (!isContentLengthValid.value) {
+      return;
+    }
+    const submittedText: string = meldungText.value;
     await meldungStore.createOrUpdateMeldung({
       ...newsboxMeldung.value,
-      text: meldungText.value,
+      text: submittedText,
       status:
         !newsboxMeldung.value || newsboxMeldung.value.status === MeldungStatus.NICHT_VEROEFFENTLICHT
           ? MeldungStatus.VEROEFFENTLICHT
           : MeldungStatus.NICHT_VEROEFFENTLICHT,
     });
+    if (!meldungStore.errorCode && meldungText.value === submittedText) {
+      hasUnsavedChanges.value = false;
+    }
     await meldungStore.getAllMeldungen();
   });
 
@@ -88,12 +78,13 @@
     router.go(0);
   };
 
-  const formWasChanged = (): boolean => {
-    return meldungText.value !== newsboxMeldung.value?.text;
+  const onEditorChanged = (payload: { contentLength: number }): void => {
+    hasUnsavedChanges.value = true;
+    isContentLengthValid.value = payload.contentLength > 0 && payload.contentLength <= maxLength;
   };
 
   function preventNavigation(event: BeforeUnloadEvent): void {
-    if (formWasChanged()) {
+    if (!hasUnsavedChanges.value) {
       return;
     }
     event.preventDefault();
@@ -111,7 +102,7 @@
   });
 
   onBeforeRouteLeave((_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
-    if (formWasChanged()) {
+    if (hasUnsavedChanges.value) {
       showUnsavedChangesDialog.value = true;
       blockedNext = next;
     } else {
@@ -166,18 +157,19 @@
             <h3 class="headline-3 mb-4">
               {{ $t('admin.hinweise.newsbox') }}
             </h3>
-            <v-textarea
-              ref="newsbox-text"
-              v-bind="meldungTextProps"
-              v-model="meldungText"
+            <TextEditor
               data-testid="newsbox-text"
-              variant="outlined"
-              rows="5"
-              placeholder="Newsbox"
-              auto-grow
-              counter
-              maxlength="2000"
+              :label="$t('admin.hinweise.newsbox')"
+              :limit="maxLength"
+              v-model="meldungText"
+              @changed="onEditorChanged"
             />
+            <div
+              v-if="!isContentLengthValid"
+              class="text-error text-label-medium pl-4 py-2"
+            >
+              {{ t('admin.hinweise.rules.min') }}
+            </div>
           </v-col>
         </v-row>
 

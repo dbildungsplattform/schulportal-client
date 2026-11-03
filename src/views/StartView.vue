@@ -223,16 +223,10 @@
           :dismissable="false"
         >
           <template #text>
-            <span class="text-body">
-              <v-textarea
-                v-model="hinweis.text"
-                variant="plain"
-                :hide-details="true"
-                readonly
-                auto-grow
-                rows="1"
-              />
-            </span>
+            <span
+              class="tiptap-content-preview"
+              v-html="hinweis.text"
+            ></span>
           </template>
         </SpshBanner>
 
@@ -343,4 +337,10 @@
   </v-card>
 </template>
 
-<style></style>
+<style>
+  .tiptap-content-preview {
+    max-height: 20rem;
+    overflow: auto;
+    display: block;
+  }
+</style>
