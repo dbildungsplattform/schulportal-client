@@ -80,11 +80,7 @@
 
   const onEditorChanged = (payload: { contentLength: number }): void => {
     hasUnsavedChanges.value = true;
-    if (payload.contentLength > maxLength || payload.contentLength <= 0) {
-      isContentLengthValid.value = false;
-    } else {
-      isContentLengthValid.value = true;
-    }
+    isContentLengthValid.value = payload.contentLength > 0 && payload.contentLength <= maxLength;
   };
 
   function preventNavigation(event: BeforeUnloadEvent): void {
