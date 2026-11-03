@@ -1194,5 +1194,25 @@
     "kopers": "Die Verwendung dieses Benutzerkontos setzt eine KoPers.-Nr. voraus. Bitte kontaktieren Sie Ihre schulischen Administratorinnen und Administratoren, um eine KoPers.-Nr. eintragen zu lassen. Andernfalls wird Ihr Zugang zum {date} automatisch gesperrt.",
     "noKontexte": "Dieses Benutzerkonto ist aktuell keiner Schule zugeordnet. Ohne Schulzuordnung sind ein großer Teil der Funktionalitäten des Schulportal SH nicht verfügbar. Sollten Sie weiterhin an einer Schule in Schleswig-Holstein tätig sein, wenden Sie sich an Ihre Schulleitung. Ist dieses Konto auch weiterhin keiner Schule zugeordnet, wird es zum {date} gelöscht.",
     "kontextExpires": "Die Zuordnung dieses Benutzerkontos zu der Schule \"{schule}\" mit der Rolle \"{rolle}\" ist bis zum {date} befristet. Sollte dies nicht zutreffen, wenden Sie sich bitte an Ihre Schulleitung. Nach Ende der Zuordnung sind Funktionalitäten, die im Bezug zu dieser Schule und Rolle stehen, nicht mehr verfügbar."
+  },
+  "textEditor": {
+    "button": {
+      "bold": "Fett",
+      "italic": "Kursiv",
+      "underline": "Unterstrichen",
+      "strike": "Durchgestrichen",
+      "bulletList": "Aufzählungsliste",
+      "orderedList": "Nummerierte Liste",
+      "linkPlaceholder": "Link eingeben",
+      "clearLink": "Link entfernen",
+      "confirmLink": "Link übernehmen",
+      "heading": "Überschrift",
+      "headingLevel": "Überschrift {level}",
+      "link": "Link"
+    },
+    "characterCount": {
+      "characters": "{count} von {limit} Zeichen",
+      "words": "{count} Wörter"
+    }
   }
 }
