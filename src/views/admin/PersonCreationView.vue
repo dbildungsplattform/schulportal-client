@@ -7,7 +7,7 @@
   import FormWrapper from '@/components/form/FormWrapper.vue';
   import PasswordOutput from '@/components/form/PasswordOutput.vue';
   import { useOrganisationen } from '@/composables/useOrganisationen';
-  import { type Organisation, type OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
+  import type { Organisation } from '@/stores/OrganisationStore';
   import {
     type DBiamPersonenkontextResponse,
     OperationContext,
@@ -21,7 +21,7 @@
     type PersonStore,
     usePersonStore,
   } from '@/stores/PersonStore';
-  import { RollenArt, RolleStore, TranslatedRolleWithAttrs, useRolleStore } from '@/stores/RolleStore';
+  import { RollenArt, RollenMerkmal, RolleStore, TranslatedRolleWithAttrs, useRolleStore } from '@/stores/RolleStore';
   import type { Zuordnung } from '@/stores/types/Zuordnung';
   import { type TranslatedObject } from '@/types.d';
   import { type BefristungUtilsType, isBefristungspflichtRolle, useBefristungUtils } from '@/utils/befristung';
@@ -41,7 +41,7 @@
     useRouter,
   } from 'vue-router';
   import { useDisplay } from 'vuetify';
-  import { type AnyObject, array, ArraySchema, object, string, StringSchema } from 'yup';
+  import { type AnyObject, array, ArraySchema, mixed, object, string, StringSchema } from 'yup';
 
   const { mdAndDown, mdAndUp }: { mdAndDown: Ref<boolean>; mdAndUp: Ref<boolean> } = useDisplay();
 
@@ -67,7 +67,8 @@
 
   const calculatedBefristung: Ref<string | undefined> = ref('');
 
-  const selectedOrgaCache: Ref<string | undefined> = ref(undefined);
+  const selectedOrgaCache: Ref<Organisation | undefined> = ref(undefined);
+  const selectedOrganisationObject: Ref<Organisation | undefined> = ref();
   const selectedKlasseCache: Ref<TranslatedObject | undefined> = ref(undefined);
   const selectedRolleCache: Ref<string[] | undefined> = ref(undefined);
 
@@ -171,8 +172,11 @@
         const {
           selectedRollen,
           selectedBefristungOption,
-        }: { selectedRollen: string[]; selectedBefristungOption: string | undefined } = this.parent as {
-          selectedRollen: string[];
+        }: {
+          selectedRollen: TranslatedRolleWithAttrs[];
+          selectedBefristungOption: string | undefined;
+        } = this.parent as {
+          selectedRollen: TranslatedRolleWithAttrs[];
           selectedBefristungOption: string | undefined;
         };
 
@@ -194,11 +198,15 @@
 
   const validationSchema: TypedSchema = toTypedSchema(
     object({
-      selectedRollen: array(string().required(t('admin.rolle.rules.rolle.required'))).when('selectedOrganisation', {
-        is: (selectedOrganisation: string) => !!selectedOrganisation,
-        then: (schema: ArraySchema<string[] | undefined, AnyObject, undefined, ''>) =>
-          schema.min(1, t('admin.rolle.rules.rolle.required')).required(t('admin.rolle.rules.rolle.required')),
-      }),
+      selectedOrganisation: mixed<Organisation>().required(t('admin.organisation.rules.organisation.required')),
+      selectedRollen: array(mixed<TranslatedRolleWithAttrs>().required(t('admin.rolle.rules.rolle.required'))).when(
+        'selectedOrganisation',
+        {
+          is: (selectedOrganisation: string) => !!selectedOrganisation,
+          then: (schema: ArraySchema<TranslatedRolleWithAttrs[] | undefined, AnyObject, undefined, ''>) =>
+            schema.min(1, t('admin.rolle.rules.rolle.required')).required(t('admin.rolle.rules.rolle.required')),
+        },
+      ),
       selectedVorname: string()
         .matches(DIN_91379A, t('admin.person.rules.vorname.matches'))
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.person.rules.vorname.noLeadingTrailingSpaces'))
@@ -209,17 +217,18 @@
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.person.rules.familienname.noLeadingTrailingSpaces'))
         .min(2, t('admin.person.rules.familienname.min'))
         .required(t('admin.person.rules.familienname.required')),
-      selectedOrganisation: string().required(t('admin.organisation.rules.organisation.required')),
       selectedKlasse: string().when('selectedRollen', {
-        is: (selectedRolleIds: string[]) => hasSelectedLernRolle(selectedRolleIds),
+        is: (rollen: TranslatedRolleWithAttrs[] | undefined) =>
+          rollen?.some((rolle: TranslatedRolleWithAttrs) => rolle.rollenart === RollenArt.Lern),
         then: (schema: StringSchema<string | undefined, AnyObject, undefined, ''>) =>
           schema.required(t('admin.klasse.rules.klasse.required')),
       }),
       selectedKopersNr: string()
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.person.rules.kopersNr.noLeadingTrailingSpaces'))
         .when('selectedRollen', {
-          is: (selectedRolleIds: string[]) =>
-            isKopersRolle(selectedRolleIds, getFilteredRollen()) && !hasNoKopersNr.value,
+          is: (rollen: TranslatedRolleWithAttrs[] | undefined) =>
+            rollen?.some((rolle: TranslatedRolleWithAttrs) => rolle.merkmale?.includes(RollenMerkmal.KopersPflicht)) &&
+            !hasNoKopersNr.value,
           then: (schema: StringSchema<string | undefined, AnyObject, undefined, ''>) =>
             schema.required(t('admin.person.rules.kopersNr.required')),
         }),
@@ -238,8 +247,8 @@
   });
 
   type PersonCreationForm = {
-    selectedOrganisation: string;
-    selectedRollen: string[];
+    selectedOrganisation: Organisation;
+    selectedRollen: TranslatedRolleWithAttrs[];
     selectedVorname: string;
     selectedFamilienname: string;
     selectedKlasse: string;
@@ -253,11 +262,11 @@
   });
 
   const [selectedOrganisation, selectedOrganisationProps]: [
-    Ref<string | undefined>,
+    Ref<Organisation>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedOrganisation', vuetifyConfig);
   const [selectedRollen, selectedRollenProps]: [
-    Ref<string[] | undefined>,
+    Ref<TranslatedRolleWithAttrs[]>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedRollen', vuetifyConfig);
   const [selectedVorname, selectedVornameProps]: [
@@ -286,7 +295,7 @@
   ] = formContext.defineField('selectedKopersNr', vuetifyConfig);
 
   const filteredRollen: ComputedRef<TranslatedRolleWithAttrs[]> = computed(() => {
-    return getFilteredRollen(selectedOrganisation.value);
+    return getFilteredRollen(selectedOrganisation.value?.id);
   });
 
   // This primitive value is load-bearing: equal store replacements must not invalidate the Rollen query.
@@ -294,9 +303,7 @@
     if (createType.value === CreationType.AddPersonToOwnSchule) {
       return personStore.personenuebersicht?.zuordnungen[0]?.rollenArt;
     }
-    return rolleStore.rollenForPersonenkontextCreation.find((rolle: TranslatedRolleWithAttrs) =>
-      selectedRollen.value?.includes(rolle.value),
-    )?.rollenart;
+    return selectedRollen.value?.[0]?.rollenart;
   });
 
   const {
@@ -316,7 +323,6 @@
   setupRolleWatcher();
 
   const organisationen: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
-  const organisationStore: OrganisationStore = useOrganisationStore();
 
   // Extract the created Klassenzuordnungen from the response after submission
   const klasseZuordnungFromCreatedKontext: ComputedRef<DBiamPersonenkontextResponse[]> = computed(() => {
@@ -342,7 +348,7 @@
   const schuleZuordnungFromCreatedKontext: ComputedRef<DBiamPersonenkontextResponse[]> = computed(() => {
     return createdKontextResponses.value.filter(
       (kontext: DBiamPersonenkontextResponse) =>
-        kontext.organisationId === selectedOrgaCache.value && selectedRolleCache.value?.includes(kontext.rolleId),
+        kontext.organisationId === selectedOrgaCache.value?.id && selectedRolleCache.value?.includes(kontext.rolleId),
     );
   });
 
@@ -367,9 +373,8 @@
 
     return schuleZuordnungFromCreatedKontext.value.map(
       (kontext: DBiamPersonenkontextResponse) =>
-        rolleStore.rollenForPersonenkontextCreation?.find(
-          (rolle: TranslatedRolleWithAttrs) => rolle.value === kontext.rolleId,
-        )?.title || '',
+        filteredRollenCache.value.find((rolle: TranslatedRolleWithAttrs) => rolle.value === kontext.rolleId)?.title ||
+        '',
     );
   });
 
@@ -456,12 +461,17 @@
 
   function handleFieldReset(field: string): void {
     if (field === 'selectedRollen') {
-      selectedRollen.value = undefined;
+      formContext.resetField('selectedRollen');
     } else if (field === 'selectedKlasse') {
       if (selectedKlasse.value) {
         selectedKlasse.value = undefined;
       }
     }
+  }
+
+  function handleSelectedKlasse(newSelection: Organisation | undefined): void {
+    selectedKlasse.value = newSelection?.id;
+    selectedKlasseCache.value = newSelection ? { value: newSelection.id, title: newSelection.name } : undefined;
   }
 
   async function createPerson(): Promise<void> {
@@ -472,8 +482,8 @@
     // Format the date in ISO 8601 format if it exists
     const formattedBefristung: string | undefined = befristungDate ? formatDateToISO(befristungDate) : undefined;
 
-    // This is used to cache the filtered Rollen to use for isLernRolle and isKopersRolle in the success template
-    filteredRollenCache.value = filteredRollen.value;
+    // Retain selected attributes for the success template after resetting the form.
+    filteredRollenCache.value = selectedRollen.value ?? [];
 
     const bodyParams: CreatePersonBodyParams = {
       familienname: selectedFamilienname.value,
@@ -481,36 +491,28 @@
       personalnummer: selectedKopersNr.value,
       befristung: formattedBefristung,
       createPersonenkontexte:
-        selectedRollen.value?.map((rolleId: string) => ({
-          organisationId: selectedOrganisation.value as string,
-          rolleId,
+        selectedRollen.value?.map((rolle: TranslatedRolleWithAttrs) => ({
+          organisationId: selectedOrganisation.value.id,
+          rolleId: rolle.value,
         })) || [],
     };
     // Klasse is only allowed if the selectedRolle is of type LERN.
     if (
       selectedKlasse.value &&
       selectedRollen.value &&
-      selectedRollen.value.length > 0 &&
-      hasSelectedLernRolle(selectedRollen.value)
+      selectedRollen.value.some((rolle: TranslatedRolleWithAttrs) => rolle.rollenart === RollenArt.Lern)
     ) {
-      selectedKlasseCache.value = {
-        value: selectedKlasse.value,
-        title:
-          organisationStore.klassenFilters
-            .get('personenkontext-create')
-            ?.filterResult.find((klasse: Organisation) => klasse.id === selectedKlasse.value)?.name || '',
-      };
-      for (const rolleId of selectedRollen.value) {
+      for (const rolle of selectedRollen.value) {
         bodyParams.createPersonenkontexte.push({
           organisationId: selectedKlasse.value,
-          rolleId: rolleId,
+          rolleId: rolle.value,
         });
       }
     }
     // We save a copy of the selected values because they are not available anymore since we reset the form right after submitting
     // This will then be used to display the organisation again in the success template after receiving the orga ID and rolle ID back from the BE.
-    selectedOrgaCache.value = JSON.parse(JSON.stringify(selectedOrganisation.value)) as string | undefined;
-    selectedRolleCache.value = JSON.parse(JSON.stringify(selectedRollen.value)) as string[] | undefined;
+    selectedOrgaCache.value = selectedOrganisation.value;
+    selectedRolleCache.value = selectedRollen.value?.map((rolle: TranslatedRolleWithAttrs) => rolle.value);
     await personenkontextStore.createPersonWithKontexte(bodyParams);
     formContext.resetForm();
     hasNoKopersNr.value = false;
@@ -536,14 +538,17 @@
     const befristungDate: string | undefined = selectedBefristung.value || calculatedBefristung.value;
     const formattedBefristung: string | undefined = befristungDate ? formatDateToISO(befristungDate) : undefined;
 
-    const newKontexte: PersonenkontextUpdate[] | undefined = selectedRollen.value?.map((rolleId: string) => ({
-      organisationId: selectedOrganisation.value as string,
-      rolleId: rolleId,
-      befristung: formattedBefristung,
-    }));
+    filteredRollenCache.value = selectedRollen.value ?? [];
+    const newKontexte: PersonenkontextUpdate[] | undefined = selectedRollen.value?.map(
+      (rolle: TranslatedRolleWithAttrs) => ({
+        organisationId: selectedOrganisation.value.id,
+        rolleId: rolle.value,
+        befristung: formattedBefristung,
+      }),
+    );
 
     selectedOrgaCache.value = selectedOrganisation.value;
-    selectedRolleCache.value = selectedRollen.value;
+    selectedRolleCache.value = selectedRollen.value?.map((rolle: TranslatedRolleWithAttrs) => rolle.value);
     await personenkontextStore.commitLandesbediensteteKontext(personId, newKontexte, existingPerson.personalnummer);
     formContext.resetForm();
   }
@@ -556,10 +561,7 @@
       addPersonConfirmationText.value = t('admin.person.stateEmployeeSearch.addPersonConfirmationMessage', {
         benutzername: `${username}`,
         rollenname: selectedRollen.value
-          ?.map(
-            (rolleId: string) =>
-              filteredRollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === rolleId)?.title,
-          )
+          ?.map((rolle: TranslatedRolleWithAttrs) => rolle.title)
           .filter(Boolean)
           .join(', '),
       });
@@ -626,7 +628,9 @@
     (): boolean =>
       !!selectedOrganisation.value &&
       !!selectedRollen.value &&
-      isKopersRolle(selectedRollen.value, filteredRollen.value),
+      selectedRollen.value.some((rolle: TranslatedRolleWithAttrs) =>
+        rolle.merkmale?.includes(RollenMerkmal.KopersPflicht),
+      ),
   );
 
   // Section numbers based on whether the createType is AddPersonToOwnSchule or not.
@@ -847,19 +851,14 @@
               <PersonenkontextCreate
                 ref="personenkontext-create"
                 v-model:selected-organisation="selectedOrganisation"
+                :initial-organisation="selectedOrganisationObject"
                 v-model:selected-rollen="selectedRollen"
-                v-model:selected-klasse="selectedKlasse"
                 :operation-context="OperationContext.PERSON_ANLEGEN"
                 :allow-multiple-rollen="true"
                 :create-type="createType"
                 :rollenart-for-person="rollenartForPerson"
                 :show-headline="true"
-                :organisationen="organisationen"
-                :rollen="
-                  createType === CreationType.AddPersonToOwnSchule || (filteredRollen?.length ?? 0) > 0
-                    ? filteredRollen
-                    : rolleStore.rollenForPersonenkontextCreation
-                "
+                :rollen="filteredRollen"
                 :selected-organisation-props="selectedOrganisationProps"
                 :selected-rollen-props="selectedRollenProps"
                 :selected-klasse-props="selectedKlasseProps"
@@ -880,6 +879,7 @@
                 @update:canCommit="canCommit = $event"
                 @update:befristung="handleBefristungUpdate($event)"
                 @update:calculated-befristung-option="handleBefristungOptionUpdate($event)"
+                @update:selectedKlasse="handleSelectedKlasse"
                 @fieldReset="handleFieldReset($event)"
               />
             </template>
@@ -888,14 +888,14 @@
               <PersonenkontextCreate
                 ref="personenkontext-create"
                 v-model:selected-organisation="selectedOrganisation"
+                :initial-organisation="selectedOrganisationObject"
+                @update:organisation-object="selectedOrganisationObject = $event"
                 v-model:selected-rollen="selectedRollen"
-                v-model:selected-klasse="selectedKlasse"
                 :operation-context="OperationContext.PERSON_ANLEGEN"
                 :allow-multiple-rollen="true"
                 :create-type="createType"
                 :rollenart-for-person="rollenartForPerson"
                 :show-headline="true"
-                :organisationen="organisationen"
                 :rollen="
                   (filteredRollen?.length ?? 0) > 0 ? filteredRollen : rolleStore.rollenForPersonenkontextCreation
                 "
@@ -914,6 +914,7 @@
                 @update:can-commit="canCommit = $event"
                 @update:befristung="handleBefristungUpdate($event)"
                 @update:calculated-befristung-option="handleBefristungOptionUpdate($event)"
+                @update:selectedKlasse="handleSelectedKlasse"
                 @field-reset="handleFieldReset($event)"
               />
               <!-- Else: Default Order -->

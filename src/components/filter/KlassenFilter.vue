@@ -1,229 +1,119 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="M extends boolean = false">
   import type { RollenSystemRechtEnum } from '@/api-client/generated';
-  import {
-    OrganisationsTyp,
-    useOrganisationStore,
-    type AutoCompleteStore,
-    type Organisation,
-    type OrganisationenFilter,
-    type OrganisationStore,
-  } from '@/stores/OrganisationStore';
-  import type { TranslatedObject } from '@/types';
-  import { dedup, sameContent } from '@/utils/arrays';
+  import { type KlassenSelection, useKlassenAutocomplete } from '@/composables/useKlassenAutocomplete';
+  import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
   import { blurActiveElement } from '@/utils/focus';
   import type { BaseFieldProps } from 'vee-validate';
-  import { computed, onMounted, onUnmounted, reactive, ref, watch, type ComputedRef, type Ref } from 'vue';
+  import { computed, onMounted, onUnmounted, watch, type ComputedRef, type WritableComputedRef } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
 
-  type SelectedKlassenIds = Array<string> | string | undefined;
+  type AnySelection = Organisation | readonly Organisation[] | null | undefined;
+
+  const isOrganisationArray = (selection: AnySelection): selection is readonly Organisation[] =>
+    Array.isArray(selection);
+
   type Props = {
     hideDetails?: boolean;
     systemrechteForSearch?: Array<RollenSystemRechtEnum>;
-    multiple?: boolean;
+    multiple?: M;
     readonly?: boolean;
+    selectedKlassen?: Organisation | Organisation[];
     selectedKlasseProps?: BaseFieldProps & { error: boolean; 'error-messages': Array<string> };
     highlightSelection?: boolean;
     placeholderText?: string;
     administriertVon?: string[] | undefined;
     parentId?: string;
   };
-  const props: Props = defineProps<Props>();
-  const selectedKlassen: Ref<SelectedKlassenIds> = defineModel('selectedKlassen');
-  const searchInputKlassen: Ref<string | undefined> = ref(undefined);
-  const clearInput = (): void => {
-    searchInputKlassen.value = undefined;
-    selectedKlassen.value = undefined;
+  type Emits = {
+    (e: 'update:selectedKlassen', value: KlassenSelection<M>): void;
   };
+  const props: Props = defineProps<Props>();
+  const emits: Emits = defineEmits<Emits>();
 
   const { t }: Composer = useI18n({ useScope: 'global' });
   const organisationStore: OrganisationStore = useOrganisationStore();
+  const {
+    selectedKlassen: selectedKlassenValue,
+    searchInput,
+    items,
+    init,
+  }: ReturnType<typeof useKlassenAutocomplete<M>> = useKlassenAutocomplete<M>(
+    {
+      systemrechte: props.systemrechteForSearch,
+      searchString: undefined,
+      administriertVon: props.administriertVon,
+    },
+    props.parentId,
+    props.multiple,
+    () => props.administriertVon,
+  );
 
-  const timerId: Ref<ReturnType<typeof setTimeout> | undefined> = ref<ReturnType<typeof setTimeout>>();
+  const normalizeSelection = (selection: AnySelection): KlassenSelection<M> => {
+    let normalizedSelection: Organisation | Organisation[] | undefined;
+    if (props.multiple) {
+      normalizedSelection = isOrganisationArray(selection) ? Array.from(selection) : [];
+    } else {
+      normalizedSelection = isOrganisationArray(selection) ? selection[0] : (selection ?? undefined);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+    return normalizedSelection as KlassenSelection<M>;
+  };
+
+  type VuetifySelection = M extends true ? readonly Organisation[] : Organisation | null;
+  const autocompleteSelection: WritableComputedRef<VuetifySelection> = computed({
+    get: (): VuetifySelection =>
+      (props.multiple ? selectedKlassenValue.value : (selectedKlassenValue.value ?? null)) as VuetifySelection,
+    set: (selection: VuetifySelection): void => {
+      selectedKlassenValue.value = normalizeSelection(selection);
+    },
+  });
+
+  watch(
+    () => props.selectedKlassen,
+    (selection: Organisation | Organisation[] | undefined): void => {
+      if (selection !== selectedKlassenValue.value) {
+        selectedKlassenValue.value = normalizeSelection(selection);
+      }
+    },
+    { immediate: true },
+  );
+
   const testId: ComputedRef<string> = computed(() => {
     return props.parentId ? `${props.parentId}-klasse-select` : 'klasse-select';
   });
-  const storeReference: ComputedRef<AutoCompleteStore<Organisation> | undefined> = computed(() => {
-    return organisationStore.klassenFilters.get(props.parentId ?? '');
-  });
 
-  const klassenFilter: OrganisationenFilter = reactive({
-    includeTyp: OrganisationsTyp.Klasse,
-    systemrechte: props.systemrechteForSearch,
-    searchString: undefined,
-    limit: 200,
-    organisationIds: [],
-    administriertVon: props.administriertVon,
-  });
-
-  const translateKlasse = (klasse: Organisation): TranslatedObject => ({
-    value: klasse.id,
-    title: klasse.name,
-  });
-
-  // selection is represented as an array internally
-  // wrap/unwrap is used to convert between internal and vuetify representation
-  const wrapSelectedKlassenIds = (selectedIds: SelectedKlassenIds): Array<string> => {
-    if (Array.isArray(selectedIds)) {
-      return selectedIds.filter(Boolean);
-    }
-    if (selectedIds) {
-      return [selectedIds];
-    }
-    return [];
-  };
-
-  const isEmptySelection = (selection: SelectedKlassenIds): boolean => {
-    if (!selection) {
-      return true;
-    }
-    return wrapSelectedKlassenIds(selection).filter(Boolean).length === 0;
+  const isEmptySelection = (selection: AnySelection): boolean => {
+    return Array.isArray(selection) ? selection.length === 0 : !selection;
   };
 
   const placeholderText: ComputedRef<string> = computed(() => {
     return props.placeholderText ?? t('admin.klasse.assignKlasse');
   });
 
-  const translatedKlassen: ComputedRef<Array<TranslatedObject>> = computed(() => {
-    const options: Array<TranslatedObject> = storeReference.value?.filterResult.map(translateKlasse) ?? [];
-    const selectedIds: Array<string> = wrapSelectedKlassenIds(selectedKlassen.value);
-    if (!isEmptySelection(selectedIds)) {
-      selectedIds.forEach((selectedId: string) => {
-        if (options.find((option: TranslatedObject) => option.value === selectedId) === undefined) {
-          options.push({
-            value: selectedId,
-            title: '...',
-          });
-        }
-      });
+  const getDisplayItem = (item: Organisation, index: number): string => {
+    const selection: AnySelection = selectedKlassenValue.value;
+    if (!Array.isArray(selection) || selection.length < 2) {
+      return item.name;
     }
-    return options;
-  });
-
-  const canDisplaySelection = (selection: SelectedKlassenIds): boolean => {
-    const result: boolean = wrapSelectedKlassenIds(selection).every((selectedKlasseId: string) =>
-      Boolean(
-        // translatedKlassen should include autoSelection if needed, so no extra logic is needed here
-        translatedKlassen.value.find(
-          (translatedKlasse: TranslatedObject) => translatedKlasse.value === selectedKlasseId,
-        ),
-      ),
-    );
-    return result;
+    return index === 0 ? t('admin.klasse.klassenSelected', { count: selection.length }) : '';
   };
 
-  const getDisplayItem = (item: TranslatedObject, index: number): string => {
-    if (!selectedKlassen.value) {
-      return '';
-    } // should not happen
-    if (!canDisplaySelection(selectedKlassen.value)) {
-      return '...';
-    } // we are loading
-    if (!props.multiple) {
-      return item.title;
-    }
+  const shouldHighlightSelection: ComputedRef<boolean> = computed(
+    (): boolean => Boolean(props.highlightSelection) && !isEmptySelection(selectedKlassenValue.value),
+  );
 
-    if (selectedKlassen.value.length < 2) {
-      return item.title;
-    }
-    if (index === 0) {
-      return t('admin.klasse.klassenSelected', { count: selectedKlassen.value.length });
-    }
-    return ''; // do not display anything for other items
-  };
-
-  const shouldHighlightSelection: ComputedRef<boolean> = computed(() => {
-    if (props.highlightSelection && !isEmptySelection(selectedKlassen.value)) {
-      return true;
-    }
-    return false;
-  });
-
-  const updateSearchString = (searchString: string | undefined): void => {
-    if (searchString) {
-      klassenFilter.searchString = searchString;
-    } else {
-      delete klassenFilter.searchString;
+  const handleFocusChange = (focused: boolean): void => {
+    if (props.multiple && !focused) {
+      searchInput.value = '';
     }
   };
 
-  const updateKlassenIds = (ids: SelectedKlassenIds): void => {
-    const tempIds: Array<string> = wrapSelectedKlassenIds(ids);
-    klassenFilter.organisationIds = dedup(tempIds.filter(Boolean));
-  };
-
-  const handleSelectionUpdate = (selection: SelectedKlassenIds): void => {
-    if (isEmptySelection(selection)) {
-      updateKlassenIds([]);
-      updateSearchString(undefined);
-      clearInput();
-    } else {
-      updateKlassenIds(selection);
-    }
+  watch(selectedKlassenValue, (newSelection: KlassenSelection<M>) => {
     if (!props.multiple) {
       blurActiveElement();
     }
-  };
-
-  const isSameSelection = (a: SelectedKlassenIds, b: SelectedKlassenIds): boolean => {
-    return sameContent(wrapSelectedKlassenIds(a), wrapSelectedKlassenIds(b));
-  };
-
-  const handleFocusChange = (focused: boolean): void => {
-    if (!props.multiple) {
-      return;
-    }
-    if (!focused) {
-      searchInputKlassen.value = undefined;
-    }
-  };
-
-  watch(
-    selectedKlassen,
-    (currentSelection: SelectedKlassenIds, oldSelection: SelectedKlassenIds) => {
-      // Case 1: Selection has changed - update parent directly
-      if (!isSameSelection(currentSelection, oldSelection)) {
-        handleSelectionUpdate(currentSelection);
-        return;
-      }
-
-      // Case 2: Empty selection - use autoselected or initial values
-      if (isEmptySelection(currentSelection) && !isSameSelection(selectedKlassen.value, [])) {
-        selectedKlassen.value = [];
-        handleSelectionUpdate([]);
-      }
-    },
-    { immediate: true },
-  );
-
-  watch(
-    klassenFilter,
-    (newFilter: OrganisationenFilter | undefined, oldFilter: OrganisationenFilter | undefined) => {
-      if (timerId.value) {
-        clearTimeout(timerId.value);
-      }
-
-      // We skip if selection is disabled and we already know how to display the selection
-      // empty selection means we have to reload anyways
-      if (!isEmptySelection(selectedKlassen.value) && props.readonly && canDisplaySelection(selectedKlassen.value)) {
-        return;
-      }
-
-      // We apply the debounce of 500 only when there is an oldFilter (a change has been made)
-      const delay: number = oldFilter ? 500 : 0;
-
-      timerId.value = setTimeout(async () => {
-        await organisationStore.loadKlassenForFilter(newFilter, props.parentId);
-      }, delay);
-    },
-    { immediate: true },
-  );
-
-  watch(
-    () => props.administriertVon,
-    (newValue: string[] | undefined) => {
-      klassenFilter.administriertVon = newValue;
-    },
-  );
+    emits('update:selectedKlassen', newSelection);
+  });
 
   onMounted(() => {
     if (organisationStore.klassenFilters.has(props.parentId ?? '')) {
@@ -231,6 +121,7 @@
       console.warn(`KlassenFilter initialized twice with id ${props.parentId}`);
     }
     organisationStore.resetKlasseFilter(props.parentId);
+    init();
   });
 
   onUnmounted(() => {
@@ -243,24 +134,24 @@
     :id="testId"
     :ref="testId"
     v-bind="selectedKlasseProps"
-    v-model="selectedKlassen"
-    v-model:search="searchInputKlassen"
+    v-model="autocompleteSelection"
+    v-model:search="searchInput"
     autocomplete="off"
     :class="['filter-dropdown', { selected: shouldHighlightSelection }]"
     clearable
     :data-testid="testId"
     density="compact"
     :disabled="props.readonly"
-    :items="translatedKlassen"
-    item-value="value"
-    item-text="title"
+    :items="items"
+    item-value="id"
+    item-title="name"
+    return-object
     :multiple="props.multiple"
     :no-data-text="'noDataFound'"
     :placeholder="placeholderText"
     required="true"
     variant="outlined"
     :hide-details
-    @update:search="updateSearchString"
     @click:clear="organisationStore.resetKlasseFilter(parentId)"
     @update:focused="handleFocusChange"
   >

@@ -2,9 +2,10 @@
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
   import FormRow from '@/components/form/FormRow.vue';
   import FormWrapper from '@/components/form/FormWrapper.vue';
+  import { useOrganisationSelection } from '@/composables/useOrganisationSelection';
   import type { Organisation } from '@/stores/OrganisationStore';
   import { RollenSystemRecht } from '@/stores/RolleStore';
-  import type { Option } from '@/types';
+  import type { Option, SelectedSchulen } from '@/types';
   import { getValidationSchema, getVuetifyConfig, type ValidationSchema } from '@/utils/validationKlasse';
   import { useForm, useIsFormDirty, useIsFormValid, type BaseFieldProps, type TypedSchema } from 'vee-validate';
   import { computed, watch, type ComputedRef, type Ref } from 'vue';
@@ -12,6 +13,7 @@
 
   type Props = {
     initialValues?: Partial<ValidationSchema>;
+    initialSchule?: Organisation | null;
     errorCode?: string;
     showUnsavedChangesDialog?: boolean;
     editMode: boolean;
@@ -39,7 +41,7 @@
   const { defineField, resetForm, setFieldValue } = useForm<ValidationSchema>({
     validationSchema,
     initialValues: {
-      selectedSchule: props.initialValues?.selectedSchule,
+      selectedSchule: props.initialValues?.selectedSchule ?? props.initialSchule?.id,
       selectedKlassenname: props.initialValues?.selectedKlassenname ?? '',
     },
   });
@@ -48,6 +50,10 @@
     Ref<string | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = defineField('selectedSchule', vuetifyConfig);
+  const selectedOrganisation: ReturnType<typeof useOrganisationSelection> = useOrganisationSelection(
+    selectedSchule,
+    () => props.initialSchule,
+  );
   const [selectedKlassenname, selectedKlassennameProps]: [
     Ref<string>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
@@ -122,8 +128,9 @@
     },
   );
 
-  function updateSchuleSelection(schuleId: string): void {
-    setFieldValue('selectedSchule', schuleId);
+  function updateSchuleSelection(organisation: SelectedSchulen<false>): void {
+    selectedOrganisation.value = organisation;
+    emit('update:selectedSchule', organisation ?? null);
   }
 </script>
 
@@ -158,17 +165,13 @@
         <SchulenFilter
           ref="schulenFilter"
           parentId="klasse-form"
-          :selectedSchulen="selectedSchule"
+          :selectedSchulen="selectedOrganisation ?? undefined"
           :multiple="false"
           :readonly="props.editMode"
           :highlightSelection="props.editMode"
           :systemrechteForSearch="[RollenSystemRecht.KlassenVerwalten]"
           :selectedSchuleProps="selectedSchuleProps"
-          @update:selectedSchulen="updateSchuleSelection"
-          @update:selected-schulen-objects="
-            (organisations: Array<Organisation>) =>
-              emit('update:selectedSchule', organisations.length > 0 ? organisations[0] : null)
-          "
+          @update:selected-schulen="updateSchuleSelection"
         ></SchulenFilter>
       </FormRow>
 

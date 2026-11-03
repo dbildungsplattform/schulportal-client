@@ -107,7 +107,7 @@ beforeEach(async () => {
 
   organisationStore = useOrganisationStore();
 
-  organisationStore.schultraeger = [
+  organisationStore.rootChildren = [
     {
       id: '2',
       name: 'Öffentliches Land',

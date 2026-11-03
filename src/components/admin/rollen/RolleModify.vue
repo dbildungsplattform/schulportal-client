@@ -4,6 +4,7 @@
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import { type BulkErrorList, useBulkErrors } from '@/composables/useBulkErrors';
   import { type BulkOperationStore, useBulkOperationStore } from '@/stores/BulkOperationStore';
+  import { Organisation } from '@/stores/OrganisationStore';
   import {
     KlassenOption,
     OperationContext,
@@ -11,22 +12,20 @@
     RolleDialogMode,
     usePersonenkontextStore,
   } from '@/stores/PersonenkontextStore';
-  import { TranslatedRolleWithAttrs } from '@/stores/RolleStore';
+  import { RollenArt, RollenMerkmal, TranslatedRolleWithAttrs } from '@/stores/RolleStore';
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
-  import type { TranslatedObject } from '@/types';
   import { type BefristungUtilsType, isBefristungspflichtRolle, useBefristungUtils } from '@/utils/befristung';
   import { formatDateToISO, getNextSchuljahresende } from '@/utils/date';
-  import { befristungSchema, isKopersRolle, isLernRolle } from '@/utils/validationPersonenkontext';
+  import { befristungSchema } from '@/utils/validationPersonenkontext';
   import { toTypedSchema } from '@vee-validate/yup';
   import { type BaseFieldProps, type FormContext, type TypedSchema, useForm } from 'vee-validate';
   import { computed, type ComputedRef, ref, type Ref, watchEffect } from 'vue';
   import { type Composer, useI18n } from 'vue-i18n';
   import { useDisplay } from 'vuetify';
-  import { object, string, StringSchema } from 'yup';
+  import { mixed, object, string, StringSchema } from 'yup';
 
   type Props = {
     errorCode: string;
-    organisationen: TranslatedObject[] | undefined;
     rollen: TranslatedRolleWithAttrs[];
     isLoading: boolean;
     isDialogVisible: boolean;
@@ -62,8 +61,8 @@
 
   // Define the form validation schema for the Personenkontext
   export type ZuordnungCreationForm = {
-    selectedRolle: string;
-    selectedOrganisation: string;
+    selectedRolle: TranslatedRolleWithAttrs;
+    selectedOrganisation: Organisation;
     selectedKlassenOption: string;
     selectedKlasseForRadio: string;
     selectedBefristung: Date;
@@ -73,8 +72,8 @@
   const validationSchema = (): TypedSchema<ZuordnungCreationForm> => {
     return toTypedSchema(
       object({
-        selectedRolle: string().required(t('admin.rolle.rules.rolle.required')),
-        selectedOrganisation: string().required(t('admin.organisation.rules.organisation.required')),
+        selectedRolle: mixed<TranslatedRolleWithAttrs>().required(t('admin.rolle.rules.rolle.required')),
+        selectedOrganisation: mixed<Organisation>().required(t('admin.organisation.rules.organisation.required')),
         selectedKlassenOption: string(),
         selectedKlasseForRadio: string().when('selectedKlassenOption', {
           is: (selectedKlassenOption: string) => selectedKlassenOption === KlassenOption.SELECT_NEW_KLASSE.toString(),
@@ -100,12 +99,12 @@
   });
 
   const [selectedOrganisation, selectedOrganisationProps]: [
-    Ref<string | undefined>,
+    Ref<Organisation | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedOrganisation', getVuetifyConfig);
 
   const [selectedRolle, selectedRolleProps]: [
-    Ref<string | undefined>,
+    Ref<TranslatedRolleWithAttrs | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedRolle', getVuetifyConfig);
 
@@ -119,7 +118,7 @@
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedKlasseForRadio', getVuetifyConfig);
 
-  const selectedRollen: ComputedRef<Array<string>> = computed(() => {
+  const selectedRollen: ComputedRef<TranslatedRolleWithAttrs[]> = computed(() => {
     return selectedRolle.value ? [selectedRolle.value] : [];
   });
 
@@ -134,14 +133,14 @@
   ] = formContext.defineField('selectedBefristungOption', getVuetifyConfig);
 
   const showKopersHint: ComputedRef<boolean> = computed(() => {
-    return isKopersRolle(selectedRollen.value, props.rollen);
+    return selectedRolle.value?.merkmale?.includes(RollenMerkmal.KopersPflicht) ?? false;
   });
 
   const showKlasseHint: ComputedRef<boolean> = computed(() => {
     if (!selectedRolle.value) {
       return false;
     }
-    return isLernRolle(selectedRolle.value, props.rollen);
+    return selectedRolle.value.rollenart === RollenArt.Lern;
   });
 
   watchEffect(async () => {
@@ -182,6 +181,10 @@
     }
   }
 
+  function handleKlasseForRadio(selectedKlasse: Organisation | undefined): void {
+    selectedKlasseForRadio.value = selectedKlasse?.id;
+  }
+
   // Creates a new Personenkontext for an array of Person IDs. For each processed ID the progress bar will increment according to the total number of items to process
   async function handleModifyRolle(personIDs: string[]): Promise<void> {
     const befristungDate: string | undefined = selectedBefristung.value
@@ -193,8 +196,8 @@
 
     await bulkOperationStore.bulkModifyPersonenRolle(
       personIDs,
-      selectedOrganisation.value!,
-      selectedRolle.value!,
+      selectedOrganisation.value!.id,
+      selectedRolle.value!.value,
       personenkontextStore.workflowStepResponse?.organisations || [],
       formattedBefristung,
       selectedKlasseForRadio.value,
@@ -241,10 +244,8 @@
               v-model:selected-organisation="selectedOrganisation"
               v-model:selected-rolle="selectedRolle"
               v-model:selected-klassen-option="selectedKlassenOption"
-              v-model:selected-klasse-for-radio="selectedKlasseForRadio"
               :operation-context="OperationContext.PERSON_BEARBEITEN"
               :show-headline="false"
-              :organisationen="organisationen"
               :rollen="rollen"
               :selected-organisation-props="selectedOrganisationProps"
               :selected-rolle-props="selectedRolleProps"
@@ -263,6 +264,7 @@
               @update:can-commit="canCommit = $event"
               @update:befristung="handleBefristungUpdate($event)"
               @update:calculated-befristung-option="handleBefristungOptionUpdate($event)"
+              @update:selectedKlasseForRadio="handleKlasseForRadio($event)"
               @fieldReset="handleFieldReset($event)"
             />
 
