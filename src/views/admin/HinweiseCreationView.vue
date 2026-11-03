@@ -158,6 +158,7 @@
               {{ $t('admin.hinweise.newsbox') }}
             </h3>
             <TextEditor
+              data-testid="newsbox-text"
               :label="$t('admin.hinweise.newsbox')"
               :limit="maxLength"
               v-model="meldungText"
