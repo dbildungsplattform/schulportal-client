@@ -203,11 +203,10 @@
   );
 
   const selectedOrganisationKennung: ComputedRef<string> = computed(() => {
-    if (selectedOrganisationIds.value.length !== 1) {
+    if (hasAutoselectedSchule.value || selectedOrganisationen.value.length !== 1) {
       return '';
     }
-    const organisation: Organisation | undefined = selectedOrganisationen.value[0];
-    return organisation?.kennung ?? '';
+    return selectedOrganisationen.value[0]?.kennung ?? '';
   });
 
   // Only Rollen from type LEHR and LERN
