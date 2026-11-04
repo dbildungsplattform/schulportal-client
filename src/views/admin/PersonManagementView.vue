@@ -865,6 +865,7 @@
           <p
             v-if="authStore.hasPersonenBulkPermission && selectedPersonIds.length > 0"
             class="text-body my-0 d-flex d-md-none"
+            data-testid="selected-count"
           >
             {{ selectedPersonIds.length }} {{ $t('selected') }}
           </p>
@@ -956,7 +957,12 @@
           cols="auto"
           class="mb-5 d-none d-md-flex align-center"
         >
-          <p class="text-body mb-0">{{ selectedPersonIds.length }} {{ $t('selected') }}</p>
+          <p
+            class="text-body mb-0"
+            data-testid="selected-count"
+          >
+            {{ selectedPersonIds.length }} {{ $t('selected') }}
+          </p>
         </v-col>
         <v-spacer />
         <SearchField
