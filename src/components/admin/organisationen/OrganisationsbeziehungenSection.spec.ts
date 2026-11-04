@@ -1,0 +1,133 @@
+import {
+  useOrganisationsbeziehungStore,
+  type OrganisationsbeziehungStore,
+} from '@/stores/OrganisationsbeziehungStore';
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
+import { DoFactory } from 'test/DoFactory';
+import OrganisationsbeziehungenSection from './OrganisationsbeziehungenSection.vue';
+
+let wrapper: VueWrapper | null = null;
+let store: OrganisationsbeziehungStore;
+
+beforeEach(() => {
+  store = useOrganisationsbeziehungStore();
+  store.beziehungen = [];
+  store.total = 0;
+  store.errorCode = '';
+  store.loading = false;
+  vi.mocked(store.loadBeziehungen).mockClear();
+
+  wrapper = mount(OrganisationsbeziehungenSection, {
+    attachTo: document.body,
+    props: { organisationId: 'org-1' },
+  });
+});
+
+afterEach(() => {
+  wrapper?.unmount();
+});
+
+async function openSection(): Promise<void> {
+  await wrapper!.get('[data-testid="organisationsbeziehungen-toggle-button"]').trigger('click');
+  await flushPromises();
+}
+
+describe('OrganisationsbeziehungenSection', () => {
+  test('it renders the headline and does not load data while collapsed', () => {
+    expect(wrapper!.get('[data-testid="organisationsbeziehungen-headline"]').text()).toBe('Organisationsbeziehungen');
+    expect(store.loadBeziehungen).not.toHaveBeenCalled();
+  });
+
+  test('it toggles aria-expanded and loads data when opened', async () => {
+    const toggle: ReturnType<VueWrapper['get']> = wrapper!.get('[data-testid="organisationsbeziehungen-toggle-button"]');
+    expect(toggle.attributes('aria-expanded')).toBe('false');
+
+    await openSection();
+
+    expect(toggle.attributes('aria-expanded')).toBe('true');
+    expect(store.loadBeziehungen).toHaveBeenCalledExactlyOnceWith('org-1', {
+      offset: 0,
+      limit: 30,
+      searchString: '',
+      sortField: 'typ',
+      sortOrder: 'asc',
+    });
+  });
+
+  test('it renders the related organisation when the current organisation is the quelle', async () => {
+    store.beziehungen = [
+      DoFactory.getOrganisationsbeziehung({
+        quelle: { id: 'org-1', name: 'Aktuelle Schule', dienststellennummer: '1111111' },
+        ziel: { id: 'z-1', name: 'Zielträger', dienststellennummer: null },
+      }),
+    ];
+    store.total = 1;
+    await openSection();
+
+    const text: string = wrapper!.get('[data-testid="organisationsbeziehungen-table"]').text();
+    expect(text).toContain('Schulträger');
+    expect(text).toContain('Zielträger');
+    expect(text).toContain('---');
+    expect(text).not.toContain('Aktuelle Schule');
+    expect(text).not.toContain('1111111');
+  });
+
+  test('it renders the related organisation when the current organisation is the ziel', async () => {
+    store.beziehungen = [
+      DoFactory.getOrganisationsbeziehung({
+        quelle: { id: 'q-1', name: 'Quellschule', dienststellennummer: '1234567' },
+        ziel: { id: 'org-1', name: 'Aktuelle Schule', dienststellennummer: '1111111' },
+      }),
+    ];
+    store.total = 1;
+    await openSection();
+
+    const text: string = wrapper!.get('[data-testid="organisationsbeziehungen-table"]').text();
+    expect(text).toContain('Quellschule');
+    expect(text).toContain('1234567');
+    expect(text).not.toContain('Aktuelle Schule');
+    expect(text).not.toContain('1111111');
+  });
+
+  test('it skips rows where neither quelle nor ziel is the current organisation', async () => {
+    store.beziehungen = [
+      DoFactory.getOrganisationsbeziehung({
+        quelle: { id: 'x-1', name: 'Fremde Quelle', dienststellennummer: '2222222' },
+        ziel: { id: 'x-2', name: 'Fremdes Ziel', dienststellennummer: '3333333' },
+      }),
+      DoFactory.getOrganisationsbeziehung({
+        quelle: { id: 'org-1', name: 'Aktuelle Schule', dienststellennummer: '1111111' },
+        ziel: { id: 'z-1', name: 'Gültiges Ziel', dienststellennummer: '4444444' },
+      }),
+    ];
+    store.total = 2;
+    await openSection();
+
+    const text: string = wrapper!.get('[data-testid="organisationsbeziehungen-table"]').text();
+    expect(text).toContain('Gültiges Ziel');
+    expect(text).not.toContain('Fremde Quelle');
+    expect(text).not.toContain('Fremdes Ziel');
+  });
+
+  test('it reloads from the first page when a search is applied', async () => {
+    await openSection();
+    vi.mocked(store.loadBeziehungen).mockClear();
+
+    await wrapper!.get('[data-testid="search-filter-input"] input').setValue('Schule');
+    await wrapper!.get('[data-testid="apply-search-filter-button"]').trigger('click');
+    await flushPromises();
+
+    expect(store.loadBeziehungen).toHaveBeenCalledExactlyOnceWith(
+      'org-1',
+      expect.objectContaining({ offset: 0, searchString: 'Schule' }),
+    );
+  });
+
+  test('it shows an error alert instead of the table when loading failed', async () => {
+    store.errorCode = 'UNSPECIFIED_ERROR';
+    await openSection();
+
+    expect(wrapper!.find('[data-testid="organisationsbeziehungen-error-alert"]').exists()).toBe(true);
+    expect(wrapper!.find('[data-testid="organisationsbeziehungen-table"]').exists()).toBe(false);
+  });
+});

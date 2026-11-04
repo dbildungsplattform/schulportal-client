@@ -368,6 +368,20 @@
     "mandatoryFieldsNotice": "Mit * markierte Felder sind Pflichtangaben.",
     "organisation": {
       "assignOrganisation": "Organisationsebene zuordnen",
+      "beziehungen": {
+        "dienststellennummer": "Dienststellennummer",
+        "headline": "Organisationsbeziehungen",
+        "loadingErrorText": "Die Organisationsbeziehungen konnten nicht geladen werden.",
+        "name": "Name",
+        "noDataFound": "Keine Organisationsbeziehungen gefunden.",
+        "searchHoverText": "Name oder Dienststellennummer",
+        "toggle": "Organisationsbeziehungen ein- oder ausklappen",
+        "typ": "Beziehungstyp",
+        "typen": {
+          "SCHULAUFSICHT": "Schulaufsicht",
+          "SCHULTRAEGER": "Schulträger"
+        }
+      },
       "errors": {
         "ORGANISATION_SPECIFICATION_ERROR": "Die Organisation konnte nicht angelegt werden.",
         "ROOT_ORGANISATION_IMMUTABLE": "Diese Organisation darf nicht verändert werden.",

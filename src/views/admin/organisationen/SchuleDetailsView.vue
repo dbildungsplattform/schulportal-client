@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import LabeledField from '@/components/admin/LabeledField.vue';
+  import OrganisationsbeziehungenSection from '@/components/admin/organisationen/OrganisationsbeziehungenSection.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import { OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
   import { onMounted, Ref } from 'vue';
@@ -108,6 +109,7 @@
                 </v-btn>
               </v-col>
             </v-row>
+            <OrganisationsbeziehungenSection :organisation-id="currentSchuleId" />
           </div>
           <div v-else-if="organisationStore.loading">
             <v-progress-circular indeterminate></v-progress-circular>

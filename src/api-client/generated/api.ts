@@ -9398,12 +9398,13 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
          * @param {string} organisationId The id of an organization
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
+         * @param {string} [searchString] Search string used to filter the organisation relationships.
          * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
          * @param {SortFieldOrganisationsbeziehung} [sortField] Field to sort by.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        organisationControllerGetOrganisationsbeziehungen: async (organisationId: string, offset?: number, limit?: number, sortOrder?: 'asc' | 'desc', sortField?: SortFieldOrganisationsbeziehung, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        organisationControllerGetOrganisationsbeziehungen: async (organisationId: string, offset?: number, limit?: number, searchString?: string, sortOrder?: 'asc' | 'desc', sortField?: SortFieldOrganisationsbeziehung, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'organisationId' is not null or undefined
             assertParamExists('organisationControllerGetOrganisationsbeziehungen', 'organisationId', organisationId)
             const localVarPath = `/api/organisationen/{organisationId}/beziehungen`
@@ -9433,6 +9434,10 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
 
             if (limit !== undefined) {
                 localVarQueryParameter['limit'] = limit;
+            }
+
+            if (searchString !== undefined) {
+                localVarQueryParameter['searchString'] = searchString;
             }
 
             if (sortOrder !== undefined) {
@@ -9832,13 +9837,14 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
          * @param {string} organisationId The id of an organization
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
+         * @param {string} [searchString] Search string used to filter the organisation relationships.
          * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
          * @param {SortFieldOrganisationsbeziehung} [sortField] Field to sort by.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async organisationControllerGetOrganisationsbeziehungen(organisationId: string, offset?: number, limit?: number, sortOrder?: 'asc' | 'desc', sortField?: SortFieldOrganisationsbeziehung, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<OrganisationsbeziehungWithOrganisationenResponse>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerGetOrganisationsbeziehungen(organisationId, offset, limit, sortOrder, sortField, options);
+        async organisationControllerGetOrganisationsbeziehungen(organisationId: string, offset?: number, limit?: number, searchString?: string, sortOrder?: 'asc' | 'desc', sortField?: SortFieldOrganisationsbeziehung, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<OrganisationsbeziehungWithOrganisationenResponse>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerGetOrganisationsbeziehungen(organisationId, offset, limit, searchString, sortOrder, sortField, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -10018,13 +10024,14 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
          * @param {string} organisationId The id of an organization
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
+         * @param {string} [searchString] Search string used to filter the organisation relationships.
          * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
          * @param {SortFieldOrganisationsbeziehung} [sortField] Field to sort by.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        organisationControllerGetOrganisationsbeziehungen(organisationId: string, offset?: number, limit?: number, sortOrder?: 'asc' | 'desc', sortField?: SortFieldOrganisationsbeziehung, options?: any): AxiosPromise<Array<OrganisationsbeziehungWithOrganisationenResponse>> {
-            return localVarFp.organisationControllerGetOrganisationsbeziehungen(organisationId, offset, limit, sortOrder, sortField, options).then((request) => request(axios, basePath));
+        organisationControllerGetOrganisationsbeziehungen(organisationId: string, offset?: number, limit?: number, searchString?: string, sortOrder?: 'asc' | 'desc', sortField?: SortFieldOrganisationsbeziehung, options?: any): AxiosPromise<Array<OrganisationsbeziehungWithOrganisationenResponse>> {
+            return localVarFp.organisationControllerGetOrganisationsbeziehungen(organisationId, offset, limit, searchString, sortOrder, sortField, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -10196,13 +10203,14 @@ export interface OrganisationenApiInterface {
      * @param {string} organisationId The id of an organization
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
+     * @param {string} [searchString] Search string used to filter the organisation relationships.
      * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
      * @param {SortFieldOrganisationsbeziehung} [sortField] Field to sort by.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof OrganisationenApiInterface
      */
-    organisationControllerGetOrganisationsbeziehungen(organisationId: string, offset?: number, limit?: number, sortOrder?: 'asc' | 'desc', sortField?: SortFieldOrganisationsbeziehung, options?: AxiosRequestConfig): AxiosPromise<Array<OrganisationsbeziehungWithOrganisationenResponse>>;
+    organisationControllerGetOrganisationsbeziehungen(organisationId: string, offset?: number, limit?: number, searchString?: string, sortOrder?: 'asc' | 'desc', sortField?: SortFieldOrganisationsbeziehung, options?: AxiosRequestConfig): AxiosPromise<Array<OrganisationsbeziehungWithOrganisationenResponse>>;
 
     /**
      * 
@@ -10392,14 +10400,15 @@ export class OrganisationenApi extends BaseAPI implements OrganisationenApiInter
      * @param {string} organisationId The id of an organization
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
+     * @param {string} [searchString] Search string used to filter the organisation relationships.
      * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
      * @param {SortFieldOrganisationsbeziehung} [sortField] Field to sort by.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof OrganisationenApi
      */
-    public organisationControllerGetOrganisationsbeziehungen(organisationId: string, offset?: number, limit?: number, sortOrder?: 'asc' | 'desc', sortField?: SortFieldOrganisationsbeziehung, options?: AxiosRequestConfig) {
-        return OrganisationenApiFp(this.configuration).organisationControllerGetOrganisationsbeziehungen(organisationId, offset, limit, sortOrder, sortField, options).then((request) => request(this.axios, this.basePath));
+    public organisationControllerGetOrganisationsbeziehungen(organisationId: string, offset?: number, limit?: number, searchString?: string, sortOrder?: 'asc' | 'desc', sortField?: SortFieldOrganisationsbeziehung, options?: AxiosRequestConfig) {
+        return OrganisationenApiFp(this.configuration).organisationControllerGetOrganisationsbeziehungen(organisationId, offset, limit, searchString, sortOrder, sortField, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
