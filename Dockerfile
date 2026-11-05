@@ -20,13 +20,14 @@ RUN npm run build
 # Deployment Stage
 FROM $BASE_IMAGE AS deployment
 
-# Pull in all available Alpine security fixes (e.g. curl/libcurl, brotli-libs, c-ares)
-RUN apk upgrade --no-cache
-
 COPY --from=build /app/dist/ /usr/share/nginx/html/
 
 RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx-vue.conf /etc/nginx/conf.d/
+
+# Pull in all available Alpine security fixes (e.g. curl/libcurl, brotli-libs, c-ares)
+USER root
+RUN apk upgrade --no-cache
 
 EXPOSE 8080
 USER 101
