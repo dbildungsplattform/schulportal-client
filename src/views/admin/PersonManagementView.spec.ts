@@ -1,4 +1,5 @@
 import { RollenArt, RollenMerkmal, RollenSystemRechtEnum } from '@/api-client/generated/api';
+import PersonBulkLock from '@/components/admin/personen/PersonBulkLock.vue';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
@@ -515,6 +516,123 @@ describe('PersonManagementView', () => {
       });
     },
   );
+
+  describe('bulk locking', (): void => {
+    async function selectSchoolAndPersons(schulen: Organisation[], sameSchool: boolean = true): Promise<void> {
+      const schule: Organisation = schulen[0]!;
+      const persons: PersonWithZuordnungen[] = [RollenArt.Lern, RollenArt.Lehr, RollenArt.Leit].map(
+        (rollenArt: RollenArt): PersonWithZuordnungen =>
+          DoFactory.getPersonWithZuordnung(DoFactory.getPerson(), [
+            DoFactory.getZuordnung({ rollenArt }, { organisation: sameSchool ? schule : DoFactory.getSchule() }),
+          ]),
+      );
+      personStore.allUebersichten = new Map(
+        persons.map((person: PersonWithZuordnungen): [string, PersonWithZuordnungen] => [person.id, person]),
+      );
+      const schulenFilter: VueWrapper = wrapper!.getComponent({ ref: 'schulenFilter' });
+      schulenFilter.vm.$emit(
+        'update:selectedSchulen',
+        schulen.map((selectedSchule: Organisation): string => selectedSchule.id),
+      );
+      await flushPromises();
+      searchFilterStore.selectedOrgaObjects = schulen;
+      schulenFilter.vm.$emit('update:selectedSchulenObjects', schulen);
+      await flushPromises();
+      const resultTable: VueWrapper = wrapper!.getComponent({ name: 'ResultTable' });
+      resultTable.vm.$emit(
+        'update:selectedRows',
+        persons.map((person: PersonWithZuordnungen): string => person.id),
+      );
+      await flushPromises();
+    }
+
+    test.each([OperationType.LOCK_PERSON, OperationType.UNLOCK_PERSON])(
+      'allows mixed roles for %s and refreshes after completion',
+      async (operation: OperationType): Promise<void> => {
+        const schule: Organisation = DoFactory.getSchule();
+        await selectSchoolAndPersons([schule]);
+        const select: VueWrapper = wrapper!.getComponent({ ref: 'benutzer-bulk-edit-select' });
+        const items: { value: OperationType; title: string }[] = select.props('items') as {
+          value: OperationType;
+          title: string;
+        }[];
+        const assignIndex: number = items.findIndex(
+          (item: { value: OperationType; title: string }): boolean => item.value === OperationType.MODIFY_ROLLE,
+        );
+        expect(
+          items
+            .slice(assignIndex + 1, assignIndex + 3)
+            .map((item: { value: OperationType; title: string }): OperationType => item.value),
+        ).toEqual([OperationType.LOCK_PERSON, OperationType.UNLOCK_PERSON]);
+        await select.setValue(operation);
+        await flushPromises();
+        const dialog: VueWrapper = wrapper!.getComponent({ name: 'PersonBulkLock' });
+        expect(dialog.props('operationType')).toBe(operation);
+        expect(dialog.props('selectedSchuleId')).toBe(schule.id);
+        const selectedPersonen: Map<string, PersonWithZuordnungen> = dialog.props('selectedPersonen');
+        expect(selectedPersonen.size).toBe(3);
+        const reload: MockInstance = vi.spyOn(personStore, 'getAllPersons');
+        reload.mockClear();
+        dialog.vm.$emit('update:dialogExit', true);
+        await flushPromises();
+        expect(reload).toHaveBeenCalledOnce();
+        expect(wrapper!.findComponent(PersonBulkLock).exists()).toBe(false);
+        expect(select.props('modelValue')).toBeNull();
+        expect(wrapper!.getComponent({ name: 'ResultTable' }).props('modelValue')).toEqual([]);
+      },
+    );
+
+    test('keeps selection when cancelled', async (): Promise<void> => {
+      await selectSchoolAndPersons([DoFactory.getSchule()]);
+      await wrapper!.getComponent({ ref: 'benutzer-bulk-edit-select' }).setValue(OperationType.LOCK_PERSON);
+      await flushPromises();
+      const reload: MockInstance = vi.spyOn(personStore, 'getAllPersons');
+      reload.mockClear();
+      const dialog: VueWrapper = wrapper!.getComponent({ name: 'PersonBulkLock' });
+      dialog.vm.$emit('update:dialogExit', false);
+      await flushPromises();
+      expect(reload).not.toHaveBeenCalled();
+      expect(wrapper!.getComponent({ name: 'ResultTable' }).props('modelValue')).toHaveLength(3);
+    });
+
+    test.each([OperationType.LOCK_PERSON, OperationType.UNLOCK_PERSON])(
+      'rejects multiple schools for %s',
+      async (operation: OperationType): Promise<void> => {
+        await selectSchoolAndPersons([DoFactory.getSchule(), DoFactory.getSchule()]);
+        await wrapper!.getComponent({ ref: 'benutzer-bulk-edit-select' }).setValue(operation);
+        await flushPromises();
+        expect(wrapper!.findComponent(PersonBulkLock).exists()).toBe(false);
+        expect(document.body.textContent).toContain('Bitte wählen Sie im Filter genau eine Schule aus');
+      },
+    );
+
+    test('relies on the school filter without inspecting user Zuordnungen', async (): Promise<void> => {
+      await selectSchoolAndPersons([DoFactory.getSchule()], false);
+      await wrapper!.getComponent({ ref: 'benutzer-bulk-edit-select' }).setValue(OperationType.LOCK_PERSON);
+      await flushPromises();
+      expect(wrapper!.findComponent(PersonBulkLock).exists()).toBe(true);
+    });
+
+    test('does not offer locking without person administration permission', async (): Promise<void> => {
+      authStore.hasPersonenverwaltungPermission = false;
+      await flushPromises();
+      const items: { value: OperationType }[] = wrapper!
+        .getComponent({ ref: 'benutzer-bulk-edit-select' })
+        .props('items') as { value: OperationType }[];
+      expect(
+        items.some(
+          (item: { value: OperationType }): boolean =>
+            item.value === OperationType.LOCK_PERSON || item.value === OperationType.UNLOCK_PERSON,
+        ),
+      ).toBe(false);
+    });
+
+    test('does not offer bulk editing without bulk permission', async (): Promise<void> => {
+      authStore.hasPersonenBulkPermission = false;
+      await flushPromises();
+      expect(wrapper!.findComponent({ ref: 'benutzer-bulk-edit-select' }).exists()).toBe(false);
+    });
+  });
 
   type BulkOperationTestParams = {
     operationType: OperationType;

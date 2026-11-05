@@ -7,6 +7,8 @@ export enum OperationType {
   ROLLE_UNASSIGN = 'ROLLE_UNASSIGN',
   ORG_UNASSIGN = 'ORG_UNASSIGN',
   CHANGE_KLASSE = 'CHANGE_KLASSE',
+  LOCK_PERSON = 'LOCK_PERSON',
+  UNLOCK_PERSON = 'UNLOCK_PERSON',
 }
 
 export type CurrentOperation = {

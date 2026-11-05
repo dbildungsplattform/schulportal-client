@@ -4,6 +4,7 @@
   import SpshTooltip from '@/components/admin/SpshTooltip.vue';
   import PersonBulkChangeKlasse from '@/components/admin/personen/PersonBulkChangeKlasse.vue';
   import PersonBulkDelete from '@/components/admin/personen/PersonBulkDelete.vue';
+  import PersonBulkLock from '@/components/admin/personen/PersonBulkLock.vue';
   import PersonBulkPasswordReset from '@/components/admin/personen/PersonBulkPasswordReset.vue';
   import RolleModify from '@/components/admin/rollen/RolleModify.vue';
   import RolleUnassign from '@/components/admin/rollen/RolleUnassign.vue';
@@ -128,6 +129,10 @@
   const rolleModifiyDialogVisible: Ref<boolean> = ref(false);
   const benutzerDeleteDialogVisible: Ref<boolean> = ref(false);
   const passwordResetDialogVisible: Ref<boolean> = ref(false);
+  const lockDialogVisible: Ref<boolean> = ref(false);
+  const lockOperationType: Ref<OperationType.LOCK_PERSON | OperationType.UNLOCK_PERSON> = ref(
+    OperationType.LOCK_PERSON,
+  );
   const organisationUnassignDialogVisible: Ref<boolean> = ref(false);
   const changeKlasseDialogVisible: Ref<boolean> = ref(false);
   const rolleUnassignDialogVisible: Ref<boolean> = ref(false);
@@ -163,6 +168,11 @@
       actionTypeTitles.set(OperationType.ORG_UNASSIGN, t('admin.person.bulkUnassignOrganisation.cancelZuordnung'));
       actionTypeTitles.set(OperationType.ROLLE_UNASSIGN, t('admin.rolle.bulkRollenzuordnung.unassignRolleZuordnung'));
       actionTypeTitles.set(OperationType.MODIFY_ROLLE, t('admin.rolle.assignRolle'));
+    }
+
+    if (authStore.hasPersonenverwaltungPermission && authStore.hasPersonenBulkPermission) {
+      actionTypeTitles.set(OperationType.LOCK_PERSON, t('person.lockUser'));
+      actionTypeTitles.set(OperationType.UNLOCK_PERSON, t('person.unlockUser'));
     }
 
     if (authStore.hasPersonenLoeschenPermission) {
@@ -499,6 +509,17 @@
           passwordResetDialogVisible.value = true;
         }
         break;
+      case OperationType.LOCK_PERSON:
+      case OperationType.UNLOCK_PERSON:
+        if (selectedPersonen.value.size === 0) {
+          return;
+        }
+        if (!validateSingleSchuleSelection()) {
+          return;
+        }
+        lockOperationType.value = newValue as OperationType.LOCK_PERSON | OperationType.UNLOCK_PERSON;
+        lockDialogVisible.value = true;
+        break;
       case OperationType.ORG_UNASSIGN:
         if (validateSingleSchuleSelection()) {
           organisationUnassignDialogVisible.value = true;
@@ -539,6 +560,16 @@
   const handleBulkPasswordResetDialog = (_finished: boolean): void => {
     passwordResetDialogVisible.value = false;
     selectedOption.value = null;
+  };
+
+  const handleBulkLockDialog = async (finished: boolean): Promise<void> => {
+    lockDialogVisible.value = false;
+    selectedOption.value = null;
+    if (finished) {
+      selectedPersonIds.value = [];
+      await getPaginatedPersonen(searchFilterStore.personenPage);
+      resultTable.value?.resetSelection();
+    }
   };
 
   const handleUnassignOrgDialog = async (finished: boolean): Promise<void> => {
@@ -913,6 +944,14 @@
             :is-dialog-visible="benutzerDeleteDialogVisible"
             :selected-personen="selectedPersonen"
             @update:dialog-exit="handleBulkDeleteDialog($event)"
+          />
+          <PersonBulkLock
+            v-if="lockDialogVisible"
+            :is-dialog-visible="lockDialogVisible"
+            :selected-personen="selectedPersonen"
+            :selected-schule-id="selectedOrganisationIds[0]!"
+            :operation-type="lockOperationType"
+            @update:dialog-exit="handleBulkLockDialog"
           />
           <PersonBulkPasswordReset
             v-if="passwordResetDialogVisible"
