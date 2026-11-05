@@ -15,7 +15,7 @@ COPY test/ test/
 COPY public/ public/
 
 RUN npm ci
-RUN npm run build
+RUN npm run build --ignore-scripts
 
 # Deployment Stage
 FROM $BASE_IMAGE AS deployment
