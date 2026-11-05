@@ -1,5 +1,5 @@
 ARG BASE_IMAGE_BUILDER=node:22.22.0-alpine3.23
-ARG BASE_IMAGE=nginx:1.29.5-alpine3.23
+ARG BASE_IMAGE=nginx/nginx-unprivileged:1.30.6-alpine3.24
 
 # Build Stage
 FROM $BASE_IMAGE_BUILDER AS build
@@ -27,14 +27,6 @@ COPY --from=build /app/dist/ /usr/share/nginx/html/
 RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx-vue.conf /etc/nginx/conf.d/
 
-RUN chown -R nginx:nginx /var/cache/nginx /var/run /var/log/nginx /usr/share/nginx/html && \
-    chmod -R 755 /usr/share/nginx/html && \
-    chmod -R 644 /etc/nginx/conf.d/*
-
-RUN touch /run/nginx.pid \
-    && chown -R nginx:nginx /run/nginx.pid /var/cache/nginx /var/run /var/log/nginx /usr/share/nginx/html
-
-USER nginx
 EXPOSE 8080
-
+USER 101
 CMD ["nginx", "-g", "daemon off;"]
