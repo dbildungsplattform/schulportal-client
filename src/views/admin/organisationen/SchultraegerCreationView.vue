@@ -200,7 +200,7 @@
       <!-- Result template on success after submit (Present value in createdSchultraeger and no errorCode)  -->
       <template v-if="organisationStore.createdSchultraeger && !organisationStore.errorCode">
         <v-container class="new-schultraeger-success">
-          <v-row justify="center">
+          <v-row class="justify-center">
             <v-col
               class="subtitle-1"
               cols="auto"
@@ -210,7 +210,7 @@
               }}</span>
             </v-col>
           </v-row>
-          <v-row justify="center">
+          <v-row class="justify-center">
             <v-col cols="auto">
               <v-icon
                 small
@@ -219,7 +219,7 @@
               />
             </v-col>
           </v-row>
-          <v-row justify="center">
+          <v-row class="justify-center">
             <v-col
               class="subtitle-2"
               cols="auto"
@@ -244,7 +244,7 @@
             color="#E5EAEF"
             thickness="6"
           />
-          <v-row justify="end">
+          <v-row class="justify-end">
             <v-col
               cols="12"
               sm="6"

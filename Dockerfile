@@ -1,10 +1,7 @@
-ARG BASE_IMAGE_BUILDER=node:22.22.0-alpine3.23
-ARG BASE_IMAGE=nginx/nginx-unprivileged:1.30.6-alpine3.24
-
+ARG BASE_IMAGE_BUILDER=node:24.22.1-alpine3.24
+ARG BASE_IMAGE=nginx/nginx-unprivileged:1.31.8-alpine3.24
 # Build Stage
 FROM $BASE_IMAGE_BUILDER AS build
-
-RUN apk add openjdk17-jre>=17.0.10_p7-r0
 
 WORKDIR /app
 COPY tsconfig*.json ./
@@ -21,6 +18,9 @@ RUN npm run build
 
 # Deployment Stage
 FROM $BASE_IMAGE AS deployment
+
+# Pull in all available Alpine security fixes (e.g. curl/libcurl, brotli-libs, c-ares)
+RUN apk upgrade --no-cache
 
 COPY --from=build /app/dist/ /usr/share/nginx/html/
 

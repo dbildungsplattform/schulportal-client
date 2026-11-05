@@ -1,10 +1,10 @@
 import type { MeldungResponse } from '@/api-client/generated';
-import ApiService from '@/services/ApiService';
+import axiosApiInstance from '@/services/ApiService';
 import MockAdapter from 'axios-mock-adapter';
 import { setActivePinia, createPinia } from 'pinia';
 import { useMeldungStore, type Meldung, type MeldungStore } from './MeldungStore';
 
-const mockadapter: MockAdapter = new MockAdapter(ApiService);
+const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
 
 describe('MeldungStore', () => {
   let meldungStore: MeldungStore;

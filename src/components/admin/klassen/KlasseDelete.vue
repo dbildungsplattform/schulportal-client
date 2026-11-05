@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import LayoutCard from '@/components/cards/LayoutCard.vue';
-  import { computed, ref, type ComputedRef, type Ref } from 'vue';
+  import { computed, ref, type ComputedRef, type ModelRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
   import { useDisplay } from 'vuetify';
 
@@ -14,10 +14,11 @@
     klassenId: string;
     schulname: string;
     isLoading: boolean;
-    useIconActivator: boolean;
+    modelValue: boolean;
   };
 
   type Emits = {
+    (event: 'update:modelValue', value: boolean): void;
     (event: 'onDeleteKlasse', klasseId: string): void;
     (event: 'onClose'): void;
   };
@@ -35,17 +36,17 @@
   const hasTriggeredAction: Ref<boolean> = ref(false);
   const isClosing: Ref<boolean> = ref(false);
 
+  const model: ModelRef<boolean | undefined> = defineModel<boolean>();
+
   const state: ComputedRef<State> = computed(() => {
-    // NOTE: order of checks and the two different paths into SUCCESS are important here
-    // this freezes the content of the dialog in the success state, while the close-animation is running
-    // otherwise it will briefly show the initial template, because the isLoading-prop is true
     if (isClosing.value) {
       return State.SUCCESS;
     }
     if (props.isLoading) {
       return State.LOADING;
     }
-    return hasTriggeredAction.value ? State.SUCCESS : State.CONFIRM;
+    // Only show success if action was triggered AND there's no error
+    return hasTriggeredAction.value && !props.errorCode ? State.SUCCESS : State.CONFIRM;
   });
 
   function closeKlasseDeleteDialog(isActive: Ref<boolean>): void {
@@ -57,9 +58,9 @@
     emit('onDeleteKlasse', klasseId);
   }
 
-  function closeSuccessDialog(isActive: Ref<boolean>): void {
+  function closeSuccessDialog(): void {
     isClosing.value = true;
-    closeKlasseDeleteDialog(isActive);
+    model.value = false;
     emit('onClose');
   }
 
@@ -86,28 +87,9 @@
 <template>
   <v-dialog
     persistent
+    v-model="model"
     @after-leave="resetState"
   >
-    <template #activator="{ props }">
-      <v-btn
-        v-if="!useIconActivator"
-        class="secondary button"
-        data-testid="open-klasse-delete-dialog-button"
-        v-bind="props"
-        :block="mdAndDown"
-      >
-        {{ $t('admin.klasse.deleteKlasse') }}
-      </v-btn>
-      <v-icon
-        v-else
-        :title="$t('admin.klasse.deleteKlasse')"
-        data-testid="open-klasse-delete-dialog-icon"
-        icon="mdi-delete"
-        size="small"
-        v-bind="props"
-      />
-    </template>
-
     <template #default="{ isActive }">
       <LayoutCard
         :headline-test-id="state === State.SUCCESS ? 'klasse-delete-success' : 'klasse-delete-confirmation'"
@@ -123,7 +105,7 @@
                 cols="10"
               >
                 <span
-                  v-if="state === State.SUCCESS && !props.errorCode"
+                  v-if="state === State.SUCCESS"
                   data-testid="klasse-delete-success-text"
                 >
                   {{ deleteKlasseSuccessMessage }}
@@ -165,7 +147,7 @@
                 :block="mdAndDown"
                 class="primary"
                 data-testid="close-klasse-delete-success-dialog-button"
-                @click.stop="closeSuccessDialog(isActive)"
+                @click.stop="closeSuccessDialog()"
               >
                 {{ $t('close') }}
               </v-btn>

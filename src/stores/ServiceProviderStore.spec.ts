@@ -1,31 +1,56 @@
-import ApiService from '@/services/ApiService';
+import axiosApiInstance from '@/services/ApiService';
 import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
 
+import {
+  ManageableServiceProviderSimpleListEntryResponse,
+  RollenArt,
+  ServiceProviderTarget,
+  type ProviderControllerFindRollenerweiterungenByServiceProviderId200Response,
+  type ProviderControllerGetManageableServiceProviders200Response,
+  type RollenerweiterungWithExtendedDataResponse,
+  type ServiceProviderResponse,
+} from '@/api-client/generated';
+import { faker } from '@faker-js/faker';
 import { DoFactory } from 'test/DoFactory';
 import {
+  ManageableServiceProviderFilter,
+  ServiceProviderKategorie,
+  ServiceProviderMerkmal,
   useServiceProviderStore,
-  type StartPageServiceProvider,
-  type ServiceProviderStore,
   type ManageableServiceProviderDetail,
-  type RollenErweiterungenUebersicht,
   type PersistRollenerweiterung,
+  type RollenErweiterungenUebersicht,
+  type ServiceProviderCreationFilter,
+  type ServiceProviderStore,
+  type StartPageServiceProvider,
 } from './ServiceProviderStore';
-import { faker } from '@faker-js/faker';
-import type {
-  ProviderControllerFindRollenerweiterungenByServiceProviderId200Response,
-  ProviderControllerGetManageableServiceProviders200Response,
-  RollenerweiterungWithExtendedDataResponse,
-} from '@/api-client/generated';
 
-const mockadapter: MockAdapter = new MockAdapter(ApiService);
+interface MultiErrorIdWithI18nKey {
+  id: string;
+  i18nKey: string;
+}
+
+interface MultiError {
+  code: number;
+  idsWithI18nKeys: MultiErrorIdWithI18nKey[];
+}
+
+interface MalformedMultiError {
+  code?: unknown;
+  idsWithI18nKeys?: unknown;
+}
+
+const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
 
 describe('serviceProviderStore', () => {
   let serviceProviderStore: ServiceProviderStore;
   beforeEach(() => {
     setActivePinia(createPinia());
     serviceProviderStore = useServiceProviderStore();
+    serviceProviderStore.$reset();
     mockadapter.reset();
+    vi.restoreAllMocks();
   });
 
   it('should initalize state correctly', () => {
@@ -34,31 +59,112 @@ describe('serviceProviderStore', () => {
     expect(serviceProviderStore.loading).toBe(false);
   });
 
-  describe('getAllServiceProviders', () => {
+  describe('getServiceProvidersForRollenVerwaltung', () => {
+    const url: string = '/api/provider/manageable-land-root?limit=25';
+    describe('when response is successful', () => {
+      it('should load service providers and their total', async () => {
+        const mockItems: ServiceProviderResponse[] = [
+          DoFactory.getServiceProviderResponse(),
+          DoFactory.getServiceProviderResponse(),
+        ];
+        const mockResponse: { items: ServiceProviderResponse[]; total: number; offset: number; limit: number } = {
+          items: mockItems,
+          total: 42,
+          offset: 0,
+          limit: 25,
+        };
+
+        mockadapter.onGet(url).replyOnce(200, mockResponse);
+        await serviceProviderStore.getServiceProvidersForRollenVerwaltung({ limit: 25 });
+
+        expect(serviceProviderStore.serviceProvidersForRollenVerwaltung).toEqual(
+          mockItems.map((serviceProvider: ServiceProviderResponse) => ({
+            id: serviceProvider.id,
+            name: serviceProvider.name,
+          })),
+        );
+        expect(serviceProviderStore.totalServiceProvidersForRollenVerwaltung).toEqual(42);
+      });
+    });
+
+    describe('when response is a string error', () => {
+      it('should handle string error', async () => {
+        mockadapter.onGet(url).replyOnce(500, 'some mock server error');
+
+        await serviceProviderStore.getServiceProvidersForRollenVerwaltung({ limit: 25 });
+
+        expect(serviceProviderStore.serviceProvidersForRollenVerwaltung).toEqual([]);
+        expect(serviceProviderStore.errorCode).toEqual('UNSPECIFIED_ERROR');
+        expect(serviceProviderStore.loading).toBe(false);
+      });
+    });
+
+    describe('when response is an error with code', () => {
+      it('should handle error code', async () => {
+        mockadapter.onGet(url).replyOnce(500, { code: 'some mock server error' });
+
+        await serviceProviderStore.getServiceProvidersForRollenVerwaltung({ limit: 25 });
+
+        expect(serviceProviderStore.serviceProvidersForRollenVerwaltung).toEqual([]);
+        expect(serviceProviderStore.errorCode).toEqual('some mock server error');
+        expect(serviceProviderStore.loading).toBe(false);
+      });
+    });
+
+    describe('when searchStr is provided', () => {
+      it('should pass searchStr as query parameter', async () => {
+        const mockItems: ServiceProviderResponse[] = [DoFactory.getServiceProviderResponse()];
+        const mockResponse: { items: ServiceProviderResponse[]; total: number; offset: number; limit: number } = {
+          items: mockItems,
+          total: 1,
+          offset: 0,
+          limit: 25,
+        };
+
+        mockadapter.onGet('/api/provider/manageable-land-root?limit=25&searchStr=test').replyOnce(200, mockResponse);
+        await serviceProviderStore.getServiceProvidersForRollenVerwaltung({ limit: 25, searchStr: 'test' });
+
+        expect(serviceProviderStore.serviceProvidersForRollenVerwaltung).toHaveLength(1);
+        expect(serviceProviderStore.totalServiceProvidersForRollenVerwaltung).toEqual(1);
+      });
+    });
+
+    describe('when a previous successful load is followed by a failed request', () => {
+      it('should clear stale state instead of keeping previous results', async () => {
+        const mockItems: ServiceProviderResponse[] = [
+          DoFactory.getServiceProviderResponse(),
+          DoFactory.getServiceProviderResponse(),
+        ];
+        mockadapter.onGet(url).replyOnce(200, { items: mockItems, total: 2, offset: 0, limit: 25 });
+        await serviceProviderStore.getServiceProvidersForRollenVerwaltung({ limit: 25 });
+        expect(serviceProviderStore.serviceProvidersForRollenVerwaltung).toHaveLength(2);
+        expect(serviceProviderStore.totalServiceProvidersForRollenVerwaltung).toBe(2);
+
+        mockadapter.onGet(url).replyOnce(500, { code: 'UNSPECIFIED_ERROR' });
+        await serviceProviderStore.getServiceProvidersForRollenVerwaltung({ limit: 25 });
+
+        expect(serviceProviderStore.serviceProvidersForRollenVerwaltung).toEqual([]);
+        expect(serviceProviderStore.totalServiceProvidersForRollenVerwaltung).toBe(0);
+      });
+    });
+  });
+
+  describe('getAssignableServiceProvidersForRolleByOrganisationId', () => {
+    const schulstrukturknotenOfRolle: string = faker.string.uuid();
+    const rollenArt: RollenArt = RollenArt.Lehr;
+    const url: string = `/api/provider/assignable-for-rolle?schulstrukturknotenOfRolle=${schulstrukturknotenOfRolle}&rollenArt=${rollenArt}`;
+
     it('should load service providers and update state', async () => {
       const mockResponse: StartPageServiceProvider[] = [
-        {
-          id: '1234',
-          name: 'itslearning mock',
-          url: 'example.org/itslearning',
-          target: 'URL',
-          kategorie: 'EMAIL',
-          hasLogo: true,
-          requires2fa: true,
-        },
-        {
-          id: '5678',
-          name: 'administration mock',
-          url: '/admin',
-          target: 'URL',
-          kategorie: 'VERWALTUNG',
-          hasLogo: true,
-          requires2fa: false,
-        },
+        DoFactory.getStartPageServiceProvider(),
+        DoFactory.getStartPageServiceProvider(),
       ];
-
-      mockadapter.onGet('/api/provider/all').replyOnce(200, mockResponse);
-      const getAllServiceProvidersPromise: Promise<void> = serviceProviderStore.getAllServiceProviders();
+      mockadapter.onGet(url).replyOnce(200, mockResponse);
+      const getAllServiceProvidersPromise: Promise<void> =
+        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
+          schulstrukturknotenOfRolle,
+          rollenArt,
+        );
       expect(serviceProviderStore.loading).toBe(true);
       await getAllServiceProvidersPromise;
       expect(serviceProviderStore.allServiceProviders).toEqual([...mockResponse]);
@@ -66,8 +172,12 @@ describe('serviceProviderStore', () => {
     });
 
     it('should handle string error', async () => {
-      mockadapter.onGet('/api/provider/all').replyOnce(500, 'some mock server error');
-      const getAllServiceProvidersPromise: Promise<void> = serviceProviderStore.getAllServiceProviders();
+      mockadapter.onGet(url).replyOnce(500, 'some mock server error');
+      const getAllServiceProvidersPromise: Promise<void> =
+        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
+          schulstrukturknotenOfRolle,
+          rollenArt,
+        );
       expect(serviceProviderStore.loading).toBe(true);
       await getAllServiceProvidersPromise;
       expect(serviceProviderStore.allServiceProviders).toEqual([]);
@@ -76,8 +186,12 @@ describe('serviceProviderStore', () => {
     });
 
     it('should handle error code', async () => {
-      mockadapter.onGet('/api/provider/all').replyOnce(500, { code: 'some mock server error' });
-      const getAllServiceProvidersPromise: Promise<void> = serviceProviderStore.getAllServiceProviders();
+      mockadapter.onGet(url).replyOnce(500, { code: 'some mock server error' });
+      const getAllServiceProvidersPromise: Promise<void> =
+        serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
+          schulstrukturknotenOfRolle,
+          rollenArt,
+        );
       expect(serviceProviderStore.loading).toBe(true);
       await getAllServiceProvidersPromise;
       expect(serviceProviderStore.allServiceProviders).toEqual([]);
@@ -86,53 +200,90 @@ describe('serviceProviderStore', () => {
     });
   });
 
-  describe('getAvailableServiceProviders', () => {
-    it("should load user's available service providers and update state", async () => {
-      const mockResponse: StartPageServiceProvider[] = [
-        {
-          id: '1234',
-          name: 'itslearning mock',
-          url: 'example.org/itslearning',
-          kategorie: 'EMAIL',
-          hasLogo: true,
-          target: 'URL',
-          requires2fa: true,
-        },
-        {
-          id: '5678',
-          name: 'administration mock',
-          url: '/admin',
-          kategorie: 'VERWALTUNG',
-          hasLogo: true,
-          target: 'URL',
-          requires2fa: false,
-        },
+  describe('getServiceProvidersForRollenerweiterung', () => {
+    const organisationId: string = faker.string.uuid();
+    const rollenArt: RollenArt = RollenArt.Lehr;
+
+    it('should load service providers allowed for role extensions', async () => {
+      const serviceProvider: ServiceProviderResponse = DoFactory.getServiceProviderResponse();
+      serviceProviderStore.allServiceProviders = [DoFactory.getStartPageServiceProvider()];
+      mockadapter.onGet().replyOnce(200, {
+        total: 1,
+        offset: 0,
+        limit: 1,
+        items: [serviceProvider],
+      });
+
+      const promise: Promise<void> = serviceProviderStore.getServiceProvidersForRollenerweiterung(
+        organisationId,
+        rollenArt,
+      );
+      expect(serviceProviderStore.loading).toBe(true);
+      expect(serviceProviderStore.allServiceProviders).toEqual([]);
+      await promise;
+
+      const requestUrl: string = mockadapter.history.get[0]?.url ?? '';
+      expect(requestUrl).toContain(`organisationId=${organisationId}`);
+      expect(requestUrl).toContain('ROLLEN_ERWEITERN');
+      expect(requestUrl).toContain(`rollenArten=${rollenArt}`);
+      expect(serviceProviderStore.allServiceProviders).toEqual([serviceProvider]);
+      expect(serviceProviderStore.errorCode).toBe('');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle an unstructured error', async () => {
+      mockadapter.onGet().replyOnce(500, 'server error');
+
+      await serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId, rollenArt);
+
+      expect(serviceProviderStore.errorCode).toBe('UNSPECIFIED_ERROR');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle a structured error', async () => {
+      mockadapter.onGet().replyOnce(500, { code: 'SERVICE_PROVIDER_LOADING_ERROR' });
+
+      await serviceProviderStore.getServiceProvidersForRollenerweiterung(organisationId, rollenArt);
+
+      expect(serviceProviderStore.errorCode).toBe('SERVICE_PROVIDER_LOADING_ERROR');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+  });
+
+  describe('getServiceProvidersByPersonId', () => {
+    it("should load a person's assigned service providers and update state", async () => {
+      const personId: string = 'abc-123';
+      const mockResponse: ServiceProviderResponse[] = [
+        DoFactory.getServiceProviderResponse({ id: '1', target: ServiceProviderTarget.None }),
+        DoFactory.getServiceProviderResponse({ id: '2', target: ServiceProviderTarget.Url }),
       ];
 
-      mockadapter.onGet('/api/provider').replyOnce(200, mockResponse);
-      const getAvailableServiceProvidersPromise: Promise<void> = serviceProviderStore.getAvailableServiceProviders();
+      mockadapter.onGet(`/api/provider/${personId}`).replyOnce(200, mockResponse);
+      const promise: Promise<void> = serviceProviderStore.getServiceProvidersByPersonId(personId);
       expect(serviceProviderStore.loading).toBe(true);
-      await getAvailableServiceProvidersPromise;
-      expect(serviceProviderStore.availableServiceProviders).toEqual([...mockResponse]);
+      await promise;
+      expect(serviceProviderStore.assignedServiceProviders).toEqual(mockResponse);
       expect(serviceProviderStore.loading).toBe(false);
     });
 
     it('should handle string error', async () => {
-      mockadapter.onGet('/api/provider').replyOnce(500, 'some mock server error');
-      const getAvailableServiceProvidersPromise: Promise<void> = serviceProviderStore.getAvailableServiceProviders();
+      const personId: string = 'abc-123';
+      mockadapter.onGet(`/api/provider/${personId}`).replyOnce(500, 'some mock server error');
+      const promise: Promise<void> = serviceProviderStore.getServiceProvidersByPersonId(personId);
       expect(serviceProviderStore.loading).toBe(true);
-      await getAvailableServiceProvidersPromise;
-      expect(serviceProviderStore.availableServiceProviders).toEqual([]);
+      await promise;
+      expect(serviceProviderStore.assignedServiceProviders).toEqual([]);
       expect(serviceProviderStore.errorCode).toEqual('UNSPECIFIED_ERROR');
       expect(serviceProviderStore.loading).toBe(false);
     });
 
     it('should handle error code', async () => {
-      mockadapter.onGet('/api/provider').replyOnce(500, { code: 'some mock server error' });
-      const getAvailableServiceProvidersPromise: Promise<void> = serviceProviderStore.getAvailableServiceProviders();
+      const personId: string = 'abc-123';
+      mockadapter.onGet(`/api/provider/${personId}`).replyOnce(500, { code: 'some mock server error' });
+      const promise: Promise<void> = serviceProviderStore.getServiceProvidersByPersonId(personId);
       expect(serviceProviderStore.loading).toBe(true);
-      await getAvailableServiceProvidersPromise;
-      expect(serviceProviderStore.availableServiceProviders).toEqual([]);
+      await promise;
+      expect(serviceProviderStore.assignedServiceProviders).toEqual([]);
       expect(serviceProviderStore.errorCode).toEqual('some mock server error');
       expect(serviceProviderStore.loading).toBe(false);
     });
@@ -140,25 +291,32 @@ describe('serviceProviderStore', () => {
 
   describe('getManageableServiceProviders', () => {
     const page: number = 1;
-    const itemsPerPage: number = 30;
-    const offset: number = (page - 1) * itemsPerPage;
-    const limit: number = itemsPerPage;
+    const entriesPerPage: number = 30;
+    const offset: number = (page - 1) * entriesPerPage;
+    const limit: number = entriesPerPage;
     const url: string = `/api/provider/manageable?offset=${offset}&limit=${limit}`;
 
     it('should load service providers manageable by the user', async () => {
+      const kategorienItems: ManageableServiceProviderSimpleListEntryResponse[] = [
+        DoFactory.getManageableServiceProviderSimpleListEntryResponse(),
+        DoFactory.getManageableServiceProviderSimpleListEntryResponse(),
+        DoFactory.getManageableServiceProviderSimpleListEntryResponse(),
+      ];
       const mockResponse: ProviderControllerGetManageableServiceProviders200Response = {
-        items: [
-          DoFactory.getManageableServiceProviderListEntryResponse(),
-          DoFactory.getManageableServiceProviderListEntryResponse(),
-          DoFactory.getManageableServiceProviderListEntryResponse(),
-        ],
+        items: kategorienItems,
         offset,
         limit,
         total: 3,
       };
 
-      mockadapter.onGet(url).replyOnce(200, mockResponse);
-      const promise: Promise<void> = serviceProviderStore.getManageableServiceProviders(page, itemsPerPage);
+      const kategorien: ServiceProviderKategorie[] = kategorienItems.map(
+        (item: ManageableServiceProviderSimpleListEntryResponse) => item.kategorie,
+      );
+      const urlWithKategorien: string = `${url}&${kategorien.map((kategorie: ServiceProviderKategorie) => `kategorien=${kategorie}`).join('&')}`;
+      mockadapter.onGet(urlWithKategorien).replyOnce(200, mockResponse);
+
+      const filter: ManageableServiceProviderFilter = { kategorien, page, entriesPerPage };
+      const promise: Promise<void> = serviceProviderStore.getManageableServiceProviders(filter);
       expect(serviceProviderStore.loading).toBe(true);
       await promise;
       expect(serviceProviderStore.manageableServiceProviders).toEqual(expect.arrayContaining(mockResponse.items));
@@ -167,9 +325,34 @@ describe('serviceProviderStore', () => {
       expect(serviceProviderStore.loading).toBe(false);
     });
 
+    it('should pass the search filter to the request', async () => {
+      const items: ManageableServiceProviderSimpleListEntryResponse[] = [
+        DoFactory.getManageableServiceProviderSimpleListEntryResponse(),
+      ];
+      const mockResponse: ProviderControllerGetManageableServiceProviders200Response = {
+        items,
+        offset,
+        limit,
+        total: 1,
+      };
+
+      const searchFilter: string = 'meine-suche';
+      const urlWithSearchFilter: string = `${url}&searchFilter=${searchFilter}`;
+      mockadapter.onGet(urlWithSearchFilter).replyOnce(200, mockResponse);
+
+      const filter: ManageableServiceProviderFilter = { kategorien: [], searchFilter, page, entriesPerPage };
+      const promise: Promise<void> = serviceProviderStore.getManageableServiceProviders(filter);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.manageableServiceProviders).toEqual(expect.arrayContaining(mockResponse.items));
+      expect(serviceProviderStore.totalManageableServiceProviders).toEqual(mockResponse.total);
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
     it('should handle string error', async () => {
       mockadapter.onGet(url).replyOnce(500, 'some mock server error');
-      const promise: Promise<void> = serviceProviderStore.getManageableServiceProviders(page, itemsPerPage);
+      const filter: ManageableServiceProviderFilter = { kategorien: [], page, entriesPerPage };
+      const promise: Promise<void> = serviceProviderStore.getManageableServiceProviders(filter);
       expect(serviceProviderStore.loading).toBe(true);
       await promise;
       expect(serviceProviderStore.manageableServiceProviders).toEqual([]);
@@ -179,7 +362,8 @@ describe('serviceProviderStore', () => {
 
     it('should handle error code', async () => {
       mockadapter.onGet(url).replyOnce(500, { code: 'some mock server error' });
-      const promise: Promise<void> = serviceProviderStore.getManageableServiceProviders(page, itemsPerPage);
+      const filter: ManageableServiceProviderFilter = { kategorien: [], page, entriesPerPage };
+      const promise: Promise<void> = serviceProviderStore.getManageableServiceProviders(filter);
       expect(serviceProviderStore.loading).toBe(true);
       await promise;
       expect(serviceProviderStore.manageableServiceProviders).toEqual([]);
@@ -199,9 +383,9 @@ describe('serviceProviderStore', () => {
     it('should load service providers manageable for the organisation', async () => {
       const mockResponse: ProviderControllerGetManageableServiceProviders200Response = {
         items: [
-          DoFactory.getManageableServiceProviderListEntryResponse(),
-          DoFactory.getManageableServiceProviderListEntryResponse(),
-          DoFactory.getManageableServiceProviderListEntryResponse(),
+          DoFactory.getManageableServiceProviderSimpleListEntryResponse(),
+          DoFactory.getManageableServiceProviderSimpleListEntryResponse(),
+          DoFactory.getManageableServiceProviderSimpleListEntryResponse(),
         ],
         offset,
         limit,
@@ -402,6 +586,47 @@ describe('serviceProviderStore', () => {
       expect(serviceProviderStore.loading).toBe(false);
     });
 
+    it('should group multiple items that belong to the same organisation into a single overview entry', async () => {
+      const sharedOrg: Partial<RollenerweiterungWithExtendedDataResponse> = {
+        organisationId: faker.string.uuid(),
+        organisationName: faker.company.name(),
+        organisationKennung: faker.string.alphanumeric(6),
+      };
+      const apiItems: RollenerweiterungWithExtendedDataResponse[] = [
+        DoFactory.getRollenerweiterungItem({ ...sharedOrg, rolleName: 'Rolle A' }),
+        DoFactory.getRollenerweiterungItem({ ...sharedOrg, rolleName: 'Rolle B' }),
+      ];
+
+      const mockResponse: ProviderControllerFindRollenerweiterungenByServiceProviderId200Response =
+        DoFactory.getRollenerweiterungenResponse(apiItems);
+
+      mockadapter.onGet(url).replyOnce(200, mockResponse);
+
+      await serviceProviderStore.getRollenerweiterungenById({ serviceProviderId: serviceProviderId });
+
+      const expectedRollenerweiterungUebersicht: RollenErweiterungenUebersicht[] =
+        DoFactory.buildRollenerweiterungenUebersicht(apiItems);
+
+      expect(expectedRollenerweiterungUebersicht).toHaveLength(1);
+      expect(serviceProviderStore.rollenerweiterungenUebersicht).toEqual(expectedRollenerweiterungUebersicht);
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should fall back to an empty overview when the response has no items', async () => {
+      const mockResponse: Omit<ProviderControllerFindRollenerweiterungenByServiceProviderId200Response, 'items'> = {
+        total: 0,
+        offset: 0,
+        limit: 0,
+      };
+
+      mockadapter.onGet(url).replyOnce(200, mockResponse);
+
+      await serviceProviderStore.getRollenerweiterungenById({ serviceProviderId: serviceProviderId });
+
+      expect(serviceProviderStore.rollenerweiterungenUebersicht).toEqual([]);
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
     it('should handle errors', async () => {
       mockadapter.onGet(url).replyOnce(500, 'some error');
       await serviceProviderStore.getRollenerweiterungenById({ serviceProviderId: serviceProviderId });
@@ -458,6 +683,318 @@ describe('serviceProviderStore', () => {
       expect(serviceProviderStore.loading).toBe(true);
       await promise;
       expect(serviceProviderStore.errorCode).toEqual('some mock server error');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle MultiError with valid rolleIdsWithI18nKeys', async () => {
+      const code: number = 400;
+      const multiError: MultiError = {
+        code,
+        idsWithI18nKeys: [
+          { id: 'role-1', i18nKey: 'ROLLENERWEITERUNG_TECHNICAL_ERROR' },
+          { id: 'role-2', i18nKey: 'NOT_FOUND' },
+        ],
+      };
+      mockadapter.onPost(url).replyOnce(code, multiError);
+
+      const promise: Promise<void> = serviceProviderStore.persistRollenerweiterungenForServiceProvider(filter);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errors.size).toBe(2);
+      expect(serviceProviderStore.errors.get('role-1')).toBe('ROLLENERWEITERUNG_TECHNICAL_ERROR');
+      expect(serviceProviderStore.errors.get('role-2')).toBe('NOT_FOUND');
+      expect(serviceProviderStore.errorCode).toBe('');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle MultiError with empty rolleIdsWithI18nKeys', async () => {
+      const code: number = 400;
+      const multiError: MultiError = {
+        code,
+        idsWithI18nKeys: [],
+      };
+      mockadapter.onPost(url).replyOnce(code, multiError);
+
+      const promise: Promise<void> = serviceProviderStore.persistRollenerweiterungenForServiceProvider(filter);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errors.size).toBe(0);
+      expect(serviceProviderStore.errorCode).toBe('');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle MultiError with missing code property', async () => {
+      const multiError: MalformedMultiError = {
+        idsWithI18nKeys: [{ id: 'role-1', i18nKey: 'ROLLENERWEITERUNG_TECHNICAL_ERROR' }],
+      };
+      mockadapter.onPost(url).replyOnce(500, multiError);
+
+      const promise: Promise<void> = serviceProviderStore.persistRollenerweiterungenForServiceProvider(filter);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errorCode).toBe('UNSPECIFIED_ERROR');
+      expect(serviceProviderStore.errors.size).toBe(0);
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle MultiError with wrong code type', async () => {
+      const multiError: MalformedMultiError = {
+        code: null,
+        idsWithI18nKeys: 'not-an-array',
+      };
+      mockadapter.onPost(url).replyOnce(400, multiError);
+
+      const promise: Promise<void> = serviceProviderStore.persistRollenerweiterungenForServiceProvider(filter);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errorCode).toBe('UNSPECIFIED_ERROR');
+      expect(serviceProviderStore.errors.size).toBe(0);
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle MultiError with non-array rolleIdsWithI18nKeys', async () => {
+      const code: number = 400;
+      const multiError: MalformedMultiError = {
+        code,
+        idsWithI18nKeys: 'not-an-array',
+      };
+      mockadapter.onPost(url).replyOnce(code, multiError);
+
+      const promise: Promise<void> = serviceProviderStore.persistRollenerweiterungenForServiceProvider(filter);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errorCode).toBe(multiError.code);
+      expect(serviceProviderStore.errors.size).toBe(0);
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle MultiError with null error', async () => {
+      mockadapter.onPost(url).replyOnce(500, null);
+
+      const promise: Promise<void> = serviceProviderStore.persistRollenerweiterungenForServiceProvider(filter);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errorCode).toBe('UNSPECIFIED_ERROR');
+      expect(serviceProviderStore.errors.size).toBe(0);
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+  });
+
+  describe('createServiceProvider', () => {
+    const filter: ServiceProviderCreationFilter = {
+      organisationId: faker.string.uuid(),
+      name: 'Test Service Provider',
+      url: faker.internet.url(),
+      kategorie: ServiceProviderKategorie.Email,
+      requires2fa: true,
+      merkmale: [ServiceProviderMerkmal.NachtraeglichZuweisbar, ServiceProviderMerkmal.VerfuegbarFuerRollenerweiterung],
+      rollenartenWhitelist: [RollenArt.Lehr, RollenArt.Lern],
+    };
+    const url: string = '/api/provider';
+
+    it('should create a service provider and update state', async () => {
+      const mockResponse: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
+        name: filter.name,
+        url: filter.url,
+        logoId: 1,
+        kategorie: filter.kategorie,
+        requires2fa: filter.requires2fa,
+        merkmale: filter.merkmale,
+        rollenartenWhitelist: filter.rollenartenWhitelist ?? [],
+      });
+
+      mockadapter.onPost(url).replyOnce(200, mockResponse);
+      const promise: Promise<void> = serviceProviderStore.createServiceProvider(filter);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.createdServiceProvider).toEqual(mockResponse);
+      expect(serviceProviderStore.errorCode).toEqual('');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle string error', async () => {
+      mockadapter.onPost(url).replyOnce(500, 'some mock server error');
+      const promise: Promise<void> = serviceProviderStore.createServiceProvider(filter);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errorCode).toEqual('UNSPECIFIED_ERROR');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle error code', async () => {
+      mockadapter.onPost(url).replyOnce(500, { code: 'some mock server error' });
+      const promise: Promise<void> = serviceProviderStore.createServiceProvider(filter);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errorCode).toEqual('some mock server error');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+  });
+
+  describe('updateServiceProvider', () => {
+    beforeEach(() => {
+      serviceProviderStore.updatedServiceProvider = null;
+    });
+    const providerId: string = 'provider-to-update';
+    const apiUrl: string = `/api/provider/${providerId}`;
+    const update: Partial<{
+      name: string;
+      url: string;
+      kategorie: ServiceProviderKategorie;
+      logoId: number;
+      rollenartenWhitelist: RollenArt[];
+    }> = {
+      name: 'Updated Service Provider',
+      url: 'https://updated-url.com',
+      kategorie: ServiceProviderKategorie.Email,
+      logoId: 1,
+      rollenartenWhitelist: [RollenArt.Lehr, RollenArt.Lern],
+    };
+
+    it('should update a service provider and update state', async () => {
+      const mockResponse: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
+        id: providerId,
+        name: update.name!,
+        url: update.url!,
+        target: ServiceProviderTarget.Url,
+        hasLogo: false,
+        logoId: 1,
+        rollenartenWhitelist: update.rollenartenWhitelist!,
+        kategorie: update.kategorie!,
+        requires2fa: false,
+        merkmale: [],
+      });
+
+      mockadapter.onPatch(apiUrl).replyOnce(200, mockResponse);
+      const promise: Promise<void> = serviceProviderStore.updateServiceProvider(providerId, update);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.updatedServiceProvider).toEqual(mockResponse);
+      expect(serviceProviderStore.errorCode).toEqual('');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should include merkmale with anbietung values in patch request body', async () => {
+      const updateWithMerkmale: { merkmale: ServiceProviderMerkmal[] } = {
+        merkmale: [
+          ServiceProviderMerkmal.AnbietenInSchulischerAngebotsverwaltung,
+          ServiceProviderMerkmal.AnbietenInSchulischerRollenverwaltung,
+        ],
+      };
+      const mockResponse: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
+        id: providerId,
+        name: 'Updated Service Provider',
+        url: 'https://updated-url.com',
+        target: ServiceProviderTarget.Url,
+        hasLogo: false,
+        logoId: 1,
+        kategorie: ServiceProviderKategorie.Email,
+        requires2fa: false,
+        merkmale: updateWithMerkmale.merkmale,
+        rollenartenWhitelist: [],
+      });
+
+      mockadapter.onPatch(apiUrl).replyOnce(200, mockResponse);
+      await serviceProviderStore.updateServiceProvider(providerId, updateWithMerkmale);
+
+      const patchData: unknown = mockadapter.history.patch[0]?.data;
+      const requestBodyRaw: unknown = JSON.parse(typeof patchData === 'string' ? patchData : '{}');
+      const requestBody: { merkmale?: ServiceProviderMerkmal[] } =
+        typeof requestBodyRaw === 'object' && requestBodyRaw !== null ? requestBodyRaw : {};
+      expect(requestBody.merkmale).toEqual(updateWithMerkmale.merkmale);
+    });
+
+    it('should handle string error', async () => {
+      mockadapter.onPatch(apiUrl).replyOnce(500, 'some mock server error');
+      const promise: Promise<void> = serviceProviderStore.updateServiceProvider(providerId, update);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errorCode).toEqual('UNSPECIFIED_ERROR');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle error code', async () => {
+      mockadapter.onPatch(apiUrl).replyOnce(500, { code: 'some mock server error' });
+      const promise: Promise<void> = serviceProviderStore.updateServiceProvider(providerId, update);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errorCode).toEqual('some mock server error');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+  });
+
+  describe('deleteServiceProvider', () => {
+    const providerId: string = 'provider-to-delete';
+    const apiUrl: string = `/api/provider/${providerId}`;
+
+    beforeEach(() => {
+      mockadapter.reset();
+      serviceProviderStore.errorCode = '';
+      serviceProviderStore.loading = false;
+    });
+
+    it('removes provider from all arrays and resets currentServiceProvider on success', async () => {
+      mockadapter.onDelete(apiUrl).replyOnce(200);
+      const promise: Promise<void> = serviceProviderStore.deleteServiceProvider(providerId);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errorCode).toBe('');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('sets errorCode to UNSPECIFIED_ERROR on string error', async () => {
+      mockadapter.onDelete(apiUrl).replyOnce(500, 'some error');
+      const promise: Promise<void> = serviceProviderStore.deleteServiceProvider(providerId);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errorCode).toBe('UNSPECIFIED_ERROR');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('sets errorCode to error code if present in error response', async () => {
+      mockadapter.onDelete(apiUrl).replyOnce(500, { code: 'some error code' });
+      const promise: Promise<void> = serviceProviderStore.deleteServiceProvider(providerId);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errorCode).toBe('some error code');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+  });
+
+  describe('syncServiceProvidersForSchule', () => {
+    const organisationId: string = faker.string.uuid();
+    const apiUrl: string = `/api/vidis/${organisationId}/angebote-sync`;
+
+    beforeEach(() => {
+      mockadapter.reset();
+      serviceProviderStore.errorCode = '';
+      serviceProviderStore.loading = false;
+    });
+
+    it('should sync service providers for a school successfully', async () => {
+      mockadapter.onPut(apiUrl).replyOnce(200);
+      const promise: Promise<void> = serviceProviderStore.syncServiceProvidersForSchule(organisationId);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errorCode).toBe('');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle string error', async () => {
+      mockadapter.onPut(apiUrl).replyOnce(500, 'some mock server error');
+      const promise: Promise<void> = serviceProviderStore.syncServiceProvidersForSchule(organisationId);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errorCode).toBe('UNSPECIFIED_ERROR');
+      expect(serviceProviderStore.loading).toBe(false);
+    });
+
+    it('should handle error code', async () => {
+      mockadapter.onPut(apiUrl).replyOnce(500, { code: 'some error code' });
+      const promise: Promise<void> = serviceProviderStore.syncServiceProvidersForSchule(organisationId);
+      expect(serviceProviderStore.loading).toBe(true);
+      await promise;
+      expect(serviceProviderStore.errorCode).toBe('some error code');
       expect(serviceProviderStore.loading).toBe(false);
     });
   });

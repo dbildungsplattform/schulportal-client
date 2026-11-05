@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { RollenArt } from '@/stores/RolleStore';
+  import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
   import { computed, ref, watch, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
 
@@ -9,13 +9,15 @@
     id: string;
     name: string;
     rollenart: RollenArt;
+    merkmale?: RollenMerkmal[];
   };
 
   type TreeNode = {
     id: string;
     title: string;
     isGroup: boolean;
-    rollenart?: RollenArt;
+    rollenart?: RollenArt | 'MPT';
+    scrollable?: boolean;
     children?: TreeNode[];
   };
 
@@ -42,10 +44,40 @@
 
   const emit: Emits = defineEmits<Emits>();
 
-  const GROUP_DEFINITIONS: { key: RollenArt; labelKey: string }[] = [
-    { key: RollenArt.Lehr, labelKey: 'angebot.groupLehr' },
-    { key: RollenArt.Lern, labelKey: 'angebot.groupLern' },
-    { key: RollenArt.Leit, labelKey: 'angebot.groupLeit' },
+  // A "group key" is either a real RollenArt, or the synthetic MPT bucket
+  type GroupKey = RollenArt | 'MPT';
+
+  type GroupDefinition = {
+    key: GroupKey;
+    labelKey: string;
+    match: (r: RolleForSelection) => boolean;
+  };
+
+  const isMptRolle = (r: RolleForSelection): boolean =>
+    Array.isArray(r.merkmale) && r.merkmale.includes(RollenMerkmal.MptRolle);
+
+  const GROUP_DEFINITIONS: GroupDefinition[] = [
+    {
+      key: RollenArt.Lehr,
+      labelKey: 'angebot.groupLehr',
+      match: (r: RolleForSelection) => r.rollenart === RollenArt.Lehr && !isMptRolle(r),
+    },
+    {
+      key: RollenArt.Lern,
+      labelKey: 'angebot.groupLern',
+      match: (r: RolleForSelection) => r.rollenart === RollenArt.Lern && !isMptRolle(r),
+    },
+    {
+      key: RollenArt.Leit,
+      labelKey: 'angebot.groupLeit',
+      match: (r: RolleForSelection) => r.rollenart === RollenArt.Leit && !isMptRolle(r),
+    },
+    // Group all MPT Rollen together, regardless of their RollenArt (e.g. Lehr, Nlehr, Schb)
+    {
+      key: 'MPT',
+      labelKey: 'angebot.groupMPT',
+      match: (r: RolleForSelection) => isMptRolle(r),
+    },
   ];
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -65,16 +97,16 @@
   );
 
   const fullGroups: ComputedRef<RolleSelection[]> = computed(() =>
-    GROUP_DEFINITIONS.map((def: { key: RollenArt; labelKey: string }) => ({
+    GROUP_DEFINITIONS.map((def: GroupDefinition) => ({
       key: def.key,
-      rollen: props.availableRollen.filter((r: RolleForSelection) => r.rollenart === def.key),
+      rollen: props.availableRollen.filter((r: RolleForSelection) => def.match(r)),
     })).filter((g: RolleSelection) => g.rollen.length > 0),
   );
 
   const treeItems: ComputedRef<TreeNode[]> = computed(() => {
-    return GROUP_DEFINITIONS.flatMap((def: { key: RollenArt; labelKey: string }) => {
+    return GROUP_DEFINITIONS.flatMap((def: GroupDefinition) => {
       const allChildren: RolleForSelection[] = props.availableRollen
-        .filter((r: RolleForSelection) => r.rollenart === def.key)
+        .filter((r: RolleForSelection) => def.match(r))
         .sort((a: RolleForSelection, b: RolleForSelection) => a.name.localeCompare(b.name));
 
       if (allChildren.length === 0) {
@@ -87,6 +119,7 @@
           title: t(def.labelKey),
           isGroup: true,
           rollenart: def.key,
+          scrollable: allChildren.length > 15,
           children: allChildren.map((r: RolleForSelection) => ({
             id: r.id,
             title: r.name,
@@ -97,9 +130,8 @@
     });
   });
 
-  // ── Selection helpers ──────────────────────────────────────────────────────
-  function getGroupRolleIds(rollenart: string): string[] {
-    const group: RolleSelection | undefined = fullGroups.value.find((g: RolleSelection) => g.key === rollenart);
+  function getGroupRolleIds(groupKey: string): string[] {
+    const group: RolleSelection | undefined = fullGroups.value.find((g: RolleSelection) => g.key === groupKey);
     return group?.rollen.map((r: RolleForSelection) => r.id) ?? [];
   }
 
@@ -178,6 +210,7 @@
       item-title="title"
       item-children="children"
       select-strategy="independent"
+      class="rolle-treeview"
       density="compact"
       :model-value="selected"
       @update:model-value="onSelectionUpdate"
@@ -185,43 +218,31 @@
       <!-- Suppress default title for group nodes (title is rendered in #prepend) -->
       <template #title="{ item }">
         <template v-if="!(item as TreeNode).isGroup">
-          {{ item.title }}
+          <span>{{ item.title }}</span>
         </template>
       </template>
       <template #prepend="{ item }">
-        <!-- ── Group header ──────────────────────────────────────────────── -->
-        <template v-if="(item as TreeNode).isGroup">
+        <template v-if="item.isGroup">
           <div
             class="group-row d-flex align-center w-100 flex-wrap"
-            :data-testid="`treeview-group-${(item as TreeNode).rollenart}`"
-            @click="toggleGroupSelection((item as TreeNode).rollenart!)"
+            :data-testid="`treeview-group-${item.rollenart}`"
+            :data-scrollable="item.scrollable || undefined"
+            :class="{ 'group-children-scrollable': item.scrollable }"
+            @click="toggleGroupSelection(item.rollenart!)"
           >
-            <!-- Our own checkbox for group-level select/deselect -->
             <v-checkbox
-              class="flex-shrink-0"
-              :data-testid="`treeview-group-checkbox-${(item as TreeNode).rollenart}`"
-              :false-icon="
-                getGroupSelectionState((item as TreeNode).rollenart!) === StateSelection.None
-                  ? 'mdi-checkbox-blank-outline'
-                  : undefined
-              "
-              :indeterminate="getGroupSelectionState((item as TreeNode).rollenart!) === StateSelection.Some"
-              :model-value="getGroupSelectionState((item as TreeNode).rollenart!) === StateSelection.All"
-              @click.stop="toggleGroupSelection((item as TreeNode).rollenart!)"
+              :data-testid="`treeview-group-checkbox-${item.rollenart}`"
+              :model-value="getGroupSelectionState(item.rollenart!) === StateSelection.All"
+              :indeterminate="getGroupSelectionState(item.rollenart!) === StateSelection.Some"
+              @click.stop="toggleGroupSelection(item.rollenart!)"
             />
-
-            <span class="group-title font-weight-bold text-body">
-              {{ item.title }}
-            </span>
+            <span class="group-title bold text-body">{{ item.title }}</span>
             <span class="ml-2 text-body">
-              ({{ getGroupSelectedCount((item as TreeNode).rollenart!) }}
-              {{ t('from') }}
-              {{ getGroupTotalCount((item as TreeNode).rollenart!) }})
+              ({{ getGroupSelectedCount(item.rollenart!) }} {{ t('from') }} {{ getGroupTotalCount(item.rollenart!) }})
             </span>
           </div>
         </template>
 
-        <!-- ── Leaf (individual rolle) ──────────────────────────────────── -->
         <template v-else>
           <v-checkbox
             :model-value="selected.includes(item.id)"

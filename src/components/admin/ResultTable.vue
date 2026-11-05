@@ -1,9 +1,9 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="TItem extends TableItem">
   /* this block is necessary to introduce a table header type for defining table headers
       watch source for updates: https://stackoverflow.com/a/75993081/4790594
    */
   import { SortOrder } from '@/utils/sorting';
-  import { onMounted, onUnmounted, ref, watch, type Ref } from 'vue';
+  import { onMounted, onUnmounted, shallowRef, watch, type ShallowRef } from 'vue';
   import type { DataTableHeader } from 'vuetify';
 
   export type Headers = DataTableHeader[];
@@ -14,20 +14,23 @@
     item: T;
   };
 
-  const selectedItems: Ref<TableItem[]> = ref<TableItem[]>([]);
+  type ItemValuePath = Extract<keyof TItem, string>;
+  type SelectedItemValue = TItem[ItemValuePath];
+
+  const selectedItems: ShallowRef<SelectedItemValue[]> = shallowRef([]);
 
   type Props = {
     currentPage?: number;
     disableRowClick?: boolean;
     headers: Headers;
-    items: TableItem[];
+    items: TItem[];
     itemsPerPage: number;
-    itemValuePath: string;
+    itemValuePath: ItemValuePath;
     loading: boolean;
     totalItems: number;
     currentSort?: { key: string; order: 'asc' | 'desc' } | null;
     // This prop is necessary so the parent component can decide which items should be de-selected after the filters have been used.
-    modelValue?: TableItem[];
+    modelValue?: SelectedItemValue[];
     hideSelect?: boolean;
     noDataText?: string;
   };
@@ -35,11 +38,11 @@
   const props: Props = defineProps<Props>();
 
   type Emits = {
-    (event: 'onHandleRowClick', eventPayload: PointerEvent, item: TableRow<unknown>): void;
+    (event: 'onHandleRowClick', eventPayload: PointerEvent, item: TableRow<TItem>): void;
     (event: 'onTableUpdate', options: { sortField: string | undefined; sortOrder: 'asc' | 'desc' }): void;
     (event: 'onItemsPerPageUpdate', limit: number): void;
     (event: 'onPageUpdate', page: number): void;
-    (event: 'update:selectedRows', selectedRows: TableItem[]): void;
+    (event: 'update:selectedRows', selectedRows: SelectedItemValue[]): void;
   };
 
   const emit: Emits = defineEmits<Emits>();
@@ -72,7 +75,7 @@
       if (row) {
         // Find the corresponding item for this row.
         const rowIndex: number = Array.from(row.parentElement!.children).indexOf(row);
-        const item: TableItem | undefined = props.items[rowIndex];
+        const item: TItem | undefined = props.items[rowIndex];
 
         if (item) {
           // Prevent default Enter key behavior
@@ -85,16 +88,10 @@
     }
   }
 
-  function handleRowClick(event: PointerEvent, item: TableRow<unknown>): void {
+  function handleRowClick(event: PointerEvent, item: TableRow<TItem>): void {
     if (!props.disableRowClick) {
       emit('onHandleRowClick', event, item);
     }
-  }
-
-  interface Slots {
-    default: (props: { default: string }) => string;
-    top: (props: { top: number }) => string;
-    bottom: (props: { bottom: boolean }) => string;
   }
 
   type SortItem = {
@@ -119,16 +116,16 @@
     }
   }
 
-  // Emits an event with the selected Rows. (Could emit the ID here but its better to emit the whole row in case we need this method for other features)
+  // Emits selected item values resolved by itemValuePath.
   function emitSelectedRows(): void {
-    const selectedRows: TableItem[] = selectedItems.value;
+    const selectedRows: SelectedItemValue[] = selectedItems.value;
     emit('update:selectedRows', selectedRows);
   }
 
   // Update the selectedItems dependings on what the table shows currently.
   watch(
     () => props.modelValue,
-    (newValue: TableItem[] | undefined) => {
+    (newValue: SelectedItemValue[] | undefined) => {
       selectedItems.value = newValue || [];
     },
     { immediate: true },
@@ -170,6 +167,8 @@
     :items-per-page-options="[5, 30, 50, 100, 300]"
     :items-per-page-text="'itemsPerPage'"
     :item-value="itemValuePath"
+    :loading="loading"
+    :loading-text="$t('loadingData')"
     :page="currentPage"
     select-strategy="page"
     :show-current-page="true"
@@ -182,9 +181,22 @@
     @update:items-per-page="(limit: number) => $emit('onItemsPerPageUpdate', limit)"
     @update:model-value="emitSelectedRows"
   >
+    <template v-slot:loading>
+      <div class="d-flex flex-column align-center justify-center pa-4">
+        <v-progress-circular
+          color="primary"
+          indeterminate
+        />
+        <div class="mt-2">
+          {{ $t('loadingData') }}
+        </div>
+      </div>
+    </template>
+
     <template
-      v-for="(_, name) in $slots as unknown as Readonly<Slots>"
-      #[name]="slotProps"
+      v-for="(_, name) in $slots"
+      v-slot:[name]="slotProps"
+      :key="name"
     >
       <slot
         :name="name"
@@ -194,4 +206,8 @@
   </v-data-table-server>
 </template>
 
-<style></style>
+<style scoped>
+  .result-table :deep(.v-data-table-progress) {
+    display: none !important;
+  }
+</style>

@@ -27,7 +27,7 @@
     type RolleFieldDefinitions,
   } from '@/utils/validationRolle';
   import { useForm, type FormContext, type TypedSchema } from 'vee-validate';
-  import { computed, onMounted, onUnmounted, ref, type ComputedRef, type Ref } from 'vue';
+  import { computed, onMounted, onUnmounted, ref, watch, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
   import {
     onBeforeRouteLeave,
@@ -193,9 +193,8 @@
     rolleStore.createdRolle = null;
   });
 
-  onMounted(async () => {
+  onMounted(() => {
     rolleStore.createdRolle = null;
-    await serviceProviderStore.getAllServiceProviders();
 
     // Iterate over the enum values
     Object.values(RollenArt).forEach((enumValue: RollenArt) => {
@@ -245,17 +244,13 @@
         selectedRollenArt.value,
         merkmaleToSubmit,
         systemrechteToSubmit,
+        selectedServiceProviders.value ?? [],
       );
       // If the creation failed, do not proceed with assigning service providers
       if (rolleStore.errorCode) {
         return;
       }
-      if (selectedServiceProviders.value && selectedServiceProviders.value.length > 0) {
-        await rolleStore.updateServiceProviderInRolle(rolleStore.createdRolle?.id ?? '', {
-          serviceProviderIds: selectedServiceProviders.value,
-          version: rolleStore.currentRolle?.version || 1,
-        });
-      }
+
       formContext.resetForm();
 
       if (rolleStore.createdRolle) {
@@ -266,6 +261,20 @@
       }
     }
   });
+
+  watch(
+    [selectedAdministrationsebene, selectedRollenArt],
+    async ([administrationsebene, rollenArt]: [string | undefined, RollenArt | undefined]) => {
+      selectedServiceProviders.value = [];
+      if (administrationsebene && rollenArt) {
+        await serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
+          administrationsebene,
+          rollenArt,
+        );
+      }
+    },
+    { immediate: true },
+  );
 </script>
 
 <template>

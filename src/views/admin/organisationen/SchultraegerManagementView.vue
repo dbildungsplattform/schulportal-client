@@ -106,11 +106,7 @@
         @update:model-value="handleAlertClose"
       />
       <template v-if="!organisationStore.errorCode">
-        <v-row
-          align="center"
-          class="ma-3"
-          justify="end"
-        />
+        <v-row class="ma-3 align-center justify-end" />
         <ResultTable
           ref="result-table"
           :current-page="searchFilterStore.schultraegerPage"

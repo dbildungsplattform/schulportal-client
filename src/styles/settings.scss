@@ -10,5 +10,7 @@
   $input-control-height: 42px,
   $list-color: #001e49,
   $selection-control-color: #001e49,
-  $table-color: #001e49
+  $table-color: #001e49,
+  $container-max-widths: ('md': 900px, 'lg': 1200px, 'xl': 1800px, 'xxl': 2400px),
+  $grid-breakpoints: ('md': 960px, 'lg': 1280px, 'xl': 1920px, 'xxl': 2560px)
 );

@@ -1,18 +1,18 @@
 <script setup lang="ts">
+  import { ImportDataItemStatus } from '@/api-client/generated';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
   import FormRow from '@/components/form/FormRow.vue';
   import FormWrapper from '@/components/form/FormWrapper.vue';
-  import { useRollen, type TranslatedRolleWithAttrs } from '@/composables/useRollen';
   import {
-    ImportDataItemStatus,
     useImportStore,
     type ImportedUserResponse,
+    type ImportResultResponse,
     type ImportStore,
   } from '@/stores/ImportStore';
-  import { OperationContext, usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
-  import { RollenArt } from '@/stores/RolleStore';
+  import { RollenArt, useRolleStore, type RolleResponse, type RolleStore } from '@/stores/RolleStore';
+  import type { TranslatedObject } from '@/types';
   import { toTypedSchema } from '@vee-validate/yup';
   import { useForm, type BaseFieldProps, type FormContext, type TypedSchema } from 'vee-validate';
   import { computed, onMounted, onUnmounted, ref, watch, type ComputedRef, type Ref } from 'vue';
@@ -28,7 +28,7 @@
   import { mixed, object, string } from 'yup';
 
   const importStore: ImportStore = useImportStore();
-  const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
+  const rolleStore: RolleStore = useRolleStore();
 
   const router: Router = useRouter();
   const { t }: Composer = useI18n({ useScope: 'global' });
@@ -37,8 +37,6 @@
   const confirmationDialogVisible: Ref<boolean> = ref(false);
 
   const isDownloadingFile: Ref<boolean> = ref(false);
-
-  const allRollen: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = useRollen();
 
   const validationSchema: TypedSchema = toTypedSchema(
     object({
@@ -82,23 +80,21 @@
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedFiles', vuetifyConfig);
 
-  const lernRollen: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = computed(() => {
-    if (!allRollen.value || selectedSchule.value === undefined) {
-      return [];
-    }
-
-    return allRollen.value.filter((rolle: TranslatedRolleWithAttrs) => {
-      return rolle.rollenart === RollenArt.Lern;
-    });
+  const lernRollen: ComputedRef<TranslatedObject[] | undefined> = computed(() => {
+    return rolleStore.allRollen
+      .map((rolle: RolleResponse) => ({
+        value: rolle.id,
+        title: rolle.name,
+      }))
+      .sort((a: TranslatedObject, b: TranslatedObject) => a.title.localeCompare(b.title));
   });
 
   watch(selectedSchule, async (newValue: string | undefined, oldValue: string | undefined) => {
     if (newValue && newValue !== oldValue) {
       // Fetch rollen after selecting the organization
-      await personenkontextStore.processWorkflowStep({
-        operationContext: OperationContext.PERSON_ANLEGEN,
+      await rolleStore.getRollenAvailableForImport({
         organisationId: newValue,
-        limit: 25,
+        rollenarten: [RollenArt.Lern],
       });
 
       // Reset the selectedRolle field only if oldValue was not undefined
@@ -188,7 +184,11 @@
           const utf8Text: string = convertToUTF8(event.target?.result as ArrayBuffer);
           resolve(utf8Text);
         } catch (error) {
-          reject(error as Error);
+          if (error instanceof Error) {
+            reject(error);
+          } else {
+            reject(new Error('An unknown error occurred during file reading.'));
+          }
         }
       };
 
@@ -306,24 +306,30 @@
       const totalUsers: number = importStore.importResponse?.total as number;
       const itemsPerPage: number = importStore.importedUsersPerPage;
       const totalPagesNumber: number = Math.ceil(totalUsers / itemsPerPage);
+      const importvorgangId: string = importStore.uploadResponse?.importvorgangId as string;
+      const maxAttemptsPerPage: number = 3;
 
       let allImportedUsers: ImportedUserResponse[] = [];
 
       for (let pageIndex: number = 0; pageIndex < totalPagesNumber; pageIndex++) {
         const offset: number = pageIndex * itemsPerPage;
-        // eslint-disable-next-line no-await-in-loop
-        await new Promise((resolve: (value: unknown) => void) => {
-          setTimeout(resolve, pageIndex * 600);
-        });
 
-        // eslint-disable-next-line no-await-in-loop
-        await importStore.getImportedPersons(
-          importStore.uploadResponse?.importvorgangId as string,
-          offset,
-          itemsPerPage,
-        );
+        // Retry transient failures so a failed page never falls back to stale data (which caused duplicate rows).
+        let page: ImportResultResponse | null = null;
+        for (let attempt: number = 0; attempt < maxAttemptsPerPage && page === null; attempt++) {
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise((resolve: (value: unknown) => void) => {
+            setTimeout(resolve, (pageIndex + attempt) * 600);
+          });
 
-        allImportedUsers = allImportedUsers.concat(importStore.importResponse?.importedUsers || []);
+          // eslint-disable-next-line no-await-in-loop
+          await importStore.getImportedPersons(importvorgangId, offset, itemsPerPage);
+          // On failure the store sets importResponse to null; only that page's data is used.
+          page = importStore.importResponse;
+        }
+
+        // Only append the users actually returned for this page; never reuse the previous page's data.
+        allImportedUsers = allImportedUsers.concat(page?.importedUsers ?? []);
       }
 
       const fileContent: string = createFileContentFromUsers(allImportedUsers);
@@ -392,8 +398,10 @@
     }
   });
 
-  onMounted(async () => {
-    await personenkontextStore.processWorkflowStep({ operationContext: OperationContext.PERSON_ANLEGEN, limit: 25 });
+  onMounted(() => {
+    // Rollen are only fetched once a Schule is selected, see the watcher above.
+    rolleStore.allRollen = [];
+    rolleStore.totalRollen = 0;
     importStore.uploadResponse = null;
     importStore.importResponse = null;
     importStore.importProgress = 0;
@@ -425,7 +433,7 @@
       <!-- Import success template -->
       <template v-if="importStore.importProgress === 100 && !importStore.importIsLoading && !isDownloadingFile">
         <v-container>
-          <v-row justify="center">
+          <v-row class="justify-center">
             <v-col cols="auto">
               <v-icon
                 aria-hidden="true"
@@ -435,7 +443,7 @@
               />
             </v-col>
           </v-row>
-          <v-row justify="center">
+          <v-row class="justify-center">
             <v-col
               class="subtitle-1"
               cols="auto"
@@ -445,7 +453,7 @@
               </span>
             </v-col>
           </v-row>
-          <v-row justify="center">
+          <v-row class="justify-center">
             <v-col cols="auto">
               <v-btn
                 class="secondary"
@@ -484,7 +492,7 @@
               </span>
             </v-col>
           </v-row>
-          <v-row justify="center">
+          <v-row class="justify-center">
             <v-col cols="auto">
               <v-progress-circular
                 data-testid="loading-spinner"
@@ -514,7 +522,7 @@
               </span>
             </v-col>
           </v-row>
-          <v-row justify="center">
+          <v-row class="justify-center">
             <v-col cols="12">
               <v-progress-linear
                 data-testid="import-progress-bar"
@@ -564,7 +572,7 @@
         <!-- Upload success template -->
         <template v-if="showUploadSuccessTemplate">
           <v-container>
-            <v-row justify="center">
+            <v-row class="justify-center">
               <v-col cols="auto">
                 <v-icon
                   aria-hidden="true"
@@ -574,7 +582,7 @@
                 />
               </v-col>
             </v-row>
-            <v-row justify="center">
+            <v-row class="justify-center">
               <v-col
                 class="subtitle-1"
                 cols="auto"
@@ -585,7 +593,7 @@
                 </span>
               </v-col>
             </v-row>
-            <v-row justify="center">
+            <v-row class="justify-center">
               <v-col cols="auto">
                 <v-btn
                   class="secondary"
@@ -703,7 +711,7 @@
               :key="index"
               class="invalid-items"
               :data-testid="`invalid-item-row-${index + 1}`"
-              dense
+              density="compact"
             >
               <v-col
                 class="primary-text-color"

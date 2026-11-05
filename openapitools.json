@@ -8,7 +8,7 @@
         "backend": {
           "generatorName": "typescript-axios",
           "output": "#{cwd}/src/api-client/generated",
-          "inputSpec": "#{cwd}/src/api-client/openapispec.json",
+          "inputSpec": "http://localhost:9090/docs-json",
           "additionalProperties": {
             "supportsES6": false,
             "npmVersion": "9.5.1",

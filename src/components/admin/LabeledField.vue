@@ -13,17 +13,17 @@
 </script>
 
 <template>
-  <v-row :class="[noMarginTop ? 'align-center mt-2' : mdMarginTop ? 'mt-md-4 align-center' : 'mt-4 align-center']">
+  <v-row :class="[noMarginTop ? 'mt-0' : mdMarginTop ? 'mt-md-2' : 'mt-2', isLogo ? 'align-center' : '', 'ga-0 mb-2']">
     <v-col
       cols="12"
       sm="auto"
-      class="d-flex align-center pr-0 flex-shrink-1"
+      class="d-flex pt-0 pr-0 flex-shrink-1"
       style="max-width: fit-content"
     >
       <span class="subtitle-2 text-no-wrap">{{ label }}:</span>
     </v-col>
     <v-col
-      class="d-flex align-center flex-grow-1 pl-2"
+      class="d-flex flex-grow-1 pl-2 py-0"
       :data-testid="testId"
       :style="wordBreakAll ? 'word-break: break-all' : undefined"
     >
@@ -32,14 +32,12 @@
         <v-img
           v-if="logoSrc"
           alt="provider-logo"
-          class="service-provider-logo mt-n2"
           :src="logoSrc"
           max-width="30"
         />
         <v-img
           v-else
           alt="schulportal-logo"
-          class="service-provider-logo"
           :src="defaultLogoSrc"
           contain
           max-width="30"

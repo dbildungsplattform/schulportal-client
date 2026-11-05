@@ -1,7 +1,6 @@
-import { mount, VueWrapper } from '@vue/test-utils';
+import { DOMWrapper, mount, VueWrapper } from '@vue/test-utils';
 import { expect, test, describe, vi, beforeEach, type Mock } from 'vitest';
 import NoSecondFactor from './NoSecondFactorView.vue';
-import type WrapperLike from 'node_modules/@vue/test-utils/dist/interfaces/wrapperLike';
 import { nextTick } from 'vue';
 
 let wrapper: VueWrapper | null = null;
@@ -39,7 +38,7 @@ describe('SpshAlert Component', () => {
   });
 
   test('it renders the back button with correct text', () => {
-    const backbutton: WrapperLike | undefined = wrapper?.find('[data-testid$="alert-button"]');
+    const backbutton: DOMWrapper<HTMLButtonElement> | undefined = wrapper?.find('[data-testid$="alert-button"]');
 
     if (!backbutton) {
       return;
@@ -49,7 +48,7 @@ describe('SpshAlert Component', () => {
   });
 
   test('it triggers goBack action when back button is clicked', async () => {
-    const alertButton: WrapperLike | undefined = wrapper?.find('[data-testid$="alert-button"]');
+    const alertButton: DOMWrapper<HTMLButtonElement> | undefined = wrapper?.find('[data-testid$="alert-button"]');
     await alertButton?.trigger('click');
     await nextTick();
 
@@ -57,7 +56,9 @@ describe('SpshAlert Component', () => {
   });
 
   test('it renders the second factor setup button', () => {
-    const setupButton: WrapperLike | undefined = wrapper?.find('[data-testid="toSecondFactorSetup-button"]');
+    const setupButton: DOMWrapper<HTMLButtonElement> | undefined = wrapper?.find(
+      '[data-testid="toSecondFactorSetup-button"]',
+    );
     expect(setupButton!.exists()).toBe(true);
   });
 
@@ -65,7 +66,9 @@ describe('SpshAlert Component', () => {
     const toSecondFactorSetupMock: Mock = vi.fn();
     await wrapper?.setProps({ buttonAction: toSecondFactorSetupMock });
 
-    const setupButton: WrapperLike | undefined = wrapper?.find('[data-testid="toSecondFactorSetup-button"]');
+    const setupButton: DOMWrapper<HTMLButtonElement> | undefined = wrapper?.find(
+      '[data-testid="toSecondFactorSetup-button"]',
+    );
     await setupButton?.trigger('click');
     await nextTick();
     expect(window.location.href).toBe('/profile');

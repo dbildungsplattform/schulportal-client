@@ -1,5 +1,7 @@
-import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import { type AxiosResponse } from 'axios';
+import { defineStore, type Store, type StoreDefinition } from 'pinia';
+
+import axiosApiInstance from '@/services/ApiService';
 import { getResponseErrorCode, getResponseErrorMessage } from '@/utils/errorHandlers';
 import {
   PersonInfoApiFactory,
@@ -7,7 +9,6 @@ import {
   type PersonInfoApiInterface,
   type PersonInfoResponse,
 } from '../api-client/generated/api';
-import axiosApiInstance from '@/services/ApiService';
 
 const personenInfoApi: PersonInfoApiInterface = PersonInfoApiFactory(undefined, '', axiosApiInstance);
 export type Person = {
@@ -48,8 +49,7 @@ export const usePersonInfoStore: StoreDefinition<
   PersonInfoState,
   PersonInfoGetters,
   PersonInfoActions
-> = defineStore({
-  id: 'personInfoStore',
+> = defineStore('personInfoStore', {
   state: (): PersonInfoState => {
     return {
       personInfo: null,

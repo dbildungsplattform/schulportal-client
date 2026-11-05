@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { VueWrapper, mount } from '@vue/test-utils';
 import AdminLayout from './AdminLayout.vue';
-import type { Component } from 'vue-demi';
+import type { Component } from 'vue';
 
 let wrapper: VueWrapper | null = null;
 

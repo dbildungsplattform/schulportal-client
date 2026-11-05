@@ -1,10 +1,10 @@
 import { ImportStatus, type ImportResultResponse, type ImportUploadResponse } from '@/api-client/generated';
-import ApiService from '@/services/ApiService';
+import axiosApiInstance from '@/services/ApiService';
 import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
 import { ImportDataItemStatus, useImportStore, type ImportStore } from './ImportStore';
 
-const mockadapter: MockAdapter = new MockAdapter(ApiService);
+const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
 
 describe('ImportStore', () => {
   let importStore: ImportStore;

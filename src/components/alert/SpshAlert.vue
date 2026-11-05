@@ -52,7 +52,7 @@
             <slot name="text" />
           </v-col>
         </v-row>
-        <v-row justify="center">
+        <v-row class="justify-center">
           <v-col
             v-if="showButton"
             cols="auto"

@@ -1,10 +1,10 @@
 import { RollenSystemRechtEnum, type SystemRechtResponse } from '@/api-client/generated/api';
-import ApiService from '@/services/ApiService';
+import axiosApiInstance from '@/services/ApiService';
 import MockAdapter from 'axios-mock-adapter';
 import { setActivePinia, createPinia } from 'pinia';
 import { useMasterDataStore, MasterDataStatus, type MasterDataStore } from './MasterDataStore';
 
-const mockadapter: MockAdapter = new MockAdapter(ApiService);
+const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
 
 describe('MasterDataStore', () => {
   let store: MasterDataStore;

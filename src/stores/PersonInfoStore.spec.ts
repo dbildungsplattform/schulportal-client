@@ -1,11 +1,11 @@
 import { usePersonInfoStore, type PersonInfoStore } from './PersonInfoStore';
-import ApiService from '@/services/ApiService';
+import axiosApiInstance from '@/services/ApiService';
 import MockAdapter from 'axios-mock-adapter';
 import { setActivePinia, createPinia } from 'pinia';
 import type { PersonInfoResponse } from '@/api-client/generated/api';
 import { DoFactory } from 'test/DoFactory';
 
-const mockadapter: MockAdapter = new MockAdapter(ApiService);
+const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
 
 describe('PersonInfoStore', () => {
   let personInfoStore: PersonInfoStore;

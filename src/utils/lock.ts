@@ -46,7 +46,7 @@ export function parseUserLock(unparsedArray: object[]): UserLock[] {
         }
         result.locked_until = formatDateDigitsToGermanDate(utcDate);
       }
-      result.lock_occasion = unparsed[LockKeys.LockOccasion] as PersonLockOccasion;
+      result.lock_occasion = unparsed[LockKeys.LockOccasion];
     } else if (
       LockKeys.LockOccasion in unparsed &&
       unparsed[LockKeys.LockOccasion] === PersonLockOccasion.KOPERS_GESPERRT

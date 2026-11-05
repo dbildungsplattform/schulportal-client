@@ -39,3 +39,14 @@ export function sameContent<T, K>(a: Array<T>, b: Array<T>, toKey?: (arg0: T) =>
     return a.every((v: T) => bSet.has(v)) && b.every((v: T) => aSet.has(v));
   }
 }
+
+/**
+ * Returns an array with all values of a that are also in b.
+ * @param a
+ * @param b
+ * @returns
+ */
+export function intersect<V>(a: Array<V>, b: Array<V>): Array<V> {
+  const bSet: Set<V> = new Set(b);
+  return dedup(a.filter((v: V) => bSet.has(v)));
+}

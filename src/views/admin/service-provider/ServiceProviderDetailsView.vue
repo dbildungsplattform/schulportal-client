@@ -1,18 +1,36 @@
 <script setup lang="ts">
-  import {
-    ServiceProviderMerkmal,
-    useServiceProviderStore,
-    type ServiceProviderStore,
-  } from '@/stores/ServiceProviderStore';
-  import { useI18n, type Composer } from 'vue-i18n';
-  import { useRoute, useRouter, type RouteLocationNormalizedLoaded, type Router } from 'vue-router';
-  import SpshAlert from '@/components/alert/SpshAlert.vue';
-  import LayoutCard from '@/components/cards/LayoutCard.vue';
-  import { computed, onMounted, ref, type ComputedRef, type Ref } from 'vue';
   import SchulPortalLogo from '@/assets/logos/Schulportal_SH_Bildmarke_RGB_Anwendung_HG_Blau.svg';
   import LabeledField from '@/components/admin/LabeledField.vue';
   import ResultTable, { type Headers } from '@/components/admin/ResultTable.vue';
+  import VidisInfoDialog from '@/components/admin/service-provider/VidisInfoDialog.vue';
+  import SpshAlert from '@/components/alert/SpshAlert.vue';
+  import LayoutCard from '@/components/cards/LayoutCard.vue';
+  import SchulenFilter from '@/components/filter/SchulenFilter.vue';
   import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
+  import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
+  import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
+  import {
+    RollenSystemRecht,
+    useRolleStore,
+    type RolleResponse,
+    type RolleStore,
+    type RolleWithServiceProvidersResponse,
+  } from '@/stores/RolleStore';
+  import {
+    ServiceProviderMerkmal,
+    useServiceProviderStore,
+    type ManageableServiceProviderDetail,
+    type ServiceProviderStore,
+  } from '@/stores/ServiceProviderStore';
+  import type { TranslatedObject } from '@/types';
+  import { getLogoPath } from '@/utils/logosConfig';
+  import {
+    formatServiceProviderAnbietenMerkmale,
+    formatServiceProviderRollenartenWhitelist,
+  } from '@/utils/serviceProvider.helper';
+  import { computed, onMounted, ref, type ComputedRef, type Ref } from 'vue';
+  import { useI18n, type Composer } from 'vue-i18n';
+  import { useRoute, useRouter, type RouteLocationNormalizedLoaded, type Router } from 'vue-router';
 
   const router: Router = useRouter();
   const route: RouteLocationNormalizedLoaded = useRoute();
@@ -20,8 +38,20 @@
 
   const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
   const authStore: AuthStore = useAuthStore();
+  const configStore: ConfigStore = useConfigStore();
+  const organisationStore: OrganisationStore = useOrganisationStore();
+  const rolleStore: RolleStore = useRolleStore();
+
+  let timerId: ReturnType<typeof setTimeout>;
+
+  const isEditModeAvailable: ComputedRef<boolean> = computed(() => {
+    return configStore.configData?.schulischeAngeboteErstellen ?? false;
+  });
 
   const currentServiceProviderId: string = route.params['id'] as string;
+  const selectedOrganisationIds: Ref<string[]> = ref([]);
+  const selectedRolleIds: Ref<string[]> = ref([]);
+  const searchInputRollen: Ref<string> = ref('');
 
   type ReadonlyHeaders = Headers;
   const headers: ReadonlyHeaders = [
@@ -34,6 +64,21 @@
   const rollenerweiterungPerPage: Ref<number> = ref(30);
 
   const isOpen: Ref<boolean> = ref(false);
+  const vidisInfoDialogOpen: Ref<boolean> = ref(false);
+
+  const resolvedLogo: ComputedRef<string | undefined> = computed(() => {
+    const provider: ManageableServiceProviderDetail | null = serviceProviderStore.currentServiceProvider;
+
+    if (provider?.logoId != null) {
+      return getLogoPath(provider.logoId);
+    }
+
+    return serviceProviderStore.serviceProviderLogos.get(currentServiceProviderId);
+  });
+
+  const isVidisAngebot: ComputedRef<boolean> = computed(() => {
+    return Boolean(serviceProviderStore.currentServiceProvider?.vidisAngebotId);
+  });
 
   function navigateToServiceProviderTable(): void {
     router.push({ name: 'angebot-management' });
@@ -43,6 +88,14 @@
     serviceProviderStore.errorCode = '';
     navigateToServiceProviderTable();
   };
+
+  async function openServiceProviderEditMode(): Promise<void> {
+    if (isVidisAngebot.value) {
+      vidisInfoDialogOpen.value = true;
+      return;
+    }
+    await router.push({ name: 'angebot-edit', params: { id: currentServiceProviderId } });
+  }
 
   // Default for now - in the future when Edit functionality is added, this will have more error codes as cases to handle accordingly
   const alertButtonText: ComputedRef<string> = computed(() => {
@@ -74,6 +127,8 @@
   async function fetchRollenerweiterungen(): Promise<void> {
     await serviceProviderStore.getRollenerweiterungenById({
       serviceProviderId: currentServiceProviderId,
+      organisationIds: selectedOrganisationIds.value.length > 0 ? selectedOrganisationIds.value : undefined,
+      rolleIds: selectedRolleIds.value.length > 0 ? selectedRolleIds.value : undefined,
       offset: (rollenerweiterungPage.value - 1) * rollenerweiterungPerPage.value,
       limit: rollenerweiterungPerPage.value,
     });
@@ -94,6 +149,50 @@
     fetchRollenerweiterungen();
   }
 
+  const rollen: ComputedRef<TranslatedObject[] | undefined> = computed(() => {
+    const rollen: RolleWithServiceProvidersResponse[] = rolleStore.allRollen;
+
+    return rollen
+      .map((rolle: RolleResponse) => ({
+        value: rolle.id,
+        title: rolle.name,
+      }))
+      .sort((a: TranslatedObject, b: TranslatedObject) => a.title.localeCompare(b.title));
+  });
+
+  function resetSearchAndFilter(): void {
+    selectedOrganisationIds.value = [];
+    selectedRolleIds.value = [];
+    searchInputRollen.value = '';
+    fetchRollenerweiterungen();
+  }
+
+  function setOrganisationFilter(newValue: string[] | undefined): void {
+    selectedOrganisationIds.value = newValue ?? [];
+    fetchRollenerweiterungen();
+  }
+
+  function setRolleFilter(newValue: string[] | undefined): void {
+    selectedRolleIds.value = newValue ?? [];
+    if (!newValue?.length) {
+      searchInputRollen.value = '';
+    }
+    fetchRollenerweiterungen();
+  }
+
+  function updateRollenSearch(searchValue: string): void {
+    clearTimeout(timerId);
+
+    timerId = setTimeout(() => {
+      rolleStore.getAllRollen({
+        limit: 25,
+        searchString: searchValue,
+        systemrechte: [RollenSystemRecht.RollenVerwalten, RollenSystemRecht.RollenErweitern],
+        rolleIds: selectedRolleIds.value.length > 0 ? selectedRolleIds.value : undefined,
+      });
+    }, 500);
+  }
+
   onMounted(async () => {
     serviceProviderStore.errorCode = '';
     serviceProviderStore.serviceProviderLogos.clear();
@@ -104,6 +203,10 @@
     ]);
     if (authStore.hasRollenerweiternPermission) {
       fetchRollenerweiterungen();
+      rolleStore.getAllRollen({
+        systemrechte: [RollenSystemRecht.RollenVerwalten, RollenSystemRecht.RollenErweitern],
+        limit: 25,
+      });
     }
   });
 </script>
@@ -148,14 +251,11 @@
       <div v-if="!serviceProviderStore.errorCode">
         <v-container class="service-provider-info">
           <div v-if="serviceProviderStore.currentServiceProvider">
-            <v-row id="service-provider-info-row">
-              <v-col
-                class="custom-offset"
-                offset="1"
-                offset-sm="1"
-                offset-md="1"
-                offset-lg="1"
-              >
+            <v-row
+              class="mt-2"
+              id="service-provider-info-row"
+            >
+              <v-col class="pl-16">
                 <v-row>
                   <!-- Left column (first 4 fields) -->
                   <v-col
@@ -175,7 +275,6 @@
                         :label="t('angebot.administrationsebene')"
                         :value="serviceProviderStore.currentServiceProvider.administrationsebene.name"
                         test-id="service-provider-administrationsebene"
-                        no-margin-top
                       />
 
                       <!-- Requires 2FA -->
@@ -183,7 +282,6 @@
                         :label="t('angebot.requires2FA')"
                         :value="serviceProviderStore.currentServiceProvider.requires2fa ? t('yes') : t('no')"
                         test-id="service-provider-requires-2fa"
-                        no-margin-top
                       />
 
                       <!-- Can be assigned to Rollen? -->
@@ -197,7 +295,13 @@
                             : t('no')
                         "
                         test-id="service-provider-can-be-assigned-to-rollen"
-                        no-margin-top
+                      />
+
+                      <!-- Is Vidis Angebot? -->
+                      <LabeledField
+                        :label="t('angebot.vidisAngebot')"
+                        :value="isVidisAngebot ? t('yes') : t('no')"
+                        test-id="service-provider-vidis-angebot"
                       />
                     </div>
                   </v-col>
@@ -211,7 +315,7 @@
                     <LabeledField
                       :label="t('angebot.logo')"
                       is-logo
-                      :logo-src="serviceProviderStore.serviceProviderLogos.get(currentServiceProviderId)"
+                      :logo-src="resolvedLogo"
                       :default-logo-src="SchulPortalLogo"
                       test-id="service-provider-logo"
                       md-margin-top
@@ -222,11 +326,12 @@
                       :label="t('angebot.kategorie')"
                       :value="
                         serviceProviderStore.currentServiceProvider.kategorie
-                          ? t(`angebot.kategorien.${serviceProviderStore.currentServiceProvider.kategorie}`)
+                          ? t(
+                              `angebot.mappingFrontBackEnd.kategorien.${serviceProviderStore.currentServiceProvider.kategorie}`,
+                            )
                           : t('missing')
                       "
                       test-id="service-provider-kategorie"
-                      no-margin-top
                     />
 
                     <!-- URL -->
@@ -235,7 +340,6 @@
                       :value="serviceProviderStore.currentServiceProvider.url || t('missing')"
                       test-id="service-provider-link"
                       word-break-all
-                      no-margin-top
                     />
 
                     <!-- Rollenerweiterung -->
@@ -247,7 +351,54 @@
                       test-id="service-provider-rollenerweiterung"
                       no-margin-top
                     />
+
+                    <LabeledField
+                      :label="t('angebot.offeringScope')"
+                      :value="
+                        formatServiceProviderAnbietenMerkmale(serviceProviderStore.currentServiceProvider.merkmale, t)
+                      "
+                      test-id="service-provider-anbieten-merkmale"
+                      no-margin-top
+                    />
+
+                    <LabeledField
+                      :label="t('angebot.rollenartenWhitelistLabel')"
+                      :value="
+                        formatServiceProviderRollenartenWhitelist(
+                          serviceProviderStore.currentServiceProvider.rollenartenWhitelist,
+                          t,
+                        )
+                      "
+                      test-id="service-provider-rollenarten-whitelist"
+                      no-margin-top
+                    />
                   </v-col>
+                </v-row>
+                <v-row
+                  v-if="isEditModeAvailable"
+                  class="mr-10 justify-end"
+                >
+                  <v-col
+                    cols="12"
+                    md="auto"
+                  >
+                    <v-btn
+                      class="primary mt-4"
+                      data-testid="service-provider-bearbeiten-button"
+                      @click="openServiceProviderEditMode"
+                      :text="t('edit')"
+                    >
+                    </v-btn>
+                  </v-col>
+                  <VidisInfoDialog
+                    :header="t('angebot.edit')"
+                    :text="
+                      t('angebot.vidisEditInfoText', {
+                        name: serviceProviderStore.currentServiceProvider.name,
+                      })
+                    "
+                    v-model="vidisInfoDialogOpen"
+                  />
                 </v-row>
               </v-col>
             </v-row>
@@ -256,7 +407,7 @@
               color="#E5EAEF"
               thickness="6"
             ></v-divider>
-            <v-row class="mt-n6">
+            <v-row>
               <v-col
                 class="custom-offset"
                 offset="1"
@@ -311,8 +462,7 @@
 
             <!-- Header row + chevron -->
             <v-row
-              class="ml-sm-16 mt-2"
-              align="center"
+              class="ml-sm-16 mt-2 align-center"
               no-gutters
             >
               <v-col cols="auto">
@@ -336,7 +486,9 @@
                 >
                   <v-icon
                     class="chevron"
-                    :class="{ rotate: isOpen }"
+                    :class="{
+                      rotate: isOpen,
+                    }"
                   >
                     mdi-chevron-down
                   </v-icon>
@@ -344,53 +496,191 @@
               </v-col>
             </v-row>
 
-            <!-- Expandable table -->
-            <v-row
-              align="center"
-              class="mx-16 mt-n4"
-              justify="end"
-            >
+            <v-row class="align-center justify-end">
               <v-col cols="12">
                 <v-expand-transition>
                   <div v-show="isOpen">
                     <template v-if="serviceProviderStore.currentServiceProvider?.availableForRollenerweiterung">
-                      <ResultTable
-                        ref="result-table"
-                        :current-page="rollenerweiterungPage"
-                        data-testid="rollenerweiterungen-table"
-                        :items="serviceProviderStore.rollenerweiterungenUebersicht || []"
-                        :loading="serviceProviderStore.loading"
-                        :headers="headers"
-                        :hide-select="true"
-                        item-value-path="id"
-                        :total-items="serviceProviderStore.rollenerweiterungen?.total || 0"
-                        :items-per-page="rollenerweiterungPerPage"
-                        @on-items-per-page-update="getPaginatedRollenerweiterungenWithLimit"
-                        @on-page-update="getPaginatedRollenerweiterungen"
+                      <v-row
+                        class="ma-3 align-start"
+                        data-testid="filter-section"
                       >
-                        <template #[`item.schule`]="{ item }">
-                          <div
-                            class="ellipsis-wrapper"
-                            :title="item.schule"
+                        <v-col
+                          cols="12"
+                          md="2"
+                          class="py-md-0 text-md-right align-self-center"
+                        >
+                          <v-btn
+                            class="px-0 reset-filter"
+                            data-testid="reset-filter-button"
+                            :disabled="!selectedOrganisationIds.length && !selectedRolleIds.length"
+                            size="x-small"
+                            variant="text"
+                            width="auto"
+                            @click="resetSearchAndFilter()"
                           >
-                            {{ item.schule }}
-                          </div>
-                        </template>
+                            {{ $t('resetFilter') }}
+                          </v-btn>
+                        </v-col>
+                        <v-col
+                          cols="12"
+                          md="3"
+                          class="py-md-0"
+                        >
+                          <SchulenFilter
+                            :multiple="true"
+                            includeAll
+                            highlightSelection
+                            parentId="service-provider-management-by-schule"
+                            ref="schulenFilter"
+                            :systemrechteForSearch="[RollenSystemRecht.AngeboteVerwalten]"
+                            :selectedSchulen="selectedOrganisationIds.length > 0 ? selectedOrganisationIds : []"
+                            @update:selected-schulen="setOrganisationFilter"
+                            :placeholderText="$t('admin.schule.schule')"
+                            hideDetails
+                          >
+                            <template #prepend-item>
+                              <v-list-item>
+                                <v-progress-circular
+                                  v-if="
+                                    organisationStore.organisationenFilters.get('service-provider-management-by-schule')
+                                      ?.loading
+                                  "
+                                  indeterminate
+                                />
+                                <span
+                                  v-else
+                                  class="filter-header"
+                                >
+                                  {{
+                                    $t(
+                                      'admin.schule.schulenFound',
+                                      {
+                                        count: organisationStore.organisationenFilters.get(
+                                          'service-provider-management-by-schule',
+                                        )?.total,
+                                      },
+                                      organisationStore.organisationenFilters.get(
+                                        'service-provider-management-by-schule',
+                                      )?.total ?? 0,
+                                    )
+                                  }}
+                                </span>
+                              </v-list-item>
+                            </template>
+                          </SchulenFilter>
+                        </v-col>
+                        <v-col
+                          cols="12"
+                          md="3"
+                          class="py-md-0"
+                        >
+                          <v-autocomplete
+                            id="rolle-select"
+                            ref="rolle-select"
+                            v-model="selectedRolleIds"
+                            v-model:search="searchInputRollen"
+                            autocomplete="off"
+                            class="filter-dropdown"
+                            :class="{
+                              selected: selectedRolleIds.length > 0,
+                            }"
+                            clearable
+                            data-testid="rolle-select"
+                            density="compact"
+                            hide-details
+                            :items="rollen"
+                            item-value="value"
+                            item-text="title"
+                            multiple
+                            :no-data-text="$t('noDataFound')"
+                            :placeholder="$t('admin.rolle.rolle')"
+                            required="true"
+                            variant="outlined"
+                            @update:model-value="setRolleFilter"
+                            @update:search="updateRollenSearch"
+                          >
+                            <template #prepend-item>
+                              <v-list-item>
+                                <v-progress-circular
+                                  v-if="rolleStore.loading"
+                                  indeterminate
+                                />
+                                <span
+                                  v-else
+                                  class="filter-header"
+                                  >{{
+                                    $t(
+                                      'admin.rolle.rollenFound',
+                                      {
+                                        count: rolleStore.totalRollen,
+                                      },
+                                      rolleStore.totalRollen,
+                                    )
+                                  }}</span
+                                >
+                              </v-list-item>
+                            </template>
+                            <template #selection="{ internalItem: item, index }">
+                              <v-chip v-if="selectedRolleIds.length < 2">
+                                <span>{{ item.title }}</span>
+                              </v-chip>
+                              <div v-else-if="index === 0">
+                                {{
+                                  $t('admin.rolle.rollenSelected', {
+                                    count: selectedRolleIds.length,
+                                  })
+                                }}
+                              </div>
+                            </template>
+                          </v-autocomplete>
+                        </v-col>
+                      </v-row>
+                      <v-row class="mx-16 mt-n4 align-center justify-end">
+                        <v-col cols="12">
+                          <ResultTable
+                            ref="result-table"
+                            :current-page="rollenerweiterungPage"
+                            data-testid="rollenerweiterungen-table"
+                            :items="serviceProviderStore.rollenerweiterungenUebersicht || []"
+                            :loading="serviceProviderStore.loading"
+                            :headers="headers"
+                            :hide-select="true"
+                            item-value-path="id"
+                            :total-items="serviceProviderStore.rollenerweiterungen?.total || 0"
+                            :items-per-page="rollenerweiterungPerPage"
+                            :noDataText="$t('noSchulenFound')"
+                            @on-items-per-page-update="getPaginatedRollenerweiterungenWithLimit"
+                            @on-page-update="getPaginatedRollenerweiterungen"
+                          >
+                            <template #[`item.schule`]="{ item }">
+                              <div
+                                class="ellipsis-wrapper"
+                                :title="item.schule"
+                              >
+                                {{ item.schule }}
+                              </div>
+                            </template>
 
-                        <template #[`item.rollenerweiterungen`]="{ item }">
-                          <div
-                            class="ellipsis-wrapper"
-                            :title="item.rollenerweiterungen"
-                          >
-                            {{ item.rollenerweiterungen }}
-                          </div>
-                        </template>
-                      </ResultTable>
+                            <template #[`item.rollenerweiterungen`]="{ item }">
+                              <div
+                                class="ellipsis-wrapper"
+                                :title="item.rollenerweiterungen"
+                              >
+                                {{ item.rollenerweiterungen }}
+                              </div>
+                            </template>
+                          </ResultTable>
+                        </v-col>
+                      </v-row>
                     </template>
                     <template v-else>
                       <v-row>
                         <v-col cols="12">
-                          <span class="text-body">
+                          <span
+                            class="text-body"
+                            data-testid="rollenerweiterungen-not-available-hint"
+                          >
                             {{ t('angebot.notForSchulspezifischeRollenerweiterungenAvailable') }}</span
                           >
                         </v-col>

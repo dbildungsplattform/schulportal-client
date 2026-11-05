@@ -2,7 +2,7 @@ import type { OrganisationResponseLegacy } from '@/api-client/generated';
 import routes from '@/router/routes';
 import { useBulkOperationStore, type BulkOperationStore } from '@/stores/BulkOperationStore';
 import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
-import { RollenArt, RollenMerkmal, type RolleResponse } from '@/stores/RolleStore';
+import { RollenArt, type RolleResponse } from '@/stores/RolleStore';
 import type { Person } from '@/stores/types/Person';
 import { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
 import type { TranslatedObject } from '@/types';
@@ -50,8 +50,8 @@ function mountComponent(partialProps: Partial<Props> = {}): VueWrapper<InstanceT
       updatedAt: '',
       administeredBySchulstrukturknoten: '1',
       rollenart: RollenArt.Lehr,
-      merkmale: new Set<RollenMerkmal>(),
-      systemrechte: new Set(),
+      merkmale: [],
+      systemrechte: [],
       administeredBySchulstrukturknotenName: null,
       administeredBySchulstrukturknotenKennung: null,
       version: 0,

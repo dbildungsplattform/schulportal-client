@@ -13,8 +13,8 @@ const app: VueApp<Element> = createApp(App as Component)
   .use(router)
   .use(vuetify)
 
+app.mount('#app');
+
 // Fetch feature flags on app startup
 const configStore: ConfigStore = useConfigStore();
 configStore.getFeatureFlags();
-
-app.mount('#app');

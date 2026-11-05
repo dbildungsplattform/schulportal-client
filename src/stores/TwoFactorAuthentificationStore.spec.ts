@@ -1,5 +1,5 @@
 import type { AssignHardwareTokenBodyParams, TokenRequiredResponse, TokenStateResponse } from '@/api-client/generated';
-import ApiService from '@/services/ApiService';
+import axiosApiInstance from '@/services/ApiService';
 import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
 import {
@@ -8,7 +8,7 @@ import {
   type TwoFactorAuthentificationStore,
 } from './TwoFactorAuthentificationStore';
 
-const mockadapter: MockAdapter = new MockAdapter(ApiService);
+const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
 
 describe('TwoFactorAuthentificationStore', () => {
   let twoFactorAuthenticationStore: TwoFactorAuthentificationStore;

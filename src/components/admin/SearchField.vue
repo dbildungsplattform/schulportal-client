@@ -44,40 +44,37 @@
 
 <template>
   <v-col
-    :cols="inputCols"
-    :md="inputColsMd"
+    :cols="inputCols + buttonCols"
+    :md="inputColsMd + buttonColsMd"
   >
-    <v-text-field
-      id="search-filter-input"
-      v-model="searchFilter"
-      autocomplete="off"
-      class="search-field"
-      clearable
-      data-testid="search-filter-input"
-      density="compact"
-      hide-details
-      :placeholder="$t('admin.searchResultTable')"
-      required="true"
-      :title="props.hoverText"
-      variant="outlined"
-      @keyup.enter="applySearchFilter"
-    />
-  </v-col>
-  <v-col
-    :cols="buttonCols"
-    :md="buttonColsMd"
-  >
-    <v-btn
-      block
-      class="primary search button"
-      data-testid="apply-search-filter-button"
-      height="44"
-      prepend-icon="mdi-magnify"
-      width="130"
-      @click="applySearchFilter()"
-    >
-      {{ $t('search') }}
-    </v-btn>
+    <div class="d-flex ga-2">
+      <v-text-field
+        id="search-filter-input"
+        v-model="searchFilter"
+        autocomplete="off"
+        class="search-field flex-grow-1"
+        clearable
+        data-testid="search-filter-input"
+        density="compact"
+        hide-details
+        :placeholder="$t('admin.searchResultTable')"
+        required="true"
+        :title="props.hoverText"
+        variant="outlined"
+        @keyup.enter="applySearchFilter"
+        @click:clear="applySearchFilter"
+      />
+      <v-btn
+        class="primary search button flex-shrink-0"
+        data-testid="apply-search-filter-button"
+        height="44"
+        prepend-icon="mdi-magnify"
+        width="160"
+        @click="applySearchFilter()"
+      >
+        {{ $t('search') }}
+      </v-btn>
+    </div>
   </v-col>
 </template>
 

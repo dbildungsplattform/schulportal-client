@@ -51,8 +51,6 @@ describe('set up two-factor authentication', () => {
     wrapper?.get('[data-testid="open-2FA-self-service-dialog-icon"]').trigger('click');
     await nextTick();
 
-    document.querySelector('[data-testid="self-service-dialog-info-text"]');
-    document.querySelector('[data-testid="self-service-dialog-warning-text"]');
     expect(document.querySelector('[data-testid="self-service-dialog-info-text"]')).not.toBeNull();
     expect(document.querySelector('[data-testid="self-service-dialog-warning-text"]')).not.toBeNull();
 
@@ -64,46 +62,42 @@ describe('set up two-factor authentication', () => {
 
     expect(twoFactorAuthenticationStore.get2FASoftwareQRCode).toHaveBeenCalled();
 
-    document.querySelector('[data-testid="self-service-dialog-qr-info-text"]');
-    document.querySelector('[data-testid="software-token-dialog-progress-bar"]');
     expect(document.querySelector('[data-testid="self-service-dialog-qr-info-text"]')).not.toBeNull();
     expect(document.querySelector('[data-testid="software-token-dialog-progress-bar"]')).not.toBeNull();
 
     twoFactorAuthenticationStore.qrCode = 'qrCode';
-
     await nextTick();
 
-    document.querySelector('[data-testid="software-token-dialog-qr-code"]');
     expect(document.querySelector('[data-testid="software-token-dialog-qr-code"]')).not.toBeNull();
 
     proceedButton?.click();
     await nextTick();
 
-    document.querySelector('[data-testid="self-service-otp-entry-info-text"]');
-    document.querySelector('[data-testid="self-service-otp-input"]');
     expect(document.querySelector('[data-testid="self-service-otp-entry-info-text"]')).not.toBeNull();
     expect(document.querySelector('[data-testid="self-service-otp-input"]')).not.toBeNull();
 
-    const otpInput: HTMLInputElement = document.querySelector(
+    // VOtpInput (Vuetify 4) renders one <input> per digit box and drives its
+    // internal model off `beforeinput`, not a plain `input` event with a
+    // multi-char value — so each digit has to be dispatched to its own box.
+    const otpBoxes: NodeListOf<HTMLInputElement> = document.querySelectorAll<HTMLInputElement>(
       '[data-testid="self-service-otp-input"] input',
-    ) as HTMLInputElement;
+    );
 
-    otpInput.value = '123456';
+    // v4.1 field grouping: 6 aria-hidden decorative spacers + 1 real functional
+    // input (autocomplete="one-time-code") that holds the whole code.
+    const realOtpInput: HTMLInputElement | undefined = Array.from(otpBoxes).find((input: HTMLInputElement) =>
+      input.classList.contains('v-otp-input__input'),
+    );
 
-    const otpevent: Event = new Event('input', {
-      bubbles: true,
-      cancelable: true,
-    });
-    otpInput.dispatchEvent(otpevent);
+    expect(realOtpInput).toBeDefined();
 
-    const event: KeyboardEvent = new KeyboardEvent('keydown', {
-      key: 'Enter',
-      bubbles: true,
-      cancelable: true,
-    });
-    otpInput.dispatchEvent(event);
-
+    realOtpInput!.value = '123456';
+    realOtpInput!.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
     await nextTick();
+
+    realOtpInput!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    await nextTick();
+
     expect(twoFactorAuthenticationStore.verify2FAToken).toHaveBeenCalled();
   });
 

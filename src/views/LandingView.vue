@@ -7,7 +7,7 @@
     fill-height
     fluid
   >
-    <v-row justify="center">
+    <v-row class="justify-center">
       <v-col
         cols="12"
         md="8"

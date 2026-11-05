@@ -29,11 +29,15 @@
     :model-value="visible"
     :color="type"
   >
-    <v-row
-      class="align-center"
-      justify="space-between"
-    >
-      <v-col :class="['text-center primary-text-color', { 'mr-8': dismissable }]">
+    <v-row class="align-center justify-space-between">
+      <v-col
+        :class="[
+          'primary-text-color',
+          {
+            'mr-8': dismissable,
+          },
+        ]"
+      >
         <slot
           class="text-body"
           name="text"

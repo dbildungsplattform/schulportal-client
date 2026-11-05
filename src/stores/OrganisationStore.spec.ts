@@ -1,5 +1,7 @@
-import { OrganisationsTyp, type OrganisationRootChildrenResponse } from '@/api-client/generated';
-import ApiService from '@/services/ApiService';
+import { OrganisationResponse, OrganisationsTyp, type OrganisationRootChildrenResponse } from '@/api-client/generated';
+import axiosApiInstance from '@/services/ApiService';
+import { faker } from '@faker-js/faker';
+import { flushPromises } from '@vue/test-utils';
 import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
 import { DoFactory } from 'test/DoFactory';
@@ -11,10 +13,8 @@ import {
   type OrganisationenFilter,
   type OrganisationStore,
 } from './OrganisationStore';
-import { flushPromises } from '@vue/test-utils';
-import { faker } from '@faker-js/faker';
 
-const mockadapter: MockAdapter = new MockAdapter(ApiService);
+const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
 
 describe('OrganisationStore', () => {
   let organisationStore: OrganisationStore;
@@ -26,6 +26,7 @@ describe('OrganisationStore', () => {
 
   it('should initialize state correctly', () => {
     expect(organisationStore.allOrganisationen).toEqual([]);
+    expect(organisationStore.createdBehoerde).toBeNull();
     expect(organisationStore.errorCode).toEqual('');
     expect(organisationStore.loading).toBe(false);
   });
@@ -456,7 +457,7 @@ describe('OrganisationStore', () => {
     });
   });
 
-  describe('updateOrganisationById', () => {
+  describe('updateOrganisationNameById', () => {
     it('should update the organisation and update state', async () => {
       const mockResponse: Organisation = {
         id: '1',
@@ -481,7 +482,7 @@ describe('OrganisationStore', () => {
       };
 
       mockadapter.onPatch('/api/organisationen/1/name').replyOnce(200, mockResponse);
-      const updateOrganisationPromise: Promise<void> = organisationStore.updateOrganisationById(
+      const updateOrganisationPromise: Promise<void> = organisationStore.updateOrganisationNameById(
         '1',
         'Updated Organisation 1',
         OrganisationsTyp.Klasse,
@@ -516,7 +517,7 @@ describe('OrganisationStore', () => {
       };
 
       mockadapter.onPatch('/api/organisationen/2/name').replyOnce(200, mockResponse);
-      const updateOrganisationPromise: Promise<void> = organisationStore.updateOrganisationById(
+      const updateOrganisationPromise: Promise<void> = organisationStore.updateOrganisationNameById(
         '2',
         'Updated Träger 1',
         OrganisationsTyp.Traeger,
@@ -540,7 +541,7 @@ describe('OrganisationStore', () => {
       };
 
       mockadapter.onPatch('/api/organisationen/2/name').replyOnce(500, 'some mock server error');
-      const updateOrganisationPromise: Promise<void> = organisationStore.updateOrganisationById(
+      const updateOrganisationPromise: Promise<void> = organisationStore.updateOrganisationNameById(
         '2',
         'Updated Träger 1',
         OrganisationsTyp.Traeger,
@@ -565,7 +566,7 @@ describe('OrganisationStore', () => {
       };
 
       mockadapter.onPatch('/api/organisationen/2/name').replyOnce(500, { i18nKey: 'UPDATE_ERROR' });
-      const updateOrganisationPromise: Promise<void> = organisationStore.updateOrganisationById(
+      const updateOrganisationPromise: Promise<void> = organisationStore.updateOrganisationNameById(
         '2',
         'Updated Träger 1',
         OrganisationsTyp.Traeger,
@@ -590,7 +591,7 @@ describe('OrganisationStore', () => {
         version: undefined,
       };
 
-      const updateOrganisationPromise: Promise<void> = organisationStore.updateOrganisationById(
+      const updateOrganisationPromise: Promise<void> = organisationStore.updateOrganisationNameById(
         '1',
         'Updated Organisation 1',
         OrganisationsTyp.Klasse,
@@ -616,7 +617,7 @@ describe('OrganisationStore', () => {
         version: undefined,
       };
 
-      const updateOrganisationPromise: Promise<void> = organisationStore.updateOrganisationById(
+      const updateOrganisationPromise: Promise<void> = organisationStore.updateOrganisationNameById(
         '1',
         'Updated Organisation 1',
         OrganisationsTyp.Traeger,
@@ -625,6 +626,117 @@ describe('OrganisationStore', () => {
       await updateOrganisationPromise;
       expect(organisationStore.updatedOrganisation).toEqual(null);
       expect(organisationStore.errorCode).toEqual('UNSPECIFIED_ERROR');
+      expect(organisationStore.loading).toBe(false);
+    });
+  });
+
+  describe('fetchSchulDetails', () => {
+    it('should load schule details with its schultraegerform', async () => {
+      const mockSchule: Organisation = {
+        id: 'schule-1',
+        kennung: '1234567',
+        name: 'Testschule',
+        typ: OrganisationsTyp.Schule,
+        administriertVon: 'schultraeger-1',
+      };
+      const mockParentsTree: { parents: OrganisationResponse[] } = {
+        parents: [
+          {
+            id: 'schultraeger-1',
+            name: 'Test Schultraeger',
+            typ: OrganisationsTyp.Land,
+            administriertVon: 'root',
+            kennung: '1',
+            zugehoerigZu: null,
+            namensergaenzung: null,
+            kuerzel: '',
+            traegerschaft: '01',
+            itslearningEnabled: false,
+            version: 0,
+            emailAdress: '',
+          },
+        ],
+      };
+
+      mockadapter.onGet('/api/organisationen/schule-1').replyOnce(200, mockSchule);
+      mockadapter.onPost('/api/organisationen/parents-by-ids').replyOnce(200, mockParentsTree);
+
+      const promise: Promise<void> = organisationStore.fetchSchulDetails('schule-1');
+
+      expect(organisationStore.loading).toBe(true);
+      await promise;
+
+      expect(organisationStore.currentSchule).toEqual({
+        ...mockSchule,
+        schultraegerform: mockParentsTree.parents[0],
+      });
+      expect(organisationStore.errorCode).toBe('');
+      expect(organisationStore.loading).toBe(false);
+    });
+
+    it('should preserve the error code from a failed organisation request', async () => {
+      organisationStore.errorCode = 'PREVIOUS_ERROR';
+      const mockParentsTree: { parents: OrganisationResponse[] } = { parents: [] };
+
+      mockadapter.onGet('/api/organisationen/schule-1').replyOnce(500, { code: 'SCHULE_NOT_FOUND' });
+      mockadapter.onPost('/api/organisationen/parents-by-ids').replyOnce(200, mockParentsTree);
+
+      await organisationStore.fetchSchulDetails('schule-1');
+
+      expect(organisationStore.currentSchule).toBeNull();
+      expect(organisationStore.errorCode).toBe('SCHULE_NOT_FOUND');
+      expect(organisationStore.loading).toBe(false);
+    });
+
+    it('should handle string error', async () => {
+      mockadapter.onGet('/api/organisationen/1').replyOnce(500, 'some mock server error');
+      const getOrganisationByIdPromise: Promise<void> = organisationStore.fetchSchulDetails('schule-1');
+      await getOrganisationByIdPromise;
+      expect(organisationStore.currentSchule).toEqual(null);
+      expect(organisationStore.errorCode).toEqual('UNSPECIFIED_ERROR');
+      expect(organisationStore.loading).toBe(false);
+    });
+  });
+
+  describe('updateSchuleById', () => {
+    it('should update school details and set the updated organisation', async () => {
+      const mockUpdatedSchool: Organisation = {
+        id: 'schule-1',
+        kennung: '1234567',
+        name: 'Updated Testschule',
+        typ: OrganisationsTyp.Schule,
+        administriertVon: 'schultraeger-1',
+        zugehoerigZu: 'schultraeger-1',
+        emailAdress: 'updated@schule.de',
+        version: 2,
+      };
+
+      mockadapter.onPut('/api/organisationen/schule-1').replyOnce(200, mockUpdatedSchool);
+
+      await organisationStore.updateSchuleById({
+        organisationId: 'schule-1',
+        schultraegerform: 'schultraeger-1',
+        name: 'Updated Testschule',
+        emailAdress: 'updated@schule.de',
+      });
+
+      expect(organisationStore.updatedOrganisation).toEqual(mockUpdatedSchool);
+      expect(organisationStore.errorCode).toBe('');
+      expect(organisationStore.loading).toBe(false);
+    });
+
+    it('should set an error code when the school update request fails', async () => {
+      mockadapter.onPut('/api/organisationen/schule-1').replyOnce(500, { i18nKey: 'SCHULE_UPDATE_FAILED' });
+
+      await organisationStore.updateSchuleById({
+        organisationId: 'schule-1',
+        schultraegerform: 'schultraeger-1',
+        name: 'Updated Testschule',
+        emailAdress: 'updated@schule.de',
+      });
+
+      expect(organisationStore.updatedOrganisation).toBeNull();
+      expect(organisationStore.errorCode).toBe('SCHULE_UPDATE_FAILED');
       expect(organisationStore.loading).toBe(false);
     });
   });
@@ -644,6 +756,7 @@ describe('OrganisationStore', () => {
           zugehoerigZu: '1',
           version: 1,
           itslearningEnabled: true,
+          emailAdress: 'oeffentlich@example.com',
         },
         ersatz: {
           id: '3',
@@ -657,6 +770,7 @@ describe('OrganisationStore', () => {
           zugehoerigZu: '1',
           version: 1,
           itslearningEnabled: true,
+          emailAdress: 'ersatz@example.com',
         },
       };
 
@@ -888,7 +1002,7 @@ describe('OrganisationStore', () => {
 
   describe('assignSchuleToTraeger', () => {
     it('should assign schule to traeger', async () => {
-      mockadapter.onPost('api/organisationen/2/zugehoerig').replyOnce(201);
+      mockadapter.onPost('/api/organisationen/2/zugehoerig').replyOnce(201);
       const assignSchuleToTraegerPromise: Promise<void> = organisationStore.assignSchuleToTraeger('2', {
         organisationId: '11',
       });
@@ -1092,6 +1206,95 @@ describe('OrganisationStore', () => {
     });
   });
 
+  describe('createBehoerde', () => {
+    beforeEach(() => {
+      organisationStore.$reset();
+      vi.restoreAllMocks();
+    });
+
+    describe('without kennung', () => {
+      it('should omit kennung from the request and update state', async () => {
+        const administriertVon: string = DoFactory.getOrganisation().id;
+        const zugehoerigZu: string = DoFactory.getOrganisation().id;
+        const mockResponse: Organisation = DoFactory.getOrganisation({
+          typ: OrganisationsTyp.Behoerde,
+          administriertVon,
+          zugehoerigZu,
+          kennung: undefined,
+        });
+
+        mockadapter
+          .onPost('/api/organisationen', {
+            administriertVon,
+            zugehoerigZu,
+            name: mockResponse.name,
+            typ: OrganisationsTyp.Behoerde,
+          })
+          .replyOnce(201, mockResponse);
+
+        const promise: Promise<void> = organisationStore.createBehoerde(
+          administriertVon,
+          zugehoerigZu,
+          mockResponse.name,
+        );
+
+        expect(organisationStore.loading).toBe(true);
+        expect(organisationStore.createdBehoerde).toBeNull();
+        await promise;
+
+        expect(organisationStore.createdBehoerde).toEqual(mockResponse);
+        expect(organisationStore.errorCode).toBe('');
+        expect(organisationStore.loading).toBe(false);
+      });
+    });
+
+    describe('with an unstructured error response', () => {
+      it('should set the fallback error code', async () => {
+        const mockBehoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
+        const administriertVon: string = DoFactory.getOrganisation().id;
+        const zugehoerigZu: string = DoFactory.getOrganisation().id;
+
+        mockadapter.onPost('/api/organisationen').replyOnce(500, 'some mock server error');
+
+        const promise: Promise<void> = organisationStore.createBehoerde(
+          administriertVon,
+          zugehoerigZu,
+          mockBehoerde.name,
+        );
+
+        expect(organisationStore.loading).toBe(true);
+        await promise;
+
+        expect(organisationStore.createdBehoerde).toBeNull();
+        expect(organisationStore.errorCode).toBe('ORGANISATION_SPECIFICATION_ERROR');
+        expect(organisationStore.loading).toBe(false);
+      });
+    });
+
+    describe('with a structured error response', () => {
+      it('should set the error code from i18nKey', async () => {
+        const mockBehoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
+        const administriertVon: string = DoFactory.getOrganisation().id;
+        const zugehoerigZu: string = DoFactory.getOrganisation().id;
+
+        mockadapter.onPost('/api/organisationen').replyOnce(500, { i18nKey: 'BEHOERDE_CREATE_ERROR' });
+
+        const promise: Promise<void> = organisationStore.createBehoerde(
+          administriertVon,
+          zugehoerigZu,
+          mockBehoerde.name,
+        );
+
+        expect(organisationStore.loading).toBe(true);
+        await promise;
+
+        expect(organisationStore.createdBehoerde).toBeNull();
+        expect(organisationStore.errorCode).toBe('BEHOERDE_CREATE_ERROR');
+        expect(organisationStore.loading).toBe(false);
+      });
+    });
+  });
+
   describe('getFilteredKlassen', () => {
     it('should get all klassen for a schule with search string', async () => {
       const mockResponse: Organisation[] = [
@@ -1159,9 +1362,9 @@ describe('OrganisationStore', () => {
     it('should delete organisation and update state', async () => {
       mockadapter.onDelete(endpoint).replyOnce(200);
       const deleteOrganisationPromise: Promise<void> = organisationStore.deleteOrganisationById(organisationId);
-      expect(organisationStore.loading).toBe(true);
+      expect(organisationStore.loadingDelete).toBe(true);
       await deleteOrganisationPromise;
-      expect(organisationStore.loading).toBe(false);
+      expect(organisationStore.loadingDelete).toBe(false);
       expect(organisationStore.errorCode).toEqual('');
     });
 
@@ -1173,9 +1376,9 @@ describe('OrganisationStore', () => {
     ])('should handle error', async (error: ErrorType, expectedErrorCode: string) => {
       mockadapter.onDelete(endpoint).replyOnce(500, error);
       const deleteOrganisationPromise: Promise<void> = organisationStore.deleteOrganisationById(organisationId);
-      expect(organisationStore.loading).toBe(true);
+      expect(organisationStore.loadingDelete).toBe(true);
       await deleteOrganisationPromise;
-      expect(organisationStore.loading).toBe(false);
+      expect(organisationStore.loadingDelete).toBe(false);
       expect(organisationStore.errorCode).toEqual(expectedErrorCode);
     });
   });

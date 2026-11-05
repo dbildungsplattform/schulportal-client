@@ -4,11 +4,13 @@
 </script>
 
 <template>
-  <AdminMenuBar />
-  <v-container>
-    <slot />
-  </v-container>
-  <TheFooter />
+  <v-main>
+    <AdminMenuBar />
+    <v-container>
+      <slot />
+    </v-container>
+    <TheFooter />
+  </v-main>
 </template>
 
 <style scoped lang="scss">
@@ -16,7 +18,6 @@
 
   @media (min-width: 1280px) {
     .v-container {
-      max-width: 1200px - 320px;
       margin-bottom: 300px;
     }
   }

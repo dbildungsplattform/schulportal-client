@@ -1,7 +1,14 @@
 @use '../variables';
 
 .v-btn {
-  width: 340px;
+  &.primary,
+  &.secondary {
+    width: 340px;
+  }
+
+  &.v-btn--icon {
+    width: calc(var(--v-btn-height) + -8px);
+  }
 
   .v-btn__content {
     font-weight: bold;
@@ -49,6 +56,10 @@
     &:hover {
       border: variables.$secondaryButtonHoverBorderSize solid variables.$secondaryButtonBorderColor;
     }
+  }
+
+  &.smallest {
+    width: 180px;
   }
 
   &.small {

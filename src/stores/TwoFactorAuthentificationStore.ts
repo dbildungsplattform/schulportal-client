@@ -50,8 +50,7 @@ export const useTwoFactorAuthentificationStore: StoreDefinition<
   TwoFactorState,
   TwoFactorGetters,
   TwoFactorActions
-> = defineStore({
-  id: 'twoFactorAuthentificationStore',
+> = defineStore('twoFactorAuthentificationStore', {
   state: (): TwoFactorState => {
     return {
       errorCode: '',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { OrganisationsTyp, RollenArt, RollenMerkmal } from '@/api-client/generated/api';
+  import { OrganisationsTyp, RollenMerkmal, ServiceProviderSystem } from '@/api-client/generated/api';
   import PasswordReset from '@/components/admin/personen/PasswordReset.vue';
   import SpshTooltip from '@/components/admin/SpshTooltip.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
@@ -9,6 +9,11 @@
   import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
   import { usePersonInfoStore, type PersonInfoStore } from '@/stores/PersonInfoStore';
   import { EmailStatus, usePersonStore, type PersonStore } from '@/stores/PersonStore';
+  import {
+    useServiceProviderStore,
+    type ServiceProviderStore,
+    type StartPageServiceProvider,
+  } from '@/stores/ServiceProviderStore';
   import {
     TokenKind,
     useTwoFactorAuthentificationStore,
@@ -32,6 +37,7 @@
   const personInfoStore: PersonInfoStore = usePersonInfoStore();
   const personStore: PersonStore = usePersonStore();
   const configStore: ConfigStore = useConfigStore();
+  const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
   const twoFactorAuthenticationStore: TwoFactorAuthentificationStore = useTwoFactorAuthentificationStore();
 
   const windowOrigin: string = window.location.origin;
@@ -60,15 +66,16 @@
     return personStore.personenuebersicht?.hasRollenMerkmale([RollenMerkmal.KopersPflicht]) || false;
   });
 
+  // The UEM Angebot is modelled as a service provider with target NONE
+  const hasUEMServiceProvider: ComputedRef<boolean> = computed(() => {
+    return serviceProviderStore.assignedServiceProviders.some(
+      (serviceProvider: StartPageServiceProvider) => serviceProvider.externalSystem === ServiceProviderSystem.Uem,
+    );
+  });
+
   // Used to show device password block
   const showResetDevicePassword: ComputedRef<boolean> = computed(() => {
-    return (
-      (configStore.configData?.setUemPasswordEnabled &&
-        !!personStore.personenuebersicht?.zuordnungen.find((zuordnung: Zuordnung) => {
-          return zuordnung.rollenArt === RollenArt.Lehr;
-        })) ||
-      false
-    );
+    return (configStore.configData?.setUemPasswordEnabled && hasUEMServiceProvider.value) || false;
   });
 
   // Computed property to get the device password dialog text
@@ -197,9 +204,16 @@
 
       const twoFARequirementPromise: Promise<void> = twoFactorAuthenticationStore.get2FARequirement(personId);
       const personUebersichtPromise: Promise<void> = personStore.getPersonenuebersichtById(personId);
+      const availableServiceProvidersPromise: Promise<void> =
+        serviceProviderStore.getServiceProvidersByPersonId(personId);
       const twoFAStatePromise: Promise<void> = twoFactorAuthenticationStore.get2FAState(personId);
 
-      await Promise.all([twoFARequirementPromise, personUebersichtPromise, twoFAStatePromise]);
+      await Promise.all([
+        twoFARequirementPromise,
+        personUebersichtPromise,
+        availableServiceProvidersPromise,
+        twoFAStatePromise,
+      ]);
       loading2FA.value = false;
     },
     { immediate: true },
@@ -246,7 +260,7 @@
         >
           <v-row class="ma-4">
             <v-col cols="12">
-              <v-table class="text-body-1">
+              <v-table class="text-body-large">
                 <template #default>
                   <tbody>
                     <tr
@@ -292,8 +306,8 @@
                         :data-testid="item.testIdValue"
                       >
                         <v-row
+                          class="align-center"
                           no-gutters
-                          align="center"
                         >
                           <SpshTooltip
                             v-if="item.tooltip"
@@ -316,7 +330,7 @@
                 </template>
               </v-table>
               <p
-                class="pt-4 text-center text-body-1 text-medium-emphasis"
+                class="pt-4 text-center text-body-large text-medium-emphasis"
                 data-testid="info-text-with-icon"
                 style="white-space: normal"
               >
@@ -338,18 +352,18 @@
           :header="$t('login.password')"
           class="text-body"
         >
-          <v-row
-            align="center"
-            justify="center"
-            class="ma-4 text-body"
-          >
+          <v-row class="ma-4 text-body align-center justify-center">
             <v-col class="text-center px-0">
               <v-row>
                 <p
                   v-if="lastPasswordChangeDate"
                   class="w-100"
                 >
-                  {{ t('profile.lastPasswordChange', { date: lastPasswordChangeDate }) }}
+                  {{
+                    t('profile.lastPasswordChange', {
+                      date: lastPasswordChangeDate,
+                    })
+                  }}
                 </p>
               </v-row>
               <v-row class="d-flex align-center justify-center">
@@ -430,11 +444,7 @@
           </v-dialog>
         </LayoutCard>
         <template v-if="loading2FA">
-          <v-row
-            align="center"
-            justify="center"
-            class="ma-3"
-          >
+          <v-row class="ma-3 align-center justify-center">
             <v-progress-circular
               indeterminate
               size="64"
@@ -448,11 +458,7 @@
           :headline-test-id="'two-factor-card'"
           :header="$t('profile.twoFactorAuth')"
         >
-          <v-row
-            align="center"
-            justify="center"
-            class="ma-4 text-body"
-          >
+          <v-row class="ma-4 text-body align-center justify-center">
             <v-col
               v-if="twoFactorAuthenticationStore.hasToken || twoFactorAuthError"
               cols="12"
@@ -460,8 +466,7 @@
               <v-row>
                 <v-col
                   cols="1"
-                  align-self="center"
-                  class="text-right"
+                  class="text-right align-self-center"
                 >
                   <v-icon
                     v-if="twoFactorAuthError"
@@ -497,10 +502,9 @@
               v-else
               cols="12"
             >
-              <v-row justify="center">
+              <v-row class="justify-center">
                 <v-col
-                  align-self="center"
-                  class="text-center"
+                  class="text-center align-self-center"
                   data-testid="two-factor-info"
                 >
                   <v-icon
@@ -527,8 +531,7 @@
                 <template v-else-if="twoFactorAuthenticationStore.hasToken === true">
                   <v-col
                     cols="1"
-                    align-self="center"
-                    class="text-right"
+                    class="text-right align-self-center"
                   >
                     <v-icon
                       class="mb-2"
@@ -552,11 +555,7 @@
           :header="$t('admin.person.devicePassword.header')"
           class="text-body"
         >
-          <v-row
-            align="center"
-            justify="center"
-            class="ma-4 text-body"
-          >
+          <v-row class="ma-4 text-body align-center justify-center">
             <v-col class="text-center px-0">
               <v-row class="d-flex align-center justify-center">
                 <PasswordReset

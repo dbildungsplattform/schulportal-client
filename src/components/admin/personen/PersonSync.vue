@@ -142,6 +142,7 @@
               <v-col
                 offset="2"
                 cols="8"
+                class="text-center"
               >
                 <span data-testid="person-sync-confirmation-text">
                   {{ t('admin.person.syncPersonConfirmation') }}

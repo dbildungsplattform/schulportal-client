@@ -4,3 +4,23 @@
   }
   max-height: 40px !important;
 }
+
+.rolle-treeview,
+.angebot-selection-tree {
+  .v-list-group:has([data-scrollable]) .v-list-group__items {
+    max-height: 400px;
+    overflow-y: scroll !important;
+  }
+
+  .v-list-group__items {
+    &::-webkit-scrollbar {
+      width: 6px;
+      display: block;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.25);
+      border-radius: 3px;
+    }
+  }
+}

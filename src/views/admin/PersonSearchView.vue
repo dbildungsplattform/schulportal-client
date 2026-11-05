@@ -632,7 +632,7 @@
         >
           <v-row
             class="ma-4"
-            dense
+            density="compact"
           >
             <!-- PERSONAL DATA COLUMN -->
             <v-col
@@ -648,7 +648,7 @@
               >
                 <v-row>
                   <v-col cols="12">
-                    <v-table class="text-body-1">
+                    <v-table class="text-body-large">
                       <template #default>
                         <tbody>
                           <tr
@@ -670,8 +670,8 @@
                             </td>
                             <td :data-testid="item.testIdValue">
                               <v-row
+                                class="align-center"
                                 no-gutters
-                                align="center"
                               >
                                 <SpshTooltip
                                   v-if="item.tooltip"
@@ -714,7 +714,7 @@
               >
                 <v-row>
                   <v-col cols="12">
-                    <v-table class="text-body-1">
+                    <v-table class="text-body-large">
                       <template #default>
                         <tbody>
                           <tr

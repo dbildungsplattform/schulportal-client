@@ -101,7 +101,10 @@
               class="text-body bold px-md-16"
             >
               <v-col>
-                <p data-testid="password-reset-info-text">
+                <p
+                  class="text-center"
+                  data-testid="password-reset-info-text"
+                >
                   {{ dialogText }}
                 </p>
               </v-col>

@@ -1,5 +1,12 @@
 /* this is used as a base class for all API based services */
-import axios, { AxiosError, HttpStatusCode, type AxiosResponse, type AxiosInstance } from 'axios';
+import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
+import axios, {
+  AxiosError,
+  HttpStatusCode,
+  type AxiosResponse,
+  type AxiosInstance,
+  type InternalAxiosRequestConfig,
+} from 'axios';
 
 const axiosApiInstance: AxiosInstance = axios.create({
   baseURL: '/',
@@ -20,5 +27,13 @@ axiosApiInstance.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+axiosApiInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const authStore: AuthStore = useAuthStore();
+  if (authStore.csrfToken) {
+    config.headers['X-CSRF-Token'] = authStore.csrfToken;
+  }
+  return config;
+});
 
 export default axiosApiInstance;

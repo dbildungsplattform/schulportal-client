@@ -1,9 +1,6 @@
-import { expect, test } from 'vitest';
-import { DOMWrapper, VueWrapper, flushPromises, mount } from '@vue/test-utils';
-import RolleDetailsView from './RolleDetailsView.vue';
-import { setActivePinia, createPinia } from 'pinia';
+import { OrganisationsTyp } from '@/api-client/generated';
 import routes from '@/router/routes';
-import { type Router, createRouter, createWebHistory } from 'vue-router';
+import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
 import {
   RollenMerkmal,
   RollenSystemRecht,
@@ -12,63 +9,37 @@ import {
   type RolleStore,
   type RolleWithServiceProvidersResponse,
 } from '@/stores/RolleStore';
+import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
+import { faker } from '@faker-js/faker';
+import { DOMWrapper, VueWrapper, flushPromises, mount } from '@vue/test-utils';
+import { DoFactory } from 'test/DoFactory';
+import { expect, test, type Mock } from 'vitest';
 import { nextTick, type Component } from 'vue';
-import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
-import { RollenSystemRechtEnum, type SystemRechtResponse } from '@/api-client/generated';
+import { createRouter, createWebHistory, type Router } from 'vue-router';
+import RolleDetailsView from './RolleDetailsView.vue';
 
 let wrapper: VueWrapper | null = null;
 let router: Router;
 const rolleStore: RolleStore = useRolleStore();
 const organisationStore: OrganisationStore = useOrganisationStore();
+const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
 
-const mockCurrentRolle: Rolle = {
-  administeredBySchulstrukturknoten: '1234',
-  rollenart: 'LEHR',
-  name: 'Lehrer',
-  // TODO: remove type casting when generator is fixed
-  merkmale: ['KOPERS_PFLICHT'] as unknown as Set<RollenMerkmal>,
-  systemrechte: ['ROLLEN_VERWALTEN'] as unknown as Set<RollenSystemRecht>,
-  id: '1',
-  version: 1,
-};
-
+const mockOrga: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Schule });
+const mockCurrentRolle: Rolle = DoFactory.getRolle({ administeredBySchulstrukturknoten: mockOrga.id });
 const mockUpdatedRolle: RolleWithServiceProvidersResponse = {
-  administeredBySchulstrukturknoten: '1234',
-  rollenart: 'LEHR',
+  ...mockCurrentRolle,
+  administeredBySchulstrukturknotenName: mockOrga.name,
+  administeredBySchulstrukturknotenKennung: mockOrga.kennung!,
   name: 'Updated Lehrer',
-  merkmale: ['KOPERS_PFLICHT'] as unknown as Set<RollenMerkmal>,
-  systemrechte: [
-    { name: RollenSystemRechtEnum.RollenVerwalten, isTechnical: false },
-  ] as unknown as Set<SystemRechtResponse>,
-  createdAt: '2022',
-  updatedAt: '2023',
-  id: '1',
   serviceProviders: [{ id: 'sp1', name: 'ServiceProvider1' }],
-  administeredBySchulstrukturknotenName: 'Land SH',
-  administeredBySchulstrukturknotenKennung: '',
   version: 2,
+  createdAt: faker.date.past().toISOString(),
+  updatedAt: faker.date.recent().toISOString(),
+  systemrechte: [],
 };
 
-rolleStore.currentRolle = mockCurrentRolle;
-rolleStore.updatedRolle = mockUpdatedRolle;
-
-beforeEach(async () => {
-  setActivePinia(createPinia());
-  document.body.innerHTML = `
-    <div>
-      <div id="app"></div>
-    </div>
-  `;
-
-  router = createRouter({
-    history: createWebHistory(),
-    routes,
-  });
-
-  router.push('/');
-  await router.isReady();
-
-  wrapper = mount(RolleDetailsView, {
+async function mountComponent(): Promise<VueWrapper<InstanceType<typeof RolleDetailsView>>> {
+  const wrapper: VueWrapper<InstanceType<typeof RolleDetailsView>> = mount(RolleDetailsView, {
     attachTo: document.getElementById('app') || '',
     global: {
       components: {
@@ -82,63 +53,118 @@ beforeEach(async () => {
       plugins: [router],
     },
   });
+  await flushPromises();
+  return wrapper;
+}
+
+beforeEach(async () => {
+  document.body.innerHTML = `
+    <div>
+      <div id="app"></div>
+    </div>
+  `;
+
+  router = createRouter({
+    history: createWebHistory(),
+    routes,
+  });
+
+  rolleStore.currentRolle = mockCurrentRolle;
+
+  router.push('/');
+  await router.isReady();
+
+  wrapper = await mountComponent();
+});
+
+afterEach(() => {
+  wrapper?.unmount();
+  rolleStore.$reset();
 });
 
 describe('RolleDetailsView', () => {
-  test('it renders the rolle details view', () => {
-    expect(wrapper?.find('[data-testid="rolle-details-headline"]').isVisible()).toBe(true);
-  });
-
-  test('it renders data for current rolle', async () => {
-    rolleStore.errorCode = '';
+  test.each([false, true])('should save pilot selections with removal=%s', async (remove: boolean) => {
+    const merkmale: RollenMerkmal[] = [
+      RollenMerkmal.Pilot1Rolle,
+      RollenMerkmal.Pilot2Rolle,
+      RollenMerkmal.Pilot3Rolle,
+      RollenMerkmal.Pilot4Rolle,
+      RollenMerkmal.Pilot5Rolle,
+    ];
+    const systemrechte: RollenSystemRecht[] = [
+      RollenSystemRecht.Pilot1RollenZuordnen,
+      RollenSystemRecht.Pilot2RollenZuordnen,
+      RollenSystemRecht.Pilot3RollenZuordnen,
+      RollenSystemRecht.Pilot4RollenZuordnen,
+      RollenSystemRecht.Pilot5RollenZuordnen,
+    ];
+    const rolle: Rolle = DoFactory.getRolle({
+      administeredBySchulstrukturknoten: mockOrga.id,
+      merkmale: remove ? merkmale : [],
+      systemrechte: new Set(remove ? systemrechte : []),
+    });
+    wrapper?.unmount();
+    rolleStore.currentRolle = rolle;
     rolleStore.updatedRolle = null;
-    rolleStore.currentRolle = {
-      administeredBySchulstrukturknoten: '1234',
-      rollenart: 'LEHR',
-      name: 'Current Lehrer',
-      merkmale: [] as unknown as Set<RollenMerkmal>,
-      systemrechte: [] as unknown as Set<RollenSystemRecht>,
-      id: '1',
-      serviceProviders: [],
-      version: 2,
-    };
-    organisationStore.currentOrganisation = {
-      id: '1234',
-      kennung: '',
-      name: 'Current Schule',
-      namensergaenzung: 'Current Schule',
-      kuerzel: 'CurrentSchool',
-      typ: 'SCHULE',
-      administriertVon: '1',
-      schuleDetails: 'SchuleDetails',
-      version: 1,
-      itslearningEnabled: true,
-    };
-    await flushPromises();
+    rolleStore.errorCode = '';
+    rolleStore.getRolleById = vi.fn();
+    rolleStore.updateRolle = vi.fn();
+    wrapper = await mountComponent();
 
-    // TODO: the computed value does not render inside the input
-    // const orgaSelectInput: DOMWrapper<Element> | undefined = wrapper?.find('input#administrationsebene-select');
-    // expect(wrapper?.find('[data-testid="administrationsebene-select"]').text()).toEqual('---');
+    await wrapper.find('[data-testid="rolle-edit-button"]').trigger('click');
+    const form: VueWrapper = wrapper.findComponent({ ref: 'rolle-form' });
+    const merkmaleSelect: VueWrapper = form.findComponent({ ref: 'merkmale-select' });
+    const systemrechteSelect: VueWrapper = form.findComponent({ ref: 'systemrechte-select' });
 
+    await merkmaleSelect.setValue(remove ? [] : merkmale);
+    await systemrechteSelect.setValue(remove ? [] : systemrechte);
+    await wrapper.find('[data-testid="rolle-changes-save-button"]').trigger('click');
+
+    await vi.waitFor(() => {
+      expect(rolleStore.updateRolle).toHaveBeenLastCalledWith(
+        rolle.id,
+        rolle.name,
+        remove ? [] : merkmale,
+        remove ? [] : systemrechte,
+        [],
+        rolle.version,
+      );
+    });
     rolleStore.currentRolle = mockCurrentRolle;
     rolleStore.updatedRolle = mockUpdatedRolle;
   });
 
+  test('it renders the rolle details view', () => {
+    rolleStore.currentRolle = mockCurrentRolle;
+    expect(wrapper?.find('[data-testid="rolle-details-headline"]').isVisible()).toBe(true);
+  });
+
+  test('it renders data for current rolle', async () => {
+    organisationStore.currentOrganisation = mockOrga;
+    organisationStore.organisationenFilters.set('rolle-form', {
+      filterResult: [mockOrga],
+      loading: false,
+      total: 1,
+    });
+    wrapper = await mountComponent();
+
+    expect(
+      wrapper
+        ?.findComponent({ ref: 'rolle-form' })
+        .findComponent({ name: 'SchulenFilter' })
+        .findComponent({ ref: 'rolle-form-organisation-select' })
+        .text(),
+    ).toContain(mockOrga.name);
+  });
+
   test('it renders data in success template', async () => {
-    rolleStore.updatedRolle = {
-      administeredBySchulstrukturknoten: '1234',
-      rollenart: 'LEHR',
+    rolleStore.updatedRolle = DoFactory.getRolleWithServiceProviders({
       name: 'Updated Lehrer',
-      merkmale: [] as unknown as Set<RollenMerkmal>,
-      systemrechte: [] as unknown as Set<SystemRechtResponse>,
-      createdAt: '2022',
-      updatedAt: '2023',
-      id: '1',
+      merkmale: [],
+      systemrechte: [],
       serviceProviders: [],
-      administeredBySchulstrukturknotenName: 'Land SH',
-      administeredBySchulstrukturknotenKennung: '',
       version: 2,
-    };
+    });
     await flushPromises();
 
     const rolleName: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="updated-rolle-name"]');
@@ -152,16 +178,9 @@ describe('RolleDetailsView', () => {
     expect(rolleMerkmale?.text()).toEqual('---');
     expect(rolleAngebote?.text()).toEqual('---');
     expect(rolleSystemrechte?.text()).toEqual('---');
-
-    rolleStore.updatedRolle = mockUpdatedRolle;
   });
 
   test('it activates editing mode', async () => {
-    rolleStore.updatedRolle = null;
-    rolleStore.errorCode = '';
-
-    await nextTick();
-
     await wrapper?.find('[data-testid="rolle-edit-button"]').trigger('click');
     await nextTick();
 
@@ -169,25 +188,21 @@ describe('RolleDetailsView', () => {
   });
 
   test('it does not cancel editing because of unsaved changes', async () => {
-    rolleStore.updatedRolle = null;
-    rolleStore.errorCode = '';
+    expect(wrapper).not.toBeNull();
+    const view: VueWrapper = wrapper!;
 
-    await wrapper?.find('[data-testid="rolle-edit-button"]').trigger('click');
-    await nextTick();
+    await view.get('[data-testid="rolle-edit-button"]').trigger('click');
+    await view.get('[data-testid="rollenname-input"] input').setValue('1b');
+    await view.get('[data-testid="rolle-edit-cancel-button"]').trigger('click');
 
-    await wrapper?.find('[data-testid="rollenname-input"] input').setValue('1b');
-    await nextTick();
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-testid="unsaved-changes-warning-text"]')).not.toBeNull();
+    });
 
-    await wrapper?.find('[data-testid="rolle-edit-cancel-button"]').trigger('click');
-    await nextTick();
-
-    expect(document.querySelector('[data-testid="unsaved-changes-warning-text"]')).not.toBeNull();
+    expect(view.get('[data-testid="rolle-changes-save-button"]').isVisible()).toBe(true);
   });
 
   test('it submits the form and shows the success template', async () => {
-    rolleStore.updatedRolle = null;
-    rolleStore.errorCode = '';
-
     await wrapper?.find('[data-testid="rolle-edit-button"]').trigger('click');
     await nextTick();
 
@@ -223,26 +238,34 @@ describe('RolleDetailsView', () => {
     );
   });
 
-  test('displays error message correctly', async () => {
-    // We have to reset updatedRolle to null to trigger the error message
-    rolleStore.updatedRolle = null;
-
-    // Test case 1: ROLLE_UPDATE_ERROR
-    rolleStore.errorCode = 'ROLLE_UPDATE_ERROR';
+  test.each([
+    ['ROLLE_UPDATE_ERROR', 'Die Rolle konnte nicht bearbeitet werden'],
+    ['NEWER_VERSION_OF_ROLLE_AVAILABLE', 'Geänderte Daten'],
+  ])('displays error message correctly for %s', async (errorCode: string, expectedTitle: string) => {
+    rolleStore.errorCode = errorCode;
     await nextTick();
 
     const spshAlertWrapper: VueWrapper | undefined = wrapper?.findComponent({ name: 'SpshAlert' });
     expect(spshAlertWrapper?.props()).toMatchObject({
-      title: 'Die Rolle konnte nicht bearbeitet werden',
+      title: expectedTitle,
     });
-    // Test case 2: NEWER_VERSION_OF_ROLLE_AVAILABLE
-    rolleStore.errorCode = 'NEWER_VERSION_OF_ROLLE_AVAILABLE';
-    await nextTick();
+  });
 
-    expect(spshAlertWrapper?.props()).toMatchObject({
-      title: 'Geänderte Daten',
+  test('it calls getAssignableServiceProvidersForRolleByOrganisationId on mount', async () => {
+    const rolle: Rolle = DoFactory.getRolle();
+    vi.spyOn(rolleStore, 'getRolleById').mockImplementationOnce(async () => {
+      rolleStore.currentRolle = rolle;
+      return Promise.resolve();
     });
-    // reset errorCode after test
-    rolleStore.errorCode = '';
+    const getAssignableServiceProvidersSpy: Mock = vi.spyOn(
+      serviceProviderStore,
+      'getAssignableServiceProvidersForRolleByOrganisationId',
+    );
+    getAssignableServiceProvidersSpy.mockClear(); // Clear the mock call history before the assertion
+    await mountComponent();
+    expect(getAssignableServiceProvidersSpy).toHaveBeenCalledWith(
+      rolle.administeredBySchulstrukturknoten,
+      rolle.rollenart,
+    );
   });
 });

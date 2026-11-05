@@ -1,13 +1,19 @@
 import { expect, test, describe } from 'vitest';
 import { DOMWrapper, mount, VueWrapper } from '@vue/test-utils';
 import RollenerweiterungTreeview, { type RolleForSelection } from './RollenerweiterungTreeview.vue';
-import { RollenArt } from '@/stores/RolleStore';
+import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
 
 const mockRollen: RolleForSelection[] = [
   { id: 'lehr-1', name: 'Lehrer A', rollenart: RollenArt.Lehr },
   { id: 'lehr-2', name: 'Lehrer B', rollenart: RollenArt.Lehr },
   { id: 'lern-1', name: 'Schüler A', rollenart: RollenArt.Lern },
   { id: 'leit-1', name: 'Schulleiter A', rollenart: RollenArt.Leit },
+  {
+    id: 'mpt-1',
+    name: 'MPT A',
+    rollenart: RollenArt.Schb,
+    merkmale: RollenMerkmal.MptRolle ? [RollenMerkmal.MptRolle] : undefined,
+  },
 ];
 
 function mountComponent(
@@ -59,9 +65,18 @@ describe('RollenerweiterungTreeview - Group rendering', () => {
 
   test('does not render group when no rollen exist for that rollenart', () => {
     const wrapper: VueWrapper = mountComponent({
-      availableRollen: [{ id: 'lehr-1', name: 'Lehrer A', rollenart: RollenArt.Lehr }],
+      availableRollen: [
+        { id: 'lehr-1', name: 'Lehrer A', rollenart: RollenArt.Lehr },
+        {
+          id: 'lehr-2',
+          name: 'MPT Lehrer B',
+          rollenart: RollenArt.Nlehr,
+          merkmale: RollenMerkmal.MptRolle ? [RollenMerkmal.MptRolle] : undefined,
+        },
+      ],
     }) as VueWrapper;
     expect(wrapper.find('[data-testid="treeview-group-LEHR"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="treeview-group-MPT"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="treeview-group-LERN"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="treeview-group-LEIT"]').exists()).toBe(false);
   });
@@ -115,7 +130,7 @@ describe('RollenerweiterungTreeview - toggleGroupSelection', () => {
 describe('RollenerweiterungTreeview - onSelectionUpdate', () => {
   test('emits only valid leaf IDs on treeview model update', () => {
     const wrapper: VueWrapper = mountComponent() as VueWrapper;
-    const treeview: VueWrapper = wrapper.findComponent({ name: 'VTreeview' }) as VueWrapper;
+    const treeview: VueWrapper = wrapper.findComponent({ name: 'VTreeview' });
     treeview.vm.$emit('update:modelValue', ['lehr-1', 'lern-1']);
 
     const emitted: unknown[][] | undefined = wrapper.emitted('update:selectedRolleIds');
@@ -125,7 +140,7 @@ describe('RollenerweiterungTreeview - onSelectionUpdate', () => {
 
   test('filters out non-leaf (group) IDs', () => {
     const wrapper: VueWrapper = mountComponent() as VueWrapper;
-    const treeview: VueWrapper = wrapper.findComponent({ name: 'VTreeview' }) as VueWrapper;
+    const treeview: VueWrapper = wrapper.findComponent({ name: 'VTreeview' });
     treeview.vm.$emit('update:modelValue', ['lehr-1', 'group-LEHR']);
 
     const emitted: unknown[][] | undefined = wrapper.emitted('update:selectedRolleIds');
@@ -136,7 +151,7 @@ describe('RollenerweiterungTreeview - onSelectionUpdate', () => {
 
   test('emits empty array when called with non-array value', () => {
     const wrapper: VueWrapper = mountComponent() as VueWrapper;
-    const treeview: VueWrapper = wrapper.findComponent({ name: 'VTreeview' }) as VueWrapper;
+    const treeview: VueWrapper = wrapper.findComponent({ name: 'VTreeview' });
     treeview.vm.$emit('update:modelValue', null);
 
     const emitted: unknown[][] | undefined = wrapper.emitted('update:selectedRolleIds');
@@ -145,7 +160,7 @@ describe('RollenerweiterungTreeview - onSelectionUpdate', () => {
 
   test('filters out non-string values from array', () => {
     const wrapper: VueWrapper = mountComponent() as VueWrapper;
-    const treeview: VueWrapper = wrapper.findComponent({ name: 'VTreeview' }) as VueWrapper;
+    const treeview: VueWrapper = wrapper.findComponent({ name: 'VTreeview' });
     treeview.vm.$emit('update:modelValue', ['lehr-1', 123, null, 'lern-1']);
 
     const emitted: unknown[][] | undefined = wrapper.emitted('update:selectedRolleIds');

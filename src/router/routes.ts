@@ -1,5 +1,6 @@
 import { StepUpLevel } from '@/stores/AuthStore';
 import type { RouteRecordRaw } from 'vue-router';
+import type { AppRoute } from '.';
 
 const routes: readonly RouteRecordRaw[] = [
   {
@@ -135,6 +136,30 @@ const routes: readonly RouteRecordRaw[] = [
     },
   },
   {
+    path: '/admin/rollen/mpt',
+    name: 'mpt-rolle-management',
+    component: () => import('../views/admin/rollen/MptRollenManagementView.vue'),
+    meta: {
+      layout: 'AdminLayout',
+      requiresAuth: true,
+      requiredStepUpLevel: StepUpLevel.GOLD,
+      requiresPermission: 'mptrollenzuordnen',
+    },
+  },
+  {
+    path: '/admin/rollen/mpt/:id',
+    name: 'mpt-rolle-details',
+    component: () => import('../views/admin/rollen/MptRolleDetailsView.vue'),
+    meta: {
+      layout: 'AdminLayout',
+      requiresAuth: true,
+      requiredStepUpLevel: StepUpLevel.GOLD,
+      requiresPermission: ['mptrollenzuordnen', 'schulspezifischeangebotsverwaltung'],
+      requiresOrga: true,
+      missingOrgaRedirect: { name: 'mpt-rolle-management' },
+    },
+  },
+  {
     path: '/admin/rollen/:id',
     name: 'rolle-details',
     component: () => import('../views/admin/rollen/RolleDetailsView.vue'),
@@ -153,7 +178,7 @@ const routes: readonly RouteRecordRaw[] = [
       layout: 'AdminLayout',
       requiresAuth: true,
       requiredStepUpLevel: StepUpLevel.GOLD,
-      requiresPermission: 'rollenverwaltung',
+      requiresPermission: ['rollenverwaltung'],
     },
   },
   {
@@ -200,7 +225,33 @@ const routes: readonly RouteRecordRaw[] = [
       requiresPermission: 'schulspezifischeangebotsverwaltung',
       requiresOrga: true,
       missingOrgaRedirect: { name: 'angebot-management-schulspezifisch' },
-    }
+    },
+  },
+  {
+    path: '/admin/angebote/:id/edit',
+    name: 'angebot-edit',
+    component: () => import('../views/admin/service-provider/ServiceProviderEditView.vue'),
+    meta: {
+      layout: 'AdminLayout',
+      requiresAuth: true,
+      requiredStepUpLevel: StepUpLevel.GOLD,
+      requiresFeatureFlag: 'schulischeAngeboteErstellen',
+      requiresPermission: ['angebotsverwaltung', 'eingeschränktangebotsverwaltung'],
+      permissionMode: 'any',
+    },
+  },
+  {
+    path: '/admin/angebote/new',
+    name: 'create-angebot',
+    component: () => import('../views/admin/service-provider/ServiceProviderCreationView.vue'),
+    meta: {
+      layout: 'AdminLayout',
+      requiresAuth: true,
+      requiredStepUpLevel: StepUpLevel.GOLD,
+      requiresPermission: ['angebotsverwaltung', 'eingeschränktangebotsverwaltung'],
+      permissionMode: 'any',
+      requiresFeatureFlag: 'schulischeAngeboteErstellen',
+    },
   },
   {
     path: '/admin/schulen/new',
@@ -217,6 +268,28 @@ const routes: readonly RouteRecordRaw[] = [
     path: '/admin/schulen',
     name: 'schule-management',
     component: () => import('../views/admin/organisationen/SchuleManagementView.vue'),
+    meta: {
+      layout: 'AdminLayout',
+      requiresAuth: true,
+      requiredStepUpLevel: StepUpLevel.GOLD,
+      requiresPermission: 'schulverwaltung',
+    },
+  },
+  {
+    path: '/admin/schulen/:id',
+    name: 'schule-details',
+    component: () => import('../views/admin/organisationen/SchuleDetailsView.vue'),
+    meta: {
+      layout: 'AdminLayout',
+      requiresAuth: true,
+      requiredStepUpLevel: StepUpLevel.GOLD,
+      requiresPermission: 'schulverwaltung',
+    },
+  },
+  {
+    path: '/admin/schulen/:id/edit',
+    name: 'schule-edit',
+    component: () => import('../views/admin/organisationen/SchuleDetailsEditView.vue'),
     meta: {
       layout: 'AdminLayout',
       requiresAuth: true,
@@ -255,6 +328,39 @@ const routes: readonly RouteRecordRaw[] = [
       requiresAuth: true,
       requiredStepUpLevel: StepUpLevel.GOLD,
       requiresPermission: 'schultraegerverwaltung',
+    },
+  },
+  {
+    path: '/admin/behoerden',
+    name: 'behoerde-management',
+    component: () => import('../views/admin/organisationen/BehoerdeManagementView.vue'),
+    meta: {
+      layout: 'AdminLayout',
+      requiresAuth: true,
+      requiredStepUpLevel: StepUpLevel.GOLD,
+      requiresPermission: 'behoerdenverwaltung',
+    },
+  },
+  {
+    path: '/admin/behoerden/new',
+    name: 'create-behoerde',
+    component: () => import('../views/admin/organisationen/BehoerdeCreationView.vue'),
+    meta: {
+      layout: 'AdminLayout',
+      requiresAuth: true,
+      requiredStepUpLevel: StepUpLevel.GOLD,
+      requiresPermission: 'behoerdenverwaltung',
+    },
+  },
+  {
+    path: '/admin/behoerden/:id',
+    name: 'behoerde-details',
+    component: () => import('../views/admin/organisationen/BehoerdeDetailsView.vue'),
+    meta: {
+      layout: 'AdminLayout',
+      requiresAuth: true,
+      requiredStepUpLevel: StepUpLevel.GOLD,
+      requiresPermission: 'behoerdenverwaltung',
     },
   },
   {
@@ -303,6 +409,11 @@ const routes: readonly RouteRecordRaw[] = [
     name: 'no-second-factor',
     component: () => import('../views/NoSecondFactorView.vue'),
   },
-];
+  {
+    path: '/service-not-available/:serviceName',
+    name: 'service-not-available',
+    component: () => import('../views/ServiceNotAvailableView.vue'),
+  },
+] satisfies readonly AppRoute[];
 
 export default routes;

@@ -6,33 +6,47 @@
     labelForId: string;
     noTopMargin?: boolean;
     isAlignedWithRadio?: boolean;
+
+    /**
+     * Makes the content column stretch wider and start further left.
+     * Useful for components like logo grids.
+     */
+    wideContent?: boolean;
   };
 
-  defineProps<Props>();
+  withDefaults(defineProps<Props>(), {
+    wideContent: false,
+  });
 </script>
 
 <template>
-  <v-row :class="`${noTopMargin ? 'align-center' : 'align-center mt-8'}`">
-    <v-col
-      :class="`${isAlignedWithRadio ? 'pb-sm-8 pt-sm-3 text-sm-right mb-sm-10' : 'pb-sm-8 pt-sm-3 text-sm-right'}`"
-      cols="12"
-      sm="5"
-    >
-      <label
-        :for="labelForId"
-        :error="errorLabel"
-        :required="isRequired"
-        >{{ label }}</label
+  <div :class="noTopMargin ? '' : 'mt-8'">
+    <v-row class="align-start">
+      <!-- Label column -->
+      <v-col
+        :class="`${isAlignedWithRadio ? 'pb-sm-8 pt-sm-3 text-sm-right mb-sm-10' : 'pb-sm-8 pt-sm-3 text-sm-right'} ${wideContent ? 'ml-sm-5' : ''}`"
+        cols="12"
+        :sm="wideContent ? '1' : '5'"
       >
-    </v-col>
-    <v-col
-      class="py-0"
-      cols="12"
-      sm="7"
-    >
-      <slot />
-    </v-col>
-  </v-row>
+        <label
+          :for="labelForId"
+          :error="errorLabel"
+          :required="isRequired"
+        >
+          {{ label }}
+        </label>
+      </v-col>
+
+      <!-- Content column -->
+      <v-col
+        class="py-0"
+        cols="12"
+        :sm="wideContent ? '10' : '7'"
+      >
+        <slot />
+      </v-col>
+    </v-row>
+  </div>
 </template>
 
-<style></style>
+<style scoped></style>

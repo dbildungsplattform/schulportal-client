@@ -30,7 +30,7 @@
 
 <template>
   <v-container>
-    <v-row justify="center">
+    <v-row class="justify-center">
       <v-col
         class="subtitle-1"
         cols="auto"
@@ -38,7 +38,7 @@
         <span data-testid="rolle-success-text">{{ successMessage }}</span>
       </v-col>
     </v-row>
-    <v-row justify="center">
+    <v-row class="justify-center">
       <v-col cols="auto">
         <v-icon
           color="#1EAE9C"
@@ -48,7 +48,7 @@
         />
       </v-col>
     </v-row>
-    <v-row justify="center">
+    <v-row class="justify-center">
       <v-col
         class="subtitle-2"
         cols="auto"
@@ -71,7 +71,7 @@
       color="#E5EAEF"
       thickness="6"
     />
-    <v-row justify="end">
+    <v-row class="justify-end">
       <v-col
         cols="12"
         sm="6"

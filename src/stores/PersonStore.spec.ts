@@ -9,7 +9,7 @@ import {
   type PersonMetadataBodyParams,
   type PersonendatensatzResponse,
 } from '@/api-client/generated';
-import ApiService from '@/services/ApiService';
+import axiosApiInstance from '@/services/ApiService';
 import { PersonLockOccasion } from '@/utils/lock';
 import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
@@ -21,7 +21,7 @@ import { PersonenUebersicht } from './types/PersonenUebersicht';
 import type { PersonWithZuordnungen } from './types/PersonWithZuordnungen';
 import { Zuordnung } from './types/Zuordnung';
 
-const mockadapter: MockAdapter = new MockAdapter(ApiService);
+const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
 
 function getUserLockBodyParams(lock: boolean): LockUserBodyParams {
   return {

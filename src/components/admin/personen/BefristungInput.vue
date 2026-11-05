@@ -104,12 +104,11 @@
         @update:model-value="handleBefristungChange"
       />
     </FormRow>
-    <v-row class="align-center">
+    <v-row class="align-center justify-end">
       <v-col
         class="py-0 mt-n1"
         cols="12"
         sm="7"
-        offset-sm="5"
       >
         <v-radio-group
           ref="befristung-radio-group"
@@ -124,6 +123,7 @@
             :value="BefristungOption.SCHULJAHRESENDE"
             color="primary"
           />
+
           <SpshTooltip
             v-if="isUnbefristetDisabled"
             :enabled-condition="!isUnbefristetDisabled"
@@ -134,16 +134,17 @@
               data-testid="unbefristet-radio-button"
               :label="$t('admin.befristung.unlimited')"
               :value="BefristungOption.UNBEFRISTET"
-              :color="'primary'"
+              color="primary"
               :disabled="isUnbefristetDisabled"
             />
           </SpshTooltip>
+
           <v-radio
             v-else
             data-testid="unbefristet-radio-button"
             :label="$t('admin.befristung.unlimited')"
             :value="BefristungOption.UNBEFRISTET"
-            :color="'primary'"
+            color="primary"
             :disabled="isUnbefristetDisabled"
           />
         </v-radio-group>

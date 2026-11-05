@@ -2,7 +2,6 @@ import { expect, test } from 'vitest';
 import { VueWrapper, mount } from '@vue/test-utils';
 import { OrganisationsTyp, useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
 import { nextTick, type Component } from 'vue';
-import type WrapperLike from 'node_modules/@vue/test-utils/dist/interfaces/wrapperLike';
 import SchultraegerManagementView from './SchultraegerManagementView.vue';
 
 let wrapper: VueWrapper | null = null;
@@ -86,7 +85,7 @@ describe('SchultraegerManagementView', () => {
     expect(wrapper?.find('.v-data-table-footer__items-per-page').isVisible()).toBe(true);
     expect(wrapper?.find('.v-data-table-footer__items-per-page').text()).toContain('30');
 
-    const itemsPerPageSelection: WrapperLike | undefined = wrapper?.findComponent(
+    const itemsPerPageSelection: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
       '.v-data-table-footer__items-per-page .v-select',
     );
     await itemsPerPageSelection?.setValue(50);

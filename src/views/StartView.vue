@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import type { PersonTimeLimitInfoResponse } from '@/api-client/generated';
+  import { ServiceProviderTarget, type PersonTimeLimitInfoResponse } from '@/api-client/generated';
   import SpshBanner from '@/components/alert/SpshBanner.vue';
   import ServiceProviderCategory from '@/components/layout/ServiceProviderCategory.vue';
   import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
@@ -10,8 +10,8 @@
   import {
     ServiceProviderKategorie,
     useServiceProviderStore,
-    type StartPageServiceProvider,
     type ServiceProviderStore,
+    type StartPageServiceProvider,
   } from '@/stores/ServiceProviderStore';
   import {
     useTwoFactorAuthentificationStore,
@@ -19,6 +19,7 @@
   } from '@/stores/TwoFactorAuthentificationStore';
   import type { Zuordnung } from '@/stores/types/Zuordnung';
   import { adjustDateForTimezoneAndFormat } from '@/utils/date';
+  import { getLogoPath } from '@/utils/logosConfig';
   import { computed, onBeforeMount, onMounted, ref, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
 
@@ -43,29 +44,32 @@
     kategorie: ServiceProviderKategorie,
   ): StartPageServiceProvider[] {
     return providers
-      .filter((provider: StartPageServiceProvider) => provider.kategorie === kategorie)
+      .filter(
+        (provider: StartPageServiceProvider) =>
+          provider.kategorie === kategorie && provider.target !== ServiceProviderTarget.None,
+      )
       .sort((a: StartPageServiceProvider, b: StartPageServiceProvider) => a.name.localeCompare(b.name));
   }
 
   // Filter service providers by category "EMAIL"
   const emailServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.availableServiceProviders, ServiceProviderKategorie.Email),
+    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Email),
   );
   // Filter service providers by category "UNTERRICHT"
   const classServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.availableServiceProviders, ServiceProviderKategorie.Unterricht),
+    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Unterricht),
   );
   // Filter service providers by category "VERWALTUNG"
   const administrationServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.availableServiceProviders, ServiceProviderKategorie.Verwaltung),
+    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Verwaltung),
   );
   // Filter service providers by category "SCHULISCH"
   const schulischServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.availableServiceProviders, ServiceProviderKategorie.Schulisch),
+    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Schulisch),
   );
   // Filter service providers by category "HINWEISE"
   const hintsServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.availableServiceProviders, ServiceProviderKategorie.Hinweise),
+    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Hinweise),
   );
 
   function getHasToken(): boolean {
@@ -143,16 +147,19 @@
     await authStore.initializeAuthStatus();
     const personId: string | null | undefined = authStore.currentUser?.personId;
 
-    // Load all service providers first
-    await serviceProviderStore.getAvailableServiceProviders();
+    await serviceProviderStore.getServiceProvidersByPersonId(personId!);
 
     // Load all logos in parallel and assign them to the respective service providers
-    const logoPromises: Promise<void>[] = serviceProviderStore.availableServiceProviders
-      .filter((p: StartPageServiceProvider) => p.hasLogo)
-      .map(async (p: StartPageServiceProvider) => {
-        await serviceProviderStore.getServiceProviderLogoById(p.id);
-        p.logoUrl = serviceProviderStore.serviceProviderLogos.get(p.id);
-      });
+    const logoPromises: Promise<void>[] = serviceProviderStore.assignedServiceProviders.map(
+      async (p: StartPageServiceProvider) => {
+        if (p.logoId) {
+          p.logoUrl = getLogoPath(p.logoId);
+        } else if (p.hasLogo) {
+          await serviceProviderStore.getServiceProviderLogoById(p.id);
+          p.logoUrl = serviceProviderStore.serviceProviderLogos.get(p.id);
+        }
+      },
+    );
 
     const twoFAStatePromise: Promise<void> = personId
       ? twoFactorAuthentificationStore.get2FAState(personId)
@@ -216,16 +223,10 @@
           :dismissable="false"
         >
           <template #text>
-            <span class="text-body">
-              <v-textarea
-                v-model="hinweis.text"
-                variant="plain"
-                :hide-details="true"
-                readonly
-                auto-grow
-                rows="1"
-              />
-            </span>
+            <span
+              class="tiptap-content-preview"
+              v-html="hinweis.text"
+            ></span>
           </template>
         </SpshBanner>
 
@@ -274,7 +275,7 @@
     <!-- Template to be displayed in case loading the providers throws an error -->
     <template v-else-if="serviceProviderStore.errorCode">
       <p
-        class="text-caption text-left"
+        class="text-body-small text-left"
         data-testid="error-text"
       >
         {{ $t(`errors.${serviceProviderStore.errorCode}`) }}
@@ -285,7 +286,9 @@
       <!-- Categorie 1: Work Email -->
       <ServiceProviderCategory
         :category-title="
-          emailServiceProviders.length > 0 ? t(`angebot.kategorien.${emailServiceProviders[0]?.kategorie}`) : ''
+          emailServiceProviders.length > 0
+            ? t(`angebot.mappingFrontBackEnd.kategorien.${emailServiceProviders[0]?.kategorie}`)
+            : ''
         "
         :service-providers="emailServiceProviders"
         :has-token="getHasToken()"
@@ -293,7 +296,9 @@
       <!-- Categorie 2: Class -->
       <ServiceProviderCategory
         :category-title="
-          classServiceProviders.length > 0 ? t(`angebot.kategorien.${classServiceProviders[0]?.kategorie}`) : ''
+          classServiceProviders.length > 0
+            ? t(`angebot.mappingFrontBackEnd.kategorien.${classServiceProviders[0]?.kategorie}`)
+            : ''
         "
         :service-providers="classServiceProviders"
         :has-token="getHasToken()"
@@ -302,7 +307,7 @@
       <ServiceProviderCategory
         :category-title="
           administrationServiceProviders.length > 0
-            ? t(`angebot.kategorien.${administrationServiceProviders[0]?.kategorie}`)
+            ? t(`angebot.mappingFrontBackEnd.kategorien.${administrationServiceProviders[0]?.kategorie}`)
             : ''
         "
         :service-providers="administrationServiceProviders"
@@ -311,7 +316,9 @@
       <!-- Categorie 4: Schulisch -->
       <ServiceProviderCategory
         :category-title="
-          schulischServiceProviders.length > 0 ? t(`angebot.kategorien.${schulischServiceProviders[0]?.kategorie}`) : ''
+          schulischServiceProviders.length > 0
+            ? t(`angebot.mappingFrontBackEnd.kategorien.${schulischServiceProviders[0]?.kategorie}`)
+            : ''
         "
         :service-providers="schulischServiceProviders"
         :has-token="getHasToken()"
@@ -319,7 +326,9 @@
       <!-- Categorie 5: Hints -->
       <ServiceProviderCategory
         :category-title="
-          hintsServiceProviders.length > 0 ? t(`angebot.kategorien.${hintsServiceProviders[0]?.kategorie}`) : ''
+          hintsServiceProviders.length > 0
+            ? t(`angebot.mappingFrontBackEnd.kategorien.${hintsServiceProviders[0]?.kategorie}`)
+            : ''
         "
         :service-providers="hintsServiceProviders"
         :has-token="getHasToken()"
@@ -328,4 +337,10 @@
   </v-card>
 </template>
 
-<style></style>
+<style>
+  .tiptap-content-preview {
+    max-height: 20rem;
+    overflow: auto;
+    display: block;
+  }
+</style>

@@ -39,7 +39,10 @@
       if (serviceProvider.requires2fa && !props.hasToken && authStore.acr !== StepUpLevel.GOLD) {
         return { url: NO_SECOND_FACTOR, newTab: false };
       } else {
-        return { url: serviceProvider.url, newTab: true };
+        return {
+          url: serviceProvider.url!, // if target is URL, url should be defined, so we can assert it with !
+          newTab: true,
+        };
       }
     }
     return { url: getInternalServiceProviderUrl(serviceProvider.target), newTab: false };
@@ -49,10 +52,10 @@
 <template>
   <template v-if="serviceProviders?.length">
     <v-row>
-      <label class="mx-3">{{ categoryTitle }}</label>
+      <label>{{ categoryTitle }}</label>
       <v-col>
         <v-divider
-          class="border-opacity-100 rounded"
+          class="border-opacity-100 rounded mt-3"
           color="#E5EAEF"
           thickness="6"
         />

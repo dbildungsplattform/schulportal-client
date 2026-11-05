@@ -6,13 +6,12 @@ import type { Person } from '@/stores/types/Person';
 import { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
 import type { Zuordnung } from '@/stores/types/Zuordnung';
 import { faker } from '@faker-js/faker';
-import { VueWrapper, flushPromises, mount } from '@vue/test-utils';
+import { DOMWrapper, VueWrapper, flushPromises, mount } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import type { MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import PersonBulkChangeKlasse from './PersonBulkChangeKlasse.vue';
-import type WrapperLike from 'node_modules/@vue/test-utils/dist/interfaces/wrapperLike';
 import { OperationType } from '@/stores/types/bulkOperationTypes';
 
 let router: Router;
@@ -194,7 +193,9 @@ describe('PersonBulkChangeKlasse', () => {
       const wrapper: VueWrapper = mountComponent() as VueWrapper;
       await nextTick();
 
-      const successMessageElement: WrapperLike = wrapper.find('[data-testid="bulk-change-klasse-success-text"]');
+      const successMessageElement: DOMWrapper<Element> = wrapper.find(
+        '[data-testid="bulk-change-klasse-success-text"]',
+      );
       expect(successMessageElement.exists()).toBe(false);
     });
   });

@@ -1,41 +1,135 @@
 {
   "angebot": {
+    "angebotAddedSuccessfully": "Das Angebot {name} wurde erfolgreich hinzugefügt. \n\nBitte wählen Sie nun die Rollen aus, die auf das Angebot zugreifen sollen.",
+    "angebotCreateErrorTitle": "Fehler beim Anlegen des Angebots",
+    "angebotEditErrorTitle": "Fehler beim Bearbeiten des Angebots",
+    "angebotUpdated": "Angebot aktualisiert",
+    "angebotUpdatedSuccessfully": "Das Angebot {name} wurde erfolgreich geändert.",
+    "addNew": "Neues Angebot hinzufügen",
     "allServiceProviders": "Alle Angebote",
     "assignedRollen": "Zugeordnete Rollen",
+    "backToCreateAngebot": "Zurück zur Angebotsanlage",
+    "backToServiceProvider": "Zurück zum Angebot",
+    "backToServiceProviderEdit": "Zurück zur Angebotsbearbeitung",
+    "backToServiceProviderList": "Zurück zur Angebotsliste",
+    "discard": "Angebot verwerfen",
+    "edit": "Angebot bearbeiten",
+    "enterName": "Name eingeben",
+    "enterUrl": "URL eingeben",
+    "selectKategorie": "Kategorie auswählen",
+    "createNew": "Neues Angebot anlegen",
+    "createAnother": "Weiteres Angebot anlegen",
+    "create": "Angebot anlegen",
     "erweiterteRollen": "Erweiterte Rollen",
     "erweiterteRollenAnDerSchule": "Erweiterte Rollen an der Schule",
     "groupLehr": "Lehrkräfte",
     "groupLern": "Schüler",
     "groupLeit": "Administratoren",
+    "groupMPT": "MPT-Rollen",
     "name": "Name",
+    "nameOfAngebotInTheStartPage": "Name des Angebots auf der Startseite der Anwender",
+    "url": "URL",
+    "urlOfTheAngebot": "URL des Angebots",
+    "logoOfTheAngebotInTheStartPage": "Logo des Angebots auf der Startseite der Anwender",
+    "logo": "Logo",
+    "enterLogoUrl": "Logo-URL eingeben",
     "kategorie": "Kategorie",
+    "kategorieOfTheAngebotInTheStartPage": "Kategorie des Angebots auf der Startseite der Anwender",
     "administrationsebene": "Administrationsebene",
     "rollen": "Rollen",
+    "rollenartenWhitelistChangedWarning": "Bitte beachten Sie, dass durch die Anpassungen existierende Rollenerweiterungen für Rollen nicht mehr erlaubter Rollenarten nach dem Speichern automatisch entfernt werden.\n\nDie folgenden Rollenarten sind von der Änderung betroffen: {rollenarten}",
+    "verfuegbarFuerRollenerweiterungChangedWarning": "Bitte beachten Sie, dass durch die Anpassung nach dem Speichern alle existierende Rollenerweiterungen automatisch entfernt werden.",
+    "rollenartenWhitelistHeading": "Ist die Nutzung auf bestimmte Rollenarten eingeschränkt?",
+    "rollenartenWhitelistLabel": "Eingeschränkt auf Rollenarten",
+    "noRestrictions": "Keine Einschränkungen",
     "schulspezifischErweitert": "Schulspezifisch erweitert",
     "schulspezifischeRollenerweiterung": "Schulspezifische Rollenerweiterung möglich",
     "showSchulspezifischeRollenerweiterungen": "Schulspezifische Rollenerweiterungen anzeigen",
     "notForSchulspezifischeRollenerweiterungenAvailable": "Dieses Angebot kann nicht für schulspezifische Rollenerweiterungen verwendet werden. In diesem Bereich werden daher keine Daten und Funktionen angeboten.",
     "canBeAssignedToRollen": "Darf Rollen hinzugefügt werden",
+    "vidisAngebot": "VIDIS-Angebot",
+    "vidisEditInfoText": "Das Angebot {name} kann von Ihnen nicht im Schulportal bearbeitet werden, da die Daten von VIDIS vorgegeben und übernommen werden.",
+    "vidisDeleteInfoText": "Das Angebot {name} wurde über VIDIS freigeschaltet. Bitte deaktivieren Sie das Angebot zunächst im VIDIS-Portal und synchronisieren Sie anschließend die Angebotsliste im Schulportal neu, um es vom System entfernen zu lassen.",
+    "canThisAngebotBeAssignedToRollen": "Darf dieses Angebot Rollen zugewiesen werden?",
+    "canThisAngebotBeUsedForSchulspezifischeRollenerweiterungen": "Darf dieses Angebot für schulspezifische Rollenerweiterungen genutzt werden?",
+    "is2FARequired": "Ist zur Nutzung eine Zwei-Faktor-Authentifizierung erforderlich?",
+    "canBeAssigned": "Darf zugewiesen werden",
+    "canBeUsed": "Darf genutzt werden",
+    "offeringScope": "Anbieten in",
+    "toServiceProviderDetails": "Zur Rollenauswahl",
+    "testUrl": "URL testen",
     "link": "Link",
-    "logo": "Logo",
     "requires2FA": "2FA erforderlich",
-    "kategorien": {
-      "EMAIL": "Dienstliche Email",
-      "UNTERRICHT": "Unterricht",
-      "VERWALTUNG": "Verwaltung",
-      "SCHULISCH": "Schulische Angebote",
-      "HINWEISE": "Hinweise"
+    "mappingFrontBackEnd": {
+      "merkmale": {
+        "ANBIETEN_IN_SCHULISCHER_ANGEBOTSVERWALTUNG": "Schulische Angebotsverwaltung",
+        "ANBIETEN_IN_SCHULISCHER_ROLLENVERWALTUNG": "Schulische Rollenverwaltung"
+      },
+      "kategorien": {
+        "EMAIL": "Dienstliche Email",
+        "UNTERRICHT": "Unterricht",
+        "VERWALTUNG": "Verwaltung",
+        "SCHULISCH": "Schulische Angebote",
+        "HINWEISE": "Hinweise"
+      }
     },
     "title": {
       "REQUIRED_STEP_UP_LEVEL_NOT_MET": "Zwei-Faktor-Authentifizierung (2FA) erforderlich"
     },
+    "schulspezifischeErweiterungen": {
+      "assignErrorTitle": "Fehler beim Speichern der Rollenerweiterungen",
+      "assignErrorIntroText": "Die Rollenerweiterung konnte für die folgenden Rollen nicht ausgeführt werden. \n\nSie können sich die Liste für eine spätere Bearbeitung abspeichern. Die Daten stehen nach dem Schließen dieses Dialogs nicht mehr zur Verfügung. Sollten Sie Hilfe benötigen, eröffnen Sie ein Störungsticket über den IQSH-Helpdesk und fügen Sie die Liste als Anhang an.",
+      "assignErrorMessage": {
+        "ROLLENERWEITERUNG_TECHNICAL_ERROR": "Beim Speichern der Erweiterung für die Rolle {rollenname} ist leider ein technischer Fehler aufgetreten. Bitte wiederholen Sie die Zuordnung.",
+        "NOT_FOUND": "Die gewählte Rolle {rollenname} ist an der Schule {dstNr} nicht verfügbar. Die Erweiterung wurde nicht gespeichert.",
+        "NO_REDUNDANT_ROLLENERWEITERUNG": "Das Angebot ist der Rolle {rollenname} bereits direkt zugeordnet und kann daher nicht zusätzlich als Rollenerweiterung festgelegt werden. Die Erweiterung wurde nicht gespeichert.",
+        "400": "Für dieses Angebot sind Rollenerweiterungen generell nicht erlaubt. Die Erweiterungen wurden nicht gespeichert.",
+        "403": "Sie verfügen nicht über die nötigen Berechtigungen, um diese Aktion auszuführen. Die Erweiterungen wurden nicht gespeichert.",
+        "500": "Beim Speichern ist ein technischer Fehler aufgetreten. Bitte führen Sie die Aktion zu einem späteren Zeitpunkt erneut aus.",
+        "MISSING_MERKMAL_VERFUEGBAR_FUER_ROLLENERWEITERUNG_ERROR": "Für dieses Angebot sind Rollenerweiterungen generell nicht erlaubt. Die Erweiterungen wurden nicht gespeichert.",
+        "MISSING_PERMISSIONS": "Sie verfügen nicht über die nötigen Berechtigungen, um diese Aktion auszuführen. Die Erweiterungen wurden nicht gespeichert."
+      },
+      "closeConfirmationMessage": "Bevor Sie den Dialog schließen, stellen Sie bitte sicher, dass Sie die Liste der Fehlermeldungen gespeichert haben. Die Daten stehen nach dem Schließen dieses Dialogs nicht mehr zur Verfügung.",
+      "errorCsvIntroText": "Bei der Erstellung der schulspezifischen Rollenerweiterungen sind folgende Fehler aufgetreten:",
+      "saveList": "Liste speichern",
+      "closeList": "Liste schließen"
+    },
     "errors": {
       "400": "Die Anfrage für das Angebot ist ungültig.",
+      "VALIDATION_ERROR": "Die Anfrage für das Angebot ist ungültig.",
       "401": "Sie sind nicht autorisiert, auf dieses Angebot zuzugreifen.",
+      "UNAUTHORIZED": "Sie sind nicht autorisiert, auf dieses Angebot zuzugreifen.",
       "403": "Der Zugriff auf dieses Angebot ist verboten.",
+      "AUTHENTICATION_ERROR": "Der Zugriff auf dieses Angebot ist verboten.",
       "404": "Das Angebot konnte nicht gefunden werden.",
+      "ENTITY_NOT_FOUND": "Das Angebot konnte nicht gefunden werden.",
       "500": "Es ist ein technischer Fehler aufgetreten.",
-      "REQUIRED_STEP_UP_LEVEL_NOT_MET": "Die letzte Aktion konnte nicht ausgeführt werden. Aufgrund von längerer Inaktivität ist eine erneute Authentifizierung mit einem zweiten Faktor erforderlich. Um fortzufahren, klicken Sie bitte auf „Zurück zur Ergebnisliste“ oder „Schließen“. Sie werden anschließend zur Eingabe Ihres zweiten Faktors aufgefordert."
+      "INTERNAL": "Es ist ein technischer Fehler aufgetreten.",
+      "REQUIRED_STEP_UP_LEVEL_NOT_MET": "Die letzte Aktion konnte nicht ausgeführt werden. Aufgrund von längerer Inaktivität ist eine erneute Authentifizierung mit einem zweiten Faktor erforderlich. Um fortzufahren, klicken Sie bitte auf „Zurück zur Ergebnisliste“ oder „Schließen“. Sie werden anschließend zur Eingabe Ihres zweiten Faktors aufgefordert.",
+      "DUPLICATE_NAME": "Der Name des Angebots wird auf dieser Ebene bereits verwendet. Bitte wählen Sie einen anderen Namen.",
+      "ATTACHED_ROLLEN": "Die Aktion konnte nicht ausgeführt werden, da das Angebot noch mindestens einer Rolle zugeordnet ist, die nicht zu den erlaubten Rollenarten gehört.\n\nBitte entfernen Sie zunächst die direkte Zuordnung dieses Angebots zu den Rollen."
+    },
+    "rules": {
+      "organisation": {
+        "required": "Die Ebene der Bereitstellung muss ausgewählt werden."
+      },
+      "name": {
+        "matches": "Der Name darf keine ungültigen Zeichen beinhalten.",
+        "noLeadingTrailingSpaces": "Der Name darf nicht mit Leerzeichen beginnen oder enden.",
+        "maxLength": "Der Name darf maximal 50 Zeichen lang sein.",
+        "required": "Der Name des Angebots muss angegeben werden."
+      },
+      "logo": {
+        "required": "Ein Logo muss ausgewählt werden."
+      },
+      "url": {
+        "invalid": "Die URL muss eine gültige URL sein.",
+        "required": "Die URL des Angebots muss angegeben werden.",
+        "maxLength": "Die URL darf maximal 2000 Zeichen lang sein."
+      },
+      "kategorie": {
+        "required": "Die Kategorie muss ausgewählt werden."
+      }
     },
     "loadingErrorText": "Es konnten keine Angebotdaten geladen werden.",
     "loadingErrorTitle": "Fehler beim Laden des Angebots",
@@ -44,7 +138,11 @@
     "providedBy": "Bereitgestellt von",
     "noRolesFound": "Es konnten keine Rollen gefunden werden.",
     "saveRollenerweiterungenSuccess": "Die Rollenerweiterungen wurden erfolgreich gespeichert.",
-    "editRollenerweiterungen": "Rollenauswahl bearbeiten"
+    "editRollenerweiterungen": "Rollenauswahl bearbeiten",
+    "whoProvidesThisAngebot": "Wer stellt dieses Angebot bereit?",
+    "previewHeadline": "Vorschau der Angebotsdarstellung auf der Startseite",
+    "previewLabel": "Bitte prüfen Sie vor dem Speichern die Darstellung.",
+    "previewPlaceholder": "Eine Vorschau wird angezeigt, sobald Name und Logo festgelegt wurden."
   },
   "action": "Aktion",
   "admin": {
@@ -57,7 +155,43 @@
     },
     "angebot": {
       "management": {
-        "title": "Angebotsverwaltung"
+        "title": "Angebotsverwaltung",
+        "name": "Name des Angebots"
+      },
+      "title": {
+        "ATTACHED_ROLLEN": "Fehler beim Löschen",
+        "ATTACHED_ROLLENERWEITERUNGEN": "Fehler beim Löschen",
+        "REQUIRED_STEP_UP_LEVEL_NOT_MET": "Zwei-Faktor-Authentifizierung (2FA) erforderlich",
+        "UNSPECIFIED_ERROR": "Technischer Fehler",
+        "403": "Fehler",
+        "UNAUTHORIZED": "Fehler",
+        "404": "Fehler",
+        "ENTITY_NOT_FOUND": "Fehler"
+      },
+      "errors": {
+        "ATTACHED_ROLLEN": "Das Angebot {serviceProviderName} kann nicht gelöscht werden, da es noch mindestens einer Rolle zugeordnet ist.",
+        "ATTACHED_ROLLENERWEITERUNGEN": "Das Angebot {serviceProviderName} kann nicht gelöscht werden, da noch schulpezifische Rollenerweiterungen existieren.",
+        "REQUIRED_STEP_UP_LEVEL_NOT_MET": "Die letzte Aktion konnte nicht ausgeführt werden. Aufgrund von längerer Inaktivität ist eine erneute Authentifizierung mit einem zweiten Faktor erforderlich. Um fortzufahren, klicken Sie bitte auf „Zurück zur Ergebnisliste“ oder „Schließen“. Sie werden anschließend zur Eingabe Ihres zweiten Faktors aufgefordert.",
+        "UNSPECIFIED_ERROR": "Es ist ein technischer Fehler aufgetreten.",
+        "403": "Sie sind nicht autorisiert, auf diese Funktion zuzugreifen.",
+        "UNAUTHORIZED": "Sie sind nicht autorisiert, auf diese Funktion zuzugreifen.",
+        "404": "Das Angebot konnte nicht gefunden werden.",
+        "ENTITY_NOT_FOUND": "Das Angebot konnte nicht gefunden werden."
+      },
+      "delete": {
+        "confirmation": "Möchten Sie das Angebot {serviceProviderName} wirklich löschen?",
+        "success": "Das Angebot {serviceProviderName} wurde erfolgreich gelöscht.",
+        "title": "Angebot löschen",
+        "action": "Löschen"
+      },
+      "vidisSync": {
+        "title": "VIDIS synchronisieren",
+        "buttonLabel": "Mit VIDIS synchronisieren",
+        "loading": "Die Daten der Angebote werden von VIDIS abgerufen.",
+        "confirmation": "Möchten Sie die Angebotsliste für die Schule {schuleName} mit VIDIS synchronisieren?",
+        "action": "Synchronisieren",
+        "success": "Die Angebotsliste wurde erfolgreich aktualisiert.",
+        "error": "Beim Abruf der Daten von VIDIS ist ein Fehler aufgetreten.\nBitte wiederholen Sie den Vorgang zu einem späteren Zeitpunkt. \n\nDie Angebotsliste wurde nicht aktualisiert."
       },
       "edit": "Angebot bearbeiten",
       "showAll": "Alle Angebote anzeigen",
@@ -81,6 +215,44 @@
       "untilEndOfSchoolYear": "Bis Schuljahresende"
     },
     "doNotCloseBrowserNotice": "Bitte den Browser während der Bearbeitung nicht schließen!",
+    "behoerde": {
+      "name": "Behördenname",
+      "showAll": "Alle Behörden anzeigen",
+      "edit": "Behörde bearbeiten",
+      "detailsLoadingErrorTitle": "Fehler beim Laden der Behörde",
+      "detailsLoadingErrorText": "Die Daten der Behörde konnten nicht geladen werden.",
+      "loadingErrorTitle": "Fehler beim Laden der Behörden",
+      "loadingErrorText": "Die Behörden konnten nicht geladen werden.",
+      "addNew": "Neue Behörde hinzufügen",
+      "assignZustaendigkeitsbereich": "Zuständigkeitsbereich zuordnen",
+      "backToCreateBehoerde": "Zurück zur Behördenanlage",
+      "behoerdeAddedSuccessfully": "Die Behörde wurde erfolgreich hinzugefügt.",
+      "behoerdeCreateErrorTitle": "Fehler beim Anlegen der Behörde",
+      "behoerdenname": "Behördenname",
+      "create": "Behörde anlegen",
+      "createAnother": "Weitere Behörde anlegen",
+      "createNew": "Neue Behörde anlegen",
+      "discard": "Behörde verwerfen",
+      "enterBehoerdenname": "Behördenname eingeben",
+      "errors": {
+        "BEHOERDE_NAME_EINDEUTIG": "Der Behördenname existiert bereits.",
+        "ORGANISATION_SPECIFICATION_ERROR": "Die Behörde konnte nicht angelegt werden.",
+        "SCHULTRAEGER_ERROR": "Die Zuständigkeitsbereiche konnten nicht geladen werden.",
+        "REQUIRED_STEP_UP_LEVEL_NOT_MET": "Die letzte Aktion konnte nicht ausgeführt werden. Aufgrund von längerer Inaktivität ist eine erneute Authentifizierung mit einem zweiten Faktor erforderlich. Um fortzufahren, klicken Sie bitte auf „Zurück zur Behördenanlage“. Sie werden anschließend zur Eingabe Ihres zweiten Faktors aufgefordert."
+      },
+      "management": "Behördenverwaltung",
+      "rules": {
+        "behoerdenname": {
+          "matches": "Der Behördenname darf keine ungültigen Zeichen beinhalten.",
+          "noLeadingTrailingSpaces": "Der Behördenname darf nicht mit Leerzeichen beginnen oder enden.",
+          "required": "Der Behördenname muss angegeben werden."
+        }
+      },
+      "title": {
+        "ORGANISATION_SPECIFICATION_ERROR": "Fehler bei Anlage der Behörde"
+      },
+      "zustaendigkeitsbereich": "Zuständigkeitsbereich"
+    },
     "followingDataCreated": "Folgende Daten wurden gespeichert:",
     "headline": "Administrationsbereich",
     "import": {
@@ -285,7 +457,6 @@
       "create": "Benutzer anlegen",
       "createAnother": "Weiteren Benutzer anlegen",
       "createNew": "Neue Benutzer anlegen",
-
       "creationErrorText": "",
       "creationErrorTitle": "Fehler beim Anlegen des Benutzers",
       "deletePerson": "Benutzer löschen",
@@ -312,6 +483,7 @@
       "editPersonalInfo": "Persönliche Informationen bearbeiten",
       "errors": {
         "404": "Der Benutzer konnte nicht gefunden werden.",
+        "ENTITY_NOT_FOUND": "Der Benutzer konnte nicht gefunden werden.",
         "PERSONALNUMMER_NICHT_EINDEUTIG": "Die eingegebene KoPers.-Nr. ist bereits vergeben. Bitte korrigieren Sie Ihre Eingabe.",
         "ERROR_LOADING_USER": "Es konnten keine Benutzerdaten geladen werden.",
         "PERSONALNUMMER_REQUIRED": "Die Änderungen wurden nicht gespeichert, da keine KoPers.-Nr. eingegeben wurde.",
@@ -408,9 +580,10 @@
           "UNKNOWN_ERROR": "Ein unbekannter Fehler ist aufgetreten.",
           "TOKEN_RESET_ERROR": "Leider konnte der Token aus technischen Gründen nicht zurückgesetzt werden. Bitte versuchen Sie es zu einem späteren Zeitpunkt erneut. Sollte das Problem weiterhin bestehen, geben Sie dazu bitte ein Ticket über den {0} auf.",
           "500": "Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+          "INTERNAL": "Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
           "SOFTWARE_TOKEN_VERIFICATION_ERROR": "Beim Verifizieren Ihres Tokens ist leider ein Problem aufgetreten.",
           "connection": "Der Server für die Zwei-Faktor-Authentifizierung kann aktuell nicht erreicht werden. Bitte versuchen Sie es zu einem späteren Zeitpunkt erneut.",
-          "softwareTokenInitError": "Leider konnte aus technischen Gründen kein QR-Code erzeugt werden. Bitte versuchen Sie es zu einem späteren Zeitpunkt erneut. Sollte das Problem weiterhin bestehen, geben Sie dazu bitte ein Ticket über den {0} auf.",
+          "connectionFailure": "Die Zwei-Faktor-Authentifizierung (2FA) für diesen Dienst ist momentan leider nicht verfügbar. Bitte versuchen Sie es zu einem späteren Zeitpunkt erneut. Informationen zur aktuellen Verfügbarkeit des 2FA-Dienstes finden Sie auch auf der Statusseite des Schulportal SH.",
           "iqshHelpdesk": "Helpdesk des IQSH",
           "iqshHelpdeskLink": "https://www.secure-lernnetz.de/helpdesk/",
           "selfServiceTokenInitError": "Leider konnte aus technischen Gründen kein QR-Code erzeugt werden. Bitte versuchen Sie es zu einem späteren Zeitpunkt erneut. Sollte das Problem weiterhin bestehen, wenden Sie sich bitte an Ihre schulischen Administratorinnen und Administratoren.",
@@ -454,7 +627,9 @@
       "errors": {
         "fallbackError": "Es ist ein technischer Fehler aufgetreten.",
         "500": "Es ist ein technischer Fehler aufgetreten.",
+        "INTERNAL": "Es ist ein technischer Fehler aufgetreten.",
         "404": "Der Benutzer konnte nicht gefunden werden.",
+        "ENTITY_NOT_FOUND": "Der Benutzer konnte nicht gefunden werden.",
         "COUNT_MISMATCHING": "Der Benutzer wurde zwischenzeitlich von einer anderen Administratorin oder einem anderen Administrator bearbeitet. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.",
         "INVALID_PERSONENKONTEXT_FOR_PERSON_WITH_ROLLENART_LERN": "Die neue Rolle kann diesem Benutzer aufgrund seiner bestehenden Rolle nicht zugeordnet werden.",
         "NEWER_VERSION_OF_PERSONENKONTEXTE_AVAILABLE": "Der Benutzer wurde zwischenzeitlich von einer anderen Administratorin oder einem anderen Administrator bearbeitet. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.",
@@ -499,7 +674,12 @@
         "ROLLE_NAME_UNIQUE_ON_SSK": "Der Rollenname ist bereits vergeben. Bitte korrigieren Sie Ihre Eingabe.",
         "UPDATE_MERKMALE_ERROR": "Die gewünschte Bearbeitung kann nicht ausgeführt werden, da die Rolle noch Benutzern zugeordnet ist. Nehmen Sie bitte zunächst alle Zuordnungen zurück.",
         "REQUIRED_STEP_UP_LEVEL_NOT_MET": "Die letzte Aktion konnte nicht ausgeführt werden. Aufgrund von längerer Inaktivität ist eine erneute Authentifizierung mit einem zweiten Faktor erforderlich. Um fortzufahren, klicken Sie bitte auf „Zurück zur Ergebnisliste“ oder „Schließen“. Sie werden anschließend zur Eingabe Ihres zweiten Faktors aufgefordert.",
-        "SERVICE_PROVIDER_NICHT_NACHTRAEGLICH_ZUWEISBAR": "Eines der gewählten Angebote darf einer Rolle mit bereits zugewiesenen Benutzern nicht hinzugefügt oder entzogen werden."
+        "SERVICE_PROVIDER_NICHT_NACHTRAEGLICH_ZUWEISBAR": "Eines der gewählten Angebote darf einer Rolle mit bereits zugewiesenen Benutzern nicht hinzugefügt oder entzogen werden.",
+        "fallbackError": "Es ist ein technischer Fehler aufgetreten.",
+        "500": "Es ist ein technischer Fehler aufgetreten.",
+        "INTERNAL": "Es ist ein technischer Fehler aufgetreten.",
+        "404": "Die Rolle konnte nicht gefunden werden.",
+        "ENTITY_NOT_FOUND": "Die Rolle konnte nicht gefunden werden."
       },
       "title": {
         "NEWER_VERSION_OF_ROLLE_AVAILABLE": "Geänderte Daten",
@@ -509,30 +689,58 @@
         "ROLLE_NAME_UNIQUE_ON_SSK": "Der Rollenname ist nicht eindeutig",
         "UPDATE_MERKMALE_ERROR": "Die Merkmale konnten nicht bearbeitet werden",
         "REQUIRED_STEP_UP_LEVEL_NOT_MET": "Zwei-Faktor-Authentifizierung (2FA) erforderlich",
-        "SERVICE_PROVIDER_NICHT_NACHTRAEGLICH_ZUWEISBAR": "Die Angebote konnten nicht bearbeitet werden"
+        "SERVICE_PROVIDER_NICHT_NACHTRAEGLICH_ZUWEISBAR": "Die Angebote konnten nicht bearbeitet werden",
+        "fallbackError": "Technischer Fehler",
+        "500": "Technischer Fehler",
+        "INTERNAL": "Technischer Fehler",
+        "404": "Die Rolle konnte nicht gefunden werden",
+        "ENTITY_NOT_FOUND": "Die Rolle konnte nicht gefunden werden"
       },
       "isAllowedToManageRollen": "Darf Rollen verwalten",
       "loadingErrorText": "Es konnten keine Rollendaten geladen werden.",
       "loadingErrorTitle": "Fehler beim Laden der Rolle",
       "management": "Rollenverwaltung",
+      "mptManagement": {
+        "title": "Rollen für multiprofessionelle Teams verwalten",
+        "menuItem": "Rollen für multiprofessionelle Teams verwalten",
+        "noSchuleSelected": "Bitte wählen Sie zunächst im Filter eine Schule aus"
+      },
+      "mptDetails": {
+        "title": "Rolle bearbeiten",
+        "editOffers": "Angebotsauswahl bearbeiten",
+        "saveSuccess": "Die Angebotsauswahl wurde erfolgreich gespeichert.",
+        "loadErrorTitle": "Fehler beim Laden der Rolle und ihrer Angebotsauswahl",
+        "loadErrorText": "Die Rolle und ihre Angebotsauswahl konnten nicht geladen werden.",
+        "saveErrorTitle": "Angebotsauswahl konnte nicht gespeichert werden",
+        "saveErrorText": "Beim Speichern der Angebotsauswahl ist ein Fehler aufgetreten."
+      },
       "mappingFrontBackEnd": {
         "systemrechte": {
+          "ANGEBOTE_EINGESCHRAENKT_VERWALTEN": "Darf Angebote eingeschränkt verwalten",
+          "ANGEBOTE_VERWALTEN": "Darf Angebote verwalten",
+          "BULK_VERWALTEN": "Darf Mehrfachbearbeitung ausführen",
+          "EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN": "Darf eingeschränkt neue Benutzer erstellen",
+          "HINWEISE_BEARBEITEN": "Darf Hinweise bearbeiten",
           "IMPORT_DURCHFUEHREN": "Darf Import durchführen",
-          "ROLLEN_VERWALTEN": "Darf Rollen verwalten",
+          "KLASSEN_VERWALTEN": "Darf Klassen verwalten",
+          "LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN": "Darf Landesbedienstete suchen und hinzufügen",
+          "MPT_ROLLEN_ZUORDNEN": "Darf Rollen für multiprofessionelle Teams zuordnen",
+          "PERSONEN_ANLEGEN": "Darf Benutzer anlegen",
+          "PILOT_1_ROLLEN_ZUORDNEN": "Darf Pilot-1-Rollen zuordnen",
+          "PILOT_2_ROLLEN_ZUORDNEN": "Darf Pilot-2-Rollen zuordnen",
+          "PILOT_3_ROLLEN_ZUORDNEN": "Darf Pilot-3-Rollen zuordnen",
+          "PILOT_4_ROLLEN_ZUORDNEN": "Darf Pilot-4-Rollen zuordnen",
+          "PILOT_5_ROLLEN_ZUORDNEN": "Darf Pilot-5-Rollen zuordnen",
           "PERSONEN_SOFORT_LOESCHEN": "Darf Benutzer sofort löschen",
           "PERSONEN_VERWALTEN": "Darf Benutzer verwalten",
-          "SCHULEN_VERWALTEN": "Darf Schulen verwalten",
-          "KLASSEN_VERWALTEN": "Darf Klassen verwalten",
-          "SCHULTRAEGER_VERWALTEN": "Darf Schulträger verwalten",
           "PERSON_SYNCHRONISIEREN": "Darf Benutzer synchronisieren",
-          "PERSONEN_ANLEGEN": "Darf Benutzer anlegen",
-          "BULK_VERWALTEN": "Darf Mehrfachbearbeitung ausführen",
-          "SCHULPORTAL_VERWALTEN": "Darf Portal verwalten",
-          "HINWEISE_BEARBEITEN": "Darf Hinweise bearbeiten",
-          "LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN": "Darf Landesbedienstete suchen und hinzufügen",
-          "EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN": "Darf eingeschränkt neue Benutzer erstellen",
           "ROLLEN_ERWEITERN": "Darf Rollen schulspezifisch erweitern",
-          "ANGEBOTE_VERWALTEN": "Darf Angebote verwalten"
+          "ROLLEN_VERWALTEN": "Darf Rollen verwalten",
+          "SCHULEN_VERWALTEN": "Darf Schulen verwalten",
+          "SCHULISCHE_VIDIS_ANGEBOTE_ABRUFEN": "Darf schulische VIDIS-Angebote abrufen",
+          "SCHULPORTAL_VERWALTEN": "Darf Portal verwalten",
+          "SCHULTRAEGER_VERWALTEN": "Darf Schulträger verwalten",
+          "BEHOERDEN_VERWALTEN": "Darf Behörden verwalten"
         },
         "rollenarten": {
           "LERN": "Lern",
@@ -540,11 +748,20 @@
           "EXTERN": "Extern",
           "ORGADMIN": "Orgadmin",
           "LEIT": "Leit",
-          "SYSADMIN": "Sysadmin"
+          "SYSADMIN": "Sysadmin",
+          "SORGBER": "SorgBer",
+          "SCHB": "SchB",
+          "NLEHR": "NLehr"
         },
         "merkmale": {
           "BEFRISTUNG_PFLICHT": "Befristung ist Pflichtangabe",
-          "KOPERS_PFLICHT": "KoPers.-Nr. ist Pflichtangabe"
+          "KOPERS_PFLICHT": "KoPers.-Nr. ist Pflichtangabe",
+          "MPT_ROLLE": "Ist MPT-Rolle",
+          "PILOT_1_ROLLE": "Ist Pilot-1-Rolle",
+          "PILOT_2_ROLLE": "Ist Pilot-2-Rolle",
+          "PILOT_3_ROLLE": "Ist Pilot-3-Rolle",
+          "PILOT_4_ROLLE": "Ist Pilot-4-Rolle",
+          "PILOT_5_ROLLE": "Ist Pilot-5-Rolle"
         }
       },
       "merkmale": "Merkmale",
@@ -557,6 +774,13 @@
       "rollenart": "Rollenart",
       "rollenFound": "{count} Rolle gefunden | {count} Rollen gefunden",
       "rollenname": "Rollenname",
+      "merkmaleSelected": "{count} Merkmale ausgewählt",
+      "rollenartenSelected": "{count} Rollenarten ausgewählt",
+      "administrationsebenenSelected": "{count} Administrationsebenen ausgewählt",
+      "landesangebote": "Landesangebote",
+      "landesangeboteSelected": "{count} Landesangebote ausgewählt",
+      "landesangeboteFound": "{count} Landesangebot gefunden | {count} Landesangebote gefunden",
+      "kategorienSelected": "{count} Kategorien ausgewählt",
       "rollenSelected": "{count} Rollen ausgewählt",
       "rolleAddedSuccessfully": "Die Rolle wurde erfolgreich hinzugefügt.",
       "rolleUpdatedSuccessfully": "Die Rolle wurde erfolgreich geändert.",
@@ -597,6 +821,8 @@
       "assignSchulform": "Schulform zuordnen",
       "assignSchule": "Schule zuordnen",
       "backToCreateSchule": "Zurück zur Schulanlage",
+      "backToSchule": "Zurück zur Schule",
+      "backToSchuleList": "Zurück zur Schulliste",
       "createNew": "Neue Schule anlegen",
       "create": "Schule anlegen",
       "createAnother": "Weitere Schule anlegen",
@@ -607,8 +833,11 @@
       "deleteSchuleNotice": "Die Schule kann nicht gelöscht werden, da folgende Bedingung nicht erfüllt ist:",
       "discard": "Schule verwerfen",
       "dienststellennummer": "Dienststellennummer",
+      "edit": "Schule bearbeiten",
+      "emailAdresse": "E-Mail-Adresse",
       "enterDienststellennummer": "Dienststellennummer eingeben",
       "enterSchulname": "Schulname eingeben",
+      "enterEmailAdresse": "E-Mail-Adresse eingeben",
       "title": {
         "ORGANISATION_SPECIFICATION_ERROR": "Fehler bei Anlage der Schule.",
         "REQUIRED_STEP_UP_LEVEL_NOT_MET": "Zwei-Faktor-Authentifizierung (2FA) erforderlich",
@@ -635,11 +864,13 @@
         "ORGANISATION_HAT_PERSONENKONTEXTE": "Es existieren noch zugeordnete Benutzer (Personenkontexte).",
         "ORGANISATION_HAT_ANGEBOTE": "Es existieren noch schulspezifische Angebote.",
         "ORGANISATION_HAT_ROLLENERWEITERUNGEN": "Es existieren noch schulspezifische Rollenerweiterungen.",
-        "500": "Die Schule konnte nicht gelöscht werden, da ein technischer Fehleraufgetreten ist. Bitte versuchen Sie es erneut."
+        "500": "Die Schule konnte nicht gelöscht werden, da ein technischer Fehleraufgetreten ist. Bitte versuchen Sie es erneut.",
+        "INTERNAL": "Die Schule konnte nicht gelöscht werden, da ein technischer Fehleraufgetreten ist. Bitte versuchen Sie es erneut."
       },
       "loadingErrorText": "Es konnten keine Schuldaten geladen werden.",
       "loadingErrorTitle": "Fehler beim Laden der Schulen",
       "itsLearningStatus": "itslearning-Status",
+      "itsLearningActive": "itslearning freigeschaltet",
       "retransmit": "Erneut übertragen",
       "retransmitSchuleConfirmationMessage": "Wollen Sie die Daten der Schule {schulname} erneut an itslearning übertragen?",
       "management": "Schulverwaltung",
@@ -653,6 +884,10 @@
           "matches": "Der Schulname darf keine ungültigen Zeichen beinhalten.",
           "noLeadingTrailingSpaces": "Der Schulname darf nicht mit Leerzeichen beginnen oder enden.",
           "required": "Der Schulname muss angegeben werden."
+        },
+        "emailAddress": {
+          "required": "Die Email-Adresse muss angegeben werden.",
+          "invalid": "Die Email-Adresse ist ungültig."
         }
       },
       "selectSchule": "Schule auswählen",
@@ -665,6 +900,7 @@
       "schulnameDienststellennummer": "Schulname/Dienststellennummer",
       "schulform": "Schulform",
       "schuleAddedSuccessfully": "Die Schule wurde erfolgreich hinzugefügt.",
+      "schuleChangedSuccessfully": "Die Daten der Schule wurden erfolgreich geändert.",
       "schuleCreateErrorTitle": "Fehler beim Anlegen der Schule",
       "showAll": "Alle Schulen anzeigen"
     },
@@ -718,6 +954,8 @@
       "assignServiceProvider": "Angebote zuordnen",
       "assignedServiceProvider": "Zugeordnete Angebote",
       "selectServiceProvider": "Angebote auswählen",
+      "deleteServiceProvider": "Angebot löschen",
+      "deleteServiceProviderSuccessMessage": "Das Angebot {name} wurde erfolgreich gelöscht.",
       "serviceProvider": "Angebote"
     },
     "status": "Status",
@@ -805,11 +1043,15 @@
     "openMobileMenu": "Mobiles Menü öffnen",
     "help": "Hilfe",
     "profile": "Mein Profil",
-    "backToPreviousPage": "Zurück zur vorherigen Seite"
+    "backToPreviousPage": "Zurück zur vorherigen Seite",
+    "faq": "FAQ - Administration",
+    "statusPage": "Zur Statusseite"
   },
   "no": "Nein",
   "from": "von",
   "noDataFound": "Keine Daten gefunden.",
+  "noSchulenFound": "Keine Schulen gefunden.",
+  "loadingData": "Daten werden abgerufen...",
   "pagination": {
     "all": "Alle",
     "pageText": "{interval} von {total} Einträgen"
@@ -844,7 +1086,7 @@
     "emailStatusActiveHover": "Das E-Mail-Konto ist aktiviert.",
     "emailStatusRequestedHover": "Das E-Mail-Konto wird zur Zeit angelegt. Dies kann einige Zeit in Anspruch nehmen. Bitte öffnen Sie die Gesamtübersicht zu einem späteren Zeitpunkt erneut, um die E-Mail-Adresse einzusehen.",
     "emailStatusDisabledHover": "Das E-Mail-Konto wurde deaktiviert.",
-    "emailStatusFailedHover": "Bei der Erstellung des E-Mail-Kontos ist ein Fehler aufgetreten. Bitte eröffnen Sie eine Fehlermeldung im Help-Desk System.",
+    "emailStatusFailedHover": "Bei der Erstellung des E-Mail-Kontos ist ein Fehler aufgetreten. Bitte eröffnen Sie eine Ticket-Anfrage beim IQSH-Helpdesk.",
     "emailStatusUnknownHover": "Der Status der E-Mail-Adresse ist unbekannt.",
     "enterFirstName": "Vorname eingeben",
     "enterEmail": "E-Mail-Adresse eingeben",
@@ -901,7 +1143,7 @@
     "emailStatusFailed": "fehlerhaft",
     "emailStatusRequestedHover": "Das E-Mail-Konto wird zur Zeit angelegt. Dies kann einige Zeit in Anspruch nehmen. Bitte öffnen Sie Ihr Profil zu einem späteren Zeitpunkt erneut, um die E-Mail-Adresse einzusehen.",
     "emailStatusDisabledHover": "Das E-Mail-Konto wurde deaktiviert.",
-    "emailStatusFailedHover": "Bei der Erstellung des E-Mail-Kontos ist ein Fehler aufgetreten. Bitte eröffnen Sie eine Fehlermeldung im Help-Desk System.",
+    "emailStatusFailedHover": "Bei der Erstellung des E-Mail-Kontos ist ein Fehler aufgetreten. Bitte eröffnen Sie eine Ticket-Anfrage beim IQSH-Helpdesk.",
     "schule": "Schule",
     "dienstStellenNummer": "Dienststellennummer",
     "dienstStellenNummerAbbr": "DStNr.",
@@ -952,5 +1194,25 @@
     "kopers": "Die Verwendung dieses Benutzerkontos setzt eine KoPers.-Nr. voraus. Bitte kontaktieren Sie Ihre schulischen Administratorinnen und Administratoren, um eine KoPers.-Nr. eintragen zu lassen. Andernfalls wird Ihr Zugang zum {date} automatisch gesperrt.",
     "noKontexte": "Dieses Benutzerkonto ist aktuell keiner Schule zugeordnet. Ohne Schulzuordnung sind ein großer Teil der Funktionalitäten des Schulportal SH nicht verfügbar. Sollten Sie weiterhin an einer Schule in Schleswig-Holstein tätig sein, wenden Sie sich an Ihre Schulleitung. Ist dieses Konto auch weiterhin keiner Schule zugeordnet, wird es zum {date} gelöscht.",
     "kontextExpires": "Die Zuordnung dieses Benutzerkontos zu der Schule \"{schule}\" mit der Rolle \"{rolle}\" ist bis zum {date} befristet. Sollte dies nicht zutreffen, wenden Sie sich bitte an Ihre Schulleitung. Nach Ende der Zuordnung sind Funktionalitäten, die im Bezug zu dieser Schule und Rolle stehen, nicht mehr verfügbar."
+  },
+  "textEditor": {
+    "button": {
+      "bold": "Fett",
+      "italic": "Kursiv",
+      "underline": "Unterstrichen",
+      "strike": "Durchgestrichen",
+      "bulletList": "Aufzählungsliste",
+      "orderedList": "Nummerierte Liste",
+      "linkPlaceholder": "Link eingeben",
+      "clearLink": "Link entfernen",
+      "confirmLink": "Link übernehmen",
+      "heading": "Überschrift",
+      "headingLevel": "Überschrift {level}",
+      "link": "Link"
+    },
+    "characterCount": {
+      "characters": "{count} von {limit} Zeichen",
+      "words": "{count} Wörter"
+    }
   }
 }

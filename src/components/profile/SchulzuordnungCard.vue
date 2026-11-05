@@ -66,7 +66,7 @@
   >
     <v-row class="ma-3 p-4">
       <v-col cols="12">
-        <v-table class="text-body-1">
+        <v-table class="text-body-large">
           <template #default>
             <tbody>
               <!-- schule -->
@@ -125,7 +125,7 @@
         </v-table>
         <p
           v-if="admins"
-          class="pt-4 text-center text-body-1 text-medium-emphasis"
+          class="pt-4 text-center text-body-large text-medium-emphasis"
           data-testid="schuladmins-info-text-with-icon"
           style="white-space: normal"
         >

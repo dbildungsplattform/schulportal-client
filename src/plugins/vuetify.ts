@@ -28,6 +28,16 @@ const shTheme: ThemeDefinition = {
 };
 
 const vuetifyConfig: VuetifyOptions = {
+  // Restore Vuetify 3 breakpoints so responsive utility classes (mt-md-*, px-lg-*, etc.)
+  // and media queries in component <style> blocks continue to work as before.
+  display: {
+    thresholds: {
+      md: 960,
+      lg: 1280,
+      xl: 1920,
+      xxl: 2560,
+    },
+  },
   icons: {
     defaultSet: 'mdi',
     aliases,

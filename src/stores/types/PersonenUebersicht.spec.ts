@@ -24,14 +24,9 @@ describe('PersonenUebersicht', () => {
     it.each([
       [
         'should return true if all merkmale are present',
-        [
-          DoFactory.getZuordnung({
-            merkmale: [RollenMerkmal.BefristungPflicht],
-          }),
-          DoFactory.getZuordnung({
-            merkmale: [RollenMerkmal.KopersPflicht],
-          }),
-        ],
+        Object.values(RollenMerkmal).map(
+          (merkmal: RollenMerkmal): Zuordnung => DoFactory.getZuordnung({ merkmale: [merkmal] }),
+        ),
         true,
       ],
       [

@@ -1,12 +1,16 @@
 <script setup lang="ts">
   import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
+  import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
+  import { RollenSystemRecht } from '@/stores/RolleStore';
   import { onMounted, ref, type ComputedRef, type Ref } from 'vue';
   import { useRoute, useRouter, type RouteLocationNormalizedLoaded, type Router } from 'vue-router';
   import { useDisplay } from 'vuetify';
 
   const router: Router = useRouter();
   const route: RouteLocationNormalizedLoaded = useRoute();
+
   const authStore: AuthStore = useAuthStore();
+  const configStore: ConfigStore = useConfigStore();
 
   const menuDrawer: Ref<boolean> = ref(true);
   const { mobile }: { mobile: ComputedRef<boolean> } = useDisplay();
@@ -101,7 +105,7 @@
 
     <!-- Back to start page -->
     <v-list-item
-      class="menu-bar-back caption"
+      class="menu-bar-back caption menu-bar-nav-item"
       data-testid="back-to-start-link"
       :title="$t('nav.backToStart')"
       to="/start"
@@ -109,6 +113,22 @@
       <template #prepend>
         <v-icon
           icon="mdi-home"
+          size="x-large"
+        />
+      </template>
+    </v-list-item>
+
+    <v-list-item
+      class="menu-bar-faq caption menu-bar-nav-item"
+      data-testid="faq-link"
+      :title="$t('nav.faq')"
+      href="https://medienberatung.iqsh.de/faq-administration-schulportal-sh.html"
+      rel="noopener noreferrer"
+      target="_blank"
+    >
+      <template #prepend>
+        <v-icon
+          icon="mdi-help-circle-outline"
           size="x-large"
         />
       </template>
@@ -230,10 +250,25 @@
         to="/admin/rollen/new"
         @click="closeMenuOnMobile"
       />
+      <v-list-item
+        v-if="authStore.grantedGatedRollenSystemrechte.includes(RollenSystemRecht.MptRollenZuordnen)"
+        class="menu-bar-sub-item caption"
+        data-testid="mpt-rolle-management-menu-item"
+        prepend-icon="mdi-format-list-bulleted"
+        :title="$t('admin.rolle.mptManagement.menuItem')"
+        to="/admin/rollen/mpt"
+        @click="handleMenuItemClick('/admin/rollen/mpt')"
+      />
     </div>
 
     <!-- Angebotsverwaltung -->
-    <div v-if="authStore.hasAngeboteVerwaltenPermission || authStore.hasRollenerweiternPermission">
+    <div
+      v-if="
+        authStore.hasAngeboteVerwaltenPermission ||
+        authStore.hasRollenerweiternPermission ||
+        authStore.hasEingeschränktAngeboteVerwaltenPermission
+      "
+    >
       <v-list-item
         class="menu-bar-main-item headline-2"
         data-testid="angebot-management-title"
@@ -257,6 +292,40 @@
         :title="$t('admin.angebot.showSchoolSpecific')"
         to="/admin/angebote/schulspezifisch"
       ></v-list-item>
+      <v-list-item
+        v-if="
+          (authStore.hasAngeboteVerwaltenPermission || authStore.hasEingeschränktAngeboteVerwaltenPermission) &&
+          configStore.configData?.schulischeAngeboteErstellen
+        "
+        class="menu-bar-sub-item caption"
+        data-testid="angebot-creation-menu-item"
+        prepend-icon="mdi-plus-circle-outline"
+        :title="$t('angebot.createNew')"
+        to="/admin/angebote/new"
+        @click="closeMenuOnMobile"
+      ></v-list-item>
+    </div>
+
+    <!-- Rollenverwaltung (MPT only) -->
+    <div
+      v-if="
+        authStore.grantedGatedRollenSystemrechte.includes(RollenSystemRecht.MptRollenZuordnen) &&
+        !authStore.hasRollenverwaltungPermission
+      "
+    >
+      <v-list-item
+        class="menu-bar-main-item headline-2"
+        data-testid="mpt-rolle-section-title"
+        :title="$t('admin.rolle.management')"
+      />
+      <v-list-item
+        class="menu-bar-sub-item caption"
+        data-testid="mpt-rolle-management-only-menu-item"
+        prepend-icon="mdi-format-list-bulleted"
+        :title="$t('admin.rolle.mptManagement.menuItem')"
+        to="/admin/rollen/mpt"
+        @click="handleMenuItemClick('/admin/rollen/mpt')"
+      />
     </div>
 
     <!-- Schulverwaltung -->
@@ -304,6 +373,30 @@
         prepend-icon="mdi-plus-circle-outline"
         :title="$t('admin.schultraeger.createNew')"
         to="/admin/schultraeger/new"
+        @click="closeMenuOnMobile"
+      />
+    </div>
+    <!-- Behördenverwaltung -->
+    <div v-if="authStore.hasBehoerdenverwaltungPermission">
+      <v-list-item
+        class="menu-bar-main-item headline-2"
+        data-testid="behoerde-management-title"
+        :title="$t('admin.behoerde.management')"
+      />
+      <v-list-item
+        class="menu-bar-sub-item caption"
+        data-testid="behoerde-management-menu-item"
+        prepend-icon="mdi-format-list-bulleted"
+        :title="$t('admin.behoerde.showAll')"
+        to="/admin/behoerden"
+        @click="handleMenuItemClick('/admin/behoerden')"
+      />
+      <v-list-item
+        class="menu-bar-sub-item caption"
+        data-testid="behoerde-creation-menu-item"
+        prepend-icon="mdi-plus-circle-outline"
+        :title="$t('admin.behoerde.createNew')"
+        to="/admin/behoerden/new"
         @click="closeMenuOnMobile"
       />
     </div>

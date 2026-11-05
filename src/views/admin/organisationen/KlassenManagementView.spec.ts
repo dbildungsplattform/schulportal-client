@@ -10,7 +10,6 @@ import {
 } from '@/stores/OrganisationStore';
 import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
 import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
-import type WrapperLike from 'node_modules/@vue/test-utils/dist/interfaces/wrapperLike';
 import { DoFactory } from 'test/DoFactory';
 import { expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component, type ComputedRef, type DefineComponent } from 'vue';
@@ -262,7 +261,7 @@ describe('KlassenManagementView', () => {
     expect(wrapper?.find('.v-data-table-footer__items-per-page').isVisible()).toBe(true);
     expect(wrapper?.find('.v-data-table-footer__items-per-page').text()).toContain('30');
 
-    const itemsPerPageSelection: WrapperLike | undefined = wrapper?.findComponent(
+    const itemsPerPageSelection: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
       '.v-data-table-footer__items-per-page .v-select',
     );
     await itemsPerPageSelection?.setValue(50);

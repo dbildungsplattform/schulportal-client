@@ -1,10 +1,10 @@
 import type { FeatureFlagResponse } from '@/api-client/generated';
-import ApiService from '@/services/ApiService';
+import axiosApiInstance from '@/services/ApiService';
 import MockAdapter from 'axios-mock-adapter';
 import { setActivePinia, createPinia } from 'pinia';
 import { useConfigStore, type ConfigStore } from './ConfigStore';
 
-const mockadapter: MockAdapter = new MockAdapter(ApiService);
+const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
 
 describe('ConfigStore', () => {
   let configStore: ConfigStore;
@@ -21,6 +21,7 @@ describe('ConfigStore', () => {
         befristungBearbeitenEnabled: false,
         rolleErweiternEnabled: false,
         setUemPasswordEnabled: false,
+        schulischeAngeboteErstellen: false,
       };
 
       mockadapter.onGet('/api/config').replyOnce(200, mockFeatureFlags);

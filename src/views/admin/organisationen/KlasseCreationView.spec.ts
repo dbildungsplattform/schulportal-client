@@ -252,8 +252,8 @@ describe('KlasseCreationView', () => {
 
       expect(wrapper?.find('[data-testid$="alert-title"]').isVisible()).toBe(true);
 
-      wrapper?.find('[data-testid$="alert-button"]').trigger('click');
-      await nextTick();
+      await wrapper?.find('[data-testid$="alert-button"]').trigger('click');
+      await flushPromises();
 
       expect(organisationStore.errorCode).toBe('');
     });

@@ -10,6 +10,7 @@
     type OrganisationStore,
   } from '@/stores/OrganisationStore';
   import {
+    LandesbediensteterWorkflowFilter,
     usePersonenkontextStore,
     type OperationContext,
     type PersonenkontextStore,
@@ -17,9 +18,10 @@
   } from '@/stores/PersonenkontextStore';
   import type { TranslatedObject } from '@/types';
   import { dedup, sameContent } from '@/utils/arrays';
+  import { blurActiveElement } from '@/utils/focus';
   import { getDisplayNameForOrg } from '@/utils/formatting';
   import type { BaseFieldProps } from 'vee-validate';
-  import { computed, onMounted, onUnmounted, reactive, ref, watch, type ComputedRef, type Ref } from 'vue';
+  import { computed, onMounted, onUnmounted, reactive, ref, watch, watchEffect, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
 
   type SelectedSchulenIds = Array<string> | string | undefined;
@@ -27,6 +29,7 @@
     hideDetails?: boolean;
     systemrechteForSearch?: Array<RollenSystemRechtEnum>;
     multiple: boolean;
+    selectionCountKey?: string;
     readonly?: boolean;
     selectedSchuleProps?: BaseFieldProps & { error: boolean; 'error-messages': Array<string> };
     highlightSelection?: boolean;
@@ -43,12 +46,16 @@
   type Emits = {
     (e: 'update:selectedSchulenObjects', value: Array<Organisation>): void;
   };
+  type ResolvedProps = Omit<Props, 'selectionCountKey'> & { selectionCountKey: string };
   type SelectionChange = [SelectedSchulenIds, boolean];
   type PreviousSelectionChange = [SelectedSchulenIds, boolean | undefined];
 
-  const props: Props = defineProps<Props>();
+  const props: ResolvedProps = withDefaults(defineProps<Props>(), {
+    selectionCountKey: 'admin.schule.schulenSelected',
+  });
   const emits: Emits = defineEmits<Emits>();
   const selectedSchulen: Ref<SelectedSchulenIds> = defineModel('selectedSchulen');
+  const lastEmittedSelection: Ref<SelectedSchulenIds> = ref(undefined);
   const searchInputSchulen: Ref<string | undefined> = ref(undefined);
   const clearInput = (): void => {
     searchInputSchulen.value = undefined;
@@ -104,15 +111,13 @@
   });
 
   // Specific filter to load the organisationen in the forms that are tied to the workflow endpoints (Normal and landesbedienstete)
-  const organisationenFilter: WorkflowFilter = reactive({
+  const organisationenFilter: WorkflowFilter | LandesbediensteterWorkflowFilter = reactive({
     operationContext: props.operationContext,
     personId: props.personId,
     organisationId: undefined,
     rollenIds: [],
-    rolleName: undefined,
     organisationName: undefined,
     limit: 25,
-    requestedWithSystemrecht: props.systemrechteForSearch ? props.systemrechteForSearch[0] : undefined,
   });
 
   const { hasAutoselectedSchule, autoselectedSchule }: ReturnType<typeof useAutoselectedSchule> = useAutoselectedSchule(
@@ -218,7 +223,7 @@
       return item.title;
     }
     if (index === 0) {
-      return t('admin.schule.schulenSelected', { count: selectedIds.length });
+      return t(props.selectionCountKey, { count: selectedIds.length });
     }
     return '';
   };
@@ -264,19 +269,11 @@
     organisationenFilter.organisationId = dedup(tempIds.filter(Boolean)).at(0);
   };
 
-  const resolveSelection = (selection: SelectedSchulenIds): Array<Organisation> => {
+  const resolveSelection = (selection: SelectedSchulenIds, organisations: Array<Organisation>): Array<Organisation> => {
     if (isEmptySelection(selection)) {
       return [];
     }
     const selectedIds: Array<string> = wrapSelectedSchulenIds(selection);
-    let organisations: Organisation[] = [];
-
-    const storeData: AutoCompleteStore<Organisation> | PersonenkontextWorkflowResponse = storeReference.value;
-    if ('filterResult' in storeData && Array.isArray(storeData.filterResult)) {
-      organisations = storeData.filterResult;
-    } else if ('organisations' in storeData && Array.isArray(storeData.organisations)) {
-      organisations = storeData.organisations;
-    }
 
     return organisations.filter((org: Organisation) => selectedIds.includes(org.id));
   };
@@ -286,15 +283,21 @@
       updateOrganisationenIds([]);
       updateSearchString(undefined);
       clearInput();
-      emits('update:selectedSchulenObjects', []);
     } else {
       updateOrganisationenIds(selection);
-      emits('update:selectedSchulenObjects', resolveSelection(selection));
+    }
+    if (!props.multiple) {
+      blurActiveElement();
     }
   };
 
   const isSameSelection = (a: SelectedSchulenIds, b: SelectedSchulenIds): boolean => {
-    return sameContent(wrapSelectedSchulenIds(a), wrapSelectedSchulenIds(b));
+    return sameContent(wrapSelectedSchulenIds(a), wrapSelectedSchulenIds(b), (id: SelectedSchulenIds) => {
+      if (!id) {
+        return '';
+      }
+      return id;
+    });
   };
 
   const handleFocusChange = (focused: boolean): void => {
@@ -306,17 +309,43 @@
     }
   };
 
-  async function handleWorkflowStep(filter: WorkflowFilter): Promise<void> {
+  async function handleWorkflowStep(filter: WorkflowFilter | LandesbediensteterWorkflowFilter): Promise<void> {
     if (props.useLandesbediensteteWorkflow) {
       await personenkontextStore.processWorkflowStepLandesbedienstete(filter);
     } else {
       await personenkontextStore.processWorkflowStep({
         operationContext: props.operationContext,
         ...filter,
-        requestedWithSystemrecht: props.systemrechteForSearch ? props.systemrechteForSearch[0] : undefined,
       });
     }
   }
+
+  watchEffect(() => {
+    const wrappedSelection: Array<string> = wrapSelectedSchulenIds(selectedSchulen.value);
+    if (isSameSelection(lastEmittedSelection.value, wrappedSelection)) {
+      return;
+    }
+    if (wrappedSelection.length === 0) {
+      lastEmittedSelection.value = [];
+      emits('update:selectedSchulenObjects', []);
+      return;
+    }
+
+    const storeData: AutoCompleteStore<Organisation> | PersonenkontextWorkflowResponse = storeReference.value;
+
+    let organisations: Array<Organisation> = [];
+    if ('filterResult' in storeData && Array.isArray(storeData.filterResult)) {
+      organisations = storeData.filterResult;
+    } else if ('organisations' in storeData && Array.isArray(storeData.organisations)) {
+      organisations = storeData.organisations;
+    }
+
+    const resolvedSelection: Array<Organisation> = resolveSelection(wrappedSelection, organisations);
+    if (resolvedSelection.length === wrappedSelection.length) {
+      lastEmittedSelection.value = wrappedSelection;
+      emits('update:selectedSchulenObjects', resolvedSelection);
+    }
+  });
 
   watch(
     [selectedSchulen, hasAutoselectedSchule],

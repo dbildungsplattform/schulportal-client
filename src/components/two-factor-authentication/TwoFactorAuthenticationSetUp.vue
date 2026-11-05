@@ -110,30 +110,27 @@
                 </v-radio-group>
               </v-col>
             </v-row>
-            <v-row class="text-body px-md-13">
+            <v-row class="text-body px-md-13 align-top">
               <v-col
                 class="text-right"
                 cols="1"
               >
-                <v-icon
-                  class="mb-2"
-                  icon="mdi-information"
-                />
+                <v-icon icon="mdi-information" />
               </v-col>
-              <div class="v-col">
-                <p
+              <v-col>
+                <span
                   v-if="selectedOption === TokenKind.software"
                   class="text-body"
                 >
                   {{ $t('admin.person.twoFactorAuthentication.softwareTokenText') }}
-                </p>
-                <p
+                </span>
+                <span
                   v-if="selectedOption === TokenKind.hardware"
                   class="text-body"
                 >
                   {{ $t('admin.person.twoFactorAuthentication.hardwareTokenText') }}
-                </p>
-              </div>
+                </span>
+              </v-col>
             </v-row>
           </v-container>
         </v-card-text>

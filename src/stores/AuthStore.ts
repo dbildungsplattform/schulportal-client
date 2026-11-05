@@ -1,13 +1,16 @@
 import axiosApiInstance from '@/services/ApiService';
+import type { AxiosResponse } from 'axios';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import {
   AuthApiFactory,
+  RollenSystemRechtEnum as RollenSystemRecht,
   type AuthApiInterface,
+  type CsrfTokenResponse,
   type PersonTimeLimitInfoResponse,
   type UserinfoResponse,
 } from '../api-client/generated/api';
 import type { Organisation } from './OrganisationStore';
-import { RollenSystemRecht } from './RolleStore';
+import { GATED_ROLLEN_SYSTEMRECHTE } from './types/GatedRollen';
 
 export enum StepUpLevel {
   NONE = 'none',
@@ -56,6 +59,7 @@ type AuthState = {
   hasRollenverwaltungPermission: boolean;
   hasSchulverwaltungPermission: boolean;
   hasSchultraegerverwaltungPermission: boolean;
+  hasBehoerdenverwaltungPermission: boolean;
   hasPersonenBulkPermission: boolean;
   hasPortalVerwaltungPermission: boolean;
   hasHinweiseBearbeitenPermission: boolean;
@@ -63,13 +67,19 @@ type AuthState = {
   hasEingeschränktNeueBenutzerErstellenPermission: boolean;
   hasAngeboteVerwaltenPermission: boolean;
   hasRollenerweiternPermission: boolean;
+  /** The gated RollenSystemRechte (MPT_ROLLEN_ZUORDNEN, PILOT_1_ROLLEN_ZUORDNEN, ...) the current user actually holds. */
+  grantedGatedRollenSystemrechte: RollenSystemRecht[];
+  hasEingeschränktAngeboteVerwaltenPermission: boolean;
+  hasVidisPermission: boolean;
   isAuthenticated: boolean;
   acr: StepUpLevel;
   timeLimitInfos: PersonTimeLimitInfoResponse[];
+  csrfToken: string | null;
 };
 
 type AuthActions = {
   initializeAuthStatus: () => Promise<void>;
+  getCsrfToken: () => Promise<void>;
 };
 
 type AuthGetters = object;
@@ -78,105 +88,139 @@ export type AuthStore = Store<'authStore', AuthState, AuthGetters, AuthActions>;
 
 const authApi: AuthApiInterface = AuthApiFactory(undefined, '', axiosApiInstance);
 
-export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, AuthActions> = defineStore({
-  id: 'authStore',
-  state: (): AuthState => ({
-    currentUser: null,
-    currentUserPermissions: [],
-    hasImportPermission: false,
-    hasKlassenverwaltungPermission: false,
-    hasPersonenAnlegenPermission: false,
-    hasPersonenLoeschenPermission: false,
-    hasPersonenSyncPermission: false,
-    hasPersonenverwaltungPermission: false,
-    hasRollenverwaltungPermission: false,
-    hasSchulverwaltungPermission: false,
-    hasSchultraegerverwaltungPermission: false,
-    hasPersonenBulkPermission: false,
-    hasPortalVerwaltungPermission: false,
-    hasHinweiseBearbeitenPermission: false,
-    hasLandesbediensteteSuchenUndHinzufügenPermission: false,
-    hasEingeschränktNeueBenutzerErstellenPermission: false,
-    hasAngeboteVerwaltenPermission: false,
-    hasRollenerweiternPermission: false,
-    isAuthenticated: false,
-    acr: StepUpLevel.NONE,
-    timeLimitInfos: [],
-  }),
-  actions: {
-    async initializeAuthStatus() {
-      try {
-        const { data, status: loginStatus }: { data: UserinfoResponse; status: number } =
-          await authApi.authenticationControllerInfo({
-            validateStatus: null,
-          });
-
-        if (loginStatus >= 200 && loginStatus < 400) {
-          this.isAuthenticated = true;
-          this.currentUser = data;
-          this.acr = data.acr as StepUpLevel;
-          this.timeLimitInfos = data.timeLimits;
-
-          /* extract all system permissions from current user's personenkontexte */
-          const personenkontexte: Array<PersonenkontextRolleFields> | null = this.currentUser.personenkontexte;
-          personenkontexte?.forEach((personenkontext: PersonenkontextRolleFields) => {
-            personenkontext.rolle.systemrechte.forEach((systemrecht: string) => {
-              /* push unique permissions only */
-              if (systemrecht && this.currentUserPermissions.indexOf(systemrecht) === -1) {
-                this.currentUserPermissions.push(systemrecht);
-              }
+export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, AuthActions> = defineStore(
+  'authStore',
+  {
+    state: (): AuthState => ({
+      currentUser: null,
+      currentUserPermissions: [],
+      hasImportPermission: false,
+      hasKlassenverwaltungPermission: false,
+      hasPersonenAnlegenPermission: false,
+      hasPersonenLoeschenPermission: false,
+      hasPersonenSyncPermission: false,
+      hasPersonenverwaltungPermission: false,
+      hasRollenverwaltungPermission: false,
+      hasSchulverwaltungPermission: false,
+      hasSchultraegerverwaltungPermission: false,
+      hasBehoerdenverwaltungPermission: false,
+      hasPersonenBulkPermission: false,
+      hasPortalVerwaltungPermission: false,
+      hasHinweiseBearbeitenPermission: false,
+      hasLandesbediensteteSuchenUndHinzufügenPermission: false,
+      hasEingeschränktNeueBenutzerErstellenPermission: false,
+      hasAngeboteVerwaltenPermission: false,
+      hasRollenerweiternPermission: false,
+      grantedGatedRollenSystemrechte: [],
+      hasEingeschränktAngeboteVerwaltenPermission: false,
+      isAuthenticated: false,
+      acr: StepUpLevel.NONE,
+      timeLimitInfos: [],
+      csrfToken: null,
+      hasVidisPermission: false,
+    }),
+    actions: {
+      async initializeAuthStatus() {
+        try {
+          const { data, status: loginStatus }: { data: UserinfoResponse; status: number } =
+            await authApi.authenticationControllerInfo({
+              validateStatus: null,
             });
-          });
 
-          /* set permission aliases for easier global access */
-          this.hasImportPermission = this.currentUserPermissions.includes('IMPORT_DURCHFUEHREN');
-          this.hasKlassenverwaltungPermission = this.currentUserPermissions.includes('KLASSEN_VERWALTEN');
-          this.hasPersonenAnlegenPermission = this.currentUserPermissions.includes('PERSONEN_ANLEGEN');
-          this.hasPersonenLoeschenPermission = this.currentUserPermissions.includes('PERSONEN_SOFORT_LOESCHEN');
-          this.hasPersonenSyncPermission = this.currentUserPermissions.includes('PERSON_SYNCHRONISIEREN');
-          this.hasPersonenverwaltungPermission = this.currentUserPermissions.includes('PERSONEN_VERWALTEN');
-          this.hasRollenverwaltungPermission = this.currentUserPermissions.includes('ROLLEN_VERWALTEN');
-          this.hasSchulverwaltungPermission = this.currentUserPermissions.includes('SCHULEN_VERWALTEN');
-          this.hasSchultraegerverwaltungPermission = this.currentUserPermissions.includes('SCHULTRAEGER_VERWALTEN');
-          this.hasPersonenBulkPermission = this.currentUserPermissions.includes('BULK_VERWALTEN');
-          this.hasPortalVerwaltungPermission = this.currentUserPermissions.includes('SCHULPORTAL_VERWALTEN');
-          this.hasHinweiseBearbeitenPermission = this.currentUserPermissions.includes('HINWEISE_BEARBEITEN');
-          this.hasLandesbediensteteSuchenUndHinzufügenPermission = this.currentUserPermissions.includes(
-            'LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN',
-          );
-          this.hasEingeschränktNeueBenutzerErstellenPermission = this.currentUserPermissions.includes(
-            'EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN',
-          );
-          this.hasAngeboteVerwaltenPermission = this.currentUserPermissions.includes(
-            RollenSystemRecht.AngeboteVerwalten,
-          );
-          this.hasRollenerweiternPermission = this.currentUserPermissions.includes(RollenSystemRecht.RollenErweitern);
-        } else {
-          throw new Error('User info could not be retrieved.');
+          if (loginStatus >= 200 && loginStatus < 400) {
+            this.isAuthenticated = true;
+            this.currentUser = data;
+            this.acr = data.acr as StepUpLevel;
+            this.timeLimitInfos = data.timeLimits;
+            await this.getCsrfToken();
+
+            /* extract all system permissions from current user's personenkontexte */
+            const personenkontexte: Array<PersonenkontextRolleFields> | null = this.currentUser.personenkontexte;
+            personenkontexte?.forEach((personenkontext: PersonenkontextRolleFields) => {
+              personenkontext.rolle.systemrechte.forEach((systemrecht: string) => {
+                /* push unique permissions only */
+                if (systemrecht && this.currentUserPermissions.indexOf(systemrecht) === -1) {
+                  this.currentUserPermissions.push(systemrecht);
+                }
+              });
+            });
+
+            /* set permission aliases for easier global access */
+            this.hasImportPermission = this.currentUserPermissions.includes('IMPORT_DURCHFUEHREN');
+            this.hasKlassenverwaltungPermission = this.currentUserPermissions.includes('KLASSEN_VERWALTEN');
+            this.hasPersonenAnlegenPermission = this.currentUserPermissions.includes('PERSONEN_ANLEGEN');
+            this.hasPersonenLoeschenPermission = this.currentUserPermissions.includes('PERSONEN_SOFORT_LOESCHEN');
+            this.hasPersonenSyncPermission = this.currentUserPermissions.includes('PERSON_SYNCHRONISIEREN');
+            this.hasPersonenverwaltungPermission = this.currentUserPermissions.includes('PERSONEN_VERWALTEN');
+            this.hasRollenverwaltungPermission = this.currentUserPermissions.includes('ROLLEN_VERWALTEN');
+            this.hasSchulverwaltungPermission = this.currentUserPermissions.includes('SCHULEN_VERWALTEN');
+            this.hasSchultraegerverwaltungPermission = this.currentUserPermissions.includes('SCHULTRAEGER_VERWALTEN');
+            this.hasBehoerdenverwaltungPermission = this.currentUserPermissions.includes(
+              RollenSystemRecht.BehoerdenVerwalten,
+            );
+            this.hasPersonenBulkPermission = this.currentUserPermissions.includes('BULK_VERWALTEN');
+            this.hasPortalVerwaltungPermission = this.currentUserPermissions.includes('SCHULPORTAL_VERWALTEN');
+            this.hasHinweiseBearbeitenPermission = this.currentUserPermissions.includes('HINWEISE_BEARBEITEN');
+            this.hasLandesbediensteteSuchenUndHinzufügenPermission = this.currentUserPermissions.includes(
+              'LANDESBEDIENSTETE_SUCHEN_UND_HINZUFUEGEN',
+            );
+            this.hasEingeschränktNeueBenutzerErstellenPermission = this.currentUserPermissions.includes(
+              'EINGESCHRAENKT_NEUE_BENUTZER_ERSTELLEN',
+            );
+            this.hasAngeboteVerwaltenPermission = this.currentUserPermissions.includes(
+              RollenSystemRecht.AngeboteVerwalten,
+            );
+            this.hasRollenerweiternPermission = this.currentUserPermissions.includes(RollenSystemRecht.RollenErweitern);
+            this.grantedGatedRollenSystemrechte = GATED_ROLLEN_SYSTEMRECHTE.filter((systemrecht: RollenSystemRecht) =>
+              this.currentUserPermissions.includes(systemrecht),
+            );
+            this.hasEingeschränktAngeboteVerwaltenPermission = this.currentUserPermissions.includes(
+              RollenSystemRecht.AngeboteEingeschraenktVerwalten,
+            );
+            this.hasVidisPermission = this.currentUserPermissions.includes(
+              RollenSystemRecht.SchulischeVidisAngeboteAbrufen,
+            );
+          } else {
+            throw new Error('User info could not be retrieved.');
+          }
+        } catch {
+          // If user info can't be retrieved, consider the user unauthenticated.
+          this.currentUser = null;
+          this.currentUserPermissions = [];
+          this.hasImportPermission = false;
+          this.hasKlassenverwaltungPermission = false;
+          this.hasPersonenAnlegenPermission = false;
+          this.hasPersonenLoeschenPermission = false;
+          this.hasPersonenSyncPermission = false;
+          this.hasPersonenverwaltungPermission = false;
+          this.hasRollenverwaltungPermission = false;
+          this.hasSchulverwaltungPermission = false;
+          this.hasSchultraegerverwaltungPermission = false;
+          this.hasBehoerdenverwaltungPermission = false;
+          this.hasPersonenBulkPermission = false;
+          this.hasPortalVerwaltungPermission = false;
+          this.hasHinweiseBearbeitenPermission = false;
+          this.hasLandesbediensteteSuchenUndHinzufügenPermission = false;
+          this.hasEingeschränktNeueBenutzerErstellenPermission = false;
+          this.hasAngeboteVerwaltenPermission = false;
+          this.grantedGatedRollenSystemrechte = [];
+          this.hasEingeschränktAngeboteVerwaltenPermission = false;
+          this.hasVidisPermission = false;
+          this.isAuthenticated = false;
+          this.acr = StepUpLevel.NONE;
+          this.timeLimitInfos = [];
+          this.csrfToken = null;
         }
-      } catch {
-        // If user info can't be retrieved, consider the user unauthenticated.
-        this.currentUser = null;
-        this.currentUserPermissions = [];
-        this.hasImportPermission = false;
-        this.hasKlassenverwaltungPermission = false;
-        this.hasPersonenAnlegenPermission = false;
-        this.hasPersonenLoeschenPermission = false;
-        this.hasPersonenSyncPermission = false;
-        this.hasPersonenverwaltungPermission = false;
-        this.hasRollenverwaltungPermission = false;
-        this.hasSchulverwaltungPermission = false;
-        this.hasSchultraegerverwaltungPermission = false;
-        this.hasPersonenBulkPermission = false;
-        this.hasPortalVerwaltungPermission = false;
-        this.hasHinweiseBearbeitenPermission = false;
-        this.hasLandesbediensteteSuchenUndHinzufügenPermission = false;
-        this.hasEingeschränktNeueBenutzerErstellenPermission = false;
-        this.hasAngeboteVerwaltenPermission = false;
-        this.isAuthenticated = false;
-        this.acr = StepUpLevel.NONE;
-        this.timeLimitInfos = [];
-      }
+      },
+
+      async getCsrfToken(): Promise<void> {
+        try {
+          const response: AxiosResponse<CsrfTokenResponse> = await authApi.authenticationControllerGetCsrfToken();
+          this.csrfToken = response.data.csrfToken;
+        } catch {
+          this.csrfToken = null;
+        }
+      },
     },
   },
-});
+);

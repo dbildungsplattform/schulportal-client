@@ -1,12 +1,8 @@
 import { config } from '@vue/test-utils';
 import { I18n, createI18n } from 'vue-i18n';
 import { createVuetify } from 'vuetify';
-import { afterAll, afterEach, beforeAll } from 'vitest';
+import { beforeAll } from 'vitest';
 import { TestingPinia, createTestingPinia } from '@pinia/testing';
-// MSW will probably be removed soon anyways
-
-import { SetupServer, setupServer } from 'msw/node';
-import requestHandlers from './src/specs/request-handlers';
 import de_locales from './src/locales/de-DE.json';
 
 const i18n: I18n = createI18n({
@@ -18,40 +14,25 @@ const i18n: I18n = createI18n({
   },
 });
 
-// eslint-disable-next-line @typescript-eslint/typedef
-const vuetify = createVuetify({});
-
+const vuetify: ReturnType<typeof createVuetify> = createVuetify({});
 const pinia: TestingPinia = createTestingPinia();
 
-/* Setup mock server */
-const server: SetupServer = setupServer(...requestHandlers);
-
-/* Start mock server before all tests */
 beforeAll(() => {
-  server.listen({ onUnhandledRequest: 'error' });
   // @ts-expect-error: global has any type
   global.ResizeObserver = class ResizeObserver {
     public observe(): void {
-      // do nothing
+      /* empty */
     }
-
     public unobserve(): void {
-      // do nothing
+      /* empty */
     }
-
     public disconnect(): void {
-      // do nothing
+      /* empty */
     }
   };
   // Fix Vuetify >=3.8.7 overlay bug (visualViewport not defined)
   // @ts-expect-error: visualViewport is missing in Node
   global.visualViewport = new EventTarget();
 });
-
-/* Close mock server after all tests */
-afterAll(() => server.close());
-
-/* Reset request handlers after each test => `important for test isolation` */
-afterEach(() => server.resetHandlers());
 
 config.global.plugins = [i18n, pinia, vuetify];

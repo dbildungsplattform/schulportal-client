@@ -338,10 +338,13 @@
             </v-col>
           </v-row>
           <v-row class="text-body bold px-md-16">
-            <v-col cols="1">
+            <v-col
+              cols="auto"
+              class="d-flex align-center pr-2"
+            >
               <v-icon icon="mdi-information-slab-circle-outline" />
             </v-col>
-            <v-col cols="11">
+            <v-col>
               <span
                 data-testid="lock-user-info-text"
                 class="text-body"

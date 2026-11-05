@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import type { LockUserBodyParams } from '@/api-client/generated';
+  import { ServiceProviderSystem, type LockUserBodyParams } from '@/api-client/generated';
   import SpshTooltip from '@/components/admin/SpshTooltip.vue';
   import KlasseChange from '@/components/admin/klassen/KlasseChange.vue';
   import BefristungInput from '@/components/admin/personen/BefristungInput.vue';
@@ -18,7 +18,6 @@
   import TokenReset from '@/components/two-factor-authentication/TokenReset.vue';
   import TwoFactorAuthenticationSetUp from '@/components/two-factor-authentication/TwoFactorAuthenticationSetUp.vue';
   import { useOrganisationen } from '@/composables/useOrganisationen';
-  import { useRollen, type TranslatedRolleWithAttrs } from '@/composables/useRollen';
   import { useAuthStore, type AuthStore, type PersonenkontextRolleFields } from '@/stores/AuthStore';
   import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
   import {
@@ -35,10 +34,13 @@
     usePersonenkontextStore,
     type PersonenkontextStore,
     type PersonenkontextUpdate,
-    type PersonenkontextWorkflowResponse,
-    type RolleResponse,
   } from '@/stores/PersonenkontextStore';
-  import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
+  import { RollenArt, RollenMerkmal, RolleStore, TranslatedRolleWithAttrs, useRolleStore } from '@/stores/RolleStore';
+  import {
+    StartPageServiceProvider,
+    useServiceProviderStore,
+    type ServiceProviderStore,
+  } from '@/stores/ServiceProviderStore';
   import {
     TokenKind,
     useTwoFactorAuthentificationStore,
@@ -58,6 +60,7 @@
     getPersonenkontextFieldDefinitions,
     getValidationSchema,
     isKopersRolle,
+    isLernRolle,
     type PersonenkontextFieldDefinitions,
   } from '@/utils/validationPersonenkontext';
   import { toTypedSchema } from '@vee-validate/yup';
@@ -104,6 +107,8 @@
   const organisationStore: OrganisationStore = useOrganisationStore();
   const twoFactorAuthentificationStore: TwoFactorAuthentificationStore = useTwoFactorAuthentificationStore();
   const configStore: ConfigStore = useConfigStore();
+  const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
+  const rolleStore: RolleStore = useRolleStore();
 
   const devicePassword: Ref<string> = ref('');
   const password: Ref<string> = ref('');
@@ -215,6 +220,8 @@
 
   const handleAlertClose = (): void => {
     personStore.errorCode = '';
+    personenkontextStore.errorCode = '';
+    rolleStore.errorCode = '';
     navigateToPersonTable();
   };
 
@@ -342,6 +349,7 @@
 
   let closeCreateSuccessDialog = (): void => {
     personStore.getPersonenuebersichtById(currentPersonId);
+    serviceProviderStore.getServiceProvidersByPersonId(currentPersonId);
     createSuccessDialogVisible.value = false;
     isEditActive.value = false;
     pendingCreation.value = false;
@@ -349,6 +357,7 @@
 
   let closeDeleteSuccessDialog = (): void => {
     personStore.getPersonenuebersichtById(currentPersonId);
+    serviceProviderStore.getServiceProvidersByPersonId(currentPersonId);
     deleteSuccessDialogVisible.value = false;
     isEditActive.value = false;
     pendingDeletion.value = false;
@@ -530,7 +539,6 @@
     return result;
   }
 
-  const rollen: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = useRollen();
   const organisationen: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
   const klassen: ComputedRef<TranslatedObject[] | undefined> = computed(() => {
     // TODO: accessing the KlassenFilter this way violates encapsulation, should be refactored (see SPSH-2185)
@@ -572,31 +580,6 @@
     selectedRolle: string;
   };
 
-  // Define a method to check if the selected Rolle is of type "Lern"
-  function isLernRolle(selectedRolleId: string): boolean {
-    const rolle: TranslatedRolleWithAttrs | undefined = rollen.value?.find(
-      (r: TranslatedRolleWithAttrs) => r.value === selectedRolleId,
-    );
-    return !!rolle && rolle.rollenart === RollenArt.Lern;
-  }
-
-  async function isLernRolleForChangeKlasse(selectedRolleId: string): Promise<boolean> {
-    await personenkontextStore.processWorkflowStep({
-      personId: currentPersonId,
-      operationContext: OperationContext.PERSON_BEARBEITEN,
-      organisationId: selectedZuordnungen.value[0]?.sskId,
-      rollenIds: [selectedRolleId],
-      limit: 1,
-    });
-
-    const workflowStepResponse: PersonenkontextWorkflowResponse | null = personenkontextStore.workflowStepResponse;
-
-    const rolle: RolleResponse | undefined = workflowStepResponse?.rollen.find(
-      (r: RolleResponse) => r.id === selectedRolleId,
-    );
-    return !!rolle && rolle.rollenart === RollenArt.Lern;
-  }
-
   const hasKopersNummer: ComputedRef<boolean> = computed(() => {
     return !!personStore.currentPerson?.person.personalnummer;
   });
@@ -610,30 +593,28 @@
     );
   });
 
-  // Used to show device password block
-  const hasLehrRolle: ComputedRef<boolean> = computed(() => {
-    return (
-      !!zuordnungenWithPendingChanges.value?.find((zuordnung: Zuordnung) => {
-        return zuordnung.rollenArt === RollenArt.Lehr;
-      }) || false
+  // Used to show device password block; the UEM Angebot is modelled as a service provider with target NONE
+  const hasUEMServiceProvider: ComputedRef<boolean> = computed(() => {
+    return serviceProviderStore.assignedServiceProviders.some(
+      (serviceProvider: StartPageServiceProvider) => serviceProvider.externalSystem === ServiceProviderSystem.Uem,
     );
   });
-
-  watch(
-    () => selectedZuordnungen.value[0]?.rolleId,
-    async (rolleId: string | undefined) => {
-      if (rolleId) {
-        isLernRolleForChangeKlasseResult.value = await isLernRolleForChangeKlasse(rolleId);
-      } else {
-        isLernRolleForChangeKlasseResult.value = false;
-      }
-    },
-    { immediate: true },
-  );
 
   const canChangeKlasse: ComputedRef<boolean> = computed(() => {
     const hasOneSelectedZuordnung: boolean = selectedZuordnungen.value.length === 1;
     return !!selectedZuordnungen.value[0]?.rolleId && isLernRolleForChangeKlasseResult.value && hasOneSelectedZuordnung;
+  });
+
+  // Landesadmins have a personenkontext at the root organisation node; Schuladmins do not.
+  const isDeleteExternZuordnungDisabled: ComputedRef<boolean> = computed(() => {
+    const hasExternSelected: boolean = selectedZuordnungen.value.some(
+      (z: ZuordnungWithKlasse) => z.rollenArt === RollenArt.Extern,
+    );
+    const isLandesadmin: boolean =
+      authStore.currentUser?.personenkontexte?.some(
+        (pk: PersonenkontextRolleFields) => pk.organisation.typ === OrganisationsTyp.Root,
+      ) ?? false;
+    return hasExternSelected && !isLandesadmin;
   });
 
   watch(
@@ -652,6 +633,8 @@
           limit: 25,
         });
       }
+
+      isLernRolleForChangeKlasseResult.value = newValue?.rollenArt === RollenArt.Lern;
     },
     { immediate: true }, // Run on initialization if there's already a selected Zuordnung
   );
@@ -990,54 +973,36 @@
   // The save button is always disabled if there is no pending creation, deletion nor changeKlasse.
   const isSaveButtonDisabled: ComputedRef<boolean> = computed(() => !hasPendingChange.value);
 
-  // Helper function to determine the existing RollenArt
-  function getExistingRollenArt(zuordnungen: Zuordnung[]): RollenArt | undefined {
-    const rollenIds: string[] = zuordnungen.map((zuordnung: Zuordnung) => zuordnung.rolleId);
-    const existingRollen: TranslatedRolleWithAttrs[] | undefined = rollen.value?.filter(
-      (rolle: TranslatedRolleWithAttrs) => rollenIds.includes(rolle.value),
-    );
-
-    if (existingRollen && existingRollen.length > 0) {
-      return existingRollen[0]?.rollenart;
-    }
-
-    return undefined;
-  }
-
   // Filter out the Rollen based on the user's existing Zuordnungen and selected organization
   const filteredRollen: ComputedRef = computed(() => {
     const existingZuordnungen: Zuordnung[] | undefined = personStore.personenuebersicht?.zuordnungen;
 
-    // If no existing Zuordnungen then show all roles
-    if (!existingZuordnungen || existingZuordnungen.length === 0) {
-      return rollen.value;
+    // If no existing Zuordnungen or no organisation selected yet, show all roles.
+    if (!existingZuordnungen || existingZuordnungen.length === 0 || !selectedOrganisation.value) {
+      return rolleStore.rollenForPersonenkontextCreation;
     }
 
     const selectedOrgaId: string | undefined = selectedOrganisation.value;
 
-    // Determine the existing RollenArt from Zuordnungen
-    const existingRollenArt: RollenArt | undefined = getExistingRollenArt(existingZuordnungen);
-
     // Filter out Rollen that the user already has in the selected organization
-    return rollen.value?.filter((rolle: TranslatedRolleWithAttrs) => {
-      // Check if the user already has this role in the selected organization
-      const alreadyHasRolleInSelectedOrga: boolean = existingZuordnungen.some(
-        (zuordnung: Zuordnung) => zuordnung.rolleId === rolle.value && zuordnung.sskId === selectedOrgaId,
-      );
-
-      // If there's an existing RollenArt, only allow roles of that type
-      if (existingRollenArt) {
-        return !alreadyHasRolleInSelectedOrga && rolle.rollenart === existingRollenArt;
-      }
-
-      // If there's no existing RollenArt, allow any role that hasn't been assigned yet in the selected organization
-      return !alreadyHasRolleInSelectedOrga;
-    });
+    return rolleStore.rollenForPersonenkontextCreation?.filter(
+      (rolle: TranslatedRolleWithAttrs) =>
+        !existingZuordnungen.some(
+          (zuordnung: Zuordnung) => zuordnung.rolleId === rolle.value && zuordnung.sskId === selectedOrgaId,
+        ),
+    );
   });
+
+  // Primitive value so equal personenuebersicht replacements do not invalidate the Rollen query.
+  const existingRollenArt: ComputedRef<RollenArt | undefined> = computed(
+    (): RollenArt | undefined => personStore.personenuebersicht?.zuordnungen[0]?.rollenArt,
+  );
 
   // Computed property to get the title of the selected rolle
   const selectedRolleTitle: ComputedRef<string | undefined> = computed(() => {
-    return rollen.value?.find((rolle: TranslatedObject) => rolle.value === selectedRolle.value)?.title;
+    return rolleStore.rollenForPersonenkontextCreation?.find(
+      (rolle: TranslatedObject) => rolle.value === selectedRolle.value,
+    )?.title;
   });
 
   // Computed property to get the title of the selected klasse
@@ -1088,7 +1053,7 @@
 
   const onSubmitCreateZuordnung: (e?: Event) => Promise<void | undefined> = formContext.handleSubmit(() => {
     if (selectedRolle.value) {
-      if (isLernRolle(selectedRolle.value)) {
+      if (isLernRolle(selectedRolle.value, rolleStore.rollenForPersonenkontextCreation)) {
         createZuordnungConfirmationDialogMessage.value = t('person.addZuordnungKlasseConfirmation', {
           rollenname: selectedRolleTitle.value,
           klassenname: selectedKlasseTitle.value,
@@ -1146,9 +1111,12 @@
         selectedRolle.value ?? '',
         organisation.name,
         organisation.kennung ?? '',
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)?.title || '',
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)
-          ?.rollenart as RollenArt,
+        rolleStore.rollenForPersonenkontextCreation?.find(
+          (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+        )?.title || '',
+        rolleStore.rollenForPersonenkontextCreation?.find(
+          (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+        )?.rollenart as RollenArt,
         organisation.administriertVon ?? '',
         OrganisationsTyp.Schule,
         true,
@@ -1170,9 +1138,12 @@
             selectedRolle.value ?? '',
             klasse.name,
             klasse.kennung ?? '',
-            rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)?.title || '',
-            rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)
-              ?.rollenart as RollenArt,
+            rolleStore.rollenForPersonenkontextCreation?.find(
+              (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+            )?.title || '',
+            rolleStore.rollenForPersonenkontextCreation?.find(
+              (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
+            )?.rollenart as RollenArt,
             klasse.administriertVon ?? '',
             OrganisationsTyp.Klasse,
             true,
@@ -1227,10 +1198,8 @@
         selectedZuordnungen.value[0]?.rolleId ?? '',
         organisation.name,
         organisation.kennung ?? '',
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedZuordnungen.value[0]?.rolleId)
-          ?.title || '',
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)
-          ?.rollenart as RollenArt,
+        selectedZuordnungen.value[0]!.rolle,
+        selectedZuordnungen.value[0]!.rollenArt,
         organisation.administriertVon ?? '',
         OrganisationsTyp.Schule,
         true,
@@ -1282,11 +1251,8 @@
             selectedZuordnungen.value[0]?.rolleId ?? '',
             newKlasse.name,
             newKlasse.kennung ?? '',
-            rollen.value?.find(
-              (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedZuordnungen.value[0]?.rolleId,
-            )?.title || '',
-            rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value)
-              ?.rollenart as RollenArt,
+            selectedZuordnungen.value[0]!.rolle,
+            selectedZuordnungen.value[0]!.rollenArt,
             newKlasse.administriertVon ?? '',
             OrganisationsTyp.Klasse,
             true,
@@ -1602,6 +1568,8 @@
     const twoFARequirementPromise: Promise<void> = twoFactorAuthentificationStore.get2FARequirement(currentPersonId);
     const personByIdPromise: Promise<void> = personStore.getPersonById(currentPersonId);
     const personUebersichtPromise: Promise<void> = personStore.getPersonenuebersichtById(currentPersonId);
+    const assignedServiceProvidersPromise: Promise<void> =
+      serviceProviderStore.getServiceProvidersByPersonId(currentPersonId);
     const workflowStepPromise: Promise<void> = personenkontextStore.processWorkflowStep({
       personId: currentPersonId,
       operationContext: OperationContext.PERSON_BEARBEITEN,
@@ -1612,6 +1580,7 @@
       twoFARequirementPromise,
       personByIdPromise,
       personUebersichtPromise,
+      assignedServiceProvidersPromise,
       workflowStepPromise,
       get2FAStatePromise,
     ]);
@@ -1680,6 +1649,20 @@
             :type="'error'"
             @update:model-value="handleAlertClose"
           />
+
+          <!-- Error Message Display if the rolleStore throws any kind of error (Not being able to load rollen) -->
+          <SpshAlert
+            ref="rollen-store-error-alert"
+            :model-value="!!rolleStore.errorCode"
+            :button-text="alertButtonText"
+            :button-action="alertButtonAction"
+            :closable="false"
+            :show-button="true"
+            :text="t(`admin.rolle.errors.${rolleStore.errorCode}`)"
+            :title="t(`admin.rolle.title.${rolleStore.errorCode}`)"
+            :type="'error'"
+            @update:model-value="handleAlertClose"
+          />
         </v-container>
       </v-container>
 
@@ -1692,7 +1675,7 @@
             >
               <v-col>
                 <!-- Vorname -->
-                <v-row class="mt-4 align-center">
+                <v-row class="mt-3 align-center">
                   <v-col
                     class="d-flex align-center justify-end"
                     sm="3"
@@ -1709,7 +1692,7 @@
                 </v-row>
 
                 <!-- Familienname -->
-                <v-row class="mt-0 align-center">
+                <v-row class="mt-3 align-center">
                   <v-col
                     class="d-flex align-center justify-end"
                     sm="3"
@@ -1726,7 +1709,7 @@
                 </v-row>
 
                 <!-- Benutzername -->
-                <v-row class="mt-0 align-center">
+                <v-row class="mt-3 align-center">
                   <v-col
                     class="d-flex align-center justify-end"
                     sm="3"
@@ -1744,7 +1727,7 @@
 
                 <!-- KoPers.-Nr. -->
                 <v-row
-                  class="mt-0 align-center"
+                  class="mt-3 align-center"
                   v-if="hasKopersRolle || personStore.currentPerson.person.personalnummer"
                 >
                   <v-col
@@ -1780,7 +1763,7 @@
                 <!-- Email -->
                 <v-row
                   v-if="emailStatusText.text !== t('person.emailStatusUnknown')"
-                  class="mt-0 align-center"
+                  class="mt-3 align-center"
                 >
                   <v-col
                     class="d-flex align-center justify-end"
@@ -2189,7 +2172,8 @@
                     ref="personenkontext-delete"
                     :error-code="personStore.errorCode"
                     :person="personStore.currentPerson"
-                    :disabled="selectedZuordnungen.length === 0"
+                    :disabled="selectedZuordnungen.length === 0 || isDeleteExternZuordnungDisabled"
+                    :disabled-tooltip-text="isDeleteExternZuordnungDisabled ? '' : undefined"
                     :zuordnung-count="
                       zuordnungenWithPendingChanges?.filter((zuordnung: Zuordnung) => zuordnung.editable).length ?? 0
                     "
@@ -2347,6 +2331,7 @@
                   v-model:selected-rolle="selectedRolle"
                   v-model:selected-klasse="selectedKlasse"
                   :person-id="currentPersonId"
+                  :rollenart-for-person="existingRollenArt"
                   :operation-context="OperationContext.PERSON_BEARBEITEN"
                   :allow-multiple-rollen="false"
                   :show-headline="false"
@@ -2577,7 +2562,7 @@
                   >
                     {{ t('admin.person.twoFactorAuthentication.header') }}
                   </h3>
-                  <v-row class="mt-4 text-body">
+                  <v-row class="align-top text-body mt-6">
                     <v-col
                       class="text-right"
                       cols="1"
@@ -2587,101 +2572,104 @@
                         icon="mdi-check-circle"
                         color="green"
                       />
+
                       <v-icon
                         v-else-if="twoFactorAuthenticationConnectionError"
                         color="warning"
                         icon="mdi-alert-outline"
                       />
                     </v-col>
+
                     <v-col>
                       <template
                         v-if="twoFactorAuthentificationStore.errorCode && !twoFactorAuthentificationStore.loading"
                       >
-                        <v-row v-if="twoFactorAuthentificationStore.errorCode === 'PI_UNAVAILABLE_ERROR'">
-                          <p
-                            class="text-body"
-                            data-testid="connection-error-text"
-                          >
-                            {{ t('admin.person.twoFactorAuthentication.errors.connection') }}
-                          </p>
-                        </v-row>
-                        <v-row v-else-if="twoFactorAuthentificationStore.errorCode === 'TOKEN_STATE_ERROR'">
-                          <p
-                            class="text-body"
-                            data-testid="token-state-error-text"
-                          >
-                            <i18n-t
-                              keypath="admin.person.twoFactorAuthentication.errors.tokenStateError"
-                              for="admin.person.twoFactorAuthentication.errors.iqshHelpdesk"
-                              tag="label"
-                            >
-                              <a
-                                :href="t('admin.person.twoFactorAuthentication.errors.iqshHelpdeskLink')"
-                                rel="noopener noreferrer"
-                                target="_blank"
-                                >{{ t('admin.person.twoFactorAuthentication.errors.iqshHelpdesk') }}</a
-                              >
-                            </i18n-t>
-                          </p>
-                        </v-row>
-                      </template>
-                      <template v-else-if="twoFactorAuthentificationStore.hasToken">
                         <p
+                          v-if="twoFactorAuthentificationStore.errorCode === 'PI_UNAVAILABLE_ERROR'"
+                          class="ma-0 text-body"
+                          data-testid="connection-error-text"
+                        >
+                          {{ t('admin.person.twoFactorAuthentication.errors.connection') }}
+                        </p>
+
+                        <p
+                          v-else-if="twoFactorAuthentificationStore.errorCode === 'TOKEN_STATE_ERROR'"
+                          class="ma-0 text-body"
+                          data-testid="token-state-error-text"
+                        >
+                          <i18n-t
+                            keypath="admin.person.twoFactorAuthentication.errors.tokenStateError"
+                            for="admin.person.twoFactorAuthentication.errors.iqshHelpdesk"
+                            tag="label"
+                          >
+                            <a
+                              :href="t('admin.person.twoFactorAuthentication.errors.iqshHelpdeskLink')"
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              {{ t('admin.person.twoFactorAuthentication.errors.iqshHelpdesk') }}
+                            </a>
+                          </i18n-t>
+                        </p>
+                      </template>
+
+                      <template v-else-if="twoFactorAuthentificationStore.hasToken">
+                        <span
                           v-if="twoFactorAuthentificationStore.tokenKind === TokenKind.software"
+                          class="ma-0"
                           data-testid="software-factor-setup-text"
                         >
                           {{ t('admin.person.twoFactorAuthentication.softwareTokenIsSetUp') }}
-                        </p>
-                        <p
+                        </span>
+
+                        <span
                           v-if="twoFactorAuthentificationStore.tokenKind === TokenKind.hardware"
+                          class="ma-0"
                           data-testid="hardware-factor-setup-text"
                         >
                           {{ t('admin.person.twoFactorAuthentication.hardwareTokenIsSetUp') }}
-                        </p>
-                        <p
+                        </span>
+
+                        <span
                           v-if="
                             twoFactorAuthentificationStore.serial &&
                             twoFactorAuthentificationStore.tokenKind == TokenKind.hardware
                           "
                         >
                           {{
-                            `${t('admin.person.twoFactorAuthentication.serial')}: ` +
-                            `${twoFactorAuthentificationStore.serial}`
+                            `${t('admin.person.twoFactorAuthentication.serial')}: ${twoFactorAuthentificationStore.serial}`
                           }}
-                        </p>
+                        </span>
                       </template>
                     </v-col>
                   </v-row>
                   <v-row
                     v-if="!twoFactorAuthenticationConnectionError"
-                    class="text-body"
+                    class="text-body align-top"
                   >
                     <v-col
                       class="text-right"
                       cols="1"
                     >
-                      <v-icon
-                        class="mb-2"
-                        icon="mdi-information"
-                      />
+                      <v-icon icon="mdi-information" />
                     </v-col>
-                    <div class="v-col">
-                      <p v-if="twoFactorAuthentificationStore.hasToken && !twoFactorAuthentificationStore.required">
+                    <v-col>
+                      <span v-if="twoFactorAuthentificationStore.hasToken && !twoFactorAuthentificationStore.required">
                         {{ t('admin.person.twoFactorAuthentication.noLongerNeedToken') }}
-                      </p>
-                      <p
+                      </span>
+                      <span
                         v-else-if="twoFactorAuthentificationStore.hasToken"
                         data-testid="two-factor-reset-info-text"
                       >
                         {{ t('admin.person.twoFactorAuthentication.resetInfo') }}
-                      </p>
-                      <p
+                      </span>
+                      <span
                         v-if="!twoFactorAuthentificationStore.hasToken"
                         data-testid="two-factor-not-setup-text"
                       >
                         {{ t('admin.person.twoFactorAuthentication.notSetUp') }}
-                      </p>
-                    </div>
+                      </span>
+                    </v-col>
                   </v-row>
                 </v-col>
                 <v-col
@@ -2852,7 +2840,7 @@
                   @on-lock-user="onLockUser"
                 />
               </div>
-              <div class="d-flex justify-sm-end">
+              <div class="d-flex justify-sm-end mt-2">
                 <template v-if="authStore.hasPersonenLoeschenPermission">
                   <PersonDelete
                     :disabled="isEditActive || isEditPersonMetadataActive"
@@ -2863,7 +2851,7 @@
                   />
                 </template>
               </div>
-              <div class="d-flex justify-sm-end">
+              <div class="d-flex justify-sm-end mt-2">
                 <template v-if="authStore.hasPersonenSyncPermission">
                   <PersonSync
                     :disabled="isEditActive || isEditPersonMetadataActive"
@@ -2878,14 +2866,14 @@
             <v-col v-else-if="personStore.loading"> <v-progress-circular indeterminate /> </v-col>
           </v-row> </v-container
         ><v-divider
-          v-if="hasLehrRolle"
+          v-if="hasUEMServiceProvider"
           class="border-opacity-100 rounded my-6 mx-4"
           color="#E5EAEF"
           thickness="6"
         />
         <!-- reset device password -->
         <v-container
-          v-if="hasLehrRolle"
+          v-if="hasUEMServiceProvider"
           data-testid="device-password"
         >
           <v-row class="ml-md-16">
@@ -2897,22 +2885,16 @@
                 {{ t('admin.person.devicePassword.header') }}
               </h3>
               <template v-if="!personStore.loading">
-                <v-row class="mt-4 text-body">
-                  <v-col
-                    class="text-right"
-                    cols="1"
-                  >
-                    <v-icon
-                      class="mb-2"
-                      icon="mdi-information"
-                    />
-                  </v-col>
-                  <v-col>
-                    <p>
-                      {{ t('admin.person.devicePassword.infoTextPersonDetails') }}
-                    </p>
-                  </v-col>
-                </v-row>
+                <div class="d-flex align-start mt-4 text-body">
+                  <v-icon
+                    class="me-2"
+                    icon="mdi-information"
+                  />
+
+                  <p class="ma-0">
+                    {{ t('admin.person.devicePassword.infoTextPersonDetails') }}
+                  </p>
+                </div>
               </template>
               <template v-else-if="personStore.loading">
                 <v-col> <v-progress-circular indeterminate /></v-col>

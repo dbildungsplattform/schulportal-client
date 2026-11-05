@@ -19,6 +19,7 @@ export default defineConfig({
     VueI18nPlugin(),
     vue(),
     vuetify({
+      autoImport: true,
       styles: {
         configFile: 'src/styles/settings.scss',
       },

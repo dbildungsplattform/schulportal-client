@@ -1,20 +1,26 @@
 <script setup lang="ts">
-  import ResultTable, { type Headers } from '@/components/admin/ResultTable.vue';
+  import ResultTable, { TableRow, type Headers } from '@/components/admin/ResultTable.vue';
   import SearchField from '@/components/admin/SearchField.vue';
   import OrganisationDelete from '@/components/admin/organisationen/OrganisationDelete.vue';
   import ItsLearningSetup from '@/components/admin/schulen/itsLearningSetup.vue';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
-  import { OrganisationsTyp, useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
+  import {
+    OrganisationsTyp,
+    SchuleTableItem,
+    useOrganisationStore,
+    type OrganisationStore,
+  } from '@/stores/OrganisationStore';
   import { RollenSystemRecht } from '@/stores/RolleStore';
   import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
   import { onMounted, ref, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
-  import { onBeforeRouteLeave } from 'vue-router';
+  import { onBeforeRouteLeave, Router, useRouter } from 'vue-router';
 
   const organisationStore: OrganisationStore = useOrganisationStore();
   const searchFilterStore: SearchFilterStore = useSearchFilterStore();
 
+  const router: Router = useRouter();
   const { t }: Composer = useI18n({ useScope: 'global' });
 
   type ReadonlyHeaders = Headers;
@@ -25,6 +31,7 @@
       align: 'start',
     },
     { title: t('admin.schule.schulname'), key: 'name', align: 'start' },
+    { title: t('admin.schule.emailAdresse'), key: 'emailAdress', align: 'start' },
     { title: t('admin.schule.itsLearningStatus'), key: 'itslearning', sortable: false, align: 'start' },
     {
       title: t('action'),
@@ -43,7 +50,7 @@
       limit: searchFilterStore.schulenPerPage,
       includeTyp: OrganisationsTyp.Schule,
       systemrechte: [RollenSystemRecht.SchulenVerwalten],
-      searchString: searchFilterStore.searchFilterSchulen || '',
+      searchString: searchFilterStore.searchStringForSchulen || '',
     });
   }
 
@@ -83,6 +90,10 @@
   const handleAlertClose = (): void => {
     organisationStore.errorCode = '';
   };
+
+  function navigateToSchuleDetails(_$event: PointerEvent, { item }: { item: SchuleTableItem }): void {
+    router.push({ name: 'schule-details', params: { id: item.id } });
+  }
 
   onMounted(async () => {
     await fetchSchulen();
@@ -127,14 +138,10 @@
         @update:model-value="handleAlertClose"
       />
       <template v-if="!organisationStore.errorCode">
-        <v-row
-          align="center"
-          class="ma-3"
-          justify="end"
-        >
+        <v-row class="ma-3 align-center justify-end">
           <SearchField
             ref="searchFieldComponent"
-            :initial-value="searchFilterStore.searchFilterSchulen ?? ''"
+            :initial-value="searchFilterStore.searchStringForSchulen ?? ''"
             :input-cols="6"
             :input-cols-md="3"
             :button-cols="6"
@@ -151,11 +158,14 @@
           :loading="organisationStore.loading"
           :headers="headers"
           item-value-path="id"
-          :disable-row-click="true"
           :total-items="organisationStore.totalSchulen"
           :items-per-page="searchFilterStore.schulenPerPage"
           @on-items-per-page-update="getPaginatedSchulenWithLimit"
           @on-page-update="getPaginatedSchulen"
+          @on-handle-row-click="
+            (event: PointerEvent, item: TableRow<unknown>) =>
+              navigateToSchuleDetails(event, item as TableRow<SchuleTableItem>)
+          "
         >
           <template #[`item.name`]="{ item }">
             <div
@@ -163,6 +173,14 @@
               :title="item.name"
             >
               {{ item.name }}
+            </div>
+          </template>
+          <template #[`item.emailAdress`]="{ item }">
+            <div
+              class="ellipsis-wrapper"
+              :title="item.emailAdress"
+            >
+              {{ item.emailAdress ?? '---' }}
             </div>
           </template>
           <template #[`item.itslearning`]="{ item }">
@@ -188,7 +206,7 @@
                 organisationStore.errorCode ? $t(`admin.schule.errors.${organisationStore.errorCode}`) : ''
               "
               :use-icon-activator="true"
-              :is-loading="organisationStore.loading"
+              :is-loading="organisationStore.loadingDelete"
               @on-delete-organisation="deleteSchule(item.id)"
               @on-close="handleSchuleDeleteClose"
             />

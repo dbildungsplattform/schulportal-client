@@ -48,8 +48,7 @@
   >
     <!-- Main title -->
     <v-row
-      class="mb-5"
-      justify="center"
+      class="mb-5 justify-center"
       no-gutters
     >
       <v-col class="text-center">
@@ -64,8 +63,7 @@
     </v-row>
 
     <v-row
-      class="mb-7"
-      justify="center"
+      class="mb-7 justify-center"
       no-gutters
     >
       <v-col class="text-center">
@@ -84,8 +82,7 @@
       class="red-border"
     >
       <v-row
-        class="mb-7"
-        justify="center"
+        class="mb-7 justify-center"
         no-gutters
       >
         <v-col class="text-center">
@@ -99,8 +96,7 @@
       </v-row>
 
       <v-row
-        class="mb-7"
-        justify="center"
+        class="mb-7 justify-center"
         no-gutters
       >
         <v-col class="text-center">
@@ -114,8 +110,7 @@
       </v-row>
 
       <v-row
-        class="mb-7"
-        justify="center"
+        class="mb-7 justify-center"
         no-gutters
       >
         <v-col class="text-center">
@@ -126,7 +121,7 @@
       </v-row>
     </div>
     <!-- Login Button -->
-    <v-row justify="center">
+    <v-row class="justify-center">
       <v-col
         cols="12"
         md="8"
@@ -148,8 +143,7 @@
       class="mt-10 primary-border"
     >
       <v-row
-        class="text-body-2"
-        justify="center"
+        class="text-body-medium justify-center"
         no-gutters
       >
         <v-col cols="12">
@@ -157,7 +151,11 @@
             class="subtitle-2"
             data-testid="whats-new-title"
           >
-            {{ $t('whatsNew.updateInformationForVersion', { version: '1.1 (16.12.2024)' }) }}
+            {{
+              $t('whatsNew.updateInformationForVersion', {
+                version: '1.1 (16.12.2024)',
+              })
+            }}
           </h1>
         </v-col>
         <v-col

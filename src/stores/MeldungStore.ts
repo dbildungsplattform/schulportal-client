@@ -40,8 +40,7 @@ type MeldungActions = {
 export type MeldungStore = Store<'meldungStore', MeldungState, MeldungGetters, MeldungActions>;
 
 export const useMeldungStore: StoreDefinition<'meldungStore', MeldungState, MeldungGetters, MeldungActions> =
-  defineStore({
-    id: 'meldungStore',
+  defineStore('meldungStore', {
     state: (): MeldungState => {
       return {
         meldungen: [],

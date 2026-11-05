@@ -107,11 +107,10 @@
   );
 
   watch(
-    () =>
-      ({
-        selectedSchule: props.initialValues?.selectedSchule,
-        selectedKlassenname: props.initialValues?.selectedKlassenname,
-      }) as Partial<ValidationSchema>,
+    () => ({
+      selectedSchule: props.initialValues?.selectedSchule,
+      selectedKlassenname: props.initialValues?.selectedKlassenname,
+    }),
     (newValues: Partial<ValidationSchema>, oldValues: Partial<ValidationSchema>) => {
       if (newValues.selectedSchule !== oldValues.selectedSchule) {
         if (newValues.selectedKlassenname !== oldValues.selectedKlassenname) {

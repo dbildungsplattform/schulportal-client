@@ -51,7 +51,7 @@
     <v-spacer />
 
     <v-toolbar-items>
-      <v-col class="align-self-center mr-2">
+      <v-col class="align-self-center mr-5">
         <a
           class="secondary"
           data-testid="help-button"
@@ -94,8 +94,11 @@
       </v-col>
     </v-toolbar-items>
 
-    <v-toolbar-items v-if="auth.isAuthenticated">
-      <v-col class="d-flex align-self-center mr-2">
+    <v-toolbar-items
+      v-if="auth.isAuthenticated"
+      class="ga-8 mr-5"
+    >
+      <v-col class="d-flex align-self-center">
         <a
           class="primary d-flex"
           data-testid="nav-profile-button"
@@ -109,7 +112,7 @@
           <span class="hidden-sm-and-down nowrap">{{ $t('nav.profile') }}</span>
         </a>
       </v-col>
-      <v-col class="align-self-center mr-2 d-flex">
+      <v-col class="align-self-center d-flex">
         <a
           class="primary d-flex"
           data-testid="nav-logout-button"

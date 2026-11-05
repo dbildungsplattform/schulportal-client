@@ -154,10 +154,7 @@
         v-else
         class="mt-4"
       >
-        <v-row
-          align="center"
-          justify="center"
-        >
+        <v-row class="align-center justify-center">
           <v-col cols="auto">
             <v-icon
               v-if="progressState === State.PROGRESSING"

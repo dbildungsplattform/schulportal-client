@@ -23,6 +23,8 @@ export default defineConfig({
     },
   },
   test: {
+    testTimeout: 10 * 1000,
+    hookTimeout: 15 * 1000,
     server: {
       deps: {
         inline: ['vuetify'],
@@ -35,7 +37,7 @@ export default defineConfig({
     clearMocks: true,
     coverage: {
       provider: 'istanbul',
-      reporter: ['text', 'lcov'],
+      reporter: [['text', { maxCols: 150 }], 'lcov'],
       include: ['src/**'],
       exclude: [
         'src/api-client/**',

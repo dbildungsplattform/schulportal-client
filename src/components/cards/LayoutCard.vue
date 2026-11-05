@@ -18,10 +18,12 @@
   >
     <v-row
       align="center"
-      class="flex-nowrap ml-md-6 ml-1"
-      :class="!closable ? 'py-3' : ''"
+      class="flex-nowrap"
     >
-      <v-col cols="auto">
+      <v-col
+        cols="auto"
+        class="pl-md-6 pl-4 my-2"
+      >
         <h2
           class="text-left ellipsis-wrapper ellipsis-wrapper--wide"
           :class="subCards ? 'subtitle-1' : 'headline-2'"

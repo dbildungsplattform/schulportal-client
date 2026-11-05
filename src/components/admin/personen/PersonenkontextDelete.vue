@@ -11,6 +11,7 @@
   type Props = {
     errorCode: string;
     disabled: boolean;
+    disabledTooltipText?: string;
     zuordnungCount: number;
   };
 
@@ -39,7 +40,7 @@
     <template #activator="{ props }">
       <SpshTooltip
         :enabled-condition="!disabled"
-        :disabled-text="$t('person.chooseZuordnungFirst')"
+        :disabled-text="disabledTooltipText !== undefined ? disabledTooltipText : $t('person.chooseZuordnungFirst')"
         :enabled-text="$t('person.removeZuordnungDescription')"
         position="start"
       >

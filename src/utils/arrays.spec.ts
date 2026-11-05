@@ -1,4 +1,4 @@
-import { dedup, sameContent } from './arrays';
+import { dedup, sameContent, intersect } from './arrays';
 
 type Cases<T> = Array<Array<Array<T>>>;
 type NestedType = { id: string };
@@ -145,5 +145,47 @@ describe('sameContent', () => {
         `a: ${JSON.stringify(a)}, b: ${JSON.stringify(b)}`,
       ).toBe(expected);
     });
+  });
+});
+
+describe('intersect', () => {
+  type Case<T> = {
+    a: Array<T>;
+    b: Array<T>;
+    expected: Array<T>;
+  };
+
+  const stringCases: Array<Case<string>> = [
+    { a: ['a', 'b', 'c'], b: ['b', 'c', 'd'], expected: ['b', 'c'] },
+    { a: ['a', 'b', 'c'], b: ['x', 'y', 'z'], expected: [] },
+    { a: [], b: ['a', 'b'], expected: [] },
+    { a: ['a', 'b'], b: [], expected: [] },
+    { a: [], b: [], expected: [] },
+    { a: ['a', 'a', 'b'], b: ['a', 'b', 'b'], expected: ['a', 'b'] },
+  ];
+
+  test.each(stringCases)('returns $expected for $a ∩ $b', ({ a, b, expected }: Case<string>) => {
+    expect(intersect(a, b)).toEqual(expected);
+  });
+
+  const numberCases: Array<Case<number>> = [
+    { a: [1, 2, 3], b: [2, 3, 4], expected: [2, 3] },
+    { a: [1, 2, 3], b: [4, 5, 6], expected: [] },
+    { a: [], b: [1, 2], expected: [] },
+    { a: [1, 2], b: [], expected: [] },
+    { a: [], b: [], expected: [] },
+    { a: [1, 1, 2], b: [1, 2, 2], expected: [1, 2] },
+  ];
+
+  test.each(numberCases)('returns $expected for $a ∩ $b', ({ a, b, expected }: Case<number>) => {
+    expect(intersect(a, b)).toEqual(expected);
+  });
+
+  it('works with objects using reference equality', () => {
+    const obj1: NestedType = { id: '1' };
+    const obj2: NestedType = { id: '2' };
+    const obj3: NestedType = { id: '3' };
+    const obj4: NestedType = { id: '2' };
+    expect(intersect([obj1, obj2], [obj2, obj3, obj4])).toEqual([obj2]);
   });
 });

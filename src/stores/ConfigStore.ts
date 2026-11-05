@@ -19,27 +19,29 @@ type ConfigActions = {
 
 export type ConfigStore = Store<'configStore', ConfigState, ConfigGetters, ConfigActions>;
 
-export const useConfigStore: StoreDefinition<'configStore', ConfigState, ConfigGetters, ConfigActions> = defineStore({
-  id: 'configStore',
-  state: (): ConfigState => {
-    return {
-      errorCode: null,
-      configData: null,
-      loading: false,
-    };
-  },
-  actions: {
-    async getFeatureFlags(): Promise<void> {
-      this.loading = true;
-      try {
-        const response: AxiosResponse<FeatureFlagResponse> = await configApi.configControllerGetFeatureFlags();
+export const useConfigStore: StoreDefinition<'configStore', ConfigState, ConfigGetters, ConfigActions> = defineStore(
+  'configStore',
+  {
+    state: (): ConfigState => {
+      return {
+        errorCode: null,
+        configData: null,
+        loading: false,
+      };
+    },
+    actions: {
+      async getFeatureFlags(): Promise<void> {
+        this.loading = true;
+        try {
+          const response: AxiosResponse<FeatureFlagResponse> = await configApi.configControllerGetFeatureFlags();
 
-        this.configData = response.data;
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
-      } finally {
-        this.loading = false;
-      }
+          this.configData = response.data;
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
     },
   },
-});
+);

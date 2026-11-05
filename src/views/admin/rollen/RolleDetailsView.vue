@@ -1,16 +1,10 @@
 <script setup lang="ts">
-  import { useMasterDataStore, type MasterDataStore } from '@/stores/MasterDataStore';
   import RolleDelete from '@/components/admin/rollen/RolleDelete.vue';
   import RolleForm from '@/components/admin/rollen/RolleForm.vue';
   import RolleSuccessTemplate from '@/components/admin/rollen/RolleSuccessTemplate.vue';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
-  import {
-    OrganisationsTyp,
-    useOrganisationStore,
-    type Organisation,
-    type OrganisationStore,
-  } from '@/stores/OrganisationStore';
+  import { useMasterDataStore, type MasterDataStore } from '@/stores/MasterDataStore';
   import {
     RollenMerkmal,
     RollenSystemRecht,
@@ -20,13 +14,13 @@
   } from '@/stores/RolleStore';
   import {
     useServiceProviderStore,
+    type BaseServiceProvider,
     type ServiceProviderIdNameResponse,
     type ServiceProviderStore,
-    type BaseServiceProvider,
   } from '@/stores/ServiceProviderStore';
   import { type TranslatedObject } from '@/types.d';
-  import { getDisplayNameForOrg } from '@/utils/formatting';
 
+  import type { RollenArt, SystemRechtResponse } from '@/api-client/generated';
   import {
     getDirtyState,
     getRolleFieldDefinitions,
@@ -46,7 +40,6 @@
     type Router,
   } from 'vue-router';
   import { useDisplay } from 'vuetify';
-  import type { RollenArt, SystemRechtResponse } from '@/api-client/generated';
 
   const route: RouteLocationNormalizedLoaded = useRoute();
   const router: Router = useRouter();
@@ -57,7 +50,6 @@
 
   const masterDataStore: MasterDataStore = useMasterDataStore();
   const rolleStore: RolleStore = useRolleStore();
-  const organisationStore: OrganisationStore = useOrganisationStore();
   const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
 
   const currentRolleId: string = route.params['id'] as string;
@@ -73,13 +65,6 @@
   const allSystemrechte: Ref<TranslatedSystemrecht[]> = ref([]);
 
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
-
-  const administrationsebenen: ComputedRef<TranslatedObject[]> = computed(() =>
-    organisationStore.allOrganisationen.map((org: Organisation) => ({
-      value: org.id,
-      title: getDisplayNameForOrg(org),
-    })),
-  );
 
   const translatedRollenart: ComputedRef<string> = computed(() => {
     return t(`admin.rolle.mappingFrontBackEnd.rollenarten.${rolleStore.currentRolle?.rollenart}`);
@@ -256,11 +241,12 @@
   onBeforeMount(async () => {
     rolleStore.errorCode = '';
     await rolleStore.getRolleById(currentRolleId);
-    await organisationStore.getOrganisationById(
-      rolleStore.currentRolle?.administeredBySchulstrukturknoten || '',
-      OrganisationsTyp.Schule,
-    );
-    await serviceProviderStore.getAllServiceProviders();
+    if (rolleStore.currentRolle) {
+      await serviceProviderStore.getAssignableServiceProvidersForRolleByOrganisationId(
+        rolleStore.currentRolle.administeredBySchulstrukturknoten,
+        rolleStore.currentRolle.rollenart,
+      );
+    }
 
     Object.values(RollenMerkmal).forEach((enumValue: RollenMerkmal) => {
       const i18nPath: string = `admin.rolle.mappingFrontBackEnd.merkmale.${enumValue}`;
@@ -281,7 +267,10 @@
     });
 
     // Set the initial values using the computed properties
-    formContext.setFieldValue('selectedAdministrationsebene', organisationStore.currentOrganisation?.id);
+    formContext.setFieldValue(
+      'selectedAdministrationsebene',
+      rolleStore.currentRolle?.administeredBySchulstrukturknoten,
+    );
     formContext.setFieldValue('selectedRollenArt', translatedRollenart.value as RollenArt);
     formContext.setFieldValue('selectedRollenName', rolleStore.currentRolle?.name);
     formContext.setFieldValue(
@@ -338,7 +327,6 @@
       :closable="true"
       :header="$t('admin.rolle.edit')"
       headlineTestId="rolle-details-headline"
-      @onCloseClicked="navigateToRolleTable"
       :padded="true"
       :show-close-text="true"
       @on-close-clicked="navigateToRolleTable"
@@ -354,7 +342,6 @@
               v-model:selected-merkmale="selectedMerkmale"
               v-model:selected-service-providers="selectedServiceProviders"
               v-model:selected-system-rechte="selectedSystemRechte"
-              :administrationsebenen="administrationsebenen"
               :error-code="rolleStore.errorCode"
               :on-handle-confirm-unsaved-changes="handleConfirmUnsavedChanges"
               :on-handle-discard="navigateToRolleTable"
@@ -380,7 +367,7 @@
                 data-test-id-prefix="rolle-details-error"
                 :model-value="!!rolleStore.errorCode"
                 :title="
-                  organisationStore.errorCode === 'UNSPECIFIED_ERROR'
+                  rolleStore.errorCode === 'UNSPECIFIED_ERROR'
                     ? $t('admin.rolle.loadingErrorTitle')
                     : $t(`admin.rolle.title.${rolleStore.errorCode}`)
                 "

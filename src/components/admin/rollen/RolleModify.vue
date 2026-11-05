@@ -3,7 +3,6 @@
   import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import { type BulkErrorList, useBulkErrors } from '@/composables/useBulkErrors';
-  import type { TranslatedRolleWithAttrs } from '@/composables/useRollen';
   import { type BulkOperationStore, useBulkOperationStore } from '@/stores/BulkOperationStore';
   import {
     KlassenOption,
@@ -12,6 +11,7 @@
     RolleDialogMode,
     usePersonenkontextStore,
   } from '@/stores/PersonenkontextStore';
+  import { TranslatedRolleWithAttrs } from '@/stores/RolleStore';
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
   import type { TranslatedObject } from '@/types';
   import { type BefristungUtilsType, isBefristungspflichtRolle, useBefristungUtils } from '@/utils/befristung';
@@ -27,7 +27,7 @@
   type Props = {
     errorCode: string;
     organisationen: TranslatedObject[] | undefined;
-    rollen: TranslatedRolleWithAttrs[] | undefined;
+    rollen: TranslatedRolleWithAttrs[];
     isLoading: boolean;
     isDialogVisible: boolean;
     selectedPersonen: Map<string, PersonWithZuordnungen>;
@@ -123,10 +123,6 @@
     return selectedRolle.value ? [selectedRolle.value] : [];
   });
 
-  const showKopersHint: ComputedRef<boolean> = computed(() => {
-    return isKopersRolle(selectedRollen.value, props.rollen);
-  });
-
   const [selectedBefristung, selectedBefristungProps]: [
     Ref<string | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
@@ -136,6 +132,17 @@
     Ref<string | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedBefristungOption', getVuetifyConfig);
+
+  const showKopersHint: ComputedRef<boolean> = computed(() => {
+    return isKopersRolle(selectedRollen.value, props.rollen);
+  });
+
+  const showKlasseHint: ComputedRef<boolean> = computed(() => {
+    if (!selectedRolle.value) {
+      return false;
+    }
+    return isLernRolle(selectedRolle.value, props.rollen);
+  });
 
   watchEffect(async () => {
     if (selectedRolle.value) {
@@ -197,7 +204,11 @@
       showErrorDialog.value = true;
     }
 
-    emit('update:getUebersichten');
+    if (bulkOperationStore.currentOperation?.errors?.size) {
+      showErrorDialog.value = true;
+    } else {
+      emit('update:getUebersichten');
+    }
   }
 
   const onSubmitModifyRolle: (e?: Event) => Promise<Promise<void> | undefined> = formContext.handleSubmit(async () => {
@@ -209,6 +220,7 @@
 <template>
   <v-dialog
     v-model="showModifyRolleDialog"
+    :capture-focus="false"
     persistent
   >
     <LayoutCard
@@ -269,7 +281,7 @@
               </v-col>
             </v-row>
             <v-row
-              v-if="isLernRolle(selectedRolle ?? '')"
+              v-if="showKlasseHint"
               class="text-body bold px-md-16"
               data-testid="modify-Rolle-hint"
             >
@@ -293,7 +305,7 @@
             class="mt-4"
           >
             <v-container v-if="successMessage">
-              <v-row justify="center">
+              <v-row class="justify-center">
                 <v-col cols="auto">
                   <v-icon
                     small
@@ -307,9 +319,8 @@
               </p>
             </v-container>
             <v-row
+              class="align-center justify-center"
               v-if="bulkOperationStore.currentOperation?.progress < 100"
-              align="center"
-              justify="center"
             >
               <v-col cols="auto">
                 <v-icon

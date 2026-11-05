@@ -1,3 +1,5 @@
+declare const cspNonce: string;
+
 export function print(title: string, content: string): void {
   const printWindow: WindowProxy | null = window.open(`${title}`, `${title}`, 'height=700, width=900');
   if (printWindow) {

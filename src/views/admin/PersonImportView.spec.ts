@@ -1,20 +1,17 @@
-import {
-  ImportDataItemStatus,
-  RollenSystemRechtEnum,
-  type ImportUploadResponse,
-  type SystemRechtResponse,
-} from '@/api-client/generated';
-import routes from '@/router/routes';
-import { useImportStore, type ImportStore } from '@/stores/ImportStore';
-import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
-import { RollenMerkmal, useRolleStore, type RolleStore } from '@/stores/RolleStore';
-import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
-import type WrapperLike from 'node_modules/@vue/test-utils/dist/interfaces/wrapperLike';
-import { DoFactory } from 'test/DoFactory';
+import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { expect, test, type Mock, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
+
+import { ImportDataItemStatus, type ImportResultResponse, type ImportUploadResponse } from '@/api-client/generated';
+import routes from '@/router/routes';
+import { useImportStore, type ImportStore } from '@/stores/ImportStore';
+import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
+import { RollenArt, useRolleStore, type RolleStore } from '@/stores/RolleStore';
+import { DoFactory } from 'test/DoFactory';
 import PersonImportView from './PersonImportView.vue';
+
+enableAutoUnmount(afterEach);
 
 let wrapper: VueWrapper | null = null;
 let router: Router;
@@ -31,56 +28,16 @@ organisationStore.organisationenFilters.set('', {
 });
 
 rolleStore.allRollen = [
-  {
-    administeredBySchulstrukturknoten: '1234',
-    rollenart: 'LEHR',
-    name: 'Lehrer',
-    // TODO: remove type casting when generator is fixed
-    merkmale: ['KOPERS_PFLICHT'] as unknown as Set<RollenMerkmal>,
-    systemrechte: [
-      { name: RollenSystemRechtEnum.RollenVerwalten, isTechnical: false },
-    ] as unknown as Set<SystemRechtResponse>,
-    createdAt: '2022',
-    updatedAt: '2022',
-    id: '1',
-    serviceProviders: [
-      {
-        id: '1',
-        name: 'itslearning',
-      },
-      {
-        id: '2',
-        name: 'E-Mail',
-      },
-    ],
-    administeredBySchulstrukturknotenName: 'Land SH',
-    administeredBySchulstrukturknotenKennung: '',
-    version: 1,
-  },
-  {
-    administeredBySchulstrukturknoten: '1234',
-    rollenart: 'LERN',
-    name: 'SuS',
-    // TODO: remove type casting when generator is fixed
-    merkmale: [] as unknown as Set<RollenMerkmal>,
-    systemrechte: [] as unknown as Set<SystemRechtResponse>,
-    createdAt: '2022',
-    updatedAt: '2022',
-    id: '2',
-    serviceProviders: [
-      {
-        id: '1',
-        name: 'itslearning',
-      },
-    ],
-    administeredBySchulstrukturknotenName: 'Land SH',
-    administeredBySchulstrukturknotenKennung: '1234567',
-    version: 1,
-  },
+  DoFactory.getRolleWithServiceProviders({
+    rollenart: RollenArt.Lehr,
+  }),
+  DoFactory.getRolleWithServiceProviders({
+    rollenart: RollenArt.Lern,
+  }),
 ];
 
-async function selectSchule(value: string): Promise<WrapperLike | undefined> {
-  const schuleAutocomplete: WrapperLike | undefined = wrapper
+async function selectSchule(value: string): Promise<ReturnType<VueWrapper['findComponent']> | undefined> {
+  const schuleAutocomplete: ReturnType<VueWrapper['findComponent']> | undefined = wrapper
     ?.findComponent({ ref: 'schulFilter' })
     .findComponent('[data-testid="person-import-schule-select"]');
   await schuleAutocomplete?.setValue(value);
@@ -141,9 +98,11 @@ describe('PersonImportView', () => {
   });
 
   test('it clears selects', async () => {
-    const schuleAutocomplete: WrapperLike | undefined = await selectSchule(schule.id);
+    const schuleAutocomplete: ReturnType<VueWrapper['findComponent']> | undefined = await selectSchule(schule.id);
 
-    const rolleAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ ref: 'rolle-select' });
+    const rolleAutocomplete: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent({
+      ref: 'rolle-select',
+    });
     rolleAutocomplete?.setValue('SuS');
     await nextTick();
 
@@ -425,6 +384,87 @@ describe('PersonImportView', () => {
     downloadButton?.trigger('click');
   });
 
+  test('it does not duplicate rows when a page request fails during download', async () => {
+    vi.useFakeTimers();
+
+    importStore.uploadResponse = {
+      importvorgangId: '1',
+      isValid: true,
+      totalImportDataItems: 3,
+      totalInvalidImportDataItems: 0,
+      invalidImportDataItems: [],
+    };
+    importStore.importedUsersPerPage = 1;
+    importStore.importResponse = {
+      importvorgandId: '1',
+      rollenname: 'itslearning-Schulbegleitung',
+      organisationsname: 'Carl-Orff-Schule',
+      importedUsers: [],
+      total: 3,
+      pageTotal: 1,
+    };
+
+    const makePage = (benutzername: string): ImportResultResponse => ({
+      importvorgandId: '1',
+      rollenname: 'itslearning-Schulbegleitung',
+      organisationsname: 'Carl-Orff-Schule',
+      importedUsers: [
+        {
+          klasse: '9a',
+          vorname: 'Vorname',
+          nachname: 'Nachname',
+          benutzername,
+          startpasswort: 'pw',
+          status: ImportDataItemStatus.Success,
+        },
+      ],
+      total: 3,
+      pageTotal: 1,
+    });
+
+    // Page at offset 1 fails on every attempt; the old code fell back to the previous page's stale data.
+    const getImportedPersonsSpy: MockInstance = vi
+      .spyOn(importStore, 'getImportedPersons')
+      .mockImplementation((_id: string, offset?: number): Promise<void> => {
+        if (offset === 0) {
+          importStore.importResponse = makePage('alpha');
+          return Promise.resolve();
+        }
+        if (offset === 2) {
+          importStore.importResponse = makePage('charlie');
+          return Promise.resolve();
+        }
+        importStore.importResponse = null;
+        return Promise.resolve();
+      });
+
+    let capturedBlob: Blob | undefined;
+    globalThis.URL.createObjectURL = vi.fn((blob: Blob): string => {
+      capturedBlob = blob;
+      return 'blob:mock';
+    });
+    globalThis.URL.revokeObjectURL = vi.fn();
+
+    importStore.importProgress = 100;
+    await nextTick();
+
+    const downloadButton: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="download-all-data-button"]');
+    downloadButton?.trigger('click');
+
+    await vi.runAllTimersAsync();
+    await flushPromises();
+    vi.useRealTimers();
+
+    const fileContent: string = capturedBlob ? await capturedBlob.text() : '';
+
+    expect(fileContent.match(/alpha/g)?.length).toBe(1);
+    expect(fileContent.match(/charlie/g)?.length).toBe(1);
+    // The failed middle page must be retried, not silently reused from stale state.
+    const importedPersonCalls: unknown[][] = getImportedPersonsSpy.mock.calls;
+    const failedPageCallCount: number = importedPersonCalls.filter((call: unknown[]) => call[1] === 1).length;
+    expect(failedPageCallCount).toBe(3);
+  });
+
   test('it shows loading bar', async () => {
     importStore.importProgress = 5;
     importStore.errorCode = null;
@@ -470,10 +510,12 @@ describe('PersonImportView', () => {
   });
 
   test('it resets the store and navigates when discarding', async () => {
-    const schuleAutocomplete: WrapperLike | undefined = wrapper
+    const schuleAutocomplete: ReturnType<VueWrapper['findComponent']> | undefined = wrapper
       ?.findComponent({ ref: 'schulFilter' })
       .findComponent({ ref: 'person-import-schule-select' });
-    const rolleAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ ref: 'rolle-select' });
+    const rolleAutocomplete: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent({
+      ref: 'rolle-select',
+    });
     const fileInput: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="file-input"] input');
     const mockFile: File = new File([''], 'personen.csv', { type: 'text/csv' });
 
@@ -549,9 +591,10 @@ describe('PersonImportView', () => {
 
     // Submit form
     await wrapper?.find('[data-testid="person-import-form-submit-button"]').trigger('click');
+    await flushPromises();
 
     // Wait for and verify mock function call
-    await vi.waitUntil(() => mockFunction.mock.calls.length > 0);
+    await vi.waitUntil(() => mockFunction.mock.calls.length > 0, { timeout: 5000 });
     expect(mockFunction).toHaveBeenCalledOnce();
 
     // Verify success message
@@ -581,7 +624,7 @@ describe('PersonImportView', () => {
   });
 
   test('it clears selected schule when clearSelectedSchule is called', async () => {
-    const schuleAutocomplete: WrapperLike | undefined = await selectSchule(schule.id);
+    const schuleAutocomplete: ReturnType<VueWrapper['findComponent']> | undefined = await selectSchule(schule.id);
     await nextTick();
 
     const clearButton: Element | null = document.body.querySelector('[data-testid="person-import-schule-select"] i');

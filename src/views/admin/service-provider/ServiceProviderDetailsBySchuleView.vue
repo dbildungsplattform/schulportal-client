@@ -1,28 +1,44 @@
 <script setup lang="ts">
-  import {
-    ServiceProviderMerkmal,
-    useServiceProviderStore,
-    type ServiceProviderStore,
-  } from '@/stores/ServiceProviderStore';
+  import { computed, nextTick, onMounted, ref, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
   import { useRoute, useRouter, type RouteLocationNormalizedLoaded, type Router } from 'vue-router';
-  import SpshAlert from '@/components/alert/SpshAlert.vue';
-  import LayoutCard from '@/components/cards/LayoutCard.vue';
-  import { computed, onMounted, ref, type ComputedRef, type Ref } from 'vue';
+  import { useDisplay } from 'vuetify';
+
+  import {
+    DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum,
+    RollenSystemRechtEnum,
+  } from '@/api-client/generated';
   import SchulPortalLogo from '@/assets/logos/Schulportal_SH_Bildmarke_RGB_Anwendung_HG_Blau.svg';
   import LabeledField from '@/components/admin/LabeledField.vue';
+  import RollenerweiterungAssignErrorDialog from '@/components/admin/service-provider/RollenerweiterungAssignErrorDialog.vue';
+  import RollenerweiterungTreeview, {
+    type RolleForSelection,
+  } from '@/components/admin/service-provider/RollenerweiterungTreeview.vue';
+  import VidisInfoDialog from '@/components/admin/service-provider/VidisInfoDialog.vue';
+  import SpshAlert from '@/components/alert/SpshAlert.vue';
+  import LayoutCard from '@/components/cards/LayoutCard.vue';
+  import { AuthStore, useAuthStore } from '@/stores/AuthStore';
+  import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
   import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
   import {
     RollenArt,
+    RollenMerkmal,
     useRolleStore,
     type RolleStore,
     type RolleWithServiceProvidersResponse,
   } from '@/stores/RolleStore';
-  import RollenerweiterungTreeview, {
-    type RolleForSelection,
-  } from '@/components/serviceProvider/RollenerweiterungTreeview.vue';
-  import { RollenSystemRechtEnum } from '@/api-client/generated';
-  import { useDisplay } from 'vuetify';
+  import {
+    ServiceProviderMerkmal,
+    useServiceProviderStore,
+    type ManageableServiceProviderDetail,
+    type ServiceProviderStore,
+  } from '@/stores/ServiceProviderStore';
+  import { intersect } from '@/utils/arrays';
+  import { getLogoPath } from '@/utils/logosConfig';
+  import {
+    formatServiceProviderAnbietenMerkmale,
+    formatServiceProviderRollenartenWhitelist,
+  } from '@/utils/serviceProvider.helper';
 
   const router: Router = useRouter();
   const route: RouteLocationNormalizedLoaded = useRoute();
@@ -32,14 +48,23 @@
   const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
   const organisationStore: OrganisationStore = useOrganisationStore();
   const rolleStore: RolleStore = useRolleStore();
+  const configStore: ConfigStore = useConfigStore();
+  const authStore: AuthStore = useAuthStore();
+
+  const isEditModeAvailable: ComputedRef<boolean> = computed(() => {
+    return configStore.configData?.schulischeAngeboteErstellen ?? false;
+  });
 
   const currentServiceProviderId: string = route.params['id'] as string;
+
+  const treeviewContainer: Ref<HTMLElement | null> = ref(null);
 
   // ── Edit mode state ────────────────────────────────────────────────────────
   const isEditingRollenerweiterungen: Ref<boolean> = ref(false);
   const selectedRolleIds: Ref<string[]> = ref([]);
   const isSaving: Ref<boolean> = ref(false);
   const saveSuccessDialogVisible: Ref<boolean> = ref(false);
+  const saveFailureDialogVisible: Ref<boolean> = ref(false);
 
   function closeSaveSuccessDialog(): void {
     saveSuccessDialogVisible.value = false;
@@ -71,15 +96,42 @@
   });
 
   const errorTitle: ComputedRef<string> = computed(() => {
+    if (isEditingRollenerweiterungen.value && serviceProviderStore.errorCode !== '') {
+      return t('angebot.schulspezifischeErweiterungen.assignErrorTitle');
+    }
     return serviceProviderStore.errorCode === 'UNSPECIFIED_ERROR'
       ? t('angebot.loadingErrorTitle')
       : t(`angebot.title.${serviceProviderStore.errorCode}`);
   });
 
   const errorText: ComputedRef<string> = computed(() => {
+    if (isEditingRollenerweiterungen.value && serviceProviderStore.errorCode !== '') {
+      return t(
+        `angebot.schulspezifischeErweiterungen.assignErrorMessage.${serviceProviderStore.errorCode}`,
+        t('angebot.schulspezifischeErweiterungen.assignErrorMessage.500'),
+      );
+    }
     return serviceProviderStore.errorCode === 'UNSPECIFIED_ERROR'
       ? t('angebot.loadingErrorText')
       : t(`angebot.errors.${serviceProviderStore.errorCode}`);
+  });
+
+  const multipleErrors: ComputedRef<{ rolle: string; message: string }[]> = computed(() => {
+    const mappedRollen: Map<string, RolleWithServiceProvidersResponse> = new Map(
+      rolleStore.allRollen.map((r: RolleWithServiceProvidersResponse) => [r.id, r]),
+    );
+    return Array.from(serviceProviderStore.errors.entries()).map(
+      ([rolleId, code]: [string, DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerI18nKeyEnum]) => {
+        const rolle: RolleWithServiceProvidersResponse | undefined = mappedRollen.get(rolleId);
+        return {
+          rolle: rolle?.name ?? rolleId,
+          message: t(`angebot.schulspezifischeErweiterungen.assignErrorMessage.${code}`, {
+            rollenname: rolle?.name ?? rolleId,
+            dstNr: organisationStore.currentOrganisation?.kennung ?? '',
+          }),
+        };
+      },
+    );
   });
 
   const organisationIdFromQuery: ComputedRef<string | undefined> = computed(
@@ -93,24 +145,96 @@
 
   const availableRollen: ComputedRef<RolleForSelection[]> = computed(() =>
     (rolleStore.allRollen ?? [])
-      .filter((r: RolleWithServiceProvidersResponse) =>
-        ([RollenArt.Lehr, RollenArt.Lern, RollenArt.Leit] as RollenArt[]).includes(r.rollenart),
+      .filter(
+        (r: RolleWithServiceProvidersResponse) =>
+          ([RollenArt.Lehr, RollenArt.Lern, RollenArt.Leit] as RollenArt[]).includes(r.rollenart) ||
+          r.merkmale.includes(RollenMerkmal.MptRolle),
       )
-      .map((r: RolleWithServiceProvidersResponse) => ({ id: r.id, name: r.name, rollenart: r.rollenart })),
+      .map(({ id, name, rollenart, merkmale }: RolleWithServiceProvidersResponse) => ({
+        id,
+        name,
+        rollenart,
+        merkmale,
+      })),
   );
 
+  const hasEditPermissions: ComputedRef<boolean> = computed(() => {
+    if (!serviceProviderStore.currentServiceProvider || serviceProviderStore.loading) {
+      return false;
+    }
+
+    const hasSomeVerwaltenPermission: boolean =
+      intersect(serviceProviderStore.currentServiceProvider.relevantSystemrechte ?? [], [
+        RollenSystemRechtEnum.AngeboteVerwalten,
+        RollenSystemRechtEnum.AngeboteEingeschraenktVerwalten,
+      ]).length > 0;
+
+    return hasSomeVerwaltenPermission;
+  });
+
+  const isVidisAngebot: ComputedRef<boolean> = computed(() => {
+    return Boolean(serviceProviderStore.currentServiceProvider?.vidisAngebotId);
+  });
+  const vidisInfoDialogOpen: Ref<boolean> = ref(false);
+
+  function scrollToTreeview(offset: number = 120): void {
+    const el: HTMLElement | null = treeviewContainer.value;
+    if (!el) {
+      return;
+    }
+
+    const scroll = (): void => {
+      const top: number = el.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({
+        top: top - offset, // scroll a bit above the element
+        behavior: 'smooth',
+      });
+    };
+
+    const onTransitionEnd = (): void => {
+      scroll();
+      el.removeEventListener('transitionend', onTransitionEnd);
+    };
+
+    el.addEventListener('transitionend', onTransitionEnd);
+
+    // Fallback in case transitionend doesn't fire
+    setTimeout(scroll, 500);
+  }
+
   // ── Edit mode actions ─────────────────────────────────────────────────────
-  async function openEditMode(): Promise<void> {
+  async function openRollenerweiterungEditMode(): Promise<void> {
     // Load available rollen for this organisation if not yet loaded
     if (organisationIdFromQuery.value) {
-      await rolleStore.getAllRollen({
+      const systemrechte: RollenSystemRechtEnum[] = [RollenSystemRechtEnum.RollenErweitern];
+      systemrechte.push(...authStore.grantedGatedRollenSystemrechte);
+      await rolleStore.getRollenAvailableForErweiterung({
         organisationId: organisationIdFromQuery.value,
-        systemrecht: RollenSystemRechtEnum.RollenErweitern,
+        systemrechte,
+        rollenarten: serviceProviderStore.currentServiceProvider?.rollenartenWhitelist,
       });
     }
     selectedRolleIds.value = [...existingRolleIds.value];
     isEditingRollenerweiterungen.value = true;
+
+    // Wait until DOM updates, then scroll
+    await nextTick();
+    scrollToTreeview();
   }
+
+  async function openServiceProviderEditMode(): Promise<void> {
+    if (isVidisAngebot.value) {
+      vidisInfoDialogOpen.value = true;
+      return;
+    }
+    await router.push({
+      name: 'angebot-edit',
+      params: { id: currentServiceProviderId },
+      query: organisationIdFromQuery.value ? { orga: organisationIdFromQuery.value } : undefined,
+    });
+  }
+
+  const autoEdit: ComputedRef<boolean> = computed(() => route.query['autoEdit'] === 'true');
 
   function cancelEdit(): void {
     isEditingRollenerweiterungen.value = false;
@@ -139,19 +263,44 @@
 
     isSaving.value = false;
 
-    if (!serviceProviderStore.errorCode) {
+    if (!serviceProviderStore.errorCode && serviceProviderStore.errors.size === 0) {
       // Refresh rollenerweiterungen to reflect saved state
       await serviceProviderStore.getRollenerweiterungenById({
         serviceProviderId: currentServiceProviderId,
-        organisationId: organisationIdFromQuery.value,
+        organisationIds: [organisationIdFromQuery.value],
       });
       saveSuccessDialogVisible.value = true;
+    } else if (serviceProviderStore.errors.size > 0) {
+      saveFailureDialogVisible.value = true;
     }
   }
+
+  async function clearErrorVisibility(isVisible: boolean): Promise<void> {
+    if (!isVisible) {
+      saveFailureDialogVisible.value = false;
+      serviceProviderStore.errors.clear();
+      isEditingRollenerweiterungen.value = false;
+      await serviceProviderStore.getRollenerweiterungenById({
+        serviceProviderId: currentServiceProviderId,
+        organisationIds: [organisationIdFromQuery.value!],
+      });
+    }
+  }
+
+  const resolvedLogo: ComputedRef<string | undefined> = computed(() => {
+    const provider: ManageableServiceProviderDetail | null = serviceProviderStore.currentServiceProvider;
+
+    if (provider?.logoId != null) {
+      return getLogoPath(provider.logoId);
+    }
+
+    return serviceProviderStore.serviceProviderLogos.get(currentServiceProviderId);
+  });
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   onMounted(async () => {
     serviceProviderStore.errorCode = '';
+    serviceProviderStore.errors.clear();
     serviceProviderStore.serviceProviderLogos.clear();
 
     await Promise.all([
@@ -159,12 +308,15 @@
       serviceProviderStore.getServiceProviderLogoById(currentServiceProviderId),
       serviceProviderStore.getRollenerweiterungenById({
         serviceProviderId: currentServiceProviderId,
-        organisationId: organisationIdFromQuery.value,
+        organisationIds: organisationIdFromQuery.value ? [organisationIdFromQuery.value] : [],
       }),
     ]);
 
     if (!organisationStore.currentOrganisation && organisationIdFromQuery.value) {
       await organisationStore.getOrganisationById(organisationIdFromQuery.value);
+    }
+    if (autoEdit.value) {
+      await openRollenerweiterungEditMode();
     }
   });
 </script>
@@ -209,7 +361,10 @@
       <template v-if="!serviceProviderStore.errorCode">
         <v-container>
           <template v-if="serviceProviderStore.currentServiceProvider">
-            <v-row data-testid="service-provider-info-row">
+            <v-row
+              class="mt-2"
+              data-testid="service-provider-info-row"
+            >
               <v-col
                 offset="1"
                 offset-sm="1"
@@ -232,13 +387,11 @@
                         :label="t('angebot.providedBy')"
                         :value="serviceProviderStore.currentServiceProvider.administrationsebene.name"
                         test-id="service-provider-administrationsebene"
-                        no-margin-top
                       />
                       <LabeledField
                         :label="t('angebot.requires2FA')"
                         :value="serviceProviderStore.currentServiceProvider.requires2fa ? t('yes') : t('no')"
                         test-id="service-provider-requires-2fa"
-                        no-margin-top
                       />
                       <LabeledField
                         :label="t('angebot.canBeAssignedToRollen')"
@@ -250,7 +403,13 @@
                             : t('no')
                         "
                         test-id="service-provider-can-be-assigned-to-rollen"
-                        no-margin-top
+                      />
+
+                      <!-- Is Vidis Angebot? -->
+                      <LabeledField
+                        :label="t('angebot.vidisAngebot')"
+                        :value="isVidisAngebot ? t('yes') : t('no')"
+                        test-id="service-provider-vidis-angebot"
                       />
                     </div>
                   </v-col>
@@ -263,27 +422,26 @@
                     <LabeledField
                       :label="t('angebot.logo')"
                       is-logo
-                      :logo-src="serviceProviderStore.serviceProviderLogos.get(currentServiceProviderId)"
+                      :logo-src="resolvedLogo"
                       :default-logo-src="SchulPortalLogo"
                       test-id="service-provider-logo"
-                      md-margin-top
                     />
                     <LabeledField
                       :label="t('angebot.kategorie')"
                       :value="
                         serviceProviderStore.currentServiceProvider.kategorie
-                          ? t(`angebot.kategorien.${serviceProviderStore.currentServiceProvider.kategorie}`)
+                          ? t(
+                              `angebot.mappingFrontBackEnd.kategorien.${serviceProviderStore.currentServiceProvider.kategorie}`,
+                            )
                           : t('missing')
                       "
                       test-id="service-provider-kategorie"
-                      no-margin-top
                     />
                     <LabeledField
                       :label="t('angebot.link')"
                       :value="serviceProviderStore.currentServiceProvider.url || t('missing')"
                       test-id="service-provider-link"
                       word-break-all
-                      no-margin-top
                     />
                     <LabeledField
                       :label="t('angebot.schulspezifischeRollenerweiterung')"
@@ -291,8 +449,56 @@
                         serviceProviderStore.currentServiceProvider.availableForRollenerweiterung ? t('yes') : t('no')
                       "
                       test-id="service-provider-rollenerweiterung"
+                    />
+                    <LabeledField
+                      :label="t('angebot.offeringScope')"
+                      :value="
+                        formatServiceProviderAnbietenMerkmale(serviceProviderStore.currentServiceProvider.merkmale, t)
+                      "
+                      test-id="service-provider-anbieten-merkmale"
                       no-margin-top
                     />
+                    <LabeledField
+                      :label="t('angebot.rollenartenWhitelistLabel')"
+                      :value="
+                        formatServiceProviderRollenartenWhitelist(
+                          serviceProviderStore.currentServiceProvider.rollenartenWhitelist,
+                          t,
+                        )
+                      "
+                      test-id="service-provider-rollenarten-whitelist"
+                      no-margin-top
+                    />
+
+                    <v-row
+                      v-if="isEditModeAvailable && hasEditPermissions"
+                      class="mr-10 justify-end"
+                    >
+                      <v-col
+                        cols="12"
+                        md="auto"
+                        class="mt-4"
+                      >
+                        <v-btn
+                          :disabled="isEditingRollenerweiterungen"
+                          class="primary"
+                          :block="mdAndDown"
+                          data-testid="service-provider-bearbeiten-button"
+                          @click="openServiceProviderEditMode"
+                          :text="t('edit')"
+                        >
+                        </v-btn>
+                      </v-col>
+                      <VidisInfoDialog
+                        :header="t('angebot.edit')"
+                        :text="
+                          t('angebot.vidisEditInfoText', {
+                            name: serviceProviderStore.currentServiceProvider.name,
+                          })
+                        "
+                        v-model="vidisInfoDialogOpen"
+                      />
+                    </v-row>
                   </v-col>
                 </v-row>
               </v-col>
@@ -346,10 +552,7 @@
                 </v-row>
 
                 <!-- Bearbeiten button -->
-                <v-row
-                  class="mr-10"
-                  justify="end"
-                >
+                <v-row class="mr-10 justify-end">
                   <v-col
                     cols="12"
                     md="auto"
@@ -362,7 +565,7 @@
                       class="primary"
                       :block="mdAndDown"
                       data-testid="rollenerweiterung-bearbeiten-button"
-                      @click="openEditMode"
+                      @click="openRollenerweiterungEditMode"
                     >
                       {{ t('edit') }}
                     </v-btn>
@@ -373,7 +576,10 @@
 
             <!-- Inline treeview (shown while editing, full-width, no offset) -->
             <v-expand-transition>
-              <div v-if="isEditingRollenerweiterungen">
+              <div
+                v-if="isEditingRollenerweiterungen"
+                ref="treeviewContainer"
+              >
                 <LayoutCard
                   :closable="false"
                   :header="t('angebot.editRollenerweiterungen')"
@@ -381,22 +587,19 @@
                   :variant="'text'"
                   :subCards="true"
                 >
-                  <v-col class="ml-10">
-                    <div :class="{ 'treeview-scrollable': availableRollen.length > 15 }">
+                  <v-row>
+                    <v-col class="ml-md-10 pr-sm-12">
                       <RollenerweiterungTreeview
                         :available-rollen="availableRollen"
                         :initially-selected-rolle-ids="existingRolleIds"
                         :loading="rolleStore.loading"
                         @update:selectedRolleIds="selectedRolleIds = $event"
                       />
-                    </div>
-                  </v-col>
+                    </v-col>
+                  </v-row>
 
                   <!-- Save / Cancel actions -->
-                  <v-row
-                    class="mt-4"
-                    justify="end"
-                  >
+                  <v-row class="mt-4 justify-end">
                     <v-col
                       cols="12"
                       sm="6"
@@ -420,7 +623,7 @@
                     >
                       <v-btn
                         v-if="availableRollen.length > 0"
-                        color="primary"
+                        class="primary"
                         :block="mdAndDown"
                         data-testid="rollenerweiterung-save-button"
                         :disabled="rolleStore.loading"
@@ -483,6 +686,14 @@
       </LayoutCard>
     </v-dialog>
   </div>
+  <!-- ── Save error dialog ──────────────────────────────────────────────── -->
+  <RollenerweiterungAssignErrorDialog
+    :isDialogVisible="saveFailureDialogVisible"
+    :dstNr="organisationStore.currentOrganisation?.kennung ?? ''"
+    :serviceProviderName="serviceProviderStore.currentServiceProvider?.name ?? ''"
+    :errors="multipleErrors"
+    @update:isDialogVisible="clearErrorVisibility"
+  />
 </template>
 
 <style scoped>
@@ -490,9 +701,5 @@
     .custom-offset {
       margin-left: 0 !important;
     }
-  }
-  .treeview-scrollable {
-    max-height: 700px;
-    overflow-y: auto;
   }
 </style>

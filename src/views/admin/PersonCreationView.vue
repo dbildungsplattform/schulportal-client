@@ -7,10 +7,8 @@
   import FormWrapper from '@/components/form/FormWrapper.vue';
   import PasswordOutput from '@/components/form/PasswordOutput.vue';
   import { useOrganisationen } from '@/composables/useOrganisationen';
-  import { type TranslatedRolleWithAttrs, useRollen } from '@/composables/useRollen';
   import { type Organisation, type OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
   import {
-    type DbiamCreatePersonenkontextBodyParams,
     type DBiamPersonenkontextResponse,
     OperationContext,
     type PersonenkontextStore,
@@ -23,13 +21,13 @@
     type PersonStore,
     usePersonStore,
   } from '@/stores/PersonStore';
-  import { RollenArt } from '@/stores/RolleStore';
+  import { RollenArt, RolleStore, TranslatedRolleWithAttrs, useRolleStore } from '@/stores/RolleStore';
   import type { Zuordnung } from '@/stores/types/Zuordnung';
   import { type TranslatedObject } from '@/types.d';
   import { type BefristungUtilsType, isBefristungspflichtRolle, useBefristungUtils } from '@/utils/befristung';
   import { formatDateToISO, getNextSchuljahresende, isValidDate, notInPast } from '@/utils/date';
   import { DDMMYYYY, DIN_91379A, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
-  import { isKopersRolle } from '@/utils/validationPersonenkontext';
+  import { isKopersRolle, isLernRolle } from '@/utils/validationPersonenkontext';
   import { toTypedSchema } from '@vee-validate/yup';
   import { type BaseFieldProps, type FormContext, type TypedSchema, useForm } from 'vee-validate';
   import { computed, type ComputedRef, onMounted, onUnmounted, ref, type Ref, watch, watchEffect } from 'vue';
@@ -43,7 +41,7 @@
     useRouter,
   } from 'vue-router';
   import { useDisplay } from 'vuetify';
-  import { array, ArraySchema, object, string, StringSchema, type AnyObject } from 'yup';
+  import { type AnyObject, array, ArraySchema, object, string, StringSchema } from 'yup';
 
   const { mdAndDown, mdAndUp }: { mdAndDown: Ref<boolean>; mdAndUp: Ref<boolean> } = useDisplay();
 
@@ -52,6 +50,7 @@
   const router: Router = useRouter();
   const personStore: PersonStore = usePersonStore();
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
+  const rolleStore: RolleStore = useRolleStore();
   const { t }: Composer = useI18n({ useScope: 'global' });
 
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
@@ -72,10 +71,7 @@
   const selectedKlasseCache: Ref<TranslatedObject | undefined> = ref(undefined);
   const selectedRolleCache: Ref<string[] | undefined> = ref(undefined);
 
-  const filteredRollen: Ref<TranslatedRolleWithAttrs[] | undefined> = ref<TranslatedRolleWithAttrs[] | undefined>([]);
-  const filteredRollenCache: Ref<TranslatedRolleWithAttrs[] | undefined> = ref<TranslatedRolleWithAttrs[] | undefined>(
-    [],
-  );
+  const filteredRollenCache: Ref<TranslatedRolleWithAttrs[]> = ref<TranslatedRolleWithAttrs[]>([]);
 
   const hasPreFilled: Ref<boolean> = ref(false);
 
@@ -131,20 +127,31 @@
     }
   });
 
-  // Define a method to check if the selected Rolle is of type "Lern"
-  function isLernRolle(selectedRolleIds?: string[]): boolean | undefined {
-    if (!Array.isArray(selectedRolleIds)) {
-      return false;
+  function getFilteredRollen(organisationId?: string): TranslatedRolleWithAttrs[] {
+    const rollen: TranslatedRolleWithAttrs[] = rolleStore.rollenForPersonenkontextCreation;
+
+    if (createType.value === CreationType.AddPersonToOwnSchule) {
+      const assignedRollenIds: Set<string> = new Set(
+        personStore.personenuebersicht?.zuordnungen
+          .filter((zuordnung: Zuordnung) => zuordnung.sskId === organisationId)
+          .map((zuordnung: Zuordnung) => zuordnung.rolleId) || [],
+      );
+      return rollen.filter((rolle: TranslatedRolleWithAttrs) => !assignedRollenIds.has(rolle.value));
     }
 
-    const translatedRollenWithAttrs: Array<TranslatedRolleWithAttrs> =
-      filteredRollen.value && filteredRollen.value.length > 0
-        ? filteredRollen.value
-        : (filteredRollenCache.value ?? []);
+    return rollen;
+  }
 
-    return translatedRollenWithAttrs.some(
-      (rolle: TranslatedRolleWithAttrs) => selectedRolleIds.includes(rolle.value) && rolle.rollenart === RollenArt.Lern,
-    );
+  // Define a method to check if the selected Rolle is of type "Lern"
+  function hasSelectedLernRolle(selectedRolleIds?: string[]): boolean | undefined {
+    const translatedRollenWithAttrs: Array<TranslatedRolleWithAttrs> =
+      filteredRollenCache.value.length > 0 ? filteredRollenCache.value : getFilteredRollen();
+
+    if (Array.isArray(selectedRolleIds)) {
+      return selectedRolleIds.some((id: string) => isLernRolle(id, translatedRollenWithAttrs));
+    } else {
+      return false;
+    }
   }
 
   const headerLabel: Ref<string> = ref(t('admin.person.addNew'));
@@ -204,7 +211,7 @@
         .required(t('admin.person.rules.familienname.required')),
       selectedOrganisation: string().required(t('admin.organisation.rules.organisation.required')),
       selectedKlasse: string().when('selectedRollen', {
-        is: (selectedRolleIds: string[]) => isLernRolle(selectedRolleIds),
+        is: (selectedRolleIds: string[]) => hasSelectedLernRolle(selectedRolleIds),
         then: (schema: StringSchema<string | undefined, AnyObject, undefined, ''>) =>
           schema.required(t('admin.klasse.rules.klasse.required')),
       }),
@@ -212,7 +219,7 @@
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.person.rules.kopersNr.noLeadingTrailingSpaces'))
         .when('selectedRollen', {
           is: (selectedRolleIds: string[]) =>
-            isKopersRolle(selectedRolleIds, filteredRollen.value) && !hasNoKopersNr.value,
+            isKopersRolle(selectedRolleIds, getFilteredRollen()) && !hasNoKopersNr.value,
           then: (schema: StringSchema<string | undefined, AnyObject, undefined, ''>) =>
             schema.required(t('admin.person.rules.kopersNr.required')),
         }),
@@ -278,6 +285,20 @@
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedKopersNr', vuetifyConfig);
 
+  const filteredRollen: ComputedRef<TranslatedRolleWithAttrs[]> = computed(() => {
+    return getFilteredRollen(selectedOrganisation.value);
+  });
+
+  // This primitive value is load-bearing: equal store replacements must not invalidate the Rollen query.
+  const rollenartForPerson: ComputedRef<RollenArt | undefined> = computed((): RollenArt | undefined => {
+    if (createType.value === CreationType.AddPersonToOwnSchule) {
+      return personStore.personenuebersicht?.zuordnungen[0]?.rollenArt;
+    }
+    return rolleStore.rollenForPersonenkontextCreation.find((rolle: TranslatedRolleWithAttrs) =>
+      selectedRollen.value?.includes(rolle.value),
+    )?.rollenart;
+  });
+
   const {
     handleBefristungUpdate,
     handleBefristungOptionUpdate,
@@ -294,7 +315,6 @@
   setupWatchers();
   setupRolleWatcher();
 
-  const rollen: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = useRollen();
   const organisationen: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
   const organisationStore: OrganisationStore = useOrganisationStore();
 
@@ -347,7 +367,9 @@
 
     return schuleZuordnungFromCreatedKontext.value.map(
       (kontext: DBiamPersonenkontextResponse) =>
-        rollen.value?.find((rolle: TranslatedRolleWithAttrs) => rolle.value === kontext.rolleId)?.title || '',
+        rolleStore.rollenForPersonenkontextCreation?.find(
+          (rolle: TranslatedRolleWithAttrs) => rolle.value === kontext.rolleId,
+        )?.title || '',
     );
   });
 
@@ -371,7 +393,30 @@
     return utcDate.toLocaleDateString('de-DE');
   });
 
-  const creationErrorText: Ref<string> = ref('');
+  const hasError: ComputedRef<boolean> = computed(
+    (): boolean => !!personenkontextStore.errorCode || !!rolleStore.errorCode || !!personStore.errorCode,
+  );
+  const errorText: ComputedRef<string> = computed((): string => {
+    if (personenkontextStore.errorCode) {
+      return t(`admin.personenkontext.errors.${personenkontextStore.errorCode}`);
+    }
+    return rolleStore.errorCode ? t(`admin.rolle.errors.${rolleStore.errorCode}`) : '';
+  });
+  const errorTitle: ComputedRef<string> = computed((): string => {
+    if (personenkontextStore.errorCode) {
+      return t(`admin.personenkontext.title.${personenkontextStore.errorCode}`);
+    }
+    if (rolleStore.errorCode) {
+      return t(`admin.rolle.title.${rolleStore.errorCode}`);
+    }
+    return personStore.errorCode ? t('admin.person.creationErrorTitle') : '';
+  });
+
+  function clearErrorsInStores(): void {
+    personStore.errorCode = '';
+    personenkontextStore.errorCode = '';
+    rolleStore.errorCode = '';
+  }
 
   function isFormDirty(): boolean {
     return (
@@ -433,23 +478,20 @@
     const bodyParams: CreatePersonBodyParams = {
       familienname: selectedFamilienname.value,
       vorname: selectedVorname.value,
-      personalnummer: selectedKopersNr.value as string,
+      personalnummer: selectedKopersNr.value,
       befristung: formattedBefristung,
       createPersonenkontexte:
-        selectedRollen.value?.map(
-          (rolleId: string) =>
-            ({
-              organisationId: selectedOrganisation.value as string,
-              rolleId,
-            }) as DbiamCreatePersonenkontextBodyParams,
-        ) || [],
+        selectedRollen.value?.map((rolleId: string) => ({
+          organisationId: selectedOrganisation.value as string,
+          rolleId,
+        })) || [],
     };
     // Klasse is only allowed if the selectedRolle is of type LERN.
     if (
       selectedKlasse.value &&
       selectedRollen.value &&
       selectedRollen.value.length > 0 &&
-      isLernRolle(selectedRollen.value)
+      hasSelectedLernRolle(selectedRollen.value)
     ) {
       selectedKlasseCache.value = {
         value: selectedKlasse.value,
@@ -472,7 +514,6 @@
     await personenkontextStore.createPersonWithKontexte(bodyParams);
     formContext.resetForm();
     hasNoKopersNr.value = false;
-    filteredRollen.value = [];
     // Reset canCommit to false after creating the personto avoid issues when going back to the form
     if (personenkontextStore.workflowStepResponse) {
       personenkontextStore.workflowStepResponse.canCommit = false;
@@ -505,7 +546,6 @@
     selectedRolleCache.value = selectedRollen.value;
     await personenkontextStore.commitLandesbediensteteKontext(personId, newKontexte, existingPerson.personalnummer);
     formContext.resetForm();
-    filteredRollen.value = [];
   }
 
   const onSubmit: (e?: Event) => Promise<Promise<void> | undefined> = formContext.handleSubmit(async () => {
@@ -553,8 +593,7 @@
       formContext.resetForm();
       await navigateToCreatePersonRoute(true);
     } else {
-      personenkontextStore.errorCode = '';
-      personStore.errorCode = '';
+      clearErrorsInStores();
       navigateToCreatePersonRoute();
     }
   }
@@ -577,85 +616,44 @@
   };
 
   const isOwnSchule: ComputedRef<boolean> = computed(() => createType.value === CreationType.AddPersonToOwnSchule);
+  const existingPersonId: ComputedRef<string | undefined> = computed((): string | undefined => {
+    if (!isOwnSchule.value) {
+      return undefined;
+    }
+    return personStore.allLandesbedienstetePersonen?.[0]?.id;
+  });
+  const showKopersInput: ComputedRef<boolean> = computed(
+    (): boolean =>
+      !!selectedOrganisation.value &&
+      !!selectedRollen.value &&
+      isKopersRolle(selectedRollen.value, filteredRollen.value),
+  );
 
   // Section numbers based on whether the createType is AddPersonToOwnSchule or not.
   const sectionNumberOrg: ComputedRef<string> = computed(() => (isOwnSchule.value ? '2.' : '1.'));
   const sectionNumberRolle: ComputedRef<string> = computed(() => (isOwnSchule.value ? '3.' : '2.'));
   const sectionNumberBefristung: ComputedRef<string> = computed(() => (isOwnSchule.value ? '4.' : '2.1'));
 
-  // Watch the selectedRollen and update filteredRollen accordingly
   watch(
-    selectedRollen,
-    (newSelectedRollen: string[] | undefined) => {
-      // Decide which rollen list to use based on createType
-      const baseRollen: TranslatedRolleWithAttrs[] | undefined =
-        createType.value === CreationType.AddPersonToOwnSchule ? filteredRollen.value : rollen.value;
-
-      if (newSelectedRollen && newSelectedRollen.length > 0) {
-        const selectedRollenart: RollenArt | undefined = baseRollen?.find((rolle: TranslatedRolleWithAttrs) =>
-          newSelectedRollen.includes(rolle.value),
-        )?.rollenart;
-
-        filteredRollen.value =
-          baseRollen?.filter((rolle: TranslatedRolleWithAttrs) => rolle.rollenart === selectedRollenart) || [];
-        // If no roles are selected, reset the filteredRollen to the normal rollen list and for createType AddPersonToOwnSchule nothing happens because the rollen are always filtered
-      } else if (
-        newSelectedRollen &&
-        newSelectedRollen.length === 0 &&
-        createType.value !== CreationType.AddPersonToOwnSchule
-      ) {
-        filteredRollen.value = [];
+    existingPersonId,
+    async (personId: string | undefined): Promise<void> => {
+      if (personId) {
+        await personStore.getPersonenuebersichtById(personId);
       }
     },
     { immediate: true },
   );
 
-  // Watch the rollen and update filteredRollen based on selectedRollen... This is necessary to ensure that the filteredRollen are always in sync while the user is searching.
-  watch(rollen, async (newRollen: TranslatedRolleWithAttrs[] | undefined) => {
-    if (!newRollen) {
-      filteredRollen.value = [];
-      return;
-    }
-
-    // AddPersonToOwnSchule: only show Lehr roles for that createType
-    if (createType.value === CreationType.AddPersonToOwnSchule) {
-      const existingPerson: PersonLandesbediensteterSearchResponse | undefined =
-        personStore.allLandesbedienstetePersonen?.[0];
-      const personId: string | undefined = existingPerson?.id;
-
-      if (!personId) {
-        return;
-      }
-      // Get latest person data
-      await personStore.getPersonenuebersichtById(personId);
-      const assignedRollenIds: Set<string> = new Set(
-        personStore.personenuebersicht?.zuordnungen
-          .filter((z: Zuordnung) => z.sskId === selectedOrganisation.value)
-          .map((z: Zuordnung) => z.rolleId) || [],
-      );
-      filteredRollen.value = newRollen.filter(
-        (rolle: TranslatedRolleWithAttrs) => rolle.rollenart === RollenArt.Lehr && !assignedRollenIds.has(rolle.value),
-      );
-      return;
-    }
-
-    // Regular filtering based on selectedRollen
-    if (!selectedRollen.value || selectedRollen.value.length === 0) {
-      filteredRollen.value = newRollen;
-    } else {
-      const selectedRollenart: RollenArt | undefined = newRollen.find((rolle: TranslatedRolleWithAttrs) =>
-        selectedRollen.value?.includes(rolle.value),
-      )?.rollenart;
-
-      filteredRollen.value = newRollen.filter(
-        (rolle: TranslatedRolleWithAttrs) => rolle.rollenart === selectedRollenart,
-      );
-    }
-  });
-
   watch(hasNoKopersNr, (newValue: boolean | undefined) => {
     if (newValue) {
       showNoKopersNrConfirmationDialog.value = true;
+    }
+  });
+
+  watch(showKopersInput, (newShowKopersInput: boolean): void => {
+    if (createType.value !== CreationType.AddPersonToOwnSchule && !newShowKopersInput) {
+      selectedKopersNr.value = undefined;
+      hasNoKopersNr.value = false;
     }
   });
 
@@ -686,8 +684,7 @@
 
   function handleConfirmUnsavedChanges(): void {
     blockedNext();
-    personStore.errorCode = '';
-    personenkontextStore.errorCode = '';
+    clearErrorsInStores();
   }
 
   function preventNavigation(event: BeforeUnloadEvent): void {
@@ -748,7 +745,7 @@
       {{ headerLabel }}
     </h1>
     <LayoutCard
-      :closable="!personenkontextStore.errorCode && !personStore.errorCode"
+      :closable="!hasError"
       :header="layoutCardLabel"
       :headlineTestId="layoutCardHeadlineTestId"
       @onCloseClicked="navigateToPersonTable"
@@ -765,41 +762,25 @@
           :confirm-unsaved-changes-action="handleConfirmUnsavedChanges"
           :create-button-label="createButtonLabel"
           :discard-button-label="discardButtonLabel"
-          :hide-actions="!!personenkontextStore.errorCode || !!personStore.errorCode"
+          :hide-actions="hasError"
           :is-loading="personenkontextStore.loading"
           :on-discard="navigateToPersonTable"
           :on-submit="onSubmit"
           :show-unsaved-changes-dialog="showUnsavedChangesDialog"
           @on-show-dialog-change="(value?: boolean) => (showUnsavedChangesDialog = value || false)"
         >
-          <!-- Error Message Display for error messages from the personenkontextStore -->
           <SpshAlert
-            :model-value="!!personenkontextStore.errorCode"
+            :model-value="hasError"
             :type="'error'"
             :closable="false"
-            :text="
-              personenkontextStore.errorCode ? t(`admin.personenkontext.errors.${personenkontextStore.errorCode}`) : ''
-            "
+            :text="errorText"
             :show-button="true"
             :button-text="$t('admin.person.backToCreatePerson')"
             :button-action="navigateBackToPersonForm"
-            :title="
-              personenkontextStore.errorCode ? t(`admin.personenkontext.title.${personenkontextStore.errorCode}`) : ''
-            "
-          />
-          <!-- Error Message Display for error messages from the personStore -->
-          <SpshAlert
-            :model-value="!!personStore.errorCode"
-            :title="$t('admin.person.creationErrorTitle')"
-            :type="'error'"
-            :closable="false"
-            :show-button="true"
-            :button-text="$t('admin.person.backToCreatePerson')"
-            :button-action="navigateBackToPersonForm"
-            :text="creationErrorText"
+            :title="errorTitle"
           />
 
-          <template v-if="!personenkontextStore.errorCode && !personStore.errorCode">
+          <template v-if="!hasError">
             <!-- If AddPersonToOwnSchule: Persönliche Info first -->
             <template v-if="createType === CreationType.AddPersonToOwnSchule">
               <v-row>
@@ -871,12 +852,13 @@
                 :operation-context="OperationContext.PERSON_ANLEGEN"
                 :allow-multiple-rollen="true"
                 :create-type="createType"
+                :rollenart-for-person="rollenartForPerson"
                 :show-headline="true"
                 :organisationen="organisationen"
                 :rollen="
                   createType === CreationType.AddPersonToOwnSchule || (filteredRollen?.length ?? 0) > 0
                     ? filteredRollen
-                    : rollen
+                    : rolleStore.rollenForPersonenkontextCreation
                 "
                 :selected-organisation-props="selectedOrganisationProps"
                 :selected-rollen-props="selectedRollenProps"
@@ -911,9 +893,12 @@
                 :operation-context="OperationContext.PERSON_ANLEGEN"
                 :allow-multiple-rollen="true"
                 :create-type="createType"
+                :rollenart-for-person="rollenartForPerson"
                 :show-headline="true"
                 :organisationen="organisationen"
-                :rollen="(filteredRollen?.length ?? 0) > 0 ? filteredRollen : rollen"
+                :rollen="
+                  (filteredRollen?.length ?? 0) > 0 ? filteredRollen : rolleStore.rollenForPersonenkontextCreation
+                "
                 :selected-organisation-props="selectedOrganisationProps"
                 :selected-rollen-props="selectedRollenProps"
                 :selected-klasse-props="selectedKlasseProps"
@@ -983,7 +968,7 @@
                   />
                 </FormRow>
                 <KopersInput
-                  v-if="isKopersRolle(selectedRollen, filteredRollen) && selectedOrganisation"
+                  v-if="showKopersInput"
                   ref="kopers-input"
                   v-model:selected-kopers-nr="selectedKopersNr"
                   :has-no-kopers-nr="hasNoKopersNr"
@@ -998,13 +983,9 @@
       </template>
 
       <!-- Result template on success after submit  -->
-      <template
-        v-if="
-          personenkontextStore.createdPersonWithKontext && !personStore.errorCode && !personenkontextStore.errorCode
-        "
-      >
+      <template v-if="personenkontextStore.createdPersonWithKontext && !hasError">
         <v-container>
-          <v-row justify="center">
+          <v-row class="justify-center">
             <v-col
               class="subtitle-1"
               cols="auto"
@@ -1019,7 +1000,7 @@
               </span>
             </v-col>
           </v-row>
-          <v-row justify="center">
+          <v-row class="justify-center">
             <v-col cols="auto">
               <v-icon
                 aria-hidden="true"
@@ -1030,7 +1011,7 @@
               />
             </v-col>
           </v-row>
-          <v-row justify="center">
+          <v-row class="justify-center">
             <v-col
               class="subtitle-2"
               cols="auto"
@@ -1168,7 +1149,7 @@
           </v-row>
           <v-row
             v-if="
-              isLernRolle(
+              hasSelectedLernRolle(
                 klasseZuordnungFromCreatedKontext.map((kontext: DBiamPersonenkontextResponse) => kontext.rolleId),
               )
             "
@@ -1190,7 +1171,7 @@
             color="#E5EAEF"
             thickness="6"
           />
-          <v-row justify="end">
+          <v-row class="justify-end">
             <v-col
               cols="12"
               sm="6"
@@ -1237,15 +1218,9 @@
         </v-container>
       </template>
       <!-- Result template on success after assigning the Landesbediensteter to a Schule   -->
-      <template
-        v-if="
-          personenkontextStore.landesbediensteteCommitResponse !== null &&
-          !personStore.errorCode &&
-          !personenkontextStore.errorCode
-        "
-      >
+      <template v-if="personenkontextStore.landesbediensteteCommitResponse !== null && !hasError">
         <v-container>
-          <v-row justify="center">
+          <v-row class="justify-center">
             <v-col
               class="subtitle-1"
               cols="auto"
@@ -1260,7 +1235,7 @@
               </span>
             </v-col>
           </v-row>
-          <v-row justify="center">
+          <v-row class="justify-center">
             <v-col cols="auto">
               <v-icon
                 aria-hidden="true"
@@ -1271,7 +1246,7 @@
               />
             </v-col>
           </v-row>
-          <v-row justify="center">
+          <v-row class="justify-center">
             <v-col
               class="subtitle-2"
               cols="auto"
@@ -1370,7 +1345,7 @@
             color="#E5EAEF"
             thickness="6"
           />
-          <v-row justify="end">
+          <v-row class="justify-end">
             <v-col
               cols="12"
               sm="6"

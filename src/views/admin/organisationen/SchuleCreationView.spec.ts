@@ -1,6 +1,12 @@
+import SchuleForm from '@/components/admin/schulen/SchuleForm.vue';
+import SchuleSuccessTemplate from '@/components/admin/schulen/SchuleSuccessTemplate.vue';
+import type { SchuleDetailsForm } from '@/components/admin/schulen/types';
+import routes from '@/router/routes';
+import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
+import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { DoFactory } from 'test/DoFactory';
 import { expect, test, type Mock, type MockInstance } from 'vitest';
-import { VueWrapper, flushPromises, mount } from '@vue/test-utils';
-import SchuleCreationView from './SchuleCreationView.vue';
+import { nextTick, type Component } from 'vue';
 import {
   createRouter,
   createWebHistory,
@@ -8,46 +14,7 @@ import {
   type RouteLocationNormalized,
   type Router,
 } from 'vue-router';
-import routes from '@/router/routes';
-import { nextTick, type Component } from 'vue';
-import {
-  OrganisationsTyp,
-  useOrganisationStore,
-  type Organisation,
-  type OrganisationStore,
-} from '@/stores/OrganisationStore';
-import type { OrganisationResponse } from '@/api-client/generated';
-
-let wrapper: VueWrapper | null = null;
-let router: Router;
-const organisationStore: OrganisationStore = useOrganisationStore();
-
-const mockSchultraeger: Array<Organisation> = [
-  {
-    id: '2',
-    name: 'Öffentliche Schulen',
-    namensergaenzung: 'Ergänzung',
-    kennung: null,
-    kuerzel: '',
-    typ: OrganisationsTyp.Land,
-    administriertVon: '1',
-  },
-  {
-    id: '3',
-    name: 'Ersatzschulen Schulen',
-    namensergaenzung: 'Ergänzung',
-    kennung: null,
-    kuerzel: '',
-    typ: OrganisationsTyp.Land,
-    administriertVon: '1',
-  },
-];
-
-type OnBeforeRouteLeaveCallback = (
-  _to: RouteLocationNormalized,
-  _from: RouteLocationNormalized,
-  _next: NavigationGuardNext,
-) => void;
+import SchuleCreationView from './SchuleCreationView.vue';
 
 let { storedBeforeRouteLeaveCallback }: { storedBeforeRouteLeaveCallback: OnBeforeRouteLeaveCallback } = vi.hoisted(
   () => {
@@ -57,15 +24,36 @@ let { storedBeforeRouteLeaveCallback }: { storedBeforeRouteLeaveCallback: OnBefo
         _from: RouteLocationNormalized,
         _next: NavigationGuardNext,
       ): void => {
-        // intentionally left blank
+        // intentionally left blank for test hoisting
       },
     };
   },
 );
 
+vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
+  const mod: object = await importOriginal();
+  return {
+    ...mod,
+    onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
+      storedBeforeRouteLeaveCallback = actualCallback;
+    }),
+  };
+});
+
+let wrapper: VueWrapper | null = null;
+let router: Router;
+const organisationStore: OrganisationStore = useOrganisationStore();
+const schultraegerOrganisation: Organisation = DoFactory.getOrganisation();
+
+type OnBeforeRouteLeaveCallback = (
+  _to: RouteLocationNormalized,
+  _from: RouteLocationNormalized,
+  _next: NavigationGuardNext,
+) => void;
+
 async function mountComponent(): Promise<ReturnType<typeof mount<typeof SchuleCreationView>>> {
   await vi.dynamicImportSettled();
-  return mount(SchuleCreationView, {
+  const mountedComponent: ReturnType<typeof mount<typeof SchuleCreationView>> = mount(SchuleCreationView, {
     attachTo: document.getElementById('app') || '',
     global: {
       components: {
@@ -74,35 +62,64 @@ async function mountComponent(): Promise<ReturnType<typeof mount<typeof SchuleCr
       plugins: [router],
     },
   });
+  await flushPromises();
+  return mountedComponent;
 }
 
 type FormFields = {
+  schulform: string;
   dienststellennummer: string;
   schulname: string;
+  emailAdresse: string;
 };
 
 type FormSelectors = {
-  dienststellennummerInput: VueWrapper;
-  schulnameInput: VueWrapper;
+  schulformRadioGroup: DOMWrapper<Element>;
+  dienststellennummerInput: DOMWrapper<Element>;
+  schulnameInput: DOMWrapper<Element>;
+  emailAdresseInput: DOMWrapper<Element>;
 };
 
 async function fillForm(args: Partial<FormFields>): Promise<Partial<FormSelectors>> {
-  const { dienststellennummer, schulname }: Partial<FormFields> = args;
+  const { schulform, dienststellennummer, schulname, emailAdresse }: Partial<FormFields> = args;
   const selectors: Partial<FormSelectors> = {};
 
-  const dienststellennummerInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'dienststellennummer-input' });
-  expect(dienststellennummerInput?.exists()).toBe(true);
+  if (schulform) {
+    // Find the radio button with the matching value
+    const radioButton: Element | null = document.querySelector(`[data-testid^="schulform-radio-button-"]`);
+    if (radioButton) {
+      radioButton.dispatchEvent(new Event('click'));
+      await nextTick();
+    }
+    const schulformRadioGroup: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="schulform-radio-group"]');
+    selectors.schulformRadioGroup = schulformRadioGroup;
+  }
 
-  await dienststellennummerInput?.setValue(dienststellennummer);
-  await nextTick();
-  selectors.dienststellennummerInput = dienststellennummerInput;
+  if (dienststellennummer) {
+    const dienststellennummerInput: DOMWrapper<Element> | undefined = wrapper?.find(
+      '[data-testid="dienststellennummer-input"]',
+    );
+    expect(dienststellennummerInput?.exists()).toBe(true);
+    await dienststellennummerInput?.find('input').setValue(dienststellennummer);
+    await nextTick();
+    selectors.dienststellennummerInput = dienststellennummerInput;
+  }
 
-  const schulnameInput: VueWrapper | undefined = wrapper?.findComponent({ ref: 'schulname-input' });
-  expect(schulnameInput?.exists()).toBe(true);
+  if (schulname) {
+    const schulnameInput: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="schulname-input"]');
+    expect(schulnameInput?.exists()).toBe(true);
+    await schulnameInput?.find('input').setValue(schulname);
+    await nextTick();
+    selectors.schulnameInput = schulnameInput;
+  }
 
-  await schulnameInput?.setValue(schulname);
-  await nextTick();
-  selectors.schulnameInput = schulnameInput;
+  if (emailAdresse) {
+    const emailAdresseInput: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="email-adress-input"]');
+    expect(emailAdresseInput?.exists()).toBe(true);
+    await emailAdresseInput?.find('input').setValue(emailAdresse);
+    await nextTick();
+    selectors.emailAdresseInput = emailAdresseInput;
+  }
 
   return selectors;
 }
@@ -125,66 +142,239 @@ beforeEach(async () => {
   await router.isReady();
 
   wrapper = await mountComponent();
+
   organisationStore.errorCode = '';
-  organisationStore.createdSchule = null;
-  organisationStore.schultraeger = mockSchultraeger;
+  organisationStore.schultraeger = [schultraegerOrganisation];
 });
 
 afterEach(() => {
+  organisationStore.$reset();
   wrapper?.unmount();
+  vi.useRealTimers();
 });
 
 describe('SchuleCreationView', () => {
-  test('it renders the schule form', () => {
-    expect(wrapper?.find('[data-testid="dienststellennummer-input"]').isVisible()).toBe(true);
-    expect(wrapper?.find('[data-testid="schulname-input"]').isVisible()).toBe(true);
-  });
-
   test('it renders all child components', () => {
     expect(wrapper?.getComponent({ name: 'LayoutCard' })).toBeTruthy();
     expect(wrapper?.getComponent({ name: 'SpshAlert' })).toBeTruthy();
-    expect(wrapper?.getComponent({ name: 'FormWrapper' })).toBeTruthy();
-    expect(wrapper?.getComponent({ name: 'FormRow' })).toBeTruthy();
+    expect(wrapper?.getComponent({ name: 'SchuleForm' })).toBeTruthy();
   });
 
-  test('it navigates back to schulen table', async () => {
-    const push: MockInstance = vi.spyOn(router, 'push');
-    vi.spyOn(router, 'go').mockImplementationOnce(() => Promise.resolve());
-    await wrapper?.find('[data-testid="close-layout-card-button"]').trigger('click');
-    expect(push).toHaveBeenCalledTimes(1);
+  test('it renders the headline', () => {
+    expect(wrapper?.find('[data-testid="admin-headline"]').exists()).toBe(true);
   });
 
-  test('it fills form and triggers submit', async () => {
-    await fillForm({
-      dienststellennummer: '9356494',
-      schulname: 'Random Schulname Gymnasium',
-    });
-    await nextTick();
-
-    const mockSchule: OrganisationResponse = {
-      id: '9876',
-      name: 'Random Schulname Gymnasium',
-      kennung: '9356494',
-      namensergaenzung: 'Schule',
-      kuerzel: 'rsg',
-      typ: 'SCHULE',
-      administriertVon: '1',
-    } as OrganisationResponse;
-
-    organisationStore.createdSchule = mockSchule;
-
-    wrapper
-      ?.findComponent({ ref: 'schule-creation-form' })
-      .find('[data-testid="schule-creation-form-submit-button"]')
-      .trigger('click');
+  test('it passes initial form values with default schulform to SchuleForm', async () => {
+    // Make sure schultraeger is set before component mounts
+    organisationStore.schultraeger = [schultraegerOrganisation];
+    wrapper = await mountComponent();
     await flushPromises();
 
-    expect(wrapper?.find('[data-testid="create-another-schule-button"]').isVisible()).toBe(true);
+    // eslint-disable-next-line @typescript-eslint/typedef
+    const form = wrapper?.findComponent(SchuleForm);
+    expect(form?.exists()).toBe(true);
+    expect(form?.props('initialValues')).toMatchObject({
+      selectedSchulform: schultraegerOrganisation.id,
+      selectedDienststellennummer: '',
+      selectedSchulname: '',
+    });
+  });
 
-    wrapper?.find('[data-testid="create-another-schule-button"]').trigger('click');
+  test('it initializes SchuleForm with the first schultraeger fetched after mounting', async () => {
+    organisationStore.schultraeger = [];
+    vi.spyOn(organisationStore, 'getRootKinderSchultraeger').mockImplementation(async () => {
+      organisationStore.schultraeger = [schultraegerOrganisation];
+      await flushPromises();
+    });
+
+    wrapper?.unmount();
+    wrapper = await mountComponent();
+
+    // eslint-disable-next-line @typescript-eslint/typedef
+    const form = wrapper.findComponent(SchuleForm);
+
+    expect(form?.props('initialValues')).toMatchObject({
+      selectedSchulform: schultraegerOrganisation.id,
+    });
+  });
+
+  test('it passes schultraeger list to SchuleForm', () => {
+    // eslint-disable-next-line @typescript-eslint/typedef
+    const form = wrapper?.findComponent(SchuleForm);
+    expect(form?.props('schultraegerList')).toEqual([schultraegerOrganisation]);
+  });
+
+  test('it calls the correct function in the store when the form is submitted', async () => {
+    const createOrganisationSpy: MockInstance = vi.spyOn(organisationStore, 'createOrganisation');
+    const payload: SchuleDetailsForm = {
+      selectedSchulform: schultraegerOrganisation.id,
+      selectedDienststellennummer: '1234567',
+      selectedSchulname: 'Test Schule',
+      selectedEmailAdress: 'test@schule.de',
+    };
+
+    await fillForm({
+      schulform: payload.selectedSchulform,
+      dienststellennummer: payload.selectedDienststellennummer,
+      schulname: payload.selectedSchulname,
+      emailAdresse: payload.selectedEmailAdress,
+    });
+
+    await flushPromises();
+
+    expect(createOrganisationSpy).not.toHaveBeenCalled();
+
+    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+    form.vm.$emit('click:submit', payload);
+    await flushPromises();
+
+    expect(createOrganisationSpy).toHaveBeenCalledOnce();
+    expect(createOrganisationSpy).toHaveBeenCalledWith(
+      payload.selectedSchulform,
+      payload.selectedSchulform,
+      payload.selectedDienststellennummer,
+      payload.selectedSchulname,
+      undefined,
+      undefined,
+      'SCHULE',
+      undefined,
+      payload.selectedEmailAdress,
+    );
+  });
+
+  test('it renders success template after successful form submission', async () => {
+    vi.spyOn(organisationStore, 'createOrganisation').mockImplementation(() => {
+      organisationStore.createdSchule = DoFactory.getSchule();
+      return Promise.resolve();
+    });
+
+    const payload: SchuleDetailsForm = {
+      selectedSchulform: schultraegerOrganisation.id,
+      selectedDienststellennummer: '1234567',
+      selectedSchulname: 'Test Schule',
+      selectedEmailAdress: 'test@schule.de',
+    };
+
+    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+    form.vm.$emit('click:submit', payload);
+    await flushPromises();
+
+    // eslint-disable-next-line @typescript-eslint/typedef
+    const successTemplate = wrapper?.findComponent(SchuleSuccessTemplate);
+    expect(successTemplate?.exists()).toBe(true);
+  });
+
+  test('it renders error alert when errorCode is present', async () => {
+    organisationStore.errorCode = 'SCHULE_DUPLICATE';
     await nextTick();
 
-    expect(organisationStore.createdSchule).toBe(null);
+    const alert: VueWrapper = wrapper!.findComponent({ name: 'SpshAlert' });
+    const alertProps: { modelValue?: boolean } = alert.props();
+    expect(alertProps.modelValue).toBe(true);
+  });
+
+  test('it calls correct function when error alert button is clicked', async () => {
+    organisationStore.errorCode = 'SCHULE_DUPLICATE';
+    await nextTick();
+
+    const push: MockInstance = vi.spyOn(router, 'push');
+    wrapper?.find('[data-testid$="alert-button"]').trigger('click');
+    await nextTick();
+
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith({ name: 'create-schule' });
+  });
+
+  test('it closes the view and navigates back to schule management', async () => {
+    const push: MockInstance = vi.spyOn(router, 'push');
+    wrapper?.find('[data-testid="close-layout-card-button"]').trigger('click');
+    await nextTick();
+
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith({ name: 'schule-management' });
+  });
+
+  test('it resets createdSchule on close', async () => {
+    organisationStore.createdSchule = DoFactory.getSchule();
+    vi.spyOn(router, 'push');
+
+    wrapper?.find('[data-testid="close-layout-card-button"]').trigger('click');
+    await nextTick();
+
+    expect(organisationStore.createdSchule).toBeNull();
+  });
+
+  test('it handles create another schule button click', async () => {
+    vi.spyOn(organisationStore, 'createOrganisation').mockImplementation(() => {
+      organisationStore.createdSchule = DoFactory.getSchule();
+      return Promise.resolve();
+    });
+
+    const payload: SchuleDetailsForm = {
+      selectedSchulform: schultraegerOrganisation.id,
+      selectedDienststellennummer: '1234567',
+      selectedSchulname: 'Test Schule',
+      selectedEmailAdress: 'test@schule.de',
+    };
+
+    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+    form.vm.$emit('click:submit', payload);
+    await flushPromises();
+
+    const push: MockInstance = vi.spyOn(router, 'push');
+    const successTemplate: VueWrapper | undefined = wrapper!.findComponent(SchuleSuccessTemplate);
+    successTemplate.vm.$emit('onNavigateToSchuleForm');
+    await nextTick();
+
+    expect(organisationStore.createdSchule).toBeNull();
+    expect(push).toHaveBeenCalled();
+  });
+
+  test('it navigates to schule management from success template', async () => {
+    vi.spyOn(organisationStore, 'createOrganisation').mockImplementation(() => {
+      organisationStore.createdSchule = DoFactory.getSchule();
+      return Promise.resolve();
+    });
+
+    const payload: SchuleDetailsForm = {
+      selectedSchulform: schultraegerOrganisation.id,
+      selectedDienststellennummer: '1234567',
+      selectedSchulname: 'Test Schule',
+      selectedEmailAdress: 'test@schule.de',
+    };
+
+    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+    form.vm.$emit('click:submit', payload);
+    await flushPromises();
+
+    const push: MockInstance = vi.spyOn(router, 'push');
+    const successTemplate: VueWrapper | undefined = wrapper!.findComponent(SchuleSuccessTemplate);
+    successTemplate.vm.$emit('onNavigateBackToSchuleManagement');
+    await nextTick();
+
+    expect(organisationStore.createdSchule).toBeNull();
+    expect(push).toHaveBeenCalled();
+  });
+
+  test('it shows error message if REQUIRED_STEP_UP_LEVEL_NOT_MET error is present', async () => {
+    organisationStore.errorCode = 'REQUIRED_STEP_UP_LEVEL_NOT_MET';
+    await nextTick();
+
+    expect(wrapper?.find('[data-testid$="alert-title"]').isVisible()).toBe(true);
+  });
+
+  test('it reloads page when navigating from REQUIRED_STEP_UP_LEVEL_NOT_MET error', async () => {
+    organisationStore.errorCode = 'REQUIRED_STEP_UP_LEVEL_NOT_MET';
+    await nextTick();
+
+    const push: MockInstance = vi.spyOn(router, 'push');
+    const goSpy: MockInstance = vi.spyOn(router, 'go');
+
+    wrapper?.find('[data-testid$="alert-button"]').trigger('click');
+    await flushPromises();
+
+    expect(push).toHaveBeenCalledWith({ name: 'create-schule' });
+    expect(goSpy).toHaveBeenCalledWith(0);
   });
 
   describe('navigation interception', () => {
@@ -192,24 +382,18 @@ describe('SchuleCreationView', () => {
       vi.unmock('vue-router');
     });
 
-    test('it triggers if form is dirty', async () => {
+    test('triggers unsaved changes dialog if form is dirty', async () => {
       const expectedCallsToNext: number = 0;
-      vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
-        const mod: object = await importOriginal();
-        return {
-          ...mod,
-          onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
-            storedBeforeRouteLeaveCallback = actualCallback;
-          }),
-        };
-      });
-
+      organisationStore.schultraeger = [schultraegerOrganisation];
       wrapper = await mountComponent();
+      await flushPromises();
+
       await fillForm({
-        dienststellennummer: '9356494',
-        schulname: 'Random Schulname Gymnasium',
+        schulform: schultraegerOrganisation.id,
+        dienststellennummer: '1234567',
+        schulname: 'Test Schule',
+        emailAdresse: 'test@schule.de',
       });
-      await nextTick();
 
       const spy: Mock = vi.fn();
       storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, spy);
@@ -222,7 +406,7 @@ describe('SchuleCreationView', () => {
       expect(spy).toHaveBeenCalledOnce();
     });
 
-    test('it does not trigger if form is not dirty', async () => {
+    test('does not trigger unsaved changes dialog if form is not dirty', async () => {
       const expectedCallsToNext: number = 1;
       vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
         const mod: object = await importOriginal();
@@ -244,51 +428,85 @@ describe('SchuleCreationView', () => {
     beforeEach(async () => {
       if (isFormDirty) {
         await fillForm({
-          dienststellennummer: '9356494',
-          schulname: 'Random Schulname Gymnasium',
+          schulform: schultraegerOrganisation.id,
+          dienststellennummer: '1234567',
+          schulname: 'Test Schule',
+          emailAdresse: 'test@schule.de',
         });
       }
-      await nextTick();
     });
 
     test('it handles unloading', () => {
       const event: Event = new Event('beforeunload');
       const spy: MockInstance = vi.spyOn(event, 'preventDefault');
       window.dispatchEvent(event);
-      // TODO: why is spy called 3 times?
-      // if (isFormDirty) expect(spy).toHaveBeenCalledOnce();
       if (isFormDirty) {
-        expect(spy).toHaveBeenCalled();
+        expect(spy).toHaveBeenCalledOnce();
       } else {
         expect(spy).not.toHaveBeenCalledOnce();
       }
     });
   });
 
-  describe('error handling', () => {
-    test('it shows error message', async () => {
-      organisationStore.errorCode = 'NAME_REQUIRED_FOR_SCHULE';
-      await nextTick();
+  test('it initializes with no schultraeger as default when schultraeger list is empty', async () => {
+    organisationStore.schultraeger = [];
+    vi.spyOn(organisationStore, 'getRootKinderSchultraeger').mockImplementation(async () => {
+      organisationStore.schultraeger = [];
+      await flushPromises();
+    });
+    wrapper = await mountComponent();
+    await nextTick();
 
-      expect(wrapper?.find('[data-testid$="alert-title"]').isVisible()).toBe(true);
+    // eslint-disable-next-line @typescript-eslint/typedef
+    const form = wrapper?.findComponent(SchuleForm);
+    expect(form?.props('initialValues')).toMatchObject({
+      selectedSchulform: undefined,
+    });
+  });
 
-      wrapper?.find('[data-testid$="alert-button"]').trigger('click');
-      await nextTick();
+  test('it calls getRootKinderSchultraeger on mount', async () => {
+    vi.clearAllMocks();
+    organisationStore.$reset();
+    const getRootKinderSchultraegerSpy: MockInstance = vi.spyOn(organisationStore, 'getRootKinderSchultraeger');
 
-      expect(organisationStore.errorCode).toBe('');
+    wrapper?.unmount();
+    wrapper = await mountComponent();
+    await flushPromises();
+
+    expect(getRootKinderSchultraegerSpy).toHaveBeenCalledOnce();
+  });
+
+  test('it clears errorCode and createdSchule on mount', async () => {
+    organisationStore.errorCode = 'SOME_ERROR';
+    organisationStore.createdSchule = DoFactory.getSchule();
+
+    wrapper = await mountComponent();
+    await flushPromises();
+
+    expect(organisationStore.errorCode).toBe('');
+    expect(organisationStore.createdSchule).toBeNull();
+  });
+
+  test('it removes beforeunload listener on unmount', () => {
+    const removeEventListenerSpy: MockInstance = vi.spyOn(window, 'removeEventListener');
+    wrapper?.unmount();
+
+    expect(removeEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+  });
+
+  test('it handles discard button click from SchuleForm', async () => {
+    await fillForm({
+      schulform: schultraegerOrganisation.id,
+      dienststellennummer: '1234567',
+      schulname: 'Test Schule',
+      emailAdresse: 'test@schule.de',
     });
 
-    test('shows error message if REQUIRED_STEP_UP_LEVEL_NOT_MET error is present and click close button', async () => {
-      organisationStore.errorCode = 'REQUIRED_STEP_UP_LEVEL_NOT_MET';
-      await nextTick();
-      vi.spyOn(router, 'go').mockImplementationOnce(() => Promise.resolve());
+    const push: MockInstance = vi.spyOn(router, 'push');
+    const form: VueWrapper = wrapper!.findComponent({ name: 'SchuleForm' });
+    form.vm.$emit('click:discard');
+    await nextTick();
 
-      expect(wrapper?.find('[data-testid$="alert-title"]').isVisible()).toBe(true);
-
-      wrapper?.find('[data-testid$="alert-button"]').trigger('click');
-      await nextTick();
-
-      organisationStore.errorCode = '';
-    });
+    expect(push).toHaveBeenCalled();
   });
 });

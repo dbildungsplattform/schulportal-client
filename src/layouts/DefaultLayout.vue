@@ -3,10 +3,13 @@
 </script>
 
 <template>
-  <v-container>
-    <slot />
-  </v-container>
-  <TheFooter />
+  <v-main>
+    <v-container>
+      <slot />
+    </v-container>
+
+    <TheFooter />
+  </v-main>
 </template>
 
 <style scoped lang="scss">

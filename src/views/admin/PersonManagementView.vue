@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import ResultTable, { type TableItem, type TableRow, type Headers } from '@/components/admin/ResultTable.vue';
+  import ResultTable, { type Headers, type TableRow } from '@/components/admin/ResultTable.vue';
   import SearchField from '@/components/admin/SearchField.vue';
   import SpshTooltip from '@/components/admin/SpshTooltip.vue';
   import PersonBulkChangeKlasse from '@/components/admin/personen/PersonBulkChangeKlasse.vue';
@@ -14,24 +14,27 @@
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
   import { useOrganisationen } from '@/composables/useOrganisationen';
-  import { type TranslatedRolleWithAttrs, useRollen } from '@/composables/useRollen';
   import { type AuthStore, useAuthStore } from '@/stores/AuthStore';
   import { type Organisation, type OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
   import { type PersonStore, SortField, usePersonStore } from '@/stores/PersonStore';
   import { type PersonenkontextStore, usePersonenkontextStore } from '@/stores/PersonenkontextStore';
   import {
+    GATED_ROLLEN_MERKMALE,
     type RolleResponse,
     type RolleStore,
     RollenArt,
+    RollenMerkmal,
     RollenSystemRecht,
+    TranslatedRolleWithAttrs,
     useRolleStore,
   } from '@/stores/RolleStore';
   import { type SearchFilterStore, useSearchFilterStore } from '@/stores/SearchFilterStore';
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
   import { OperationType } from '@/stores/types/bulkOperationTypes';
   import { type TranslatedObject } from '@/types.d';
+  import { blurActiveElement } from '@/utils/focus';
   import { SortOrder } from '@/utils/sorting';
-  import { type ComputedRef, type Ref, computed, onMounted, ref, watch, type ComponentPublicInstance } from 'vue';
+  import { type ComponentPublicInstance, type ComputedRef, type Ref, computed, onMounted, ref, watch } from 'vue';
   import { type Composer, useI18n } from 'vue-i18n';
   import { type Router, useRouter } from 'vue-router';
 
@@ -137,6 +140,19 @@
 
   const authStore: AuthStore = useAuthStore();
 
+  const rollenSystemrechteForPersonAdministration: ComputedRef<RollenSystemRecht[]> = computed(() => {
+    return [RollenSystemRecht.PersonenVerwalten, ...authStore.grantedGatedRollenSystemrechte];
+  });
+
+  async function loadRollenForPersonAdministration(searchStr: string): Promise<void> {
+    await rolleStore.getRollenForPersonAdministration({
+      searchStr,
+      limit: 25,
+      organisationIds: selectedOrganisationIds.value,
+      systemrechte: rollenSystemrechteForPersonAdministration.value,
+    });
+  }
+
   // Computed property for generating options dynamically for v-selects
   const actions: ComputedRef<TranslatedObject[]> = computed(() => {
     const actionTypeTitles: Map<OperationType, string> = new Map();
@@ -159,13 +175,13 @@
     }));
   });
 
-  const filterOrSearchActive: Ref<boolean> = computed(
+  const filterOrSearchActive: ComputedRef<boolean> = computed(
     () =>
       (!hasAutoselectedSchule.value && selectedOrganisationIds.value.length > 0) ||
       selectedRollen.value.length > 0 ||
       !!searchFilterStore.selectedOrganisationen?.length ||
       !!searchFilterStore.selectedRollen?.length ||
-      !!searchFilterStore.searchFilterPersonen ||
+      !!searchFilterStore.searchStringForPersonen ||
       (selectedKlassen.value && selectedKlassen.value.length > 0) ||
       !!selectedStatus.value,
   );
@@ -179,7 +195,7 @@
   });
 
   const rollen: ComputedRef<TranslatedObject[] | undefined> = computed(() => {
-    const filteredRollen: RolleResponse[] = personenkontextStore.filteredRollen?.moeglicheRollen || [];
+    const filteredRollen: RolleResponse[] = rolleStore.rollenForPersonAdministration;
     const uniqueRollenMap: Map<string, RolleResponse> = new Map();
 
     [...filteredRollen, ...selectedRollenObjects.value].forEach((rolle: RolleResponse) => {
@@ -196,12 +212,14 @@
 
   const organisationenForForm: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
 
-  const rollenForForm: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = useRollen();
-
   // Only Rollen from type LEHR and LERN
-  const lehrAndLernRollen: ComputedRef<TranslatedRolleWithAttrs[] | undefined> = computed(() => {
-    return rollenForForm.value?.filter(
-      (rolle: TranslatedRolleWithAttrs) => rolle.rollenart === RollenArt.Lehr || rolle.rollenart === RollenArt.Lern,
+  const rollenForRolleModify: ComputedRef<TranslatedRolleWithAttrs[]> = computed(() => {
+    return rolleStore.rollenForPersonenkontextCreation.filter(
+      (rolle: TranslatedRolleWithAttrs) =>
+        rolle.rollenart === RollenArt.Lehr ||
+        rolle.rollenart === RollenArt.Lern ||
+        // this assumes the incoming rollen have already been checked for gated-Merkmal permission server-side
+        rolle.merkmale?.some((merkmal: RollenMerkmal) => GATED_ROLLEN_MERKMALE.includes(merkmal)),
     );
   });
 
@@ -215,7 +233,7 @@
         ? searchFilterStore.selectedKlassen
         : searchFilterStore.selectedOrganisationen || [],
       rolleIDs: searchFilterStore.selectedRollen || [],
-      searchFilter: searchFilterStore.searchFilterPersonen || '',
+      searchFilter: searchFilterStore.searchStringForPersonen || '',
       sortField: searchFilterStore.personenSortField as SortField,
       sortOrder: searchFilterStore.personenSortOrder as SortOrder,
     });
@@ -238,7 +256,7 @@
       limit: searchFilterStore.personenPerPage,
       organisationIDs: searchFilterStore.selectedOrganisationen || selectedOrganisationIds.value,
       rolleIDs: searchFilterStore.selectedRollen || selectedRollen.value,
-      searchFilter: searchFilterStore.searchFilterPersonen || searchFilter.value,
+      searchFilter: searchFilterStore.searchStringForPersonen || searchFilter.value,
     });
 
     await applySearchAndFilters();
@@ -255,7 +273,7 @@
     // Update selectedRollenObjects based on the new selection
     selectedRollenObjects.value = newValue
       .map((rolleId: string) => {
-        const existingRolle: RolleResponse | undefined = personenkontextStore.filteredRollen?.moeglicheRollen.find(
+        const existingRolle: RolleResponse | undefined = rolleStore.rollenForPersonAdministration.find(
           (r: RolleResponse) => r.id === rolleId,
         );
         return existingRolle;
@@ -283,10 +301,7 @@
     searchFilterStore.setOrganisationFilterForPersonen(newValue ?? []);
     searchFilterStore.setKlasseFilterForPersonen([]);
     selectedKlassen.value = [];
-    await Promise.all([
-      applySearchAndFilters(),
-      personenkontextStore.getPersonenkontextRolleWithFilter('', 25, selectedOrganisationIds.value),
-    ]);
+    await Promise.all([applySearchAndFilters(), loadRollenForPersonAdministration('')]);
   }
 
   function navigateToPersonDetails(_$event: PointerEvent, { item }: { item: PersonRow }): void {
@@ -324,7 +339,7 @@
         sortField: SortField.Familienname,
         sortOrder: SortOrder.Asc,
       }),
-      personenkontextStore.getPersonenkontextRolleWithFilter('', 25, selectedOrganisationIds.value),
+      loadRollenForPersonAdministration(''),
     ]);
   }
 
@@ -338,21 +353,20 @@
     clearTimeout(timerId);
 
     timerId = setTimeout(async () => {
-      await personenkontextStore.getPersonenkontextRolleWithFilter(searchValue, 25, selectedOrganisationIds.value);
+      await loadRollenForPersonAdministration(searchValue);
 
-      // If there are selected rollen not in the search results, add them to filteredRollen
-      const moeglicheRollen: RolleResponse[] = personenkontextStore.filteredRollen?.moeglicheRollen || [];
+      // If there are selected rollen not in the search results, add them to the in-memory list.
+      const moeglicheRollen: RolleResponse[] = rolleStore.rollenForPersonAdministration;
       const missingRollen: RolleResponse[] = searchFilterStore.selectedRollenObjects.filter(
         (rolle: RolleResponse) => !moeglicheRollen.some((r: RolleResponse) => r.id === rolle.id),
       );
 
-      if (missingRollen.length > 0 && personenkontextStore.filteredRollen) {
-        personenkontextStore.filteredRollen = {
-          moeglicheRollen: [...moeglicheRollen, ...missingRollen],
-          total: personenkontextStore.filteredRollen.total + missingRollen.length,
-        };
-        // Update the total count of found Rollen.
-        personenkontextStore.totalFilteredRollen = personenkontextStore.totalFilteredRollen + missingRollen.length;
+      if (missingRollen.length > 0) {
+        rolleStore.rollenForPersonAdministration = [...moeglicheRollen, ...missingRollen];
+        rolleStore.totalRollenForPersonAdministration = Math.max(
+          rolleStore.totalRollenForPersonAdministration,
+          rolleStore.rollenForPersonAdministration.length,
+        );
       }
     }, 500);
   }
@@ -557,9 +571,9 @@
     }
   };
 
-  function handleSelectedRows(selectedItems: TableItem[]): void {
-    // Directly assign the selected items to selectedPersonIds since the emitted tableItems are always IDs of the specific rows
-    selectedPersonIds.value = selectedItems as unknown as string[];
+  function handleSelectedRows(selectedItems: string[]): void {
+    // Directly assign the selected item values to selectedPersonIds since itemValuePath resolves to the person ID.
+    selectedPersonIds.value = selectedItems;
   }
 
   // This method filters the selectedPersonIds to avoid items being selected when they are not included in the current table "items"
@@ -581,6 +595,10 @@
     }
   });
 
+  watch(selectedStatus, () => {
+    blurActiveElement();
+  });
+
   // Used for to show the number of klassen found in the filter
   const totalKlassen: ComputedRef<number> = computed(
     () => organisationStore.klassenFilters.get('personen-management')?.total ?? 0,
@@ -596,7 +614,7 @@
     }
 
     await getPaginatedPersonen(searchFilterStore.personenPage);
-    await personenkontextStore.getPersonenkontextRolleWithFilter('', 25, selectedOrganisationIds.value);
+    await loadRollenForPersonAdministration('');
   });
 </script>
 
@@ -612,16 +630,11 @@
       :header="$t('admin.person.management')"
       headlineTestId="person-management-headline"
     >
-      <v-row
-        align="start"
-        class="ma-3"
-        justify="end"
-      >
+      <v-row class="ma-3 align-start justify-end">
         <v-col
-          align-self="center"
           cols="12"
           md="2"
-          class="py-md-0 text-md-right"
+          class="py-md-0 text-md-right align-self-center"
         >
           <v-btn
             class="px-0 reset-filter"
@@ -656,7 +669,7 @@
             <template #prepend-item>
               <v-list-item>
                 <v-progress-circular
-                  v-if="organisationStore.loading"
+                  v-if="organisationStore.organisationenFilters.get('person-management')?.loading"
                   indeterminate
                 />
                 <span
@@ -665,7 +678,9 @@
                   >{{
                     $t(
                       'admin.schule.schulenFound',
-                      { count: organisationStore.organisationenFilters.get('person-management')?.total },
+                      {
+                        count: organisationStore.organisationenFilters.get('person-management')?.total,
+                      },
                       organisationStore.organisationenFilters.get('person-management')?.total ?? 0,
                     )
                   }}</span
@@ -686,7 +701,9 @@
             v-model:search="searchInputRollen"
             autocomplete="off"
             class="filter-dropdown"
-            :class="{ selected: selectedRollen.length > 0 }"
+            :class="{
+              selected: selectedRollen.length > 0,
+            }"
             clearable
             data-testid="rolle-select"
             density="compact"
@@ -715,19 +732,25 @@
                   >{{
                     $t(
                       'admin.rolle.rollenFound',
-                      { count: personenkontextStore.totalFilteredRollen },
-                      personenkontextStore.totalFilteredRollen,
+                      {
+                        count: rolleStore.totalRollenForPersonAdministration,
+                      },
+                      rolleStore.totalRollenForPersonAdministration,
                     )
                   }}</span
                 >
               </v-list-item>
             </template>
-            <template #selection="{ item, index }">
+            <template #selection="{ internalItem: item, index }">
               <v-chip v-if="selectedRollen.length < 2">
                 <span>{{ item.title }}</span>
               </v-chip>
               <div v-else-if="index === 0">
-                {{ $t('admin.rolle.rollenSelected', { count: selectedRollen.length }) }}
+                {{
+                  $t('admin.rolle.rollenSelected', {
+                    count: selectedRollen.length,
+                  })
+                }}
               </div>
             </template>
           </v-autocomplete>
@@ -765,7 +788,15 @@
                       <span
                         v-else
                         class="filter-header"
-                        >{{ t('admin.klasse.klassenFound', { count: totalKlassen }, totalKlassen) }}</span
+                        >{{
+                          t(
+                            'admin.klasse.klassenFound',
+                            {
+                              count: totalKlassen,
+                            },
+                            totalKlassen,
+                          )
+                        }}</span
                       >
                     </v-list-item>
                   </template>
@@ -800,10 +831,7 @@
           />
         </v-col>
       </v-row>
-      <v-row
-        class="ma-3 mb-n4"
-        justify="start"
-      >
+      <v-row class="ma-3 mb-0 mb-md-n4 mt-6 justify-start">
         <v-col
           md="3"
           cols="12"
@@ -832,6 +860,14 @@
               @update:model-value="handleOption"
             />
           </SpshTooltip>
+
+          <!-- Small screens only: count directly under the select -->
+          <p
+            v-if="authStore.hasPersonenBulkPermission && selectedPersonIds.length > 0"
+            class="text-body my-0 d-flex d-md-none"
+          >
+            {{ selectedPersonIds.length }} {{ $t('selected') }}
+          </p>
           <InfoDialog
             id="invalid-selection-alert-dialog"
             :is-dialog-visible="onlyOneOrganisationAlertDialogVisible"
@@ -860,11 +896,11 @@
             v-if="rolleModifiyDialogVisible"
             ref="person-bulk-rolle-modify"
             :organisationen="organisationenForForm"
-            :rollen="lehrAndLernRollen"
+            :rollen="rollenForRolleModify"
             :is-loading="personenkontextStore.loading"
             :is-dialog-visible="rolleModifiyDialogVisible"
             :error-code="personenkontextStore.errorCode"
-            :selected-personen
+            :selected-personen="selectedPersonen"
             @update:is-dialog-visible="handleRolleModifyDialog($event)"
             @update:get-uebersichten="getPaginatedPersonen(searchFilterStore.personenPage)"
           >
@@ -875,7 +911,7 @@
             :error-code="personStore.errorCode"
             :is-loading="personStore.loading"
             :is-dialog-visible="benutzerDeleteDialogVisible"
-            :selected-personen
+            :selected-personen="selectedPersonen"
             @update:dialog-exit="handleBulkDeleteDialog($event)"
           />
           <PersonBulkPasswordReset
@@ -883,7 +919,7 @@
             ref="person-bulk-password-reset"
             :is-dialog-visible="passwordResetDialogVisible"
             :selected-schule-kennung="selectedOrganisationKennung"
-            :selected-personen
+            :selected-personen="selectedPersonen"
             @update:dialog-exit="handleBulkPasswordResetDialog($event)"
           />
           <OrganisationUnassign
@@ -914,19 +950,18 @@
             @update:dialog-exit="handleBulkKlasseChangeDialog"
           />
         </v-col>
-        <!-- Display the number of selected checkboxes -->
+        <!-- Display the number of selected checkboxes (md+ only) -->
         <v-col
           v-if="authStore.hasPersonenBulkPermission && selectedPersonIds.length > 0"
-          cols="12"
-          md="4"
-          class="mt-md-5 mt-n10"
+          cols="auto"
+          class="mb-5 d-none d-md-flex align-center"
         >
-          <p class="text-body">{{ selectedPersonIds.length }} {{ $t('selected') }}</p>
+          <p class="text-body mb-0">{{ selectedPersonIds.length }} {{ $t('selected') }}</p>
         </v-col>
         <v-spacer />
         <SearchField
           ref="searchFieldComponent"
-          :initial-value="searchFilterStore.searchFilterPersonen ?? ''"
+          :initial-value="searchFilterStore.searchStringForPersonen ?? ''"
           :input-cols="6"
           :input-cols-md="3"
           :button-cols="6"
@@ -944,7 +979,7 @@
         :loading="personStore.loading"
         :headers="headers"
         :current-sort="searchFilterStore.currentSort"
-        :model-value="selectedPersonIds as unknown as TableItem[]"
+        :model-value="selectedPersonIds"
         :total-items="personStore.totalPersons"
         item-value-path="id"
         @on-handle-row-click="

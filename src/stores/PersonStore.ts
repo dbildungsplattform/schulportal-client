@@ -123,228 +123,230 @@ type PersonActions = {
 
 export type PersonStore = Store<'personStore', PersonState, PersonGetters, PersonActions>;
 
-export const usePersonStore: StoreDefinition<'personStore', PersonState, PersonGetters, PersonActions> = defineStore({
-  id: 'personStore',
-  state: (): PersonState => {
-    return {
-      allUebersichten: new Map<string, PersonWithZuordnungen>(),
-      currentPerson: null,
-      allLandesbedienstetePersonen: [],
-      errorCode: '',
-      loading: false,
-      newDevicePassword: null,
-      newPassword: null,
-      patchedPerson: null,
-      personenuebersicht: null,
-      totalPersons: 0,
-    };
-  },
-  actions: {
-    resetState() {
-      this.$reset();
+export const usePersonStore: StoreDefinition<'personStore', PersonState, PersonGetters, PersonActions> = defineStore(
+  'personStore',
+  {
+    state: (): PersonState => {
+      return {
+        allUebersichten: new Map<string, PersonWithZuordnungen>(),
+        currentPerson: null,
+        allLandesbedienstetePersonen: [],
+        errorCode: '',
+        loading: false,
+        newDevicePassword: null,
+        newPassword: null,
+        patchedPerson: null,
+        personenuebersicht: null,
+        totalPersons: 0,
+      };
     },
-    async getAllPersons(filter: PersonFilter) {
-      this.loading = true;
-      try {
-        // Fetch all persons
-        const { data }: AxiosResponse<PersonFrontendControllerFindPersons200Response> =
-          await personenFrontendApi.personFrontendControllerFindPersons(
-            filter.offset,
-            filter.limit,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            filter.organisationIDs,
-            filter.rolleIDs,
-            filter.searchFilter,
-            filter.sortOrder,
-            filter.sortField,
-          );
+    actions: {
+      resetState() {
+        this.$reset();
+      },
+      async getAllPersons(filter: PersonFilter) {
+        this.loading = true;
+        try {
+          // Fetch all persons
+          const { data }: AxiosResponse<PersonFrontendControllerFindPersons200Response> =
+            await personenFrontendApi.personFrontendControllerFindPersons(
+              filter.offset,
+              filter.limit,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              filter.organisationIDs,
+              filter.rolleIDs,
+              filter.searchFilter,
+              filter.sortOrder,
+              filter.sortField,
+            );
 
-        // Store the fetched persons
-        const allPersons: Map<string, Person> = new Map();
-        const personIds: string[] = []; // keep ids in an array, so we do not need to rely on the order of the map
-        for (const personendatensatz of data.items) {
-          const person: Person = Person.fromResponse(personendatensatz.person);
-          allPersons.set(person.id, person);
-          personIds.push(person.id);
-        }
-        this.totalPersons = +data.total;
-
-        // Fetch overviews for all persons
-        if (allPersons.size === 0) {
-          this.allUebersichten = new Map<string, PersonWithZuordnungen>();
-          return;
-        }
-        const bodyParams: PersonenuebersichtBodyParams = {
-          personIds,
-        };
-        const { data: uebersichten }: { data: DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response } =
-          await personenuebersichtApi.dBiamPersonenuebersichtControllerFindPersonenuebersichten(bodyParams);
-        const tempUebersichtenMap: Map<string, DBiamPersonenuebersichtResponse> = new Map(
-          uebersichten.items.map((uebersicht: DBiamPersonenuebersichtResponse) => {
-            return [uebersicht.personId, uebersicht];
-          }),
-        );
-        this.allUebersichten = new Map<string, PersonWithZuordnungen>();
-        // Aggregate the personen with their uebersichten
-        for (const personId of personIds) {
-          const person: Person = allPersons.get(personId)!;
-
-          const uebersicht: DBiamPersonenuebersichtResponse | undefined = tempUebersichtenMap.get(personId);
-          if (!uebersicht) {
-            continue;
+          // Store the fetched persons
+          const allPersons: Map<string, Person> = new Map();
+          const personIds: string[] = []; // keep ids in an array, so we do not need to rely on the order of the map
+          for (const personendatensatz of data.items) {
+            const person: Person = Person.fromResponse(personendatensatz.person);
+            allPersons.set(person.id, person);
+            personIds.push(person.id);
           }
+          this.totalPersons = +data.total;
 
-          const zuordnungen: Zuordnung[] = uebersicht.zuordnungen.map(
-            (zuordnungResponse: DBiamPersonenzuordnungResponse) => Zuordnung.fromResponse(zuordnungResponse),
+          // Fetch overviews for all persons
+          if (allPersons.size === 0) {
+            this.allUebersichten = new Map<string, PersonWithZuordnungen>();
+            return;
+          }
+          const bodyParams: PersonenuebersichtBodyParams = {
+            personIds,
+          };
+          const { data: uebersichten }: { data: DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response } =
+            await personenuebersichtApi.dBiamPersonenuebersichtControllerFindPersonenuebersichten(bodyParams);
+          const tempUebersichtenMap: Map<string, DBiamPersonenuebersichtResponse> = new Map(
+            uebersichten.items.map((uebersicht: DBiamPersonenuebersichtResponse) => {
+              return [uebersicht.personId, uebersicht];
+            }),
           );
-          const personWithZuordnungen: PersonWithZuordnungen = new PersonWithZuordnungen(person, zuordnungen);
-          this.allUebersichten.set(person.id, personWithZuordnungen);
+          this.allUebersichten = new Map<string, PersonWithZuordnungen>();
+          // Aggregate the personen with their uebersichten
+          for (const personId of personIds) {
+            const person: Person = allPersons.get(personId)!;
+
+            const uebersicht: DBiamPersonenuebersichtResponse | undefined = tempUebersichtenMap.get(personId);
+            if (!uebersicht) {
+              continue;
+            }
+
+            const zuordnungen: Zuordnung[] = uebersicht.zuordnungen.map(
+              (zuordnungResponse: DBiamPersonenzuordnungResponse) => Zuordnung.fromResponse(zuordnungResponse),
+            );
+            const personWithZuordnungen: PersonWithZuordnungen = new PersonWithZuordnungen(person, zuordnungen);
+            this.allUebersichten.set(person.id, personWithZuordnungen);
+          }
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
         }
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
-      } finally {
-        this.loading = false;
-      }
-    },
+      },
 
-    async getPersonById(personId: string): Promise<void> {
-      this.loading = true;
-      this.errorCode = '';
-      try {
-        const { data }: AxiosResponse<PersonendatensatzResponse, unknown> =
-          await personenApi.personControllerFindPersonById(personId);
-        this.currentPerson = mapPersonendatensatzResponseToPersonendatensatz(data);
-      } catch (error) {
-        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async resetPassword(personId: string): Promise<void> {
-      this.loading = true;
-      try {
-        const { data }: { data: string } = await personenApi.personControllerResetPasswordByPersonId(personId);
-        this.newPassword = data;
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async resetDevicePassword(personId?: string): Promise<void> {
-      this.loading = true;
-      try {
-        let data: string;
-        if (personId) {
-          data = (await personenApi.personControllerResetUEMPasswordByPersonId(personId)).data;
-        } else {
-          data = (await personenApi.personControllerResetUEMPassword()).data;
+      async getPersonById(personId: string): Promise<void> {
+        this.loading = true;
+        this.errorCode = '';
+        try {
+          const { data }: AxiosResponse<PersonendatensatzResponse, unknown> =
+            await personenApi.personControllerFindPersonById(personId);
+          this.currentPerson = mapPersonendatensatzResponseToPersonendatensatz(data);
+        } catch (error) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
         }
-        this.newDevicePassword = data;
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
-      } finally {
-        this.loading = false;
-      }
-    },
+      },
 
-    async deletePersonById(personId: string) {
-      this.loading = true;
-      try {
-        await personenApi.personControllerDeletePersonById(personId);
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
-      } finally {
-        this.loading = false;
-      }
-    },
+      async resetPassword(personId: string): Promise<void> {
+        this.loading = true;
+        try {
+          const { data }: { data: string } = await personenApi.personControllerResetPasswordByPersonId(personId);
+          this.newPassword = data;
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
 
-    async lockPerson(personId: string, bodyParams: LockUserBodyParams): Promise<void> {
-      this.loading = true;
-      try {
-        await personenApi.personControllerLockPerson(personId, bodyParams);
-        await this.getPersonById(personId);
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
-      } finally {
-        this.loading = false;
-      }
-    },
+      async resetDevicePassword(personId?: string): Promise<void> {
+        this.loading = true;
+        try {
+          let data: string;
+          if (personId) {
+            data = (await personenApi.personControllerResetUEMPasswordByPersonId(personId)).data;
+          } else {
+            data = (await personenApi.personControllerResetUEMPassword()).data;
+          }
+          this.newDevicePassword = data;
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
 
-    async syncPersonById(personId: string) {
-      this.loading = true;
-      try {
-        await personenApi.personControllerSyncPerson(personId);
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
-      } finally {
-        this.loading = false;
-      }
-    },
+      async deletePersonById(personId: string) {
+        this.loading = true;
+        try {
+          await personenApi.personControllerDeletePersonById(personId);
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
 
-    async getPersonenuebersichtById(personId: string): Promise<void> {
-      this.loading = true;
-      try {
-        const { data }: { data: DBiamPersonenuebersichtResponse } =
-          await personenuebersichtApi.dBiamPersonenuebersichtControllerFindPersonenuebersichtenByPerson(personId);
-        this.personenuebersicht = PersonenUebersicht.fromResponse(data);
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
-      } finally {
-        this.loading = false;
-      }
-    },
+      async lockPerson(personId: string, bodyParams: LockUserBodyParams): Promise<void> {
+        this.loading = true;
+        try {
+          await personenApi.personControllerLockPerson(personId, bodyParams);
+          await this.getPersonById(personId);
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
 
-    async changePersonMetadataById(
-      personId: string,
-      vorname: string,
-      familienname: string,
-      personalnummer?: string,
-    ): Promise<void> {
-      this.loading = true;
-      try {
-        const personMetadataBodyParams: PersonMetadataBodyParams = {
-          vorname: vorname,
-          familienname: familienname,
-          personalnummer: personalnummer,
-          revision: this.currentPerson?.person.revision ?? '',
-          lastModified: this.currentPerson?.person.lastModified ?? '',
-        };
-        const { data }: { data: PersonendatensatzResponse } = await personenApi.personControllerUpdateMetadata(
-          personId,
-          personMetadataBodyParams,
-        );
+      async syncPersonById(personId: string) {
+        this.loading = true;
+        try {
+          await personenApi.personControllerSyncPerson(personId);
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
 
-        this.patchedPerson = data;
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'ERROR_LOADING_USER');
-      } finally {
-        this.loading = false;
-      }
-    },
+      async getPersonenuebersichtById(personId: string): Promise<void> {
+        this.loading = true;
+        try {
+          const { data }: { data: DBiamPersonenuebersichtResponse } =
+            await personenuebersichtApi.dBiamPersonenuebersichtControllerFindPersonenuebersichtenByPerson(personId);
+          this.personenuebersicht = PersonenUebersicht.fromResponse(data);
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
 
-    async getLandesbedienstetePerson(filter?: LandesbediensteterFilter): Promise<void> {
-      this.loading = true;
-      try {
-        const { data }: AxiosResponse<PersonLandesbediensteterSearchResponse[]> =
-          await personenApi.personControllerFindLandesbediensteter(
-            filter?.personalnummer,
-            filter?.primaryEmailAddress,
-            filter?.username,
-            filter?.vorname,
-            filter?.nachname,
+      async changePersonMetadataById(
+        personId: string,
+        vorname: string,
+        familienname: string,
+        personalnummer?: string,
+      ): Promise<void> {
+        this.loading = true;
+        try {
+          const personMetadataBodyParams: PersonMetadataBodyParams = {
+            vorname: vorname,
+            familienname: familienname,
+            personalnummer: personalnummer,
+            revision: this.currentPerson?.person.revision ?? '',
+            lastModified: this.currentPerson?.person.lastModified ?? '',
+          };
+          const { data }: { data: PersonendatensatzResponse } = await personenApi.personControllerUpdateMetadata(
+            personId,
+            personMetadataBodyParams,
           );
-        this.allLandesbedienstetePersonen = data;
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
-      } finally {
-        this.loading = false;
-      }
+
+          this.patchedPerson = data;
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'ERROR_LOADING_USER');
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async getLandesbedienstetePerson(filter?: LandesbediensteterFilter): Promise<void> {
+        this.loading = true;
+        try {
+          const { data }: AxiosResponse<PersonLandesbediensteterSearchResponse[]> =
+            await personenApi.personControllerFindLandesbediensteter(
+              filter?.personalnummer,
+              filter?.primaryEmailAddress,
+              filter?.username,
+              filter?.vorname,
+              filter?.nachname,
+            );
+          this.allLandesbedienstetePersonen = data;
+        } catch (error: unknown) {
+          this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
+        } finally {
+          this.loading = false;
+        }
+      },
     },
   },
-});
+);

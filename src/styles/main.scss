@@ -16,6 +16,7 @@
 @use 'components/alert.scss';
 @use 'components/text-area.scss';
 @use 'components/treeview.scss';
+@use 'components/text-editor.scss';
 
 body {
   min-height: 100vh;
@@ -28,8 +29,11 @@ body {
 *::before,
 *::after {
   box-sizing: border-box;
-  margin: 0;
   font-weight: normal;
+}
+
+body {
+  margin: 0;
 }
 
 #app {
@@ -37,6 +41,15 @@ body {
   color: variables.$bodyFontColor;
   font-family: Arial, sans-serif;
   font-weight: normal;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
 }
 
 .v-toolbar-title__placeholder {

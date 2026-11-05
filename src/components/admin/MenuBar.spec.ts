@@ -6,6 +6,7 @@ import { h, nextTick, type Component } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useDisplay } from 'vuetify';
 import { VApp } from 'vuetify/components';
+import { GATED_ROLLEN_SYSTEMRECHTE, RollenSystemRecht } from '@/stores/RolleStore';
 import MenuBar from './MenuBar.vue';
 
 let wrapper: VueWrapper | null = null;
@@ -54,6 +55,7 @@ function setPermissions(hasPermission: boolean): void {
   authStore.hasRollenverwaltungPermission = hasPermission;
   authStore.hasSchulverwaltungPermission = hasPermission;
   authStore.hasSchultraegerverwaltungPermission = hasPermission;
+  authStore.hasBehoerdenverwaltungPermission = hasPermission;
   authStore.hasPersonenAnlegenPermission = hasPermission;
   authStore.hasSchultraegerverwaltungPermission = hasPermission;
   authStore.hasPortalVerwaltungPermission = hasPermission;
@@ -62,6 +64,7 @@ function setPermissions(hasPermission: boolean): void {
   authStore.hasEingeschränktNeueBenutzerErstellenPermission = hasPermission;
   authStore.hasAngeboteVerwaltenPermission = hasPermission;
   authStore.hasRollenerweiternPermission = hasPermission;
+  authStore.grantedGatedRollenSystemrechte = hasPermission ? [...GATED_ROLLEN_SYSTEMRECHTE] : [];
 }
 
 beforeEach(() => {
@@ -87,6 +90,7 @@ describe('MenuBar', () => {
       await nextTick();
       expect(wrapper?.find('[data-testid="menu-bar-title"]').isVisible()).toBe(true);
       expect(wrapper?.find('[data-testid="back-to-start-link"]').isVisible()).toBe(true);
+      expect(wrapper?.find('[data-testid="faq-link"]').isVisible()).toBe(true);
 
       expect(wrapper?.find('[data-testid="person-management-title"]').exists()).toBe(hasPermission);
       expect(wrapper?.find('[data-testid="person-management-menu-item"]').exists()).toBe(hasPermission);
@@ -100,6 +104,9 @@ describe('MenuBar', () => {
       expect(wrapper?.find('[data-testid="rolle-management-title"]').exists()).toBe(hasPermission);
       expect(wrapper?.find('[data-testid="rolle-management-menu-item"]').exists()).toBe(hasPermission);
       expect(wrapper?.find('[data-testid="rolle-creation-menu-item"]').exists()).toBe(hasPermission);
+      expect(wrapper?.find('[data-testid="mpt-rolle-management-menu-item"]').exists()).toBe(hasPermission);
+      expect(wrapper?.find('[data-testid="mpt-rolle-section-title"]').exists()).toBe(false);
+      expect(wrapper?.find('[data-testid="mpt-rolle-management-only-menu-item"]').exists()).toBe(false);
 
       expect(wrapper?.find('[data-testid="angebot-management-title"]').exists()).toBe(hasPermission);
       expect(wrapper?.find('[data-testid="angebot-management-menu-item"]').exists()).toBe(hasPermission);
@@ -113,6 +120,10 @@ describe('MenuBar', () => {
 
       expect(wrapper?.find('[data-testid="schultraeger-management-title"]').exists()).toBe(hasPermission);
 
+      expect(wrapper?.find('[data-testid="behoerde-management-title"]').exists()).toBe(hasPermission);
+      expect(wrapper?.find('[data-testid="behoerde-management-menu-item"]').exists()).toBe(hasPermission);
+      expect(wrapper?.find('[data-testid="behoerde-creation-menu-item"]').exists()).toBe(hasPermission);
+
       expect(wrapper?.find('[data-testid="portal-management-title"]').exists()).toBe(hasPermission);
       expect(wrapper?.find('[data-testid="hinweise-edit-menu-item"]').exists()).toBe(hasPermission);
 
@@ -125,9 +136,22 @@ describe('MenuBar', () => {
   test('hides elements when permissions are false', async () => {
     // Reset permissions to false
     authStore.hasPersonenAnlegenPermission = false;
+    authStore.grantedGatedRollenSystemrechte = [];
     await nextTick();
 
     expect(wrapper?.find('[data-testid="person-creation-menu-item"]').exists()).toBe(false);
+    expect(wrapper?.find('[data-testid="mpt-rolle-management-menu-item"]').exists()).toBe(false);
+    expect(wrapper?.find('[data-testid="mpt-rolle-management-only-menu-item"]').exists()).toBe(false);
+  });
+
+  test('renders standalone mpt role section for users without rollenverwaltung permission', async () => {
+    setPermissions(false);
+    authStore.grantedGatedRollenSystemrechte = [RollenSystemRecht.MptRollenZuordnen];
+    await nextTick();
+
+    expect(wrapper?.find('[data-testid="rolle-management-title"]').exists()).toBe(false);
+    expect(wrapper?.find('[data-testid="mpt-rolle-section-title"]').exists()).toBe(true);
+    expect(wrapper?.find('[data-testid="mpt-rolle-management-only-menu-item"]').exists()).toBe(true);
   });
 
   test('it handles menu item click', async () => {
@@ -145,6 +169,7 @@ describe('MenuBar', () => {
       { selector: '[data-testid="person-import-menu-item"]', route: '/admin/personen/import' },
       { selector: '[data-testid="klasse-management-menu-item"]', route: '/admin/klassen' },
       { selector: '[data-testid="rolle-management-menu-item"]', route: '/admin/rollen' },
+      { selector: '[data-testid="mpt-rolle-management-menu-item"]', route: '/admin/rollen/mpt' },
       { selector: '[data-testid="angebot-management-menu-item"]', route: '/admin/angebote' },
       {
         selector: '[data-testid="angebot-display-schulspezifisch-menu-item"]',

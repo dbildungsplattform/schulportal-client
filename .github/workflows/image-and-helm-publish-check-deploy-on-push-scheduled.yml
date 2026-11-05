@@ -7,54 +7,57 @@ on:
   push:
     branches:
       - '*'
+  pull_request:
+    branches:
+      - main
   schedule:
     - cron: '0 2 * * *'
   delete:
 
 concurrency:
-  group: schulportal-client-${{ github.event.ref }}
+  group: schulportal-client-${{ github.event.pull_request.number || github.event.ref }}
   cancel-in-progress: true
 
 jobs:
-
   check_deployment_clearance:
-      name: "Check deployment clearance"
-      runs-on: ubuntu-latest
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      outputs:
-        deployment_clearance: ${{ steps.determine_deployment_clearance.outputs.deployment_clearance }}
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v2
+    name: 'Check deployment clearance'
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      deployment_clearance: ${{ steps.determine_deployment_clearance.outputs.deployment_clearance }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-        - name: Get PR number
-          id: get_pr_number
-          run: |
-            PR_NUMBER=$(gh pr list --state open --head ${{ github.ref_name }} --json number --jq '.[0].number')
-            if [ -z "$PR_NUMBER" ]; then
-              echo "No existing PR found for ${{ github.ref_name }} "
-            else
-              echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
-            fi
+      - name: Get PR number
+        id: get_pr_number
+        run: |
+          PR_NUMBER=$(gh pr list --state open --head ${{ github.ref_name }} --json number --jq '.[0].number')
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No existing PR found for ${{ github.ref_name }} "
+          else
+            echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+          fi
 
-        - name: Get PR labels
-          id: get_pr_labels
-          if: ${{ env.PR_NUMBER != ''  }}
-          run: |
-            PR_LABELS=$(gh pr view ${{ env.PR_NUMBER }} --json labels --jq '.labels | map(.name) | join(",")')
-            echo "PR_LABELS=$PR_LABELS" >> $GITHUB_ENV
+      - name: Get PR labels
+        id: get_pr_labels
+        if: ${{ env.PR_NUMBER != ''  }}
+        run: |
+          PR_LABELS=$(gh pr view ${{ env.PR_NUMBER }} --json labels --jq '.labels | map(.name) | join(",")')
+          echo "PR_LABELS=$PR_LABELS" >> $GITHUB_ENV
 
-        - name: Determine deployment clearance
-          id: determine_deployment_clearance
-          run: |
-            if [ -z "$env.PR_NUMBER" ] || [[ ${{ ! contains(env.PR_LABELS, 'prevent_auto_deployment') }} == true ]]; then
-              echo "Deployment clearance: true"
-              echo "deployment_clearance=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "Deployment clearance: false"
-              echo "deployment_clearance=false" >> "$GITHUB_OUTPUT"
-            fi
+      - name: Determine deployment clearance
+        id: determine_deployment_clearance
+        run: |
+          if [ -z "$env.PR_NUMBER" ] || [[ ${{ ! contains(env.PR_LABELS, 'prevent_auto_deployment') }} == true ]]; then
+            echo "Deployment clearance: true"
+            echo "deployment_clearance=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Deployment clearance: false"
+            echo "deployment_clearance=false" >> "$GITHUB_OUTPUT"
+          fi
 
   codeql_analyze:
     name: 'CodeQL'
@@ -72,19 +75,39 @@ jobs:
     if: ${{ github.event_name == 'push' }}
     uses: dBildungsplattform/dbp-github-workflows/.github/workflows/check-nest-lint.yaml@8
     with:
-      node_version: '22'
+      node_version: '24.22.1'
     permissions:
       contents: read
 
+  prettier_check:
+    name: 'Prettier Formatting'
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.1'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run Prettier check
+        run: npm run check-format
+
   tests_and_sonarcloud:
     name: 'Tests and Sonarcloud'
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ (github.event_name == 'push' && github.ref_name == 'main') || github.event_name == 'pull_request' }}
     uses: dBildungsplattform/dbp-github-workflows/.github/workflows/check-nest-test-sonarcloud.yaml@8
     with:
-      node_version: '22'
+      node_version: '24.22.1'
     permissions:
       contents: read
-    secrets: inherit
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   build_image_on_push:
     needs:
@@ -137,14 +160,14 @@ jobs:
     needs:
       - create_branch_identifier
       - select_helm_version_generation_and_image_tag_generation
-    secrets: inherit
+    secrets:
+      HELM_CHARTS_REGISTRY_PUBLISHER: ${{ secrets.HELM_CHARTS_REGISTRY_PUBLISHER }}
     with:
       chart_name: schulportal-client
       image_tag_generation: ${{ needs.select_helm_version_generation_and_image_tag_generation.outputs.SELECT_IMAGE_TAG_GENERATION }}
       image_tag: ${{ github.ref_name == 'main' && '' || needs.create_branch_identifier.outputs.image_tag_from_branch }}
       helm_chart_version_generation: ${{ needs.select_helm_version_generation_and_image_tag_generation.outputs.SELECT_HELM_VERSION_GENERATION }}
       helm_chart_version: ${{ github.ref_name == 'main' && '' || needs.create_branch_identifier.outputs.chart_version_from_branch }}
-    
 
   wait_for_helm_chart_to_get_published:
     runs-on: ubuntu-latest
@@ -160,7 +183,7 @@ jobs:
 
           echo "Adding Helm repository $REPO_URL"
           helm repo add dbildungsplattform $REPO_URL
-          
+
           echo "Checking for chart $CHART_NAME version $CHART_VERSION in $REPO_URL"
 
           for i in {1..20}; do
@@ -176,17 +199,17 @@ jobs:
           done
 
           echo "Chart $CHART_NAME:$CHART_VERSION not found after waiting."
-          exit 1 
+          exit 1
 
   branch_meta:
     if: ${{ github.event_name == 'push' && !startsWith(github.ref_name,'dependabot/') }}
-    uses: dBildungsplattform/spsh-app-deploy/.github/workflows/get-branch-meta.yml@6
+    uses: dBildungsplattform/spsh-app-deploy/.github/workflows/get-branch-meta.yml@7
 
   create_branch_identifier:
     if: ${{ github.event_name == 'push' && !startsWith(github.ref_name,'dependabot/') }}
     needs:
       - branch_meta
-    uses: dBildungsplattform/spsh-app-deploy/.github/workflows/convert-branch-name.yml@6
+    uses: dBildungsplattform/spsh-app-deploy/.github/workflows/convert-branch-name.yml@7
     with:
       branch: ${{ needs.branch_meta.outputs.branch }}
 
@@ -197,20 +220,21 @@ jobs:
       - create_branch_identifier
       - wait_for_helm_chart_to_get_published
       - build_image_on_push
-    uses: dBildungsplattform/spsh-app-deploy/.github/workflows/deploy.yml@7
+    uses: dBildungsplattform/spsh-app-deploy/.github/workflows/deploy.yml@9
     with:
       dbildungs_iam_server_branch: ${{ needs.branch_meta.outputs.ticket }}
       schulportal_client_branch: ${{ needs.branch_meta.outputs.ticket }}
       dbildungs_iam_keycloak_branch: ${{ needs.branch_meta.outputs.ticket }}
       dbildungs_iam_ldap_branch: ${{ needs.branch_meta.outputs.ticket }}
       namespace: ${{ needs.create_branch_identifier.outputs.namespace_from_branch }}
-      database_recreation: "true" # to prevent database recreation this has to be set to false
-    secrets: inherit
+      database_recreation: 'true' # to prevent database recreation this has to be set to false
+    secrets:
+      SPSH_DEV_KUBECONFIG: ${{ secrets.SPSH_DEV_KUBECONFIG }}
 
   # On Delete
   create_branch_identifier_for_deletion:
     if: ${{ github.event_name == 'delete' && github.event.ref_type == 'branch' }}
-    uses: dBildungsplattform/spsh-app-deploy/.github/workflows/convert-branch-name.yml@6
+    uses: dBildungsplattform/spsh-app-deploy/.github/workflows/convert-branch-name.yml@9
     with:
       branch: ${{ github.event.ref }}
 
@@ -232,14 +256,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "Deletion of namespace" ${{ needs.create_branch_identifier_for_deletion.outputs.namespace_from_branch }} "done"
-  
+
   # Scheduled
   scheduled_trivy_scan:
     name: 'Scheduled trivy scan of image (image) or node modules (fs). This job scanned: '
     if: ${{ github.event_name == 'schedule' }}
     strategy:
       matrix:
-        scan_type: [ 'image', 'fs' ]
+        scan_type: ['image', 'fs']
     permissions:
       packages: read
       security-events: write
@@ -254,17 +278,17 @@ jobs:
   trivy_scan_rocketchat_notification:
     if: github.event_name == 'schedule' && failure()
     needs:
-    - scheduled_trivy_scan
+      - scheduled_trivy_scan
     runs-on: 'ubuntu-latest'
     steps:
-    - name: Check if today is Monday
-      id: check_monday
-      run: |
+      - name: Check if today is Monday
+        id: check_monday
+        run: |
           echo "date=$(date +%u)" >> $GITHUB_OUTPUT
-    - name: Send Notification to Rocket Chat
-      uses: RocketChat/Rocket.Chat.GitHub.Action.Notification@1.1.1
-      if: ${{ steps.check_monday.outputs.date == '1' }}
-      with:
-        type: failure
-        job_name: 'Daily nightly image check failed. This notification will be sent only on Mondays, so the check may have been failing for several days. CVE scan results: https://github.com/dBildungsplattform/schulportal-client/security/code-scanning'
-        url: ${{ secrets.RC_WEBHOOK_SPSH_DEVELOPER_CHANNEL }}
+      - name: Send Notification to Rocket Chat
+        uses: RocketChat/Rocket.Chat.GitHub.Action.Notification@1.1.1
+        if: ${{ steps.check_monday.outputs.date == '1' }}
+        with:
+          type: failure
+          job_name: 'Daily nightly image check failed. This notification will be sent only on Mondays, so the check may have been failing for several days. CVE scan results: https://github.com/dBildungsplattform/schulportal-client/security/code-scanning'
+          url: ${{ secrets.RC_WEBHOOK_SPSH_DEVELOPER_CHANNEL }}

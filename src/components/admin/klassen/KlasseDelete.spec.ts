@@ -1,88 +1,91 @@
-import { VueWrapper, mount } from '@vue/test-utils';
-import { expect, test } from 'vitest';
-import { nextTick, type Component } from 'vue';
+import { DOMWrapper, mount, type VueWrapper } from '@vue/test-utils';
+import { describe, expect, it } from 'vitest';
+import { nextTick } from 'vue';
 import KlasseDelete from './KlasseDelete.vue';
 
-let wrapper: VueWrapper | null = null;
+type Wrapper = VueWrapper<InstanceType<typeof KlasseDelete>>;
 
-beforeEach(() => {
-  document.body.innerHTML = `
-    <div>
-      <div id="app"></div>
-    </div>
-  `;
+interface DefaultProps {
+  modelValue: boolean;
+  errorCode: string;
+  klassenId: string;
+  klassenname: string;
+  schulname: string;
+  isLoading: boolean;
+}
 
-  wrapper = mount(KlasseDelete, {
-    attachTo: document.getElementById('app') || '',
-    props: {
-      errorCode: '',
-      isLoading: false,
-      klassenId: '1',
-      klassenname: '1A',
-      schulname: 'schule',
-      useIconActivator: false,
-    },
+const defaultProps: DefaultProps = {
+  modelValue: true,
+  errorCode: '',
+  klassenId: '1',
+  klassenname: '1A',
+  schulname: 'schule',
+  isLoading: false,
+};
+
+function mountDialog(props: Partial<DefaultProps> = {}): Wrapper {
+  return mount(KlasseDelete, {
+    props: { ...defaultProps, ...props },
     global: {
-      components: {
-        KlasseDelete: KlasseDelete as Component,
+      stubs: {
+        transition: false,
+        'v-dialog': {
+          name: 'v-dialog',
+          template: `
+            <div>
+              <slot name="activator" :props="{}" />
+              <slot name="default" :isActive="{ value: true }" />
+            </div>
+          `,
+        },
       },
     },
   });
-});
+}
 
-describe('KlasseDelete', () => {
-  test('it opens and closes the dialog via buttons', async () => {
-    wrapper?.setProps({ useIconActivator: false });
-    wrapper?.find('[data-testid="open-klasse-delete-dialog-button"]').trigger('click');
-    await nextTick();
+describe('KlasseDelete.vue', () => {
+  it('renders confirmation state by default', () => {
+    const wrapper: Wrapper = mountDialog();
 
-    expect(document.querySelector('[data-testid="klasse-delete-confirmation-text"]')).not.toBeNull();
-
-    const cancelDeleteButton: HTMLElement | undefined = document.querySelectorAll<HTMLElement>(
-      '[data-testid="cancel-klasse-delete-button"]',
-    )[0];
-    cancelDeleteButton?.click();
-    await nextTick();
-
-    expect(document.querySelector('[data-testid="close-klasse-delete-dialog-button"]')).toBeNull();
+    expect(wrapper.html()).toContain('klasse-delete-confirmation-text');
+    expect(wrapper.html()).toContain('1A');
   });
 
-  test('it opens the dialog via icon activator and closes via layout card', async () => {
-    wrapper?.setProps({ useIconActivator: true });
-    await nextTick();
+  it('emits onDeleteKlasse when delete button is clicked', async () => {
+    const wrapper: Wrapper = mountDialog();
 
-    wrapper?.find('[data-testid="open-klasse-delete-dialog-icon"]').trigger('click');
-    await nextTick();
+    const btn: DOMWrapper<Element> = wrapper.find('[data-testid="klasse-delete-button"]');
 
-    expect(document.querySelector('[data-testid="klasse-delete-confirmation-text"]')).not.toBeNull();
+    expect(btn.exists()).toBe(true);
 
-    const closeDialogButton: HTMLElement = document.querySelector(
-      '[data-testid="close-layout-card-button"]',
-    ) as HTMLElement;
-    closeDialogButton.click();
+    await btn.trigger('click');
+
+    expect(wrapper.emitted('onDeleteKlasse')).toBeTruthy();
+    expect(wrapper.emitted('onDeleteKlasse')?.[0]).toEqual(['1']);
   });
 
-  test('it deletes a klasse and navigates back to management', async () => {
-    wrapper?.setProps({ useIconActivator: false });
+  it('shows success state after delete and emits onClose', async () => {
+    const wrapper: Wrapper = mountDialog();
 
-    wrapper?.find('[data-testid="open-klasse-delete-dialog-button"]').trigger('click');
+    // trigger delete
+    await wrapper.find('[data-testid="klasse-delete-button"]').trigger('click');
     await nextTick();
 
-    expect(document.querySelector('[data-testid="klasse-delete-confirmation-text"]')).not.toBeNull();
+    const closeBtn: DOMWrapper<Element> = wrapper.find('[data-testid="close-klasse-delete-success-dialog-button"]');
 
-    const klasseDeleteButton: HTMLElement | undefined = document.querySelectorAll<HTMLElement>(
-      '[data-testid="klasse-delete-button"]',
-    )[0];
-    klasseDeleteButton?.click();
-    await wrapper?.setProps({ isLoading: false });
-    await nextTick();
+    expect(closeBtn.exists()).toBe(true);
 
-    expect(document.querySelector('[data-testid="klasse-delete-success-text"]')).not.toBeNull();
+    await closeBtn.trigger('click');
 
-    const closeDialogButton: HTMLElement | undefined = document.querySelectorAll<HTMLElement>(
-      '[data-testid="close-klasse-delete-success-dialog-button"]',
-    )[0];
-    closeDialogButton?.click();
-    await nextTick();
+    expect(wrapper.emitted('onClose')).toBeTruthy();
+  });
+
+  it('disables delete button when loading', () => {
+    const wrapper: Wrapper = mountDialog({ isLoading: true });
+
+    const btn: DOMWrapper<Element> = wrapper.find('[data-testid="klasse-delete-button"]');
+
+    expect(btn.exists()).toBe(true);
+    expect(btn.attributes('disabled')).toBeDefined();
   });
 });

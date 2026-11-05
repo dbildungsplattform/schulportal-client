@@ -31,7 +31,7 @@
 
 <template>
   <v-container>
-    <v-row justify="center">
+    <v-row class="justify-center">
       <v-col
         class="subtitle-1"
         cols="auto"
@@ -39,7 +39,7 @@
         <span data-testid="schultraeger-success-text">{{ successMessage }}</span>
       </v-col>
     </v-row>
-    <v-row justify="center">
+    <v-row class="justify-center">
       <v-col cols="auto">
         <v-icon
           small
@@ -48,7 +48,7 @@
         />
       </v-col>
     </v-row>
-    <v-row justify="center">
+    <v-row class="justify-center">
       <v-col
         class="subtitle-2"
         cols="auto"
@@ -70,7 +70,7 @@
       color="#E5EAEF"
       thickness="6"
     />
-    <v-row justify="end">
+    <v-row class="justify-end">
       <v-col
         v-if="showBackButton"
         cols="12"

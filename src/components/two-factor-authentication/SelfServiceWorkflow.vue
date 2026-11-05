@@ -119,7 +119,7 @@
         data-testid="two-factor-authentication-dialog"
         @on-close-clicked="close2FADialog(isActive)"
       >
-        <v-card-text>
+        <v-card-text class="py-0">
           <v-container v-if="workflowStep === TwoFactorSteps.Start">
             <v-row class="text-body bold px-md-16">
               <div class="v-col">
@@ -196,10 +196,7 @@
             v-if="workflowStep === TwoFactorSteps.Verify"
             class="fill-height"
           >
-            <v-row
-              justify="center"
-              class="fill-height"
-            >
+            <v-row class="fill-height justify-center">
               <v-col
                 cols="12"
                 md="8"
@@ -215,7 +212,7 @@
                   </v-col>
                 </v-row>
 
-                <v-row class="justify-center">
+                <v-row class="justify-center mt-0">
                   <v-otp-input
                     ref="otpInput"
                     v-model="otp"
@@ -228,7 +225,7 @@
 
                 <v-row
                   v-if="errorMessage.length > 0"
-                  class="text-body bold justify-center text-error"
+                  class="text-body bold justify-center text-error mt-0"
                 >
                   <p
                     class="justify-center text-center"
@@ -240,10 +237,10 @@
 
                 <v-row
                   v-if="errorMessage.length === 0"
-                  class="text-body bold justify-center"
+                  class="text-body bold justify-center mt-0"
                   data-testid="self-service-token-verify-error-text"
                 >
-                  <p class="justify-center">
+                  <p class="mt-0 justify-center">
                     {{ $t('admin.person.twoFactorAuthentication.otp') }}
                   </p>
                 </v-row>

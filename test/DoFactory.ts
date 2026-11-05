@@ -2,8 +2,10 @@ import {
   type DBiamPersonenkontextResponse,
   type DBiamPersonenuebersichtResponse,
   type DBiamPersonenzuordnungResponse,
+  type DBiamPersonResponse,
   EmailAddressStatus,
   type ManageableServiceProviderListEntryResponse,
+  type ManageableServiceProviderSimpleListEntryResponse,
   type OrganisationResponse,
   type OrganisationResponseLegacy,
   OrganisationsTyp,
@@ -17,24 +19,27 @@ import {
   type ProviderControllerFindRollenerweiterungenByServiceProviderId200Response,
   RollenArt,
   type RollenerweiterungWithExtendedDataResponse,
-  RollenMerkmal,
   RollenSystemRechtEnum,
   type RollenSystemRechtServiceProviderIDResponse,
   ServiceProviderKategorie,
   type ServiceProviderResponse,
   ServiceProviderTarget,
-  type SystemRechtResponse,
   TraegerschaftTyp,
   type UserinfoResponse,
 } from '@/api-client/generated';
+import {
+  PersonenkontextWorkflowResponse,
+  ServiceProviderMerkmal,
+  ServiceProviderSystem,
+} from '@/api-client/generated/api';
 import type { Organisation } from '@/stores/OrganisationStore';
-import type { PersonenkontextWorkflowResponse } from '@/stores/PersonenkontextStore';
 import { type Personendatensatz } from '@/stores/PersonStore';
 import type { Rolle, RolleResponse, RolleWithServiceProvidersResponse } from '@/stores/RolleStore';
 import {
+  type ManageableServiceProviderDetail,
   type RollenErweiterungenUebersicht,
   type RollenerweiterungMap,
-  type ManageableServiceProviderDetail,
+  type StartPageServiceProvider,
 } from '@/stores/ServiceProviderStore';
 import type { Person } from '@/stores/types/Person';
 import { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
@@ -127,6 +132,22 @@ export class DoFactory {
     };
   }
 
+  public static getDBiamPersonResponse(props?: Partial<DBiamPersonResponse>): DBiamPersonResponse {
+    const person: PersonResponse = this.getPersonResponse(props?.person);
+    const dBiamPersonenkontextResponses: DBiamPersonenkontextResponse[] = props?.dBiamPersonenkontextResponses
+      ? props.dBiamPersonenkontextResponses.map((kontext: DBiamPersonenkontextResponse) => ({
+          ...kontext,
+          personId: kontext.personId ?? person.id,
+        }))
+      : [this.getDBiamPersonenkontextResponse({ personId: person.id })];
+
+    return {
+      ...props,
+      person,
+      dBiamPersonenkontextResponses,
+    };
+  }
+
   public static getOrganisation(props?: Partial<Organisation>): Organisation {
     const organisationsTypen: Array<OrganisationsTyp> = [
       OrganisationsTyp.Schule,
@@ -193,6 +214,7 @@ export class DoFactory {
       kennung: faker.string.numeric(7),
       kuerzel: 'Schulkürzel',
       itslearningEnabled: true,
+      emailAdress: '',
       namensergaenzung: null,
       version: 1,
       ...props,
@@ -297,8 +319,8 @@ export class DoFactory {
       administeredBySchulstrukturknotenName: faker.string.alpha(4),
       administeredBySchulstrukturknotenKennung: faker.string.alpha(4),
       rollenart: RollenArt.Lehr,
-      merkmale: new Set<RollenMerkmal>(),
-      systemrechte: new Set<SystemRechtResponse>(),
+      merkmale: [],
+      systemrechte: [],
       version: 1,
       serviceProviders: [],
       ...props,
@@ -310,7 +332,7 @@ export class DoFactory {
       administeredBySchulstrukturknoten: faker.string.uuid(),
       id: faker.string.uuid(),
       name: faker.string.alpha(4),
-      merkmale: new Set<RollenMerkmal>(),
+      merkmale: [],
       rollenart: RollenArt.Lehr,
       systemrechte: new Set<RollenSystemRechtEnum>(),
       version: 1,
@@ -323,8 +345,8 @@ export class DoFactory {
       ...this.getRolle(),
       createdAt: faker.date.past().toISOString(),
       updatedAt: faker.date.recent().toISOString(),
-      merkmale: new Set<RollenMerkmal>(),
-      systemrechte: new Set<SystemRechtResponse>(),
+      merkmale: [],
+      systemrechte: [],
       administeredBySchulstrukturknotenName: this.getFakeSchuleName(),
       administeredBySchulstrukturknotenKennung: faker.string.numeric(7),
       ...props,
@@ -337,13 +359,6 @@ export class DoFactory {
     const organisation: OrganisationResponseLegacy = this.getOrganisationenResponseLegacy();
     return {
       organisations: [organisation],
-      rollen: [
-        this.getRolleResponse({
-          administeredBySchulstrukturknoten: organisation.id,
-          administeredBySchulstrukturknotenName: organisation.name,
-          administeredBySchulstrukturknotenKennung: organisation.kennung,
-        }),
-      ],
       selectedOrganisation: null,
       selectedRollen: null,
       canCommit: false,
@@ -447,8 +462,29 @@ export class DoFactory {
       url: faker.internet.url(),
       kategorie: faker.helpers.enumValue(ServiceProviderKategorie),
       hasLogo: true,
+      logoId: 1,
       requires2fa: false,
       merkmale: [],
+      rollenartenWhitelist: [],
+      externalSystem: faker.helpers.enumValue(ServiceProviderSystem),
+      ...props,
+    };
+  }
+
+  public static getManageableServiceProviderSimpleListEntryResponse(
+    props?: Partial<ManageableServiceProviderSimpleListEntryResponse>,
+  ): ManageableServiceProviderSimpleListEntryResponse {
+    return {
+      id: faker.string.uuid(),
+      kategorie: faker.helpers.enumValue(ServiceProviderKategorie),
+      name: faker.company.name(),
+      administrationsebene: { id: faker.string.uuid(), name: faker.company.name(), kennung: faker.string.numeric(7) },
+      rollen: [{ id: faker.string.uuid(), name: faker.person.jobTitle() }],
+      requires2fa: faker.datatype.boolean(),
+      merkmale: [],
+      hasRollenerweiterungen: false,
+      hasSomeVerwaltenPermission: faker.datatype.boolean(),
+      rollenartenWhitelist: [],
       ...props,
     };
   }
@@ -463,8 +499,14 @@ export class DoFactory {
       administrationsebene: { id: faker.string.uuid(), name: faker.company.name(), kennung: faker.string.numeric(7) },
       rollen: [{ id: faker.string.uuid(), name: faker.person.jobTitle() }],
       requires2fa: faker.datatype.boolean(),
-      merkmale: [],
+      merkmale: [
+        ServiceProviderMerkmal.VerfuegbarFuerRollenerweiterung,
+        ServiceProviderMerkmal.AnbietenInSchulischerAngebotsverwaltung,
+        ServiceProviderMerkmal.AnbietenInSchulischerRollenverwaltung,
+      ],
       rollenerweiterungen: [],
+      hasSomeVerwaltenPermission: faker.datatype.boolean(),
+      rollenartenWhitelist: [],
       ...props,
     };
   }
@@ -476,6 +518,8 @@ export class DoFactory {
       ...this.getManageableServiceProviderListEntryResponse(props),
       url: props?.url ?? faker.internet.url(),
       availableForRollenerweiterung: props?.availableForRollenerweiterung ?? false,
+      logoId: props?.logoId,
+      relevantSystemrechte: props?.relevantSystemrechte ?? [],
     };
   }
 
@@ -565,6 +609,20 @@ export class DoFactory {
             address: person.email.address,
           }
         : null,
+      ...props,
+    };
+  }
+
+  public static getStartPageServiceProvider(props?: Partial<StartPageServiceProvider>): StartPageServiceProvider {
+    return {
+      id: faker.string.uuid(),
+      name: faker.company.name(),
+      url: faker.internet.url(),
+      kategorie: faker.helpers.enumValue(ServiceProviderKategorie),
+      requires2fa: faker.datatype.boolean(),
+      hasLogo: faker.datatype.boolean(),
+      target: ServiceProviderTarget.Url,
+      externalSystem: ServiceProviderSystem.None,
       ...props,
     };
   }

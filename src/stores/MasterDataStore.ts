@@ -30,8 +30,7 @@ export const useMasterDataStore: StoreDefinition<
   MasterDataState,
   MasterDataGetters,
   MasterDataActions
-> = defineStore({
-  id: 'masterDataStore',
+> = defineStore('masterDataStore', {
   state: (): MasterDataState => {
     return {
       systemrechte: [],

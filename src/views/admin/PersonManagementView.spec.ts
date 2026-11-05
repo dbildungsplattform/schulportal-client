@@ -1,27 +1,30 @@
-import {
-  RollenArt,
-  RollenSystemRechtEnum,
-  type FindRollenResponse,
-  type SystemRechtResponse,
-} from '@/api-client/generated/api';
+import { RollenArt, RollenMerkmal, RollenSystemRechtEnum } from '@/api-client/generated/api';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import { usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
-import { type RolleResponse, type RollenMerkmal } from '@/stores/RolleStore';
+import { useRolleStore, type RolleStore, type TranslatedRolleWithAttrs } from '@/stores/RolleStore';
 import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
 import type { Person } from '@/stores/types/Person';
 import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
 import type { Zuordnung } from '@/stores/types/Zuordnung';
-import { DOMWrapper, VueWrapper, flushPromises, mount } from '@vue/test-utils';
-import type WrapperLike from 'node_modules/@vue/test-utils/dist/interfaces/wrapperLike';
+import { OperationType } from '@/stores/types/bulkOperationTypes';
+import { DOMWrapper, VueWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { expect, test, type Mock, type MockInstance } from 'vitest';
-import { nextTick, type Component, type ComputedRef, type DefineComponent } from 'vue';
+import {
+  defineComponent,
+  h,
+  nextTick,
+  type Component,
+  type ComputedRef,
+  type DefineComponent,
+  type Slot,
+  type VNode,
+} from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import PersonManagementView from './PersonManagementView.vue';
-import { OperationType } from '@/stores/types/bulkOperationTypes';
 
 let wrapper: VueWrapper | null = null;
 let router: Router;
@@ -29,10 +32,12 @@ let router: Router;
 let organisationStore: OrganisationStore;
 let personStore: PersonStore;
 let personenkontextStore: PersonenkontextStore;
+let rolleStore: RolleStore;
 let searchFilterStore: SearchFilterStore;
 let authStore: AuthStore;
 
 vi.useFakeTimers();
+enableAutoUnmount(afterEach);
 
 function mountComponent(): VueWrapper<InstanceType<typeof PersonManagementView>> {
   return mount(PersonManagementView, {
@@ -64,6 +69,7 @@ beforeEach(async () => {
   organisationStore = useOrganisationStore();
   personStore = usePersonStore();
   personenkontextStore = usePersonenkontextStore();
+  rolleStore = useRolleStore();
   searchFilterStore = useSearchFilterStore();
   authStore = useAuthStore();
 
@@ -72,11 +78,12 @@ beforeEach(async () => {
   authStore.hasPersonenBulkPermission = true;
   authStore.hasPersonenLoeschenPermission = true;
   authStore.hasPersonenverwaltungPermission = true;
+  authStore.grantedGatedRollenSystemrechte = [];
 
   personStore.getAllPersons = vi.fn();
   organisationStore.getFilteredKlassen = vi.fn();
   organisationStore.getAllOrganisationen = vi.fn();
-  personenkontextStore.getPersonenkontextRolleWithFilter = vi.fn();
+  rolleStore.getRollenForPersonAdministration = vi.fn();
   personenkontextStore.processWorkflowStep = vi.fn();
 
   organisationStore.klassen = [
@@ -101,38 +108,18 @@ beforeEach(async () => {
 
   personStore.totalPersons = personStore.allUebersichten.size;
 
-  personenkontextStore.filteredRollen = {
-    moeglicheRollen: [
-      {
-        id: '10',
-        administeredBySchulstrukturknoten: '1',
-        merkmale: new Set(),
-        name: 'Rolle 1',
-        rollenart: 'LERN',
-        systemrechte: new Set(),
-      },
-    ] as RolleResponse[],
-    total: 1,
-  } as FindRollenResponse;
+  rolleStore.rollenForPersonAdministration = [
+    DoFactory.getRolleResponse({
+      id: '10',
+      administeredBySchulstrukturknoten: '1',
+      merkmale: [],
+      name: 'Rolle 1',
+      rollenart: RollenArt.Lern,
+      systemrechte: [],
+    }),
+  ];
 
   personenkontextStore.workflowStepResponse = {
-    rollen: [
-      {
-        administeredBySchulstrukturknoten: '1234',
-        rollenart: 'LEHR',
-        name: 'SuS',
-        merkmale: ['KOPERS_PFLICHT'] as unknown as Set<RollenMerkmal>,
-        systemrechte: [
-          { name: RollenSystemRechtEnum.RollenVerwalten, isTechnical: false },
-        ] as unknown as Set<SystemRechtResponse>,
-        createdAt: '2022',
-        updatedAt: '2022',
-        id: '54321',
-        administeredBySchulstrukturknotenName: 'Land SH',
-        administeredBySchulstrukturknotenKennung: '',
-        version: 1,
-      },
-    ],
     organisations: [
       {
         id: '9876',
@@ -301,7 +288,9 @@ describe('PersonManagementView', () => {
     expect(wrapper?.find('.v-data-table-footer__items-per-page').isVisible()).toBe(true);
     expect(wrapper?.find('.v-data-table-footer__items-per-page').text()).toContain('30');
 
-    const component: WrapperLike | undefined = wrapper?.findComponent('.v-data-table-footer__items-per-page .v-select');
+    const component: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+      '.v-data-table-footer__items-per-page .v-select',
+    );
     await component?.setValue(50);
     expect(wrapper?.find('.v-data-table-footer__items-per-page').text()).toContain('50');
 
@@ -448,26 +437,29 @@ describe('PersonManagementView', () => {
 
   test('it updates Rollen search correctly', async () => {
     searchFilterStore.selectedRollenObjects = [
-      {
+      DoFactory.getRolleResponse({
         id: '1',
         administeredBySchulstrukturknoten: '1',
-        merkmale: new Set(),
         name: 'Rolle 1',
-        rollenart: 'LERN',
-        systemrechte: new Set(),
-      },
-    ] as RolleResponse[];
+        rollenart: RollenArt.Lern,
+      }),
+    ];
 
     const rollenAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ ref: 'rolle-select' });
 
-    searchFilterStore.searchFilterPersonen = 'test search';
+    searchFilterStore.searchStringForPersonen = 'test search';
 
-    // Mock the getPersonenkontextRolleWithFilter method
-    const mockGetPersonenkontextRolleWithFilter: Mock = vi.fn().mockResolvedValue({
-      moeglicheRollen: [{ id: '1', name: 'Test Rolle' }],
-      total: 1,
-    });
-    personenkontextStore.getPersonenkontextRolleWithFilter = mockGetPersonenkontextRolleWithFilter;
+    // Mock the getRollenForPersonAdministration method
+    const mockGetRollenForPersonAdministration: Mock = vi.fn().mockResolvedValue(undefined);
+    rolleStore.getRollenForPersonAdministration = mockGetRollenForPersonAdministration;
+    rolleStore.rollenForPersonAdministration = [
+      DoFactory.getRolleResponse({
+        id: '1',
+        administeredBySchulstrukturknoten: '1',
+        name: 'Test Rolle',
+        rollenart: RollenArt.Lern,
+      }),
+    ];
 
     // Trigger the search
     await rollenAutocomplete?.setValue(['name']);
@@ -480,12 +472,49 @@ describe('PersonManagementView', () => {
     vi.runAllTicks();
 
     // Assert that the method was called
-    expect(mockGetPersonenkontextRolleWithFilter).toHaveBeenCalledWith('name', 25, []);
+    expect(mockGetRollenForPersonAdministration).toHaveBeenCalledWith(
+      expect.objectContaining({
+        searchStr: 'name',
+        limit: 25,
+        organisationIds: [],
+      }),
+    );
 
     // Add more assertions here to check the state after the search
-    expect(personenkontextStore.filteredRollen).toBeDefined();
-    expect(personenkontextStore.filteredRollen?.moeglicheRollen).toHaveLength(1);
+    expect(rolleStore.rollenForPersonAdministration).toBeDefined();
+    expect(rolleStore.rollenForPersonAdministration).toHaveLength(1);
   });
+
+  test.each([
+    { systemrechte: [] },
+    {
+      systemrechte: [
+        RollenSystemRechtEnum.MptRollenZuordnen,
+        RollenSystemRechtEnum.Pilot2RollenZuordnen,
+        RollenSystemRechtEnum.Pilot5RollenZuordnen,
+      ],
+    },
+  ])(
+    'forwards granted gated rights to Rollen search: $systemrechte',
+    async ({ systemrechte }: { systemrechte: RollenSystemRechtEnum[] }) => {
+      authStore.grantedGatedRollenSystemrechte = systemrechte;
+      const getRollenForPersonAdministration: Mock = vi.fn().mockResolvedValue(undefined);
+      rolleStore.getRollenForPersonAdministration = getRollenForPersonAdministration;
+      const rollenAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ ref: 'rolle-select' });
+
+      rollenAutocomplete?.vm.$emit('update:search', 'pilot');
+      await nextTick();
+      vi.runAllTimers();
+      vi.runAllTicks();
+
+      expect(getRollenForPersonAdministration).toHaveBeenLastCalledWith({
+        searchStr: 'pilot',
+        limit: 25,
+        organisationIds: [],
+        systemrechte: [RollenSystemRechtEnum.PersonenVerwalten, ...systemrechte],
+      });
+    },
+  );
 
   type BulkOperationTestParams = {
     operationType: OperationType;
@@ -561,6 +590,34 @@ describe('PersonManagementView', () => {
     },
   );
 
+  test('offers Pilot-Merkmal rollen (not just MPT) in the Rolle zuordnen bulk dialog', async () => {
+    const pilotRolle: TranslatedRolleWithAttrs = {
+      value: '99999',
+      title: 'Pilot Rolle',
+      rollenart: RollenArt.Schb,
+      merkmale: [RollenMerkmal.Pilot2Rolle],
+    };
+    rolleStore.rollenForPersonenkontextCreation = [...rolleStore.rollenForPersonenkontextCreation, pilotRolle];
+
+    const checkbox: DOMWrapper<Element> | undefined = wrapper?.find(
+      '[data-testid="person-table"] .v-selection-control',
+    );
+    await checkbox?.trigger('click');
+    await nextTick();
+
+    const benutzerEditSelect: VueWrapper | undefined = wrapper?.findComponent({ ref: 'benutzer-bulk-edit-select' });
+    benutzerEditSelect?.setValue(OperationType.MODIFY_ROLLE);
+    await nextTick();
+
+    const rolleSelect: VueWrapper = wrapper?.findComponent(
+      '[data-testid="rolle-modify-layout-card"] [data-testid="rolle-select"]',
+    ) as VueWrapper;
+    const rollenItems: Array<{ value: string }> = (
+      rolleSelect as unknown as { props: (key: string) => Array<{ value: string }> }
+    ).props('items');
+    expect(rollenItems.some((item: { value: string }) => item.value === '99999')).toBe(true);
+  });
+
   test.each([
     [OperationType.CHANGE_KLASSE],
     [OperationType.DELETE_PERSON],
@@ -590,6 +647,59 @@ describe('PersonManagementView', () => {
     });
   });
 
+  test('it shows loading spinner in schule filter dropdown', async () => {
+    organisationStore.organisationenFilters.set('person-management', {
+      filterResult: [],
+      total: 0,
+      loading: true,
+    });
+    await nextTick();
+
+    const schulenFilter: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchulenFilter' });
+
+    // Den Slot-Inhalt direkt aus SchulenFilter rendern
+    const prependItemSlot: Slot | undefined = schulenFilter?.getCurrentComponent()?.slots?.['prepend-item'];
+    expect(prependItemSlot).toBeDefined();
+
+    // Slot aufrufen und rendern
+    const slotVNodes: VNode[] | undefined = prependItemSlot?.();
+    const slotWrapper: VueWrapper | undefined = mount(
+      defineComponent({
+        render() {
+          return h('div', slotVNodes);
+        },
+      }),
+    );
+
+    expect(slotWrapper.findComponent({ name: 'v-progress-circular' }).exists()).toBe(true);
+  });
+
+  test('it shows schule count in schule filter dropdown when not loading', async () => {
+    organisationStore.organisationenFilters.set('person-management', {
+      filterResult: [],
+      total: 5,
+      loading: false,
+    });
+    await nextTick();
+
+    const schulenFilter: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchulenFilter' });
+    const prependItemSlot: Slot | undefined = schulenFilter?.getCurrentComponent()?.slots?.['prepend-item'];
+    expect(prependItemSlot).toBeDefined();
+
+    const slotVNodes: VNode[] | undefined = prependItemSlot?.();
+    const slotWrapper: VueWrapper | undefined = mount(
+      defineComponent({
+        render() {
+          return h('div', slotVNodes);
+        },
+      }),
+    );
+
+    expect(slotWrapper.findComponent({ name: 'v-progress-circular' }).exists()).toBe(false);
+    expect(slotWrapper.find('.filter-header').exists()).toBe(true);
+    expect(slotWrapper.find('.filter-header').text()).toContain('5');
+  });
+
   test('it shows the error dialog, when the selection is invalid', async () => {
     wrapper = mountComponent();
     // don't select schule and select a person without LERN-rolle
@@ -612,7 +722,7 @@ describe('PersonManagementView', () => {
     // Trigger the checkbox click
     await checkbox.trigger('click');
     await nextTick();
-    const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' }) as VueWrapper;
+    const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' });
     resultTable.vm.$emit('update:selectedRows', [person.id]);
     await nextTick();
 

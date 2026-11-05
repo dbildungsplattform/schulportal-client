@@ -16,15 +16,13 @@
 <template>
   <v-app>
     <TheHeader />
-    <v-main>
-      <!-- TODO: Can we change the conditional layouts into a dynamic component? -->
-      <AdminLayout v-if="isAdminRoute">
-        <router-view :key="$route.fullPath" />
-      </AdminLayout>
-      <DefaultLayout v-else>
-        <router-view :key="$route.fullPath" />
-      </DefaultLayout>
-    </v-main>
+    <!-- TODO: Can we change the conditional layouts into a dynamic component? -->
+    <AdminLayout v-if="isAdminRoute">
+      <router-view :key="$route.fullPath" />
+    </AdminLayout>
+    <DefaultLayout v-else>
+      <router-view :key="$route.fullPath" />
+    </DefaultLayout>
   </v-app>
 </template>
 

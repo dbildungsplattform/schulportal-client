@@ -29,6 +29,9 @@
 
   const klasseColumnKey: string = 'name';
 
+  const klasseToDelete: Ref<Organisation | null> = ref(null);
+  const isDeleteDialogOpen: Ref<boolean, boolean> = ref(false);
+
   let defaultHeaders: Mutable<Headers> = [
     {
       title: t('admin.klasse.klasse'),
@@ -75,7 +78,6 @@
     }
     return initialFilter;
   });
-  const administriertVonForKlassenFilter: Ref<Array<string>> = ref([]);
 
   const finalKlassen: ComputedRef<Organisation[]> = computed(() => {
     // If there are selected Klassen, filter allKlassen to show only those that are selected
@@ -182,12 +184,15 @@
 
   const handleAlertClose = async (): Promise<void> => {
     organisationStore.errorCode = '';
+    isDeleteDialogOpen.value = false;
+    klasseToDelete.value = null;
     await reloadData(klassenListFilter.value);
   };
 
-  const handleKlasseDeleteClose = async (): Promise<void> => {
+  async function handleKlasseDeleteCloseWrapper(): Promise<void> {
+    klasseToDelete.value = null;
     await reloadData(klassenListFilter.value);
-  };
+  }
 
   function navigateToKlassenDetails(_$event: PointerEvent, { item }: { item: Organisation }): void {
     router.push({ name: 'klasse-details', params: { id: item.id } });
@@ -222,11 +227,8 @@
     { immediate: true },
   );
 
-  watch(selectedSchule, (newValue: string | undefined) => {
-    administriertVonForKlassenFilter.value.shift();
-    if (newValue) {
-      administriertVonForKlassenFilter.value.push(newValue);
-    }
+  const administriertVonForKlassenFilter: ComputedRef<Array<string>> = computed(() => {
+    return selectedSchule.value ? [selectedSchule.value] : [];
   });
 
   watchEffect(async () => {
@@ -263,11 +265,7 @@
         :type="'error'"
       />
       <template v-if="!organisationStore.errorCode">
-        <v-row
-          align="center"
-          class="ma-3"
-          justify="end"
-        >
+        <v-row class="ma-3 align-center justify-end">
           <v-col
             cols="12"
             md="2"
@@ -313,7 +311,9 @@
                     >{{
                       t(
                         'admin.schule.schulenFound',
-                        { count: organisationStore.organisationenFilters.get('klassen-management')?.total },
+                        {
+                          count: organisationStore.organisationenFilters.get('klassen-management')?.total,
+                        },
                         organisationStore.organisationenFilters.get('klassen-management')?.total ?? 0,
                       )
                     }}</span
@@ -357,7 +357,15 @@
                         <span
                           v-else
                           class="filter-header"
-                          >{{ t('admin.klasse.klassenFound', { count: totalKlassen }, totalKlassen) }}</span
+                          >{{
+                            t(
+                              'admin.klasse.klassenFound',
+                              {
+                                count: totalKlassen,
+                              },
+                              totalKlassen,
+                            )
+                          }}</span
                         >
                       </v-list-item>
                     </template>
@@ -400,18 +408,31 @@
             </div>
           </template>
           <template #[`item.actions`]="{ item }">
-            <KlasseDelete
-              :klassenname="item.name"
-              :klassen-id="item.id"
-              :schulname="item.schuleDetails ?? ''"
-              :error-code="organisationStore.errorCode"
-              :use-icon-activator="true"
-              :is-loading="organisationStore.loading"
-              @on-delete-klasse="deleteKlasse(item.id)"
-              @on-close="handleKlasseDeleteClose"
+            <v-icon
+              data-testid="open-klasse-delete-dialog-icon"
+              icon="mdi-delete"
+              size="small"
+              @click.stop="
+                () => {
+                  klasseToDelete = item;
+                  isDeleteDialogOpen = true;
+                }
+              "
             />
           </template>
         </ResultTable>
+        <KlasseDelete
+          v-if="klasseToDelete"
+          v-model="isDeleteDialogOpen"
+          :klassenname="klasseToDelete.name"
+          :klassen-id="klasseToDelete.id"
+          :schulname="klasseToDelete.schuleDetails ?? ''"
+          :error-code="organisationStore.errorCode"
+          :is-loading="organisationStore.loading"
+          :use-icon-activator="false"
+          @on-delete-klasse="deleteKlasse"
+          @on-close="handleKlasseDeleteCloseWrapper"
+        />
       </template>
     </LayoutCard>
   </div>

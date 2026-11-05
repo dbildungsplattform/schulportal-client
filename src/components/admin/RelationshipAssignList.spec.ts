@@ -4,7 +4,7 @@ import { createRouter, createWebHistory, type Router } from 'vue-router';
 import routes from '@/router/routes';
 import RelationshipAssignList from './RelationshipAssignList.vue';
 import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
-import type { Component } from 'vue-demi';
+import type { Component } from 'vue';
 
 let wrapper: VueWrapper | null = null;
 let router: Router;
