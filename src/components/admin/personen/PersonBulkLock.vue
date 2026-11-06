@@ -29,15 +29,15 @@
   const actionTitle: ComputedRef<string> = computed((): string =>
     t(props.operationType === OperationType.LOCK_PERSON ? 'person.lockUser' : 'person.unlockUser'),
   );
-  const confirmation: ComputedRef<string> = computed((): string =>
-    t(
-      props.operationType === OperationType.LOCK_PERSON
-        ? 'admin.person.bulkLock.confirmation'
-        : confirmedUnlock.value
-          ? 'admin.person.bulkUnlock.approval'
-          : 'admin.person.bulkUnlock.confirmation',
-    ),
-  );
+  const confirmation: ComputedRef<string> = computed((): string => {
+    let confirmationKey: string = 'admin.person.bulkUnlock.confirmation';
+    if (props.operationType === OperationType.LOCK_PERSON) {
+      confirmationKey = 'admin.person.bulkLock.confirmation';
+    } else if (confirmedUnlock.value) {
+      confirmationKey = 'admin.person.bulkUnlock.approval';
+    }
+    return t(confirmationKey);
+  });
   const successMessage: ComputedRef<string> = computed((): string =>
     bulkOperationStore.currentOperation?.successMessage ? t(bulkOperationStore.currentOperation.successMessage) : '',
   );
