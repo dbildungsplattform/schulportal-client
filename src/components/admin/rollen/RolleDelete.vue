@@ -1,10 +1,10 @@
 <script setup lang="ts">
+  import LayoutCard from '@/components/cards/LayoutCard.vue';
+  import { type Rolle } from '@/stores/RolleStore';
   import { ref, type Ref } from 'vue';
   import { useI18n } from 'vue-i18n';
-  import { useDisplay } from 'vuetify';
-  import LayoutCard from '@/components/cards/LayoutCard.vue';
   import { type Router, useRouter } from 'vue-router';
-  import { type Rolle } from '@/stores/RolleStore';
+  import { useDisplay } from 'vuetify';
 
   useI18n({ useScope: 'global' });
   const { mdAndDown }: { mdAndDown: Ref<boolean> } = useDisplay();
@@ -52,11 +52,8 @@
     >
       <v-card-text>
         <v-container>
-          <v-row class="text-body bold px-md-16">
-            <v-col
-              offset="3"
-              cols="10"
-            >
+          <v-row class="text-body bold text-center">
+            <v-col cols="12">
               <span data-testid="rolle-delete-success-text">
                 {{ $t('admin.rolle.deleteRolleSuccessMessage') }}
               </span>
@@ -126,11 +123,8 @@
                 </p>
               </v-col>
             </v-row>
-            <v-row class="text-body bold">
-              <v-col
-                offset="3"
-                cols="10"
-              >
+            <v-row class="text-body bold text-center">
+              <v-col cols="12">
                 <span data-testid="rolle-delete-confirmation-text">
                   {{ $t('admin.rolle.deleteRolleConfirmation') }}
                 </span>
