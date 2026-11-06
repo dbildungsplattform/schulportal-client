@@ -102,14 +102,13 @@
         v-else
         class="my-4"
       >
-        <p
+        <output
           v-if="successMessage"
-          class="text-body text-center"
+          class="d-block text-body text-center"
           data-testid="person-bulk-lock-success-text"
-          role="status"
         >
           {{ successMessage }}
-        </p>
+        </output>
         <v-row
           v-if="bulkOperationStore.currentOperation?.isRunning"
           class="justify-center"

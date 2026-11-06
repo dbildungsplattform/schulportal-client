@@ -274,7 +274,7 @@
 
   function updateKlassenSelection(newValue: Array<string>): void {
     searchFilterStore.setKlasseFilterForPersonen(newValue);
-    applySearchAndFilters();
+    void applySearchAndFilters();
     selectedKlassen.value = newValue;
   }
 
@@ -291,7 +291,7 @@
       .filter((rolle: RolleResponse | undefined): rolle is RolleResponse => rolle !== undefined);
 
     searchFilterStore.setRolleFilterWithObjectsForPersonen(newValue, selectedRollenObjects.value);
-    applySearchAndFilters();
+    void applySearchAndFilters();
   }
 
   function setSelectedOrganisationen(newValue: Array<Organisation> | Organisation): void {
@@ -423,7 +423,7 @@
     searchFilterStore.personenSortField = sortField.value;
     searchFilterStore.personenSortOrder = sortOrder.value;
 
-    getPaginatedPersonen(searchFilterStore.personenPage);
+    void getPaginatedPersonen(searchFilterStore.personenPage);
   }
 
   const invalidSelectionAlertHeader: ComputedRef<string> = computed(() => {
