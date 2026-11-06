@@ -47,6 +47,7 @@ describe('PersonBulkLock', (): void => {
   }
 
   it('should confirm locking and submit the selected users', async (): Promise<void> => {
+    expect(document.body.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('Benutzer sperren');
     expect(document.body.textContent).toContain(
       'Eine Anmeldung am Schulportal SH ist dann für diese Benutzer nicht mehr möglich.',
     );
@@ -56,12 +57,20 @@ describe('PersonBulkLock', (): void => {
 
   it('should require both unlock confirmations before submitting', async (): Promise<void> => {
     await wrapper.setProps({ operationType: OperationType.UNLOCK_PERSON });
+    expect(document.body.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('Benutzer entsperren');
+    const confirmation: Element | null = document.body.querySelector(
+      '[data-testid="person-bulk-lock-confirmation-text"]',
+    );
+    expect(
+      document.body.querySelector('[data-testid="person-bulk-lock-submit-button"]')?.getAttribute('aria-describedby'),
+    ).toBe(confirmation?.id);
     expect(document.body.textContent).toContain('Möchten Sie die ausgewählten Benutzer wirklich entsperren?');
     expect(document.body.querySelector('[data-testid="person-bulk-lock-submit-button"]')?.textContent).toContain(
       'Weiter',
     );
     await click('person-bulk-lock-submit-button');
     expect(bulkLockPersonen).not.toHaveBeenCalled();
+    expect(document.body.querySelector('[data-testid="person-bulk-lock-confirmation-text"]')).toBe(confirmation);
     expect(document.body.textContent).toContain(
       'Ich bestätige, dass ich mit der sperrenden Stelle geklärt habe, dass die Sperren aufgehoben werden dürfen.',
     );

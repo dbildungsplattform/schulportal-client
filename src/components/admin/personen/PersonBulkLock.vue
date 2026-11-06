@@ -5,7 +5,7 @@
   import { useBulkOperationStore, type BulkOperationStore } from '@/stores/BulkOperationStore';
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
   import { OperationType } from '@/stores/types/bulkOperationTypes';
-  import { computed, ref, type ComputedRef, type Ref } from 'vue';
+  import { computed, ref, useId, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
   import { useDisplay } from 'vuetify';
 
@@ -26,6 +26,7 @@
   const showDialog: Ref<boolean> = ref(props.isDialogVisible);
   const showErrorDialog: Ref<boolean> = ref(false);
   const confirmedUnlock: Ref<boolean> = ref(false);
+  const confirmationId: string = useId();
   const actionTitle: ComputedRef<string> = computed((): string =>
     t(props.operationType === OperationType.LOCK_PERSON ? 'person.lockUser' : 'person.unlockUser'),
   );
@@ -78,6 +79,7 @@
 <template>
   <v-dialog
     v-model="showDialog"
+    :aria-label="actionTitle"
     persistent
   >
     <LayoutCard
@@ -90,9 +92,12 @@
       >
         <v-row class="justify-center">
           <v-col
+            :id="confirmationId"
             cols="12"
             class="text-body font-weight-bold text-center"
             data-testid="person-bulk-lock-confirmation-text"
+            aria-live="polite"
+            aria-atomic="true"
           >
             {{ confirmation }}
           </v-col>
@@ -167,6 +172,7 @@
             <v-btn
               :block="mdAndDown"
               :disabled="props.selectedPersonen.size === 0"
+              :aria-describedby="confirmationId"
               class="primary"
               data-testid="person-bulk-lock-submit-button"
               @click="submit"
