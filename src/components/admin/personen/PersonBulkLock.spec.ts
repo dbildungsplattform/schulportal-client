@@ -16,7 +16,6 @@ describe('PersonBulkLock', (): void => {
   let schuleId: string;
 
   beforeEach(async (): Promise<void> => {
-    document.body.innerHTML = '<div id="app"></div>';
     store = useBulkOperationStore();
     store.$reset();
     bulkLockPersonen = vi.fn();
@@ -57,6 +56,7 @@ describe('PersonBulkLock', (): void => {
 
   it('should require both unlock confirmations before submitting', async (): Promise<void> => {
     await wrapper.setProps({ operationType: OperationType.UNLOCK_PERSON });
+
     expect(document.body.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('Benutzer entsperren');
     const confirmation: Element | null = document.body.querySelector(
       '[data-testid="person-bulk-lock-confirmation-text"]',
@@ -68,28 +68,40 @@ describe('PersonBulkLock', (): void => {
     expect(document.body.querySelector('[data-testid="person-bulk-lock-submit-button"]')?.textContent).toContain(
       'Weiter',
     );
+
     await click('person-bulk-lock-submit-button');
+
     expect(bulkLockPersonen).not.toHaveBeenCalled();
     expect(document.body.querySelector('[data-testid="person-bulk-lock-confirmation-text"]')).toBe(confirmation);
     expect(document.body.textContent).toContain(
       'Ich bestätige, dass ich mit der sperrenden Stelle geklärt habe, dass die Sperren aufgehoben werden dürfen.',
     );
+
     await click('person-bulk-lock-submit-button');
+
     expect(bulkLockPersonen).toHaveBeenCalledWith([person.id], schuleId, OperationType.UNLOCK_PERSON);
   });
 
-  it.each([false, true])(
-    'should cancel without a request in either unlock step (second=%s)',
-    async (second: boolean): Promise<void> => {
+  describe('when cancelling in the first unlock step', (): void => {
+    it('should cancel without a request', async (): Promise<void> => {
       await wrapper.setProps({ operationType: OperationType.UNLOCK_PERSON });
-      if (second) {
-        await click('person-bulk-lock-submit-button');
-      }
       await click('person-bulk-lock-cancel-button');
+
       expect(bulkLockPersonen).not.toHaveBeenCalled();
       expect(wrapper.emitted('update:dialogExit')).toEqual([[false]]);
-    },
-  );
+    });
+  });
+
+  describe('when cancelling in the second unlock step', (): void => {
+    it('should cancel without a request', async (): Promise<void> => {
+      await wrapper.setProps({ operationType: OperationType.UNLOCK_PERSON });
+      await click('person-bulk-lock-submit-button');
+      await click('person-bulk-lock-cancel-button');
+
+      expect(bulkLockPersonen).not.toHaveBeenCalled();
+      expect(wrapper.emitted('update:dialogExit')).toEqual([[false]]);
+    });
+  });
 
   it('should show progress and prevent cancellation from the first pending request', async (): Promise<void> => {
     store.bulkLockPersonen = vi.fn((): Promise<void> => {
@@ -104,6 +116,7 @@ describe('PersonBulkLock', (): void => {
       return Promise.resolve();
     });
     await click('person-bulk-lock-submit-button');
+
     expect(document.body.textContent).toContain(
       'Bitte schließen Sie diesen Tab nicht, bis die Aktion vollständig ausgeführt wurde.',
     );
@@ -112,34 +125,48 @@ describe('PersonBulkLock', (): void => {
     expect(document.body.querySelector('[data-testid="person-bulk-lock-submit-button"]')).toBeNull();
   });
 
-  it.each([OperationType.LOCK_PERSON, OperationType.UNLOCK_PERSON] as const)(
-    'should show success and close after completion (operationType=%s)',
-    async (operationType: OperationType.LOCK_PERSON | OperationType.UNLOCK_PERSON): Promise<void> => {
-      await wrapper.setProps({ operationType });
+  describe('when locking completes successfully', (): void => {
+    it('should show success and close after completion', async (): Promise<void> => {
+      await wrapper.setProps({ operationType: OperationType.LOCK_PERSON });
       store.currentOperation = {
-        type: operationType,
+        type: OperationType.LOCK_PERSON,
         isRunning: false,
         complete: true,
         progress: 100,
         errors: new Map(),
         data: new Map(),
-        successMessage:
-          operationType === OperationType.LOCK_PERSON
-            ? 'admin.person.bulkLock.success'
-            : 'admin.person.bulkUnlock.success',
+        successMessage: 'admin.person.bulkLock.success',
       };
       await nextTick();
-      expect(document.body.textContent).toContain(
-        operationType === OperationType.LOCK_PERSON
-          ? 'Die Benutzer wurden erfolgreich gesperrt.'
-          : 'Die Benutzer wurden erfolgreich entsperrt.',
-      );
+
+      expect(document.body.textContent).toContain('Die Benutzer wurden erfolgreich gesperrt.');
       const resetState: MockInstance = vi.spyOn(store, 'resetState');
       await click('person-bulk-lock-close-button');
       expect(wrapper.emitted('update:dialogExit')).toEqual([[true]]);
       expect(resetState).toHaveBeenCalledOnce();
-    },
-  );
+    });
+  });
+
+  describe('when unlocking completes successfully', (): void => {
+    it('should show success and close after completion', async (): Promise<void> => {
+      await wrapper.setProps({ operationType: OperationType.UNLOCK_PERSON });
+      store.currentOperation = {
+        type: OperationType.UNLOCK_PERSON,
+        isRunning: false,
+        complete: true,
+        progress: 100,
+        errors: new Map(),
+        data: new Map(),
+        successMessage: 'admin.person.bulkUnlock.success',
+      };
+      await nextTick();
+      expect(document.body.textContent).toContain('Die Benutzer wurden erfolgreich entsperrt.');
+      const resetState: MockInstance = vi.spyOn(store, 'resetState');
+      await click('person-bulk-lock-close-button');
+      expect(wrapper.emitted('update:dialogExit')).toEqual([[true]]);
+      expect(resetState).toHaveBeenCalledOnce();
+    });
+  });
 
   it('should list failed users with a CSV download and finish when the error dialog closes', async (): Promise<void> => {
     store.bulkLockPersonen = vi.fn((): Promise<void> => {
@@ -154,14 +181,15 @@ describe('PersonBulkLock', (): void => {
       return Promise.resolve();
     });
     await click('person-bulk-lock-submit-button');
+
     expect(wrapper.getComponent(PersonBulkError).props('errors')).toEqual([
       expect.objectContaining({ username: person.username }),
     ]);
     expect(document.body.querySelector('[data-testid="person-bulk-error-save-button"]')?.textContent).toContain(
       'Liste speichern',
     );
-    wrapper.getComponent(PersonBulkError).vm.$emit('update:isDialogVisible', false);
-    await flushPromises();
+    await click('person-bulk-error-discard-button');
+    await click('confirm-close-bulk-error-dialog-button');
     expect(wrapper.emitted('update:dialogExit')).toEqual([[true]]);
   });
 });
