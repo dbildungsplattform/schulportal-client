@@ -19,12 +19,14 @@ import {
   h,
   nextTick,
   type Component,
+  type ComponentPublicInstance,
   type ComputedRef,
   type DefineComponent,
   type Slot,
   type VNode,
 } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
+import { VSelect } from 'vuetify/components';
 import PersonManagementView from './PersonManagementView.vue';
 
 let wrapper: VueWrapper | null = null;
@@ -529,7 +531,7 @@ describe('PersonManagementView', () => {
       personStore.allUebersichten = new Map(
         persons.map((person: PersonWithZuordnungen): [string, PersonWithZuordnungen] => [person.id, person]),
       );
-      const schulenFilter: VueWrapper = wrapper!.getComponent({ ref: 'schulenFilter' });
+      const schulenFilter: Omit<VueWrapper, 'exists'> = wrapper!.getComponent({ ref: 'schulenFilter' });
       schulenFilter.vm.$emit(
         'update:selectedSchulen',
         schulen.map((selectedSchule: Organisation): string => selectedSchule.id),
@@ -538,7 +540,7 @@ describe('PersonManagementView', () => {
       searchFilterStore.selectedOrgaObjects = schulen;
       schulenFilter.vm.$emit('update:selectedSchulenObjects', schulen);
       await flushPromises();
-      const resultTable: VueWrapper = wrapper!.getComponent({ name: 'ResultTable' });
+      const resultTable: Omit<VueWrapper, 'exists'> = wrapper!.getComponent({ name: 'ResultTable' });
       resultTable.vm.$emit(
         'update:selectedRows',
         persons.map((person: PersonWithZuordnungen): string => person.id),
@@ -551,7 +553,9 @@ describe('PersonManagementView', () => {
       async (operation: OperationType): Promise<void> => {
         const schule: Organisation = DoFactory.getSchule();
         await selectSchoolAndPersons([schule]);
-        const select: VueWrapper = wrapper!.getComponent({ ref: 'benutzer-bulk-edit-select' });
+        const select: Omit<VueWrapper<InstanceType<typeof VSelect>>, 'exists'> = wrapper!.getComponent<typeof VSelect>({
+          ref: 'benutzer-bulk-edit-select',
+        });
         const items: { value: OperationType; title: string }[] = select.props('items') as {
           value: OperationType;
           title: string;
@@ -566,7 +570,17 @@ describe('PersonManagementView', () => {
         ).toEqual([OperationType.LOCK_PERSON, OperationType.UNLOCK_PERSON]);
         await select.setValue(operation);
         await flushPromises();
-        const dialog: VueWrapper = wrapper!.getComponent({ name: 'PersonBulkLock' });
+        const dialog: Omit<
+          VueWrapper<
+            unknown,
+            ComponentPublicInstance<{
+              operationType: OperationType;
+              selectedSchuleId: string;
+              selectedPersonen: Map<string, PersonWithZuordnungen>;
+            }>
+          >,
+          'exists'
+        > = wrapper!.getComponent(PersonBulkLock);
         expect(dialog.props('operationType')).toBe(operation);
         expect(dialog.props('selectedSchuleId')).toBe(schule.id);
         const selectedPersonen: Map<string, PersonWithZuordnungen> = dialog.props('selectedPersonen');
@@ -588,7 +602,7 @@ describe('PersonManagementView', () => {
       await flushPromises();
       const reload: MockInstance = vi.spyOn(personStore, 'getAllPersons');
       reload.mockClear();
-      const dialog: VueWrapper = wrapper!.getComponent({ name: 'PersonBulkLock' });
+      const dialog: Omit<VueWrapper, 'exists'> = wrapper!.getComponent(PersonBulkLock);
       dialog.vm.$emit('update:dialogExit', false);
       await flushPromises();
       expect(reload).not.toHaveBeenCalled();
