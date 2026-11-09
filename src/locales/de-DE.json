@@ -442,10 +442,7 @@
       "bulkLock": {
         "confirmation": "Möchten Sie die ausgewählten Benutzer wirklich sperren? Eine Anmeldung am Schulportal SH ist dann für diese Benutzer nicht mehr möglich.",
         "success": "Die Benutzer wurden erfolgreich gesperrt.",
-        "progressNotice": "Bitte schließen Sie diesen Tab nicht, bis die Aktion vollständig ausgeführt wurde.",
-        "downloadErrors": "Download CSV",
-        "errorFilename": "Fehler-Mehrfachbearbeitung.csv",
-        "sameSchoolRequired": "Bitte wählen Sie nur Benutzer derselben Schule aus, um die Aktion durchzuführen."
+        "progressNotice": "Bitte schließen Sie diesen Tab nicht, bis die Aktion vollständig ausgeführt wurde."
       },
       "bulkUnlock": {
         "confirmation": "Möchten Sie die ausgewählten Benutzer wirklich entsperren?",
