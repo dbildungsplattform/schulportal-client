@@ -499,15 +499,15 @@
   }
 
   // The save button will act according to what kind of pending action we have.
-  const handleSaveClick = (): void => {
+  const handleSaveClick = async (): Promise<void> => {
     if (pendingCreation.value) {
-      confirmAddition();
+      await confirmAddition();
     } else if (pendingDeletion.value) {
-      confirmDeletion();
+      await confirmDeletion();
     } else if (pendingChangeKlasse.value) {
-      confirmChangeKlasse();
+      await confirmChangeKlasse();
     } else if (pendingChangeBefristung.value) {
-      confirmChangeBefristung();
+      await confirmChangeBefristung();
     }
   };
 
