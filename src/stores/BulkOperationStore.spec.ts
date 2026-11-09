@@ -181,6 +181,175 @@ describe('BulkOperationStore', () => {
     });
   });
 
+  describe('bulkLockPersonen - lock', (): void => {
+    it('should send the explicit target status without a time limit on first execution', async (): Promise<void> => {
+      const personId: string = DoFactory.getPerson().id;
+      const organisationId: string = DoFactory.getSchule().id;
+      mockAdapter.onPut(`/api/personen/${personId}/lock-user`).replyOnce(200);
+
+      const operation: Promise<void> = bulkOperationStore.bulkLockPersonen(
+        [personId],
+        organisationId,
+        OperationType.LOCK_PERSON,
+      );
+      expect(bulkOperationStore.currentOperation?.isRunning).toBe(true);
+      expect(bulkOperationStore.currentOperation?.progress).toBe(0);
+
+      await operation;
+
+      expect(mockAdapter.history.put).toHaveLength(1);
+      expect(JSON.parse(mockAdapter.history.put.at(-1)?.data as string)).toEqual({
+        lock: true,
+        locked_by: organisationId,
+      });
+      expect(bulkOperationStore.currentOperation).toMatchObject({
+        type: OperationType.LOCK_PERSON,
+        isRunning: false,
+        complete: true,
+        progress: 100,
+        successMessage: 'admin.person.bulkLock.success',
+      });
+      expect(bulkOperationStore.currentOperation?.errors.size).toBe(0);
+    });
+
+    it('should send the explicit target status without a time limit on repeated execution', async (): Promise<void> => {
+      const personId: string = DoFactory.getPerson().id;
+      const organisationId: string = DoFactory.getSchule().id;
+      mockAdapter.onPut(`/api/personen/${personId}/lock-user`).replyOnce(200);
+
+      await bulkOperationStore.bulkLockPersonen([personId], organisationId, OperationType.LOCK_PERSON);
+
+      mockAdapter.onPut(`/api/personen/${personId}/lock-user`).replyOnce(200);
+      const operation: Promise<void> = bulkOperationStore.bulkLockPersonen(
+        [personId],
+        organisationId,
+        OperationType.LOCK_PERSON,
+      );
+      expect(bulkOperationStore.currentOperation?.isRunning).toBe(true);
+      expect(bulkOperationStore.currentOperation?.progress).toBe(0);
+
+      await operation;
+
+      expect(mockAdapter.history.put).toHaveLength(2);
+      expect(JSON.parse(mockAdapter.history.put.at(-1)?.data as string)).toEqual({
+        lock: true,
+        locked_by: organisationId,
+      });
+      expect(bulkOperationStore.currentOperation).toMatchObject({
+        type: OperationType.LOCK_PERSON,
+        isRunning: false,
+        complete: true,
+        progress: 100,
+        successMessage: 'admin.person.bulkLock.success',
+      });
+      expect(bulkOperationStore.currentOperation?.errors.size).toBe(0);
+    });
+
+    describe('structured server error', (): void => {
+      it('should collect errors and continue processing', async (): Promise<void> => {
+        const personIds: string[] = [DoFactory.getPerson().id, DoFactory.getPerson().id, DoFactory.getPerson().id];
+        mockAdapter.onPut(`/api/personen/${personIds[0]}/lock-user`).replyOnce(200);
+        mockAdapter.onPut(`/api/personen/${personIds[1]}/lock-user`).replyOnce(500, { i18nKey: 'LOCK_ERROR' });
+        mockAdapter.onPut(`/api/personen/${personIds[2]}/lock-user`).replyOnce(200);
+
+        await bulkOperationStore.bulkLockPersonen(personIds, mockSchule.id, OperationType.LOCK_PERSON);
+
+        expect(mockAdapter.history.put).toHaveLength(3);
+        expect(bulkOperationStore.currentOperation?.errors).toEqual(new Map([[personIds[1], 'LOCK_ERROR']]));
+        expect(bulkOperationStore.currentOperation?.isRunning).toBe(false);
+        expect(bulkOperationStore.currentOperation?.complete).toBe(true);
+        expect(bulkOperationStore.currentOperation?.progress).toBe(100);
+        expect(bulkOperationStore.currentOperation?.successMessage).toBeUndefined();
+      });
+    });
+
+    describe('unstructured server error', (): void => {
+      it('should collect fallback errors and continue processing', async (): Promise<void> => {
+        const personIds: string[] = [DoFactory.getPerson().id, DoFactory.getPerson().id, DoFactory.getPerson().id];
+        mockAdapter.onPut(`/api/personen/${personIds[0]}/lock-user`).replyOnce(200);
+        mockAdapter.onPut(`/api/personen/${personIds[1]}/lock-user`).replyOnce(500, 'server error');
+        mockAdapter.onPut(`/api/personen/${personIds[2]}/lock-user`).replyOnce(200);
+
+        await bulkOperationStore.bulkLockPersonen(personIds, mockSchule.id, OperationType.LOCK_PERSON);
+
+        expect(mockAdapter.history.put).toHaveLength(3);
+        expect(bulkOperationStore.currentOperation?.errors).toEqual(new Map([[personIds[1], 'UNSPECIFIED_ERROR']]));
+        expect(bulkOperationStore.currentOperation?.isRunning).toBe(false);
+        expect(bulkOperationStore.currentOperation?.complete).toBe(true);
+        expect(bulkOperationStore.currentOperation?.progress).toBe(100);
+        expect(bulkOperationStore.currentOperation?.successMessage).toBeUndefined();
+      });
+    });
+  });
+
+  describe('bulkLockPersonen - unlock', (): void => {
+    it('should send the explicit target status without a time limit on repeated execution', async (): Promise<void> => {
+      const personId: string = DoFactory.getPerson().id;
+      const organisationId: string = DoFactory.getSchule().id;
+      for (const attempt of [1, 2]) {
+        mockAdapter.onPut(`/api/personen/${personId}/lock-user`).replyOnce(200);
+        const operation: Promise<void> = bulkOperationStore.bulkLockPersonen(
+          [personId],
+          organisationId,
+          OperationType.UNLOCK_PERSON,
+        );
+        expect(bulkOperationStore.currentOperation?.isRunning).toBe(true);
+        expect(bulkOperationStore.currentOperation?.progress).toBe(0);
+        // eslint-disable-next-line no-await-in-loop
+        await operation;
+        expect(mockAdapter.history.put).toHaveLength(attempt);
+        expect(JSON.parse(mockAdapter.history.put.at(-1)?.data as string)).toEqual({
+          lock: false,
+          locked_by: organisationId,
+        });
+        expect(bulkOperationStore.currentOperation).toMatchObject({
+          type: OperationType.UNLOCK_PERSON,
+          isRunning: false,
+          complete: true,
+          progress: 100,
+          successMessage: 'admin.person.bulkUnlock.success',
+        });
+        expect(bulkOperationStore.currentOperation?.errors.size).toBe(0);
+      }
+    });
+
+    describe('structured server error', (): void => {
+      it('should collect errors and continue processing', async (): Promise<void> => {
+        const personIds: string[] = [DoFactory.getPerson().id, DoFactory.getPerson().id, DoFactory.getPerson().id];
+        mockAdapter.onPut(`/api/personen/${personIds[0]}/lock-user`).replyOnce(200);
+        mockAdapter.onPut(`/api/personen/${personIds[1]}/lock-user`).replyOnce(500, { i18nKey: 'LOCK_ERROR' });
+        mockAdapter.onPut(`/api/personen/${personIds[2]}/lock-user`).replyOnce(200);
+
+        await bulkOperationStore.bulkLockPersonen(personIds, mockSchule.id, OperationType.UNLOCK_PERSON);
+
+        expect(mockAdapter.history.put).toHaveLength(3);
+        expect(bulkOperationStore.currentOperation?.errors).toEqual(new Map([[personIds[1], 'LOCK_ERROR']]));
+        expect(bulkOperationStore.currentOperation?.isRunning).toBe(false);
+        expect(bulkOperationStore.currentOperation?.complete).toBe(true);
+        expect(bulkOperationStore.currentOperation?.progress).toBe(100);
+        expect(bulkOperationStore.currentOperation?.successMessage).toBeUndefined();
+      });
+    });
+
+    describe('unstructured server error', (): void => {
+      it('should collect fallback errors and continue processing', async (): Promise<void> => {
+        const personIds: string[] = [DoFactory.getPerson().id, DoFactory.getPerson().id, DoFactory.getPerson().id];
+        mockAdapter.onPut(`/api/personen/${personIds[0]}/lock-user`).replyOnce(200);
+        mockAdapter.onPut(`/api/personen/${personIds[1]}/lock-user`).replyOnce(500, 'server error');
+        mockAdapter.onPut(`/api/personen/${personIds[2]}/lock-user`).replyOnce(200);
+
+        await bulkOperationStore.bulkLockPersonen(personIds, mockSchule.id, OperationType.UNLOCK_PERSON);
+
+        expect(mockAdapter.history.put).toHaveLength(3);
+        expect(bulkOperationStore.currentOperation?.errors).toEqual(new Map([[personIds[1], 'UNSPECIFIED_ERROR']]));
+        expect(bulkOperationStore.currentOperation?.isRunning).toBe(false);
+        expect(bulkOperationStore.currentOperation?.complete).toBe(true);
+        expect(bulkOperationStore.currentOperation?.progress).toBe(100);
+        expect(bulkOperationStore.currentOperation?.successMessage).toBeUndefined();
+      });
+    });
+  });
+
   describe('bulkResetPassword', () => {
     it('should reset passwords successfully and handle errors', async () => {
       const userIds: Array<string> = [

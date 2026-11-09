@@ -439,6 +439,17 @@
         "affectedSchule": "Betroffene Schule: {schule}",
         "success": "Die Schulzuordnung(en) wurden erfolgreich entfernt."
       },
+      "bulkLock": {
+        "confirmation": "Möchten Sie die ausgewählten Benutzer wirklich sperren? Eine Anmeldung am Schulportal SH ist dann für diese Benutzer nicht mehr möglich.",
+        "success": "Die Benutzer wurden erfolgreich gesperrt.",
+        "progressNotice": "Bitte schließen Sie diesen Tab nicht, bis die Aktion vollständig ausgeführt wurde."
+      },
+      "bulkUnlock": {
+        "confirmation": "Möchten Sie die ausgewählten Benutzer wirklich entsperren?",
+        "approval": "Ich bestätige, dass ich mit der sperrenden Stelle geklärt habe, dass die Sperren aufgehoben werden dürfen.",
+        "continue": "Weiter",
+        "success": "Die Benutzer wurden erfolgreich entsperrt."
+      },
       "bulkChangeKlasse": {
         "transfer": "Schüler versetzen",
         "nextKlasse": "Neue Klasse",
