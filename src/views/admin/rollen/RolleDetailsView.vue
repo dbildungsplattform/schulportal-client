@@ -239,6 +239,7 @@
   };
 
   onBeforeMount(async () => {
+    rolleStore.updatedRolle = null;
     rolleStore.errorCode = '';
     await rolleStore.getRolleById(currentRolleId);
     if (rolleStore.currentRolle) {

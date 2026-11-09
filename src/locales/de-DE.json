@@ -662,7 +662,7 @@
       "createNew": "Neue Rolle anlegen",
       "deleteRolle": "Rolle löschen",
       "deleteRolleConfirmation": "Wollen Sie die Rolle sofort und endgültig löschen?",
-      "deleteRolleSuccessMessage": "Die Rolle wurde erfolgreich gelöscht",
+      "deleteRolleSuccessMessage": "Die Rolle wurde erfolgreich gelöscht.",
       "discard": "Rolle verwerfen",
       "edit": "Rolle bearbeiten",
       "enterRollenname": "Rollenname eingeben",
