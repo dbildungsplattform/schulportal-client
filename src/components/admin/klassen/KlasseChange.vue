@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import KlassenFilter from '@/components/filter/KlassenFilter.vue';
   import FormRow from '@/components/form/FormRow.vue';
+  import type { Organisation } from '@/stores/OrganisationStore';
   import { type BaseFieldProps } from 'vee-validate';
   import { type Ref, ref, type ModelRef, watch } from 'vue';
 
@@ -12,7 +13,12 @@
     onSubmit: () => void;
   };
 
+  type Emits = {
+    (event: 'update:selectedNewKlasseObject', value: Organisation | undefined): void;
+  };
+
   defineProps<Props>();
+  const emits: Emits = defineEmits<Emits>();
 
   const selectedSchule: ModelRef<string | undefined, string> = defineModel('selectedSchule');
   const selectedNewKlasse: ModelRef<string | undefined, string> = defineModel('selectedNewKlasse');
@@ -81,6 +87,9 @@
         :parentId="'klasse-change'"
         :placeholder-text="$t('admin.klasse.selectKlasse')"
         @update:selectedKlassen="(newValue: string | undefined) => (selectedNewKlasse = newValue)"
+        @update:selectedKlassenObjects="
+          (klassen: Array<Organisation>) => emits('update:selectedNewKlasseObject', klassen[0])
+        "
       />
     </FormRow>
   </v-form>

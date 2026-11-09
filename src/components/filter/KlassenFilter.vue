@@ -12,7 +12,7 @@
   import { dedup, sameContent } from '@/utils/arrays';
   import { blurActiveElement } from '@/utils/focus';
   import type { BaseFieldProps } from 'vee-validate';
-  import { computed, onMounted, onUnmounted, reactive, ref, watch, type ComputedRef, type Ref } from 'vue';
+  import { computed, onMounted, onUnmounted, reactive, ref, watch, watchEffect, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
 
   type SelectedKlassenIds = Array<string> | string | undefined;
@@ -27,8 +27,13 @@
     administriertVon?: string[] | undefined;
     parentId?: string;
   };
+  type Emits = {
+    (event: 'update:selectedKlassenObjects', value: Array<Organisation>): void;
+  };
   const props: Props = defineProps<Props>();
+  const emits: Emits = defineEmits<Emits>();
   const selectedKlassen: Ref<SelectedKlassenIds> = defineModel('selectedKlassen');
+  const lastEmittedSelection: Ref<SelectedKlassenIds> = ref(undefined);
   const searchInputKlassen: Ref<string | undefined> = ref(undefined);
   const clearInput = (): void => {
     searchInputKlassen.value = undefined;
@@ -217,6 +222,22 @@
     },
     { immediate: true },
   );
+
+  // Emit the selected Klassen as objects once all of them can be resolved from the loaded filter result
+  watchEffect(() => {
+    const selectedIds: Array<string> = wrapSelectedKlassenIds(selectedKlassen.value);
+    if (isSameSelection(lastEmittedSelection.value, selectedIds)) {
+      return;
+    }
+    const loadedKlassen: Array<Organisation> = storeReference.value?.filterResult ?? [];
+    const resolvedKlassen: Array<Organisation> = selectedIds
+      .map((id: string) => loadedKlassen.find((klasse: Organisation) => klasse.id === id))
+      .filter((klasse: Organisation | undefined): klasse is Organisation => klasse !== undefined);
+    if (resolvedKlassen.length === selectedIds.length) {
+      lastEmittedSelection.value = selectedIds;
+      emits('update:selectedKlassenObjects', resolvedKlassen);
+    }
+  });
 
   watch(
     () => props.administriertVon,

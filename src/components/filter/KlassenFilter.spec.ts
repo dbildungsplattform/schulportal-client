@@ -262,4 +262,51 @@ describe('KlassenFilter', () => {
       });
     });
   });
+
+  describe('when emitting the selected Klassen objects', () => {
+    const storeKey: string = 'test-component';
+
+    function setFilterResult(klassen: Array<Organisation>): void {
+      organisationStore.klassenFilters.set(storeKey, {
+        filterResult: klassen,
+        total: klassen.length,
+        loading: false,
+      });
+    }
+
+    test('it emits the selected Klassen once they are loaded', async () => {
+      const klasse: Organisation = DoFactory.getKlasse();
+      const wrapper: VueWrapper = mountComponent({ multiple: false, parentId: storeKey }) as VueWrapper;
+      await wrapper.setProps({ selectedKlassen: klasse.id });
+
+      expect(wrapper.emitted('update:selectedKlassenObjects')).toBeUndefined();
+
+      setFilterResult([DoFactory.getKlasse(), klasse]);
+      await nextTick();
+
+      expect(wrapper.emitted('update:selectedKlassenObjects')).toEqual([[[klasse]]]);
+    });
+
+    test('it does not emit again if only the loaded Klassen change', async () => {
+      const klasse: Organisation = DoFactory.getKlasse();
+      setFilterResult([klasse]);
+      const wrapper: VueWrapper = mountComponent({ multiple: true, parentId: storeKey }) as VueWrapper;
+      await wrapper.setProps({ selectedKlassen: [klasse.id] });
+
+      setFilterResult([klasse, DoFactory.getKlasse()]);
+      await nextTick();
+
+      expect(wrapper.emitted('update:selectedKlassenObjects')).toEqual([[[klasse]]]);
+    });
+
+    test('it emits an empty array when the selection is cleared', async () => {
+      const klasse: Organisation = DoFactory.getKlasse();
+      setFilterResult([klasse]);
+      const wrapper: VueWrapper = mountComponent({ multiple: false, parentId: storeKey }) as VueWrapper;
+      await wrapper.setProps({ selectedKlassen: klasse.id });
+      await wrapper.setProps({ selectedKlassen: undefined });
+
+      expect(wrapper.emitted('update:selectedKlassenObjects')).toEqual([[[klasse]], [[]]]);
+    });
+  });
 });

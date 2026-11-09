@@ -1,5 +1,5 @@
 import { RollenArt, RollenMerkmal } from '@/api-client/generated';
-import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
+import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
 import {
   CreationType,
   OperationContext,
@@ -644,4 +644,26 @@ describe('PersonenkontextCreate', () => {
       });
     },
   );
+
+  test('it forwards the selected Klasse object from the KlassenFilter', async () => {
+    wrapper = mountComponent({
+      operationContext: OperationContext.PERSON_BEARBEITEN,
+      allowMultipleRollen: false,
+      selectedOrganisation: '1133',
+      selectedRolle: '54321',
+    });
+    await flushPromises();
+
+    const klasse: Organisation = DoFactory.getKlasse();
+    const klassenFilter: VueWrapper = wrapper.findComponent({ name: 'KlassenFilter' });
+    klassenFilter.vm.$emit('update:selectedKlassenObjects', [klasse]);
+    await nextTick();
+
+    expect(wrapper.emitted('update:selectedKlasseObject')).toContainEqual([klasse]);
+
+    klassenFilter.vm.$emit('update:selectedKlassenObjects', []);
+    await nextTick();
+
+    expect(wrapper.emitted('update:selectedKlasseObject')?.at(-1)).toEqual([undefined]);
+  });
 });

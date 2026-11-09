@@ -92,6 +92,7 @@
     (event: 'update:selectedRolle', value: string | undefined): void;
     (event: 'update:selectedRollen', value: string[] | undefined): void;
     (event: 'update:selectedKlasse', value: string | undefined): void;
+    (event: 'update:selectedKlasseObject', value: Organisation | undefined): void;
     (event: 'update:selectedKlasseForRadio', value: string | undefined): void;
     (event: 'update:selectedKlassenOption', value: string | null): void;
     (event: 'update:canCommit', value: boolean): void;
@@ -545,6 +546,9 @@
           :highlightSelection="false"
           :selectedKlassen="selectedKlasse"
           @update:selectedKlassen="updateKlasseSelection"
+          @update:selectedKlassenObjects="
+            (klassen: Array<Organisation>) => emits('update:selectedKlasseObject', klassen[0])
+          "
           :placeholderText="$t('admin.klasse.selectKlasse')"
           ref="klasse-select"
           :administriertVon

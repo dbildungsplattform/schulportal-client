@@ -1,4 +1,6 @@
+import type { Organisation } from '@/stores/OrganisationStore';
 import { VueWrapper, mount } from '@vue/test-utils';
+import { DoFactory } from 'test/DoFactory';
 import { expect, test } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import KlasseChange from './KlasseChange.vue';
@@ -105,5 +107,14 @@ describe('KlasseChange', () => {
 
     const klassenAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ name: 'KlassenFilter' });
     expect(klassenAutocomplete?.props()).toEqual(expect.objectContaining({ administriertVon: ['1'] }));
+  });
+
+  test('it forwards the selected Klasse object from the KlassenFilter', async () => {
+    const klasse: Organisation = DoFactory.getKlasse();
+    const klassenFilter: VueWrapper | undefined = wrapper?.findComponent({ name: 'KlassenFilter' });
+    klassenFilter?.vm.$emit('update:selectedKlassenObjects', [klasse]);
+    await nextTick();
+
+    expect(wrapper?.emitted('update:selectedNewKlasseObject')).toEqual([[klasse]]);
   });
 });
