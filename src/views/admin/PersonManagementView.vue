@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { PersonLockOccasion } from '@/api-client/generated/api';
   import ResultTable, { type Headers, type TableRow } from '@/components/admin/ResultTable.vue';
   import SearchField from '@/components/admin/SearchField.vue';
   import SpshTooltip from '@/components/admin/SpshTooltip.vue';
@@ -32,7 +33,6 @@
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
   import { OperationType } from '@/stores/types/bulkOperationTypes';
   import { type TranslatedObject } from '@/types.d';
-  import { blurActiveElement } from '@/utils/focus';
   import { SortOrder } from '@/utils/sorting';
   import { type ComponentPublicInstance, type ComputedRef, type Ref, computed, onMounted, ref, watch } from 'vue';
   import { type Composer, useI18n } from 'vue-i18n';
@@ -118,7 +118,7 @@
   const selectedKlassen: Ref<Array<string> | undefined> = ref(searchFilterStore.selectedKlassen ?? []);
   const selectedRollen: Ref<Array<string>> = ref([]);
   const selectedOrganisationIds: Ref<Array<string>> = ref([]);
-  const selectedStatus: Ref<string | null> = ref(null);
+  const selectedStatus: Ref<string[]> = ref([]);
   const searchFilter: Ref<string> = ref('');
 
   const selectedRollenObjects: Ref<RolleResponse[]> = ref([]);
@@ -183,7 +183,7 @@
       !!searchFilterStore.selectedRollen?.length ||
       !!searchFilterStore.searchStringForPersonen ||
       (selectedKlassen.value && selectedKlassen.value.length > 0) ||
-      !!selectedStatus.value,
+      selectedStatus.value.length > 0,
   );
 
   const selectedOrganisationKennung: ComputedRef<string> = computed(() => {
@@ -223,7 +223,9 @@
     );
   });
 
-  const statuses: Array<string> = ['Aktiv', 'Inaktiv'];
+  const statuses: ComputedRef<TranslatedObject[]> = computed(() => [
+    { value: 'locked', title: t('admin.person.lockedStatus') },
+  ]);
 
   async function applySearchAndFilters(): Promise<void> {
     await personStore.getAllPersons({
@@ -233,6 +235,9 @@
         ? searchFilterStore.selectedKlassen
         : searchFilterStore.selectedOrganisationen || [],
       rolleIDs: searchFilterStore.selectedRollen || [],
+      sperrgruende: selectedStatus.value.includes('locked')
+        ? [PersonLockOccasion.ManuellGesperrt, PersonLockOccasion.KopersGesperrt]
+        : undefined,
       searchFilter: searchFilterStore.searchStringForPersonen || '',
       sortField: searchFilterStore.personenSortField as SortField,
       sortOrder: searchFilterStore.personenSortOrder as SortOrder,
@@ -251,14 +256,12 @@
     }
 
     searchFilterStore.personenPerPage = limit;
-    await personStore.getAllPersons({
-      offset: (searchFilterStore.personenPage - 1) * searchFilterStore.personenPerPage,
-      limit: searchFilterStore.personenPerPage,
-      organisationIDs: searchFilterStore.selectedOrganisationen || selectedOrganisationIds.value,
-      rolleIDs: searchFilterStore.selectedRollen || selectedRollen.value,
-      searchFilter: searchFilterStore.searchStringForPersonen || searchFilter.value,
-    });
+    await applySearchAndFilters();
+  }
 
+  async function setStatusFilter(newValue: string[]): Promise<void> {
+    selectedStatus.value = newValue;
+    searchFilterStore.personenPage = 1;
     await applySearchAndFilters();
   }
 
@@ -326,7 +329,7 @@
     searchInputRollen.value = '';
     selectedRollen.value = [];
     selectedKlassen.value = [];
-    selectedStatus.value = null;
+    selectedStatus.value = [];
     searchFilterStore.personenPage = 1;
     searchFilterStore.personenPerPage = 30;
     searchFilterStore.currentSort = null;
@@ -595,10 +598,6 @@
     }
   });
 
-  watch(selectedStatus, () => {
-    blurActiveElement();
-  });
-
   // Used for to show the number of klassen found in the filter
   const totalKlassen: ComputedRef<number> = computed(
     () => organisationStore.klassenFilters.get('personen-management')?.total ?? 0,
@@ -811,7 +810,7 @@
           md="2"
           class="py-md-0"
         >
-          <v-autocomplete
+          <v-select
             id="status-select"
             v-model="selectedStatus"
             autocomplete="off"
@@ -821,13 +820,15 @@
             data-testid="status-select"
             density="compact"
             hide-details
+            multiple
             :items="statuses"
             item-value="value"
-            item-text="title"
+            item-title="title"
             :no-data-text="$t('noDataFound')"
             :placeholder="$t('admin.status')"
-            required="true"
             variant="outlined"
+            :aria-label="$t('admin.status')"
+            @update:model-value="setStatusFilter"
           />
         </v-col>
       </v-row>

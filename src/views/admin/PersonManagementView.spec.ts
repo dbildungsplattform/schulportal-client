@@ -1,4 +1,4 @@
-import { RollenArt, RollenMerkmal, RollenSystemRechtEnum } from '@/api-client/generated/api';
+import { PersonLockOccasion, RollenArt, RollenMerkmal, RollenSystemRechtEnum } from '@/api-client/generated/api';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
@@ -18,12 +18,14 @@ import {
   h,
   nextTick,
   type Component,
+  type ComponentPublicInstance,
   type ComputedRef,
   type DefineComponent,
   type Slot,
   type VNode,
 } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
+import { VSelect } from 'vuetify/components';
 import PersonManagementView from './PersonManagementView.vue';
 
 let wrapper: VueWrapper | null = null;
@@ -157,6 +159,126 @@ beforeEach(async () => {
 });
 
 describe('PersonManagementView', () => {
+  describe('status filter', () => {
+    test('should start without a status selection and offer only locked accounts', async () => {
+      await flushPromises();
+      const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
+        '[data-testid="status-select"]',
+      );
+
+      expect(statusSelect.props('modelValue')).toEqual([]);
+      expect(statusSelect.props('multiple')).toBe(true);
+      expect(statusSelect.props('items')).toEqual([{ value: 'locked', title: 'gesperrt' }]);
+      expect(personStore.getAllPersons).toHaveBeenLastCalledWith(expect.objectContaining({ sperrgruende: undefined }));
+      expect(wrapper!.get('[data-testid="reset-filter-button"]').attributes('disabled')).toBeDefined();
+    });
+
+    test('should show a checkbox and filter without a selected school', async () => {
+      await flushPromises();
+      const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
+        '[data-testid="status-select"]',
+      );
+      await statusSelect.find('.v-field').trigger('mousedown');
+      await nextTick();
+      expect(document.querySelector('.v-select__content .v-checkbox-btn')).not.toBeNull();
+      searchFilterStore.personenPage = 3;
+      const statusOption: DOMWrapper<Element> = new DOMWrapper(
+        document.querySelector('.v-select__content .v-list-item'),
+      );
+      await statusOption.trigger('click');
+      await flushPromises();
+
+      expect(statusSelect.props('modelValue')).toEqual(['locked']);
+      expect(searchFilterStore.personenPage).toBe(1);
+      expect(personStore.getAllPersons).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          offset: 0,
+          organisationIDs: [],
+          sperrgruende: [PersonLockOccasion.ManuellGesperrt, PersonLockOccasion.KopersGesperrt],
+        }),
+      );
+      expect(wrapper!.get('[data-testid="reset-filter-button"]').attributes('disabled')).toBeUndefined();
+    });
+
+    test('should combine status with existing filters and remove only status when deselected', async () => {
+      const schule: Organisation = DoFactory.getSchule();
+      const klasse: Organisation = DoFactory.getKlasse(schule);
+      const rolleId: string = DoFactory.getRolleResponse().id;
+      searchFilterStore.selectedOrganisationen = [schule.id];
+      searchFilterStore.selectedKlassen = [klasse.id];
+      searchFilterStore.selectedRollen = [rolleId];
+      searchFilterStore.searchStringForPersonen = 'search';
+      const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
+        '[data-testid="status-select"]',
+      );
+
+      await statusSelect.setValue(['locked']);
+      await flushPromises();
+      expect(personStore.getAllPersons).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          organisationIDs: [klasse.id],
+          rolleIDs: [rolleId],
+          searchFilter: 'search',
+          sperrgruende: [PersonLockOccasion.ManuellGesperrt, PersonLockOccasion.KopersGesperrt],
+        }),
+      );
+
+      await statusSelect.setValue([]);
+      await flushPromises();
+      expect(personStore.getAllPersons).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          organisationIDs: [klasse.id],
+          rolleIDs: [rolleId],
+          searchFilter: 'search',
+          sperrgruende: undefined,
+        }),
+      );
+    });
+
+    test('should retain status on pagination, page-size changes and sorting', async () => {
+      await wrapper!.findComponent<typeof VSelect>('[data-testid="status-select"]').setValue(['locked']);
+      await flushPromises();
+      vi.mocked(personStore.getAllPersons).mockClear();
+      const table: VueWrapper<ComponentPublicInstance> = wrapper!.findComponent({
+        name: 'ResultTable',
+      }) as VueWrapper<ComponentPublicInstance>;
+      table.vm.$emit('onPageUpdate', 2);
+      table.vm.$emit('onItemsPerPageUpdate', 50);
+      table.vm.$emit('onTableUpdate', { sortField: 'vorname', sortOrder: 'desc' });
+      await flushPromises();
+
+      expect(personStore.getAllPersons).toHaveBeenCalledTimes(3);
+      for (const [filter] of vi.mocked(personStore.getAllPersons).mock.calls) {
+        expect(filter.sperrgruende).toEqual([PersonLockOccasion.ManuellGesperrt, PersonLockOccasion.KopersGesperrt]);
+      }
+    });
+
+    test('should clear status when resetting filters', async () => {
+      const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
+        '[data-testid="status-select"]',
+      );
+      await statusSelect.setValue(['locked']);
+      await wrapper!.get('[data-testid="reset-filter-button"]').trigger('click');
+      await flushPromises();
+
+      expect(statusSelect.props('modelValue')).toEqual([]);
+      expect(vi.mocked(personStore.getAllPersons).mock.lastCall?.[0].sperrgruende).toBeUndefined();
+      expect(wrapper!.get('[data-testid="reset-filter-button"]').attributes('disabled')).toBeDefined();
+    });
+
+    test('should remove the lock filter when the clear button is clicked', async () => {
+      const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
+        '[data-testid="status-select"]',
+      );
+      await statusSelect.setValue(['locked']);
+      await statusSelect.get('.v-field__clearable .v-icon').trigger('click');
+      await flushPromises();
+
+      expect(statusSelect.props('modelValue')).toEqual([]);
+      expect(vi.mocked(personStore.getAllPersons).mock.lastCall?.[0].sperrgruende).toBeUndefined();
+    });
+  });
+
   test('it renders person management table', () => {
     expect(wrapper?.getComponent({ name: 'ResultTable' })).toBeTruthy();
     expect(wrapper?.find('[data-testid="person-table"]').isVisible()).toBe(true);
