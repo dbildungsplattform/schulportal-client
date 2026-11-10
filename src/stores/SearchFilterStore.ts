@@ -5,6 +5,10 @@ import { SortField } from './PersonStore';
 import { RollenArt, RollenMerkmal, type RolleResponse } from './RolleStore';
 import { ServiceProviderKategorie } from './ServiceProviderStore';
 
+export enum PersonStatusFilter {
+  Locked = 'locked',
+}
+
 export const DEFAULT_SERVICE_PROVIDER_KATEGORIEN: ReadonlyArray<ServiceProviderKategorie> = [
   ServiceProviderKategorie.Email,
   ServiceProviderKategorie.Unterricht,
@@ -35,7 +39,7 @@ type SearchFilterState = {
   searchStringForServiceProvider: string | null;
   selectedKlassen: Array<string> | null;
   selectedRollen: Array<string> | null;
-  selectedStatusForPersonen: string[];
+  selectedStatusForPersonen: PersonStatusFilter[];
   selectedRollenObjects: RolleResponse[];
   selectedOrganisationen: Array<string> | null;
   selectedOrgaObjects: Organisation[] | null;
@@ -59,7 +63,7 @@ type SearchFilterState = {
 type SearchFilterActions = {
   setKlasseFilterForPersonen: (selectedKlassen: Array<string> | null) => void;
   setRolleFilterForPersonen: (selectedRollen: Array<string> | null) => void;
-  setStatusFilterForPersonen: (selectedStatus: string[]) => void;
+  setStatusFilterForPersonen: (selectedStatus: PersonStatusFilter[]) => void;
   setRolleFilterWithObjectsForPersonen: (selectedRollen: Array<string> | null, rollenObjects: RolleResponse[]) => void;
   setOrganisationFilterForPersonen: (
     selectedOrganisationen: Array<string> | null,
@@ -145,7 +149,7 @@ export const useSearchFilterStore: StoreDefinition<
       this.selectedRollen = selectedRollen;
     },
 
-    setStatusFilterForPersonen(selectedStatus: string[]): void {
+    setStatusFilterForPersonen(selectedStatus: PersonStatusFilter[]): void {
       this.selectedStatusForPersonen = selectedStatus;
     },
 

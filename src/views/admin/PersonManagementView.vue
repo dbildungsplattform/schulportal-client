@@ -29,7 +29,7 @@
     TranslatedRolleWithAttrs,
     useRolleStore,
   } from '@/stores/RolleStore';
-  import { type SearchFilterStore, useSearchFilterStore } from '@/stores/SearchFilterStore';
+  import { PersonStatusFilter, type SearchFilterStore, useSearchFilterStore } from '@/stores/SearchFilterStore';
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
   import { OperationType } from '@/stores/types/bulkOperationTypes';
   import { type TranslatedObject } from '@/types.d';
@@ -223,7 +223,7 @@
   });
 
   const statuses: ComputedRef<TranslatedObject[]> = computed(() => [
-    { value: 'locked', title: t('admin.person.lockedStatus') },
+    { value: PersonStatusFilter.Locked, title: t('admin.person.lockedStatus') },
   ]);
 
   async function applySearchAndFilters(): Promise<void> {
@@ -234,7 +234,7 @@
         ? searchFilterStore.selectedKlassen
         : searchFilterStore.selectedOrganisationen || [],
       rolleIDs: searchFilterStore.selectedRollen || [],
-      sperrgruende: searchFilterStore.selectedStatusForPersonen.includes('locked')
+      sperrgruende: searchFilterStore.selectedStatusForPersonen.includes(PersonStatusFilter.Locked)
         ? [PersonLockOccasion.ManuellGesperrt, PersonLockOccasion.KopersGesperrt]
         : undefined,
       searchFilter: searchFilterStore.searchStringForPersonen || '',
@@ -258,7 +258,7 @@
     await applySearchAndFilters();
   }
 
-  async function setStatusFilter(newValue: string[]): Promise<void> {
+  async function setStatusFilter(newValue: PersonStatusFilter[]): Promise<void> {
     searchFilterStore.setStatusFilterForPersonen(newValue);
     searchFilterStore.personenPage = 1;
     await applySearchAndFilters();

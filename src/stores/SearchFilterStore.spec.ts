@@ -3,6 +3,7 @@ import { DoFactory } from 'test/DoFactory';
 import { RollenArt, RollenMerkmal, type RolleResponse } from './RolleStore';
 import {
   DEFAULT_SERVICE_PROVIDER_KATEGORIEN,
+  PersonStatusFilter,
   rollenPerPageDefault,
   useSearchFilterStore,
   type SearchFilterStore,
@@ -109,13 +110,13 @@ describe('SearchFilterStore', () => {
   });
 
   it('should persist, clear and reset the person status selection', () => {
-    searchFilterStore.setStatusFilterForPersonen(['locked']);
-    expect(searchFilterStore.selectedStatusForPersonen).toEqual(['locked']);
+    searchFilterStore.setStatusFilterForPersonen([PersonStatusFilter.Locked]);
+    expect(searchFilterStore.selectedStatusForPersonen).toEqual([PersonStatusFilter.Locked]);
 
     searchFilterStore.setStatusFilterForPersonen([]);
     expect(searchFilterStore.selectedStatusForPersonen).toEqual([]);
 
-    searchFilterStore.setStatusFilterForPersonen(['locked']);
+    searchFilterStore.setStatusFilterForPersonen([PersonStatusFilter.Locked]);
     searchFilterStore.$reset();
     expect(searchFilterStore.selectedStatusForPersonen).toEqual([]);
   });

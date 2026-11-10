@@ -5,7 +5,7 @@ import { useOrganisationStore, type Organisation, type OrganisationStore } from 
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import { usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
 import { useRolleStore, type RolleStore, type TranslatedRolleWithAttrs } from '@/stores/RolleStore';
-import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
+import { PersonStatusFilter, useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
 import type { Person } from '@/stores/types/Person';
 import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
 import type { Zuordnung } from '@/stores/types/Zuordnung';
@@ -169,7 +169,7 @@ describe('PersonManagementView', () => {
       expect(statusSelect.props('modelValue')).toEqual([]);
       expect(searchFilterStore.selectedStatusForPersonen).toEqual([]);
       expect(statusSelect.props('multiple')).toBe(true);
-      expect(statusSelect.props('items')).toEqual([{ value: 'locked', title: 'gesperrt' }]);
+      expect(statusSelect.props('items')).toEqual([{ value: PersonStatusFilter.Locked, title: 'gesperrt' }]);
       expect(personStore.getAllPersons).toHaveBeenLastCalledWith(expect.objectContaining({ sperrgruende: undefined }));
       expect(wrapper!.get('[data-testid="reset-filter-button"]').attributes('disabled')).toBeDefined();
     });
@@ -186,12 +186,12 @@ describe('PersonManagementView', () => {
       const statusOption: DOMWrapper<Element> = new DOMWrapper(
         document.querySelector('.v-select__content .v-list-item'),
       );
-      searchFilterStore.selectedStatusForPersonen = ['locked'];
+      searchFilterStore.selectedStatusForPersonen = [PersonStatusFilter.Locked];
       await statusOption.trigger('click');
       await flushPromises();
 
-      expect(searchFilterStore.setStatusFilterForPersonen).toHaveBeenCalledWith(['locked']);
-      expect(statusSelect.props('modelValue')).toEqual(['locked']);
+      expect(searchFilterStore.setStatusFilterForPersonen).toHaveBeenCalledWith([PersonStatusFilter.Locked]);
+      expect(statusSelect.props('modelValue')).toEqual([PersonStatusFilter.Locked]);
       expect(searchFilterStore.personenPage).toBe(1);
       expect(personStore.getAllPersons).toHaveBeenLastCalledWith(
         expect.objectContaining({
@@ -215,8 +215,8 @@ describe('PersonManagementView', () => {
         '[data-testid="status-select"]',
       );
 
-      searchFilterStore.selectedStatusForPersonen = ['locked'];
-      await statusSelect.setValue(['locked']);
+      searchFilterStore.selectedStatusForPersonen = [PersonStatusFilter.Locked];
+      await statusSelect.setValue([PersonStatusFilter.Locked]);
       await flushPromises();
       expect(personStore.getAllPersons).toHaveBeenLastCalledWith(
         expect.objectContaining({
@@ -242,7 +242,7 @@ describe('PersonManagementView', () => {
     });
 
     test('should retain status on pagination, page-size changes and sorting', async () => {
-      searchFilterStore.selectedStatusForPersonen = ['locked'];
+      searchFilterStore.selectedStatusForPersonen = [PersonStatusFilter.Locked];
       await flushPromises();
       vi.mocked(personStore.getAllPersons).mockClear();
       const table: VueWrapper<ComponentPublicInstance> = wrapper!.findComponent({
@@ -263,7 +263,7 @@ describe('PersonManagementView', () => {
       const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
         '[data-testid="status-select"]',
       );
-      searchFilterStore.selectedStatusForPersonen = ['locked'];
+      searchFilterStore.selectedStatusForPersonen = [PersonStatusFilter.Locked];
       await nextTick();
       await wrapper!.get('[data-testid="reset-filter-button"]').trigger('click');
       await flushPromises();
@@ -281,7 +281,7 @@ describe('PersonManagementView', () => {
       const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
         '[data-testid="status-select"]',
       );
-      searchFilterStore.selectedStatusForPersonen = ['locked'];
+      searchFilterStore.selectedStatusForPersonen = [PersonStatusFilter.Locked];
       await nextTick();
       await statusSelect.get('.v-field__clearable .v-icon').trigger('click');
       await flushPromises();
