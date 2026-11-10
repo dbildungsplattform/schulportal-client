@@ -39,7 +39,6 @@ type Props = {
   useLandesbediensteteWorkflow?: boolean;
   operationContext?: OperationContext;
   personId?: string;
-  selectedRollen?: string[];
 };
 
 enableAutoUnmount(afterEach);

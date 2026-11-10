@@ -49,7 +49,6 @@
     operationContext?: OperationContext;
     isRolleUnassignForm?: boolean;
     personId?: string;
-    selectedRollen?: Array<string>;
   };
   type ResolvedProps = Omit<Props, 'selectionCountKey'> & { selectionCountKey: string };
   type AnySelection = Organisation | readonly Organisation[] | null | undefined;
@@ -121,7 +120,7 @@
     operationContext: props.operationContext,
     personId: props.personId,
     organisationId: undefined,
-    rollenIds: props.selectedRollen ?? [],
+    rollenIds: [],
     organisationName: undefined,
     limit: 25,
   });

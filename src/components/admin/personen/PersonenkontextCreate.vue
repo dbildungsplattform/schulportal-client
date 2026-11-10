@@ -121,9 +121,6 @@
     }
     return dedup([...props.rollen, ...activeSelection], (rolle: TranslatedRolleWithAttrs) => rolle.value);
   });
-  const selectedRollenIds: ComputedRef<string[]> = computed(() =>
-    (selectedRollen.value ?? []).map((rolle: TranslatedRolleWithAttrs) => rolle.value),
-  );
 
   const selectedRollenart: ComputedRef<RollenArt | undefined> = computed(() => {
     if (props.allowMultipleRollen) {
@@ -403,7 +400,6 @@
         ref="schulenFilter"
         parentId="personenkontext-create"
         :selectedSchulen="selectedOrganisation ?? undefined"
-        :selectedRollen="selectedRollenIds"
         :multiple="false"
         :systemrechteForSearch="[requestedWithSystemrecht].filter((v): v is RollenSystemRecht => v !== undefined)"
         :selectedSchuleProps="selectedOrganisationProps"
