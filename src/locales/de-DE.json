@@ -662,7 +662,7 @@
       "createNew": "Neue Rolle anlegen",
       "deleteRolle": "Rolle löschen",
       "deleteRolleConfirmation": "Wollen Sie die Rolle sofort und endgültig löschen?",
-      "deleteRolleSuccessMessage": "Die Rolle wurde erfolgreich gelöscht",
+      "deleteRolleSuccessMessage": "Die Rolle wurde erfolgreich gelöscht.",
       "discard": "Rolle verwerfen",
       "edit": "Rolle bearbeiten",
       "enterRollenname": "Rollenname eingeben",
@@ -864,8 +864,8 @@
         "ORGANISATION_HAT_PERSONENKONTEXTE": "Es existieren noch zugeordnete Benutzer (Personenkontexte).",
         "ORGANISATION_HAT_ANGEBOTE": "Es existieren noch schulspezifische Angebote.",
         "ORGANISATION_HAT_ROLLENERWEITERUNGEN": "Es existieren noch schulspezifische Rollenerweiterungen.",
-        "500": "Die Schule konnte nicht gelöscht werden, da ein technischer Fehleraufgetreten ist. Bitte versuchen Sie es erneut.",
-        "INTERNAL": "Die Schule konnte nicht gelöscht werden, da ein technischer Fehleraufgetreten ist. Bitte versuchen Sie es erneut."
+        "500": "Technischer Fehler. Bitte versuchen Sie es erneut.",
+        "INTERNAL": "Technischer Fehler. Bitte versuchen Sie es erneut."
       },
       "loadingErrorText": "Es konnten keine Schuldaten geladen werden.",
       "loadingErrorTitle": "Fehler beim Laden der Schulen",
@@ -878,12 +878,14 @@
       "rules": {
         "dienststellennummer": {
           "noLeadingTrailingSpaces": "Die Dienststellennummer darf nicht mit Leerzeichen beginnen oder enden.",
-          "required": "Die Dienststellennummer muss angegeben werden."
+          "required": "Die Dienststellennummer muss angegeben werden.",
+          "max": "Die Dienststellennummer darf maximal 255 Zeichen lang sein."
         },
         "schulname": {
           "matches": "Der Schulname darf keine ungültigen Zeichen beinhalten.",
           "noLeadingTrailingSpaces": "Der Schulname darf nicht mit Leerzeichen beginnen oder enden.",
-          "required": "Der Schulname muss angegeben werden."
+          "required": "Der Schulname muss angegeben werden.",
+          "max": "Der Schulname darf maximal 255 Zeichen lang sein."
         },
         "emailAddress": {
           "required": "Die Email-Adresse muss angegeben werden.",
