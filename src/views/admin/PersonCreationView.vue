@@ -499,8 +499,7 @@
     // Klasse is only allowed if the selectedRolle is of type LERN.
     if (
       selectedKlasse.value &&
-      selectedRollen.value &&
-      selectedRollen.value.some((rolle: TranslatedRolleWithAttrs) => rolle.rollenart === RollenArt.Lern)
+      selectedRollen.value?.some((rolle: TranslatedRolleWithAttrs) => rolle.rollenart === RollenArt.Lern)
     ) {
       for (const rolle of selectedRollen.value) {
         bodyParams.createPersonenkontexte.push({

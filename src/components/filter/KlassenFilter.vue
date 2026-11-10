@@ -121,7 +121,7 @@
       console.warn(`KlassenFilter initialized twice with id ${props.parentId}`);
     }
     organisationStore.resetKlasseFilter(props.parentId);
-    init();
+    void init();
   });
 
   onUnmounted(() => {
