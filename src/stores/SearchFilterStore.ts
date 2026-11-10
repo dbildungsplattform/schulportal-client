@@ -35,6 +35,7 @@ type SearchFilterState = {
   searchStringForServiceProvider: string | null;
   selectedKlassen: Array<string> | null;
   selectedRollen: Array<string> | null;
+  selectedStatusForPersonen: string[];
   selectedRollenObjects: RolleResponse[];
   selectedOrganisationen: Array<string> | null;
   selectedOrgaObjects: Organisation[] | null;
@@ -58,6 +59,7 @@ type SearchFilterState = {
 type SearchFilterActions = {
   setKlasseFilterForPersonen: (selectedKlassen: Array<string> | null) => void;
   setRolleFilterForPersonen: (selectedRollen: Array<string> | null) => void;
+  setStatusFilterForPersonen: (selectedStatus: string[]) => void;
   setRolleFilterWithObjectsForPersonen: (selectedRollen: Array<string> | null, rollenObjects: RolleResponse[]) => void;
   setOrganisationFilterForPersonen: (
     selectedOrganisationen: Array<string> | null,
@@ -114,6 +116,7 @@ export const useSearchFilterStore: StoreDefinition<
     searchStringForRollen: '',
     selectedKlassen: [],
     selectedRollen: [],
+    selectedStatusForPersonen: [],
     selectedRollenObjects: [],
     selectedOrganisationen: [],
     selectedOrgaObjects: [],
@@ -140,6 +143,10 @@ export const useSearchFilterStore: StoreDefinition<
 
     setRolleFilterForPersonen(selectedRollen: Array<string> | null) {
       this.selectedRollen = selectedRollen;
+    },
+
+    setStatusFilterForPersonen(selectedStatus: string[]): void {
+      this.selectedStatusForPersonen = selectedStatus;
     },
 
     setOrganisationFilterForPersonen(selectedOrganisationen: Array<string> | null, orgaObjects?: Organisation[]) {

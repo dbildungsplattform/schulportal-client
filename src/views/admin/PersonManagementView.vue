@@ -118,7 +118,6 @@
   const selectedKlassen: Ref<Array<string> | undefined> = ref(searchFilterStore.selectedKlassen ?? []);
   const selectedRollen: Ref<Array<string>> = ref([]);
   const selectedOrganisationIds: Ref<Array<string>> = ref([]);
-  const selectedStatus: Ref<string[]> = ref([]);
   const searchFilter: Ref<string> = ref('');
 
   const selectedRollenObjects: Ref<RolleResponse[]> = ref([]);
@@ -183,7 +182,7 @@
       !!searchFilterStore.selectedRollen?.length ||
       !!searchFilterStore.searchStringForPersonen ||
       (selectedKlassen.value && selectedKlassen.value.length > 0) ||
-      selectedStatus.value.length > 0,
+      searchFilterStore.selectedStatusForPersonen.length > 0,
   );
 
   const selectedOrganisationKennung: ComputedRef<string> = computed(() => {
@@ -235,7 +234,7 @@
         ? searchFilterStore.selectedKlassen
         : searchFilterStore.selectedOrganisationen || [],
       rolleIDs: searchFilterStore.selectedRollen || [],
-      sperrgruende: selectedStatus.value.includes('locked')
+      sperrgruende: searchFilterStore.selectedStatusForPersonen.includes('locked')
         ? [PersonLockOccasion.ManuellGesperrt, PersonLockOccasion.KopersGesperrt]
         : undefined,
       searchFilter: searchFilterStore.searchStringForPersonen || '',
@@ -260,7 +259,7 @@
   }
 
   async function setStatusFilter(newValue: string[]): Promise<void> {
-    selectedStatus.value = newValue;
+    searchFilterStore.setStatusFilterForPersonen(newValue);
     searchFilterStore.personenPage = 1;
     await applySearchAndFilters();
   }
@@ -329,7 +328,7 @@
     searchInputRollen.value = '';
     selectedRollen.value = [];
     selectedKlassen.value = [];
-    selectedStatus.value = [];
+    searchFilterStore.setStatusFilterForPersonen([]);
     searchFilterStore.personenPage = 1;
     searchFilterStore.personenPerPage = 30;
     searchFilterStore.currentSort = null;
@@ -812,7 +811,7 @@
         >
           <v-select
             id="status-select"
-            v-model="selectedStatus"
+            :model-value="searchFilterStore.selectedStatusForPersonen"
             autocomplete="off"
             chips
             class="filter-dropdown"

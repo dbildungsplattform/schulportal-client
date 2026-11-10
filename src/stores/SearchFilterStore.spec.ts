@@ -14,11 +14,13 @@ describe('SearchFilterStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     searchFilterStore = useSearchFilterStore();
+    searchFilterStore.$reset();
   });
 
   it('should initalize state correctly', () => {
     expect(searchFilterStore.selectedKlassen).toEqual([]);
     expect(searchFilterStore.selectedRollen).toEqual([]);
+    expect(searchFilterStore.selectedStatusForPersonen).toEqual([]);
     expect(searchFilterStore.selectedOrganisationen).toEqual([]);
     expect(searchFilterStore.selectedRollenObjects).toEqual([]);
     expect(searchFilterStore.searchStringForRollen).toEqual('');
@@ -104,6 +106,18 @@ describe('SearchFilterStore', () => {
     // it resets the selectedKategorienForServiceProvider back to the default selection
     searchFilterStore.resetKategorienForServiceProvider();
     expect(searchFilterStore.selectedKategorienForServiceProvider).toEqual(DEFAULT_SERVICE_PROVIDER_KATEGORIEN);
+  });
+
+  it('should persist, clear and reset the person status selection', () => {
+    searchFilterStore.setStatusFilterForPersonen(['locked']);
+    expect(searchFilterStore.selectedStatusForPersonen).toEqual(['locked']);
+
+    searchFilterStore.setStatusFilterForPersonen([]);
+    expect(searchFilterStore.selectedStatusForPersonen).toEqual([]);
+
+    searchFilterStore.setStatusFilterForPersonen(['locked']);
+    searchFilterStore.$reset();
+    expect(searchFilterStore.selectedStatusForPersonen).toEqual([]);
   });
 
   it('should set merkmale filter for rollen', () => {

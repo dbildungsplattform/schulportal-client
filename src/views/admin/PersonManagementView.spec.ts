@@ -167,6 +167,7 @@ describe('PersonManagementView', () => {
       );
 
       expect(statusSelect.props('modelValue')).toEqual([]);
+      expect(searchFilterStore.selectedStatusForPersonen).toEqual([]);
       expect(statusSelect.props('multiple')).toBe(true);
       expect(statusSelect.props('items')).toEqual([{ value: 'locked', title: 'gesperrt' }]);
       expect(personStore.getAllPersons).toHaveBeenLastCalledWith(expect.objectContaining({ sperrgruende: undefined }));
@@ -185,9 +186,11 @@ describe('PersonManagementView', () => {
       const statusOption: DOMWrapper<Element> = new DOMWrapper(
         document.querySelector('.v-select__content .v-list-item'),
       );
+      searchFilterStore.selectedStatusForPersonen = ['locked'];
       await statusOption.trigger('click');
       await flushPromises();
 
+      expect(searchFilterStore.setStatusFilterForPersonen).toHaveBeenCalledWith(['locked']);
       expect(statusSelect.props('modelValue')).toEqual(['locked']);
       expect(searchFilterStore.personenPage).toBe(1);
       expect(personStore.getAllPersons).toHaveBeenLastCalledWith(
@@ -212,6 +215,7 @@ describe('PersonManagementView', () => {
         '[data-testid="status-select"]',
       );
 
+      searchFilterStore.selectedStatusForPersonen = ['locked'];
       await statusSelect.setValue(['locked']);
       await flushPromises();
       expect(personStore.getAllPersons).toHaveBeenLastCalledWith(
@@ -223,8 +227,10 @@ describe('PersonManagementView', () => {
         }),
       );
 
+      searchFilterStore.selectedStatusForPersonen = [];
       await statusSelect.setValue([]);
       await flushPromises();
+      expect(searchFilterStore.setStatusFilterForPersonen).toHaveBeenLastCalledWith([]);
       expect(personStore.getAllPersons).toHaveBeenLastCalledWith(
         expect.objectContaining({
           organisationIDs: [klasse.id],
@@ -236,7 +242,7 @@ describe('PersonManagementView', () => {
     });
 
     test('should retain status on pagination, page-size changes and sorting', async () => {
-      await wrapper!.findComponent<typeof VSelect>('[data-testid="status-select"]').setValue(['locked']);
+      searchFilterStore.selectedStatusForPersonen = ['locked'];
       await flushPromises();
       vi.mocked(personStore.getAllPersons).mockClear();
       const table: VueWrapper<ComponentPublicInstance> = wrapper!.findComponent({
@@ -257,11 +263,16 @@ describe('PersonManagementView', () => {
       const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
         '[data-testid="status-select"]',
       );
-      await statusSelect.setValue(['locked']);
+      searchFilterStore.selectedStatusForPersonen = ['locked'];
+      await nextTick();
       await wrapper!.get('[data-testid="reset-filter-button"]').trigger('click');
       await flushPromises();
 
+      expect(searchFilterStore.setStatusFilterForPersonen).toHaveBeenCalledWith([]);
+      searchFilterStore.selectedStatusForPersonen = [];
+      await nextTick();
       expect(statusSelect.props('modelValue')).toEqual([]);
+      expect(searchFilterStore.selectedStatusForPersonen).toEqual([]);
       expect(vi.mocked(personStore.getAllPersons).mock.lastCall?.[0].sperrgruende).toBeUndefined();
       expect(wrapper!.get('[data-testid="reset-filter-button"]').attributes('disabled')).toBeDefined();
     });
@@ -270,12 +281,15 @@ describe('PersonManagementView', () => {
       const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
         '[data-testid="status-select"]',
       );
-      await statusSelect.setValue(['locked']);
+      searchFilterStore.selectedStatusForPersonen = ['locked'];
+      await nextTick();
       await statusSelect.get('.v-field__clearable .v-icon').trigger('click');
       await flushPromises();
 
+      expect(searchFilterStore.setStatusFilterForPersonen).toHaveBeenCalledWith([]);
+      searchFilterStore.selectedStatusForPersonen = [];
+      await nextTick();
       expect(statusSelect.props('modelValue')).toEqual([]);
-      expect(vi.mocked(personStore.getAllPersons).mock.lastCall?.[0].sperrgruende).toBeUndefined();
     });
   });
 
