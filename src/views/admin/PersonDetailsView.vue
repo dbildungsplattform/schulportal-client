@@ -23,7 +23,6 @@
   import {
     OrganisationsTyp,
     useOrganisationStore,
-    type AutoCompleteStore,
     type Organisation,
     type OrganisationStore,
   } from '@/stores/OrganisationStore';
@@ -59,8 +58,6 @@
     getDirtyState,
     getPersonenkontextFieldDefinitions,
     getValidationSchema,
-    isKopersRolle,
-    isLernRolle,
     type PersonenkontextFieldDefinitions,
   } from '@/utils/validationPersonenkontext';
   import { toTypedSchema } from '@vee-validate/yup';
@@ -88,7 +85,7 @@
     type Router,
   } from 'vue-router';
   import { useDisplay } from 'vuetify';
-  import { object, string, StringSchema, type AnyObject } from 'yup';
+  import { mixed, object, string, StringSchema, type MixedSchema } from 'yup';
 
   type ZuordnungWithKlasse = Zuordnung & {
     klasse?: string;
@@ -159,8 +156,8 @@
   const creationErrorText: Ref<string> = ref('');
   const creationErrorTitle: Ref<string> = ref('');
 
-  const cachedSelectedOrganisation: Ref<string> = ref('');
-  const cachedSelectedRolle: Ref<string> = ref('');
+  const cachedSelectedOrganisation: Ref<Organisation | undefined> = ref();
+  const cachedSelectedRolle: Ref<TranslatedRolleWithAttrs | undefined> = ref();
   const cachedSelectedKopersNr: Ref<string> = ref('');
 
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
@@ -540,23 +537,10 @@
   }
 
   const organisationen: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
-  const klassen: ComputedRef<TranslatedObject[] | undefined> = computed(() => {
-    // TODO: accessing the KlassenFilter this way violates encapsulation, should be refactored (see SPSH-2185)
-    const activeStore: AutoCompleteStore<Organisation> | undefined =
-      organisationStore.klassenFilters.get('personenkontext-create') ??
-      organisationStore.klassenFilters.get('klasse-change');
-    if (!activeStore) {
-      return [];
-    }
-    return activeStore.filterResult.map((klasse: Organisation) => ({
-      value: klasse.id,
-      title: klasse.name,
-    }));
-  });
 
   type ZuordnungCreationForm = {
-    selectedRolle: string;
-    selectedOrganisation: string;
+    selectedRolle: TranslatedRolleWithAttrs;
+    selectedOrganisation: Organisation;
     selectedKlasse: string;
     selectedBefristung: Date;
     selectedBefristungOption: string;
@@ -565,7 +549,7 @@
 
   type ChangeKlasseForm = {
     selectedSchule: string;
-    selectedNewKlasse: string;
+    selectedNewKlasse: Organisation;
   };
 
   type ChangePersonMetadata = {
@@ -642,9 +626,9 @@
   // Validation schema for the form for changing the Klasse (Versetzen)
   const changeKlasseValidationSchema: TypedSchema = toTypedSchema(
     object({
-      selectedNewKlasse: string().when('selectedSchule', {
+      selectedNewKlasse: mixed<Organisation>().when('selectedSchule', {
         is: (selectedSchule: string) => selectedSchule,
-        then: (schema: StringSchema<string | undefined, AnyObject, undefined, ''>) =>
+        then: (schema: MixedSchema<Organisation | undefined>) =>
           schema.required(t('admin.klasse.rules.klasse.required')),
       }),
     }),
@@ -693,7 +677,7 @@
     selectedRolleProps,
     selectedOrganisation,
     selectedOrganisationProps,
-    selectedKlasse,
+    selectedKlasse: selectedKlasseId,
     selectedKlasseProps,
     selectedBefristung,
     selectedBefristungProps,
@@ -702,6 +686,13 @@
     selectedKopersNr,
     selectedKopersNrProps,
   }: PersonenkontextFieldDefinitions = getPersonenkontextFieldDefinitions(formContext);
+  const selectedKlasse: Ref<Organisation | undefined> = ref();
+
+  watch(selectedKlasseId, (klasseId: string | undefined): void => {
+    if (!klasseId) {
+      selectedKlasse.value = undefined;
+    }
+  });
 
   // eslint-disable-next-line @typescript-eslint/typedef
   const {
@@ -735,7 +726,7 @@
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = defineFieldChangeKlasse('selectedSchule', vuetifyConfig);
   const [selectedNewKlasse, selectedNewKlasseProps]: [
-    Ref<string | undefined>,
+    Ref<Organisation | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = defineFieldChangeKlasse('selectedNewKlasse', vuetifyConfig);
 
@@ -821,8 +812,12 @@
     personenkontextStore.errorCode = '';
     pendingCreation.value = false;
     isZuordnungFormActive.value = true;
-    formContext.setFieldValue('selectedOrganisation', cachedSelectedOrganisation.value);
-    formContext.setFieldValue('selectedRolle', cachedSelectedRolle.value);
+    if (cachedSelectedOrganisation.value) {
+      formContext.setFieldValue('selectedOrganisation', cachedSelectedOrganisation.value);
+    }
+    if (cachedSelectedRolle.value) {
+      formContext.setFieldValue('selectedRolle', cachedSelectedRolle.value);
+    }
     formContext.setFieldValue('selectedKopersNr', cachedSelectedKopersNr.value);
 
     // Rollback the zuordnungen to be added
@@ -872,7 +867,7 @@
       (z: Zuordnung) => z.sskName === selectedZuordnungen.value[0]?.klasse,
     );
     // Auto select the new Klasse
-    selectedNewKlasse.value = klassenZuordnung?.sskId;
+    selectedNewKlasse.value = klassenZuordnung?.getOrganisation();
     isChangeKlasseFormActive.value = true;
   };
 
@@ -930,7 +925,7 @@
     );
     createSuccessDialogVisible.value = !personenkontextStore.errorCode;
     // Cache the selected values to avoid losing them on form reset (Useful for when Kopers is already assigned and we want to redirect back to form)
-    cachedSelectedOrganisation.value = selectedOrganisation.value!;
+    cachedSelectedOrganisation.value = selectedOrganisation.value;
     cachedSelectedRolle.value = selectedRolle.value!;
     cachedSelectedKopersNr.value = selectedKopersNr.value!;
     formContext.resetForm();
@@ -982,7 +977,7 @@
       return rolleStore.rollenForPersonenkontextCreation;
     }
 
-    const selectedOrgaId: string | undefined = selectedOrganisation.value;
+    const selectedOrgaId: string | undefined = selectedOrganisation.value.id;
 
     // Filter out Rollen that the user already has in the selected organization
     return rolleStore.rollenForPersonenkontextCreation?.filter(
@@ -1000,19 +995,17 @@
 
   // Computed property to get the title of the selected rolle
   const selectedRolleTitle: ComputedRef<string | undefined> = computed(() => {
-    return rolleStore.rollenForPersonenkontextCreation?.find(
-      (rolle: TranslatedObject) => rolle.value === selectedRolle.value,
-    )?.title;
+    return selectedRolle.value?.title;
   });
 
   // Computed property to get the title of the selected klasse
   const selectedKlasseTitle: ComputedRef<string | undefined> = computed(() => {
-    return klassen.value?.find((klasse: TranslatedObject) => klasse.value === selectedKlasse.value)?.title;
+    return selectedKlasse.value?.name;
   });
 
   // Computed property to get the title of the selected new klasse
   const selectedNewKlasseTitle: ComputedRef<string | undefined> = computed(() => {
-    return klassen.value?.find((klasse: TranslatedObject) => klasse.value === selectedNewKlasse.value)?.title;
+    return selectedNewKlasse.value?.name;
   });
 
   // Computed property to get the title of the selected new klasse
@@ -1053,7 +1046,7 @@
 
   const onSubmitCreateZuordnung: (e?: Event) => Promise<void | undefined> = formContext.handleSubmit(() => {
     if (selectedRolle.value) {
-      if (isLernRolle(selectedRolle.value, rolleStore.rollenForPersonenkontextCreation)) {
+      if (selectedRolle.value.rollenart === RollenArt.Lern) {
         createZuordnungConfirmationDialogMessage.value = t('person.addZuordnungKlasseConfirmation', {
           rollenname: selectedRolleTitle.value,
           klassenname: selectedKlasseTitle.value,
@@ -1087,19 +1080,13 @@
     createZuordnungConfirmationDialogVisible.value = false;
     hasNoKopersNr.value = false;
     const organisation: Organisation | undefined = personenkontextStore.workflowStepResponse?.organisations.find(
-      (orga: Organisation) => orga.id === selectedOrganisation.value,
+      (orga: Organisation) => orga.id === selectedOrganisation.value?.id,
     );
 
     // The existing Klassenzuordnungen that the person has already
     const existingKlassen: Zuordnung[] | undefined = personStore.personenuebersicht?.zuordnungen.filter(
       (zuordnung: Zuordnung) => zuordnung.typ === OrganisationsTyp.Klasse,
     );
-    // TODO: accessing the KlassenFilter this way violates encapsulation, should be refactored (see SPSH-2185)
-    // The new selected Klasse to add as a separate Zuordnung
-    const klasse: Organisation | undefined = organisationStore.klassenFilters
-      .get('personenkontext-create')
-      ?.filterResult.find((k: Organisation) => k.id === selectedKlasse.value);
-
     const befristungDate: string | undefined = selectedBefristung.value
       ? selectedBefristung.value
       : calculatedBefristung.value;
@@ -1108,15 +1095,11 @@
     if (organisation) {
       newZuordnung.value = new Zuordnung(
         organisation.id,
-        selectedRolle.value ?? '',
+        selectedRolle.value?.value ?? '',
         organisation.name,
         organisation.kennung ?? '',
-        rolleStore.rollenForPersonenkontextCreation?.find(
-          (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
-        )?.title || '',
-        rolleStore.rollenForPersonenkontextCreation?.find(
-          (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
-        )?.rollenart as RollenArt,
+        selectedRolle.value?.title || '',
+        selectedRolle.value?.rollenart as RollenArt,
         organisation.administriertVon ?? '',
         OrganisationsTyp.Schule,
         true,
@@ -1130,20 +1113,17 @@
       }
 
       // Add the new selected Klasse to finalZuordnungen
-      if (klasse) {
+      if (selectedKlasse.value) {
+        const klasse: Organisation = selectedKlasse.value;
         newZuordnung.value.klasse = klasse.name;
         zuordnungenToBePersisted.value.push(
           new Zuordnung(
             klasse.id,
-            selectedRolle.value ?? '',
+            selectedRolle.value?.value ?? '',
             klasse.name,
             klasse.kennung ?? '',
-            rolleStore.rollenForPersonenkontextCreation?.find(
-              (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
-            )?.title || '',
-            rolleStore.rollenForPersonenkontextCreation?.find(
-              (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
-            )?.rollenart as RollenArt,
+            selectedRolle.value?.title || '',
+            selectedRolle.value?.rollenart as RollenArt,
             klasse.administriertVon ?? '',
             OrganisationsTyp.Klasse,
             true,
@@ -1178,11 +1158,7 @@
       (orga: Organisation) => orga.id === selectedSchule.value,
     );
 
-    // TODO: accessing the KlassenFilter this way violates encapsulation, should be refactored (see SPSH-2185)
-    // Find the Orga object for the selected new Klasse
-    const newKlasse: Organisation | undefined = organisationStore.klassenFilters
-      .get('klasse-change')
-      ?.filterResult.find((k: Organisation) => k.id === selectedNewKlasse.value);
+    const newKlasse: Organisation | undefined = selectedNewKlasse.value;
 
     // The remaining Zuordnungen that were not selected for deletion
     const remainingZuordnungen: ZuordnungWithKlasse[] | undefined = zuordnungenWithPendingChanges.value?.filter(
@@ -1326,16 +1302,6 @@
     { immediate: true },
   );
 
-  function handleFieldReset(field: string): void {
-    if (field === 'selectedRolle') {
-      selectedRolle.value = undefined;
-    } else if (field === 'selectedKlasse') {
-      if (selectedKlasse.value) {
-        selectedKlasse.value = undefined;
-      }
-    }
-  }
-
   // Triggers the template to start editing the person informations
   const triggerPersonMetadataEdit = (): void => {
     isEditPersonMetadataActive.value = true;
@@ -1366,6 +1332,19 @@
   // Handles the value emitted by PersonenMetadata for the selectedFamilienname
   function handleSelectedFamilienname(value: string | undefined): void {
     selectedFamilienname.value = value;
+  }
+
+  function handleKlasseUpdate(newSelection: Organisation | undefined): void {
+    selectedKlasse.value = newSelection;
+    selectedKlasseId.value = selectedKlasse.value?.id;
+  }
+
+  function handleFieldReset(field: string): void {
+    if (field === 'selectedRolle') {
+      selectedRolle.value = undefined;
+    } else if (field === 'selectedKlasse') {
+      handleKlasseUpdate(undefined);
+    }
   }
 
   // Submit the form for changing person informations (Vorname, Nachname, KopersNr.)
@@ -2329,13 +2308,11 @@
                   ref="personenkontext-create"
                   v-model:selected-organisation="selectedOrganisation"
                   v-model:selected-rolle="selectedRolle"
-                  v-model:selected-klasse="selectedKlasse"
                   :person-id="currentPersonId"
                   :rollenart-for-person="existingRollenArt"
                   :operation-context="OperationContext.PERSON_BEARBEITEN"
                   :allow-multiple-rollen="false"
                   :show-headline="false"
-                  :organisationen="organisationen"
                   :rollen="filteredRollen"
                   :selected-organisation-props="selectedOrganisationProps"
                   :selected-rolle-props="selectedRolleProps"
@@ -2352,11 +2329,14 @@
                   @update:can-commit="canCommit = $event"
                   @update:befristung="handleBefristungUpdate($event)"
                   @update:calculated-befristung-option="handleBefristungOptionUpdate($event)"
+                  @update:selectedKlasse="handleKlasseUpdate"
                   @field-reset="handleFieldReset($event)"
                 />
                 <KopersInput
                   v-if="
-                    !hasKopersNummer && isKopersRolle([selectedRolle as string], filteredRollen) && selectedOrganisation
+                    !hasKopersNummer &&
+                    selectedRolle?.merkmale?.includes(RollenMerkmal.KopersPflicht) &&
+                    selectedOrganisation
                   "
                   v-model:selected-kopers-nr="selectedKopersNr"
                   :has-no-kopers-nr="hasNoKopersNr"
@@ -2421,7 +2401,6 @@
                   :is-edit-active="isEditActive"
                   :readonly="true"
                   :schulen="organisationen"
-                  :klassen="klassen"
                   :selected-schule-props="selectedSchuleProps"
                   :selected-new-klasse-props="selectedNewKlasseProps"
                   :on-submit="onSubmitChangeKlasse"

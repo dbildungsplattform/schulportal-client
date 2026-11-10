@@ -40,7 +40,7 @@ async function selectSchule(value: string): Promise<ReturnType<VueWrapper['findC
   const schuleAutocomplete: ReturnType<VueWrapper['findComponent']> | undefined = wrapper
     ?.findComponent({ ref: 'schulFilter' })
     .findComponent('[data-testid="person-import-schule-select"]');
-  await schuleAutocomplete?.setValue(value);
+  await schuleAutocomplete?.setValue(DoFactory.getSchule({ id: value }));
   return schuleAutocomplete;
 }
 
