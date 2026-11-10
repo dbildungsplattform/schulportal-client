@@ -1,7 +1,7 @@
 import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
-import { createRouter, createWebHistory, type Router } from 'vue-router';
+import { createRouter, createWebHistory, RouterView, type Router } from 'vue-router';
 
 import { EmailAddressStatus, ServiceProviderSystem } from '@/api-client/generated';
 import KlasseChange from '@/components/admin/klassen/KlasseChange.vue';
@@ -666,6 +666,49 @@ describe('PersonDetailsView', () => {
     await nextTick();
 
     expect(wrapper?.find('[data-testid="metadata-edit-button"]').isVisible()).toBe(true);
+  });
+
+  describe('unsaved Zuordnung changes', () => {
+    beforeEach(async () => {
+      wrapper?.unmount();
+      await router.push({ name: 'person-details', params: { id: '1' } });
+      // The route leave guard is only registered when the view is rendered by a RouterView
+      wrapper = mount(RouterView, {
+        attachTo: document.getElementById('app') || '',
+        global: { plugins: [router] },
+      });
+      await flushPromises();
+    });
+
+    async function selectFirstZuordnung(): Promise<void> {
+      await wrapper!.get('[data-testid="zuordnung-edit-button"]').trigger('click');
+      await wrapper!.get('[data-testid="person-zuordnung-1"] input[type="checkbox"]').setValue(true);
+      await flushPromises();
+    }
+
+    test('it blocks leaving the page while a Zuordnung change is pending', async () => {
+      await selectFirstZuordnung();
+      const personenkontextDelete: VueWrapper = wrapper!.findComponent(PersonenkontextDelete);
+      personenkontextDelete.vm.$emit('onDeletePersonenkontext');
+      await flushPromises();
+
+      void router.push({ name: 'person-management' });
+      await flushPromises();
+
+      expect(document.body.querySelector('[data-testid="unsaved-changes-warning-text"]')).not.toBeNull();
+      expect(router.currentRoute.value.name).toBe('person-details');
+    });
+
+    test('it prevents unloading the page while a Zuordnung form is dirty', async () => {
+      await selectFirstZuordnung();
+      await wrapper!.get('[data-testid="klasse-change-button"]').trigger('click');
+      await flushPromises();
+
+      const beforeUnloadEvent: Event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(beforeUnloadEvent);
+
+      expect(beforeUnloadEvent.defaultPrevented).toBe(true);
+    });
   });
 
   describe('error messages', () => {

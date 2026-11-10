@@ -71,7 +71,9 @@ describe('zuordnungen', () => {
     });
 
     test('it sorts by Dienststellennummer and puts Zuordnungen without one last', () => {
-      const withoutDstNr: Zuordnung = DoFactory.getZuordnung({ sskDstNr: null, typ: OrganisationsTyp.Schule });
+      const withoutDstNr: Zuordnung = DoFactory.getZuordnung({ typ: OrganisationsTyp.Schule });
+      // DoFactory replaces a null sskDstNr with a random kennung, so it has to be cleared afterwards
+      withoutDstNr.sskDstNr = null;
       const second: Zuordnung = DoFactory.getZuordnung({ sskDstNr: '2', rolle: 'a', typ: OrganisationsTyp.Schule });
       const first: Zuordnung = DoFactory.getZuordnung({ sskDstNr: '1', rolle: 'b', typ: OrganisationsTyp.Schule });
 

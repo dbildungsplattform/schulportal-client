@@ -1,6 +1,9 @@
 import { PendingState } from '@/components/admin/personen/details/PersonenkontextItem.types';
 import PersonenkontextItem from '@/components/admin/personen/details/PersonenkontextItem.vue';
 import KlasseChange from '@/components/admin/klassen/KlasseChange.vue';
+import KopersInput from '@/components/admin/personen/KopersInput.vue';
+import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
+import PersonenkontextDelete from '@/components/admin/personen/PersonenkontextDelete.vue';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
@@ -23,6 +26,7 @@ import type { Person } from '@/stores/types/Person';
 import type { Zuordnung } from '@/stores/types/Zuordnung';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
+import type { MockInstance } from 'vitest';
 import { nextTick } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import ZuordnungenSection from './ZuordnungenSection.vue';
@@ -239,5 +243,148 @@ describe('ZuordnungenSection', () => {
 
     expect(personenkontextStore.updatePersonenkontexte).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain('Sie dürfen sich selbst keine Zuordnungen entziehen.');
+  });
+
+  async function startEditingWithSelection(): Promise<VueWrapper> {
+    wrapper = mountComponent();
+    await flushPromises();
+    await wrapper.get('[data-testid="zuordnung-edit-button"]').trigger('click');
+    await wrapper.get(`[data-testid="person-zuordnung-${schule.id}"] input[type="checkbox"]`).setValue(true);
+    await flushPromises();
+    return wrapper;
+  }
+
+  async function prepareDeletion(sectionWrapper: VueWrapper): Promise<void> {
+    const personenkontextDelete: VueWrapper = sectionWrapper.findComponent(PersonenkontextDelete);
+    personenkontextDelete.vm.$emit('onDeletePersonenkontext');
+    await flushPromises();
+  }
+
+  async function openZuordnungCreationForm(): Promise<VueWrapper> {
+    wrapper = mountComponent();
+    await flushPromises();
+    await wrapper.get('[data-testid="zuordnung-edit-button"]').trigger('click');
+    await wrapper.get('[data-testid="zuordnung-create-button"]').trigger('click');
+    await flushPromises();
+    return wrapper.findComponent(PersonenkontextCreate);
+  }
+
+  test('it cancels editing and discards the pending change', async () => {
+    const sectionWrapper: VueWrapper = await startEditingWithSelection();
+    await prepareDeletion(sectionWrapper);
+    expect(getVm().hasPendingChange).toBe(true);
+
+    await sectionWrapper.get('[data-testid="zuordnung-edit-cancel"]').trigger('click');
+
+    expect(getVm().hasPendingChange).toBe(false);
+    expect(sectionWrapper.emitted('update:isEditActive')?.at(-1)).toEqual([false]);
+    expect(sectionWrapper.find('[data-testid="person-zuordnungen-section-view"]').exists()).toBe(true);
+  });
+
+  test('it navigates to the person table after the last editable Zuordnung was deleted', async () => {
+    const pushSpy: MockInstance = vi.spyOn(router, 'push');
+    const sectionWrapper: VueWrapper = await startEditingWithSelection();
+    await prepareDeletion(sectionWrapper);
+
+    await sectionWrapper.get('[data-testid="zuordnung-changes-save-button"]').trigger('click');
+    await flushPromises();
+
+    expect(personenkontextStore.updatePersonenkontexte).toHaveBeenCalledWith([], person.id);
+    const closeButton: Element = await vi.waitUntil(() =>
+      document.body.querySelector('[data-testid="close-zuordnung-delete-success-button"]'),
+    );
+    closeButton.dispatchEvent(new Event('click'));
+    await flushPromises();
+
+    expect(pushSpy).toHaveBeenCalledWith({ name: 'person-management' });
+    expect(personStore.getPersonenuebersichtById).not.toHaveBeenCalled();
+  });
+
+  test('it keeps the change Klasse form open when the confirmation is cancelled', async () => {
+    const newKlasse: Organisation = DoFactory.getKlasse(schule, { name: '9b' });
+    const sectionWrapper: VueWrapper = await startEditingWithSelection();
+    await sectionWrapper.get('[data-testid="klasse-change-button"]').trigger('click');
+    await flushPromises();
+
+    expect(getVm().isFormDirty()).toBe(true);
+
+    const klassenFilter: VueWrapper = sectionWrapper
+      .findComponent(KlasseChange)
+      .findComponent({ name: 'KlassenFilter' });
+    klassenFilter.vm.$emit('update:selectedKlassen', newKlasse.id);
+    klassenFilter.vm.$emit('update:selectedKlassenObjects', [newKlasse]);
+    await flushPromises();
+    await sectionWrapper.get('[data-testid="klasse-change-submit-button"]').trigger('click');
+    await flushPromises();
+
+    expect(document.body.querySelector('[data-testid="change-klasse-confirmation-dialog-text"]')?.textContent).toContain(
+      newKlasse.name,
+    );
+    const closeButtons: NodeListOf<HTMLElement> = document.body.querySelectorAll(
+      '[data-testid="close-layout-card-button"]',
+    );
+    closeButtons[closeButtons.length - 1]!.dispatchEvent(new Event('click'));
+    await flushPromises();
+
+    expect(getVm().hasPendingChange).toBe(false);
+    expect(sectionWrapper.find('[data-testid="klasse-change-form"]').exists()).toBe(true);
+  });
+
+  test('it does not allow submitting an unchanged unlimited Befristung', async () => {
+    configStore.configData = {
+      befristungBearbeitenEnabled: true,
+      rolleBearbeitenEnabled: true,
+      rolleErweiternEnabled: true,
+      setUemPasswordEnabled: true,
+      schulischeAngeboteErstellen: true,
+    };
+    const unbefristeteZuordnung: Zuordnung = DoFactory.getZuordnung({}, { organisation: schule });
+    // DoFactory replaces a null befristung with a random date, so it has to be cleared afterwards
+    unbefristeteZuordnung.befristung = null;
+    personStore.personenuebersicht = DoFactory.getPersonenUebersicht(person, [unbefristeteZuordnung]);
+
+    const sectionWrapper: VueWrapper = await startEditingWithSelection();
+    await sectionWrapper.get('[data-testid="befristung-change-button"]').trigger('click');
+    await flushPromises();
+
+    expect(sectionWrapper.find('[data-testid="change-befristung-form"]').exists()).toBe(true);
+    expect(sectionWrapper.get('[data-testid="change-befristung-submit-button"]').attributes('disabled')).toBeDefined();
+  });
+
+  test.each([['selectedRolle'], ['selectedKlasse']])(
+    'it resets %s when PersonenkontextCreate requests it',
+    async (field: string) => {
+      const personenkontextCreate: VueWrapper = await openZuordnungCreationForm();
+      const modelEvent: string = field === 'selectedRolle' ? 'update:selectedRolle' : 'update:selectedKlasse';
+
+      personenkontextCreate.vm.$emit(modelEvent, 'some-id');
+      await nextTick();
+      expect(personenkontextCreate.props(field)).toBe('some-id');
+
+      personenkontextCreate.vm.$emit('fieldReset', field);
+      await nextTick();
+      expect(personenkontextCreate.props(field)).toBeUndefined();
+    },
+  );
+
+  test('it asks for confirmation when the person has no KoPers.-Nr.', async () => {
+    personStore.currentPerson = { person: { ...person, personalnummer: null } };
+    const personenkontextCreate: VueWrapper = await openZuordnungCreationForm();
+    personenkontextCreate.vm.$emit('update:selectedOrganisation', schule.id);
+    personenkontextCreate.vm.$emit('update:selectedRolle', 'lehr-rolle');
+    await flushPromises();
+
+    const kopersInput: VueWrapper = wrapper!.findComponent(KopersInput);
+    kopersInput.vm.$emit('update:hasNoKopersNr', true);
+    await flushPromises();
+
+    const cancelButton: Element = await vi.waitUntil(() =>
+      document.body.querySelector('[data-testid="cancel-no-kopersnr-button"]'),
+    );
+    expect(document.body.querySelector('[data-testid="no-kopersnr-confirmation-text"]')).not.toBeNull();
+    cancelButton.dispatchEvent(new Event('click'));
+    await flushPromises();
+
+    expect(kopersInput.props('hasNoKopersNr')).toBe(false);
   });
 });
