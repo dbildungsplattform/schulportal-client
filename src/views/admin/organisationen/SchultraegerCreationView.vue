@@ -49,7 +49,7 @@
   }: SchultraegerFieldDefinitions = getSchultraegerFieldDefinitions(formContext);
 
   const rootChildSchultraegerList: ComputedRef<Organisation[]> = computed(() => {
-    return organisationStore.schultraeger;
+    return organisationStore.rootChildren;
   });
 
   const isFormDirty: ComputedRef<boolean> = computed(() => getDirtyState(formContext));
@@ -125,7 +125,7 @@
   onMounted(async () => {
     organisationStore.createdSchultraeger = null;
     organisationStore.errorCode = '';
-    await organisationStore.getRootKinderSchultraeger();
+    await organisationStore.getRootChildren();
 
     if (rootChildSchultraegerList.value.length > 0) {
       const defaultSchultraegerform: string = rootChildSchultraegerList.value[0]?.id ?? '';

@@ -62,8 +62,6 @@ export type RolleFilter = {
   offset?: number;
   searchString?: string;
   organisationIds?: string[];
-  rolleIds?: string[];
-  systemrechte?: RollenSystemRechtEnum[];
   rollenarten?: Array<RollenArt>;
   merkmale?: Array<RollenMerkmal>;
   serviceProviderIds?: Array<string>;
@@ -75,7 +73,6 @@ export type RollenForPersonenkontextCreationQuery = {
   limit?: number;
   rollenartForPerson?: RollenArt;
   rolleName?: string;
-  rollenIds?: Array<string>;
   systemrecht?: RollenSystemRechtEnum;
 };
 
@@ -101,7 +98,6 @@ export type RollenForMptZuordnungFilter = {
   offset?: number;
   searchString?: string;
   organisationIds?: string[];
-  rolleIds?: string[];
 };
 
 export type PersistRollenerweiterungForRolle = {
@@ -111,7 +107,7 @@ export type PersistRollenerweiterungForRolle = {
   selectedServiceProviderIds: Array<string>;
 };
 
-type RollenForPersonAdministrationParams = {
+export type RollenForPersonAdministrationParams = {
   searchStr?: string;
   limit?: number;
   offset?: number;
@@ -254,8 +250,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               filter.limit,
               filter.searchString,
               filter.organisationIds,
-              filter.rolleIds,
-              filter.systemrechte,
+              undefined,
               filter.rollenarten,
               filter.merkmale,
               filter.serviceProviderIds,
@@ -319,7 +314,6 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               filter.limit,
               filter.searchString,
               filter.organisationIds,
-              filter.rolleIds,
             );
           this.allRollen = response.data;
           this.totalRollen = +response.headers['x-paging-total'];
@@ -501,7 +495,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               params.limit,
               params.rollenartForPerson,
               params.rolleName,
-              params.rollenIds,
+              undefined,
               params.systemrecht,
             );
           this.rollenForPersonenkontextCreation = data.items
