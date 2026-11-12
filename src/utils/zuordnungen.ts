@@ -25,8 +25,8 @@ export function withoutKlassen<T extends Zuordnung>(zuordnungen: T[]): T[] {
 }
 
 // Deep copy that is safe for reactive (proxied) Zuordnungen, which structuredClone cannot handle
-export function cloneZuordnungen(zuordnungen: ZuordnungWithKlasse[]): ZuordnungWithKlasse[] {
-  return zuordnungen.map((zuordnung: ZuordnungWithKlasse) => {
+export function cloneZuordnungen(zuordnungen: ZuordnungWithKlasse[] | undefined): ZuordnungWithKlasse[] | undefined {
+  return zuordnungen?.map((zuordnung: ZuordnungWithKlasse) => {
     const copy: ZuordnungWithKlasse = Zuordnung.from(zuordnung);
     copy.merkmale = [...zuordnung.merkmale];
     copy.admins = [...zuordnung.admins];

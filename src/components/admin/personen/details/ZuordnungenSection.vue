@@ -275,7 +275,8 @@
     selectedBefristung: selectedChangeBefristung,
     selectedBefristungOption: selectedChangeBefristungOption,
     calculatedBefristung,
-    selectedRollen: computed(() => (changeBefristungRolle.value ? [changeBefristungRolle.value] : [])),
+    // The initial Befristung of the Rolle is only relevant when creating a Zuordnung
+    selectedRollen: ref<Array<string | TranslatedRolleWithAttrs>>(),
   });
 
   function navigateToPersonTable(): void {
@@ -317,7 +318,7 @@
     isEditActive.value = true;
     // Deep copy of the zuordnungenResult to keep track of the Zuordnungen before any changes were done.
     // This is necessary if a user cancels the editing at some point and the zuordnungenResult was mutated at the time.
-    originalZuordnungen.value = cloneZuordnungen(zuordnungenWithPendingChanges.value ?? []);
+    originalZuordnungen.value = cloneZuordnungen(zuordnungenWithPendingChanges.value);
   };
 
   // Triggers the template to change the Klasse. Also pre-select the Schule and Klasse.
@@ -388,9 +389,7 @@
     formContext.resetForm();
     resetChangeKlasseForm();
     changeBefristungFormContext.resetForm();
-    zuordnungenWithPendingChanges.value = originalZuordnungen.value
-      ? cloneZuordnungen(originalZuordnungen.value)
-      : undefined;
+    zuordnungenWithPendingChanges.value = cloneZuordnungen(originalZuordnungen.value);
   };
 
   const closeCannotDeleteDialog = (): void => {
@@ -594,19 +593,19 @@
   });
 
   const onSubmitCreateZuordnung: (e?: Event) => Promise<void | undefined> = formContext.handleSubmit(() => {
-    if (selectedRolle.value) {
-      if (selectedRolle.value.rollenart === RollenArt.Lern) {
-        createZuordnungConfirmationDialogMessage.value = t('person.addZuordnungKlasseConfirmation', {
-          rollenname: selectedRolle.value.title,
-          klassenname: selectedKlasseForCreation.value?.name,
-        });
-      } else {
-        createZuordnungConfirmationDialogMessage.value = t('person.addZuordnungConfirmation', {
-          rollenname: selectedRolle.value.title,
-        });
-      }
-      createZuordnungConfirmationDialogVisible.value = true;
+    // The Rolle is required by the validation schema
+    const rolle: TranslatedRolleWithAttrs = selectedRolle.value!;
+    if (rolle.rollenart === RollenArt.Lern) {
+      createZuordnungConfirmationDialogMessage.value = t('person.addZuordnungKlasseConfirmation', {
+        rollenname: rolle.title,
+        klassenname: selectedKlasseForCreation.value?.name,
+      });
+    } else {
+      createZuordnungConfirmationDialogMessage.value = t('person.addZuordnungConfirmation', {
+        rollenname: rolle.title,
+      });
     }
+    createZuordnungConfirmationDialogVisible.value = true;
   });
 
   const onSubmitChangeBefristung: (e?: Event) => Promise<void | undefined> = changeBefristungFormContext.handleSubmit(

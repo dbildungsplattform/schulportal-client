@@ -7,6 +7,7 @@ import {
   buildZuordnungenForCreation,
   buildZuordnungenForDeletion,
   buildZuordnungenForKlassenwechsel,
+  cloneZuordnungen,
   computeZuordnungenWithKlasse,
   getKlassenZuordnungenToKeep,
   withoutKlassen,
@@ -83,6 +84,49 @@ describe('zuordnungen', () => {
 
       expect(result).toEqual([first, second, withoutDstNr]);
     });
+
+    test.each([[true], [false]])(
+      'it puts the Zuordnung without Dienststellennummer last (without Dienststellennummer first: %s)',
+      (withoutFirst: boolean) => {
+        const withoutDstNr: Zuordnung = DoFactory.getZuordnung({ rolle: 'rolle', typ: OrganisationsTyp.Schule });
+        withoutDstNr.sskDstNr = null;
+        const withDstNr: Zuordnung = DoFactory.getZuordnung({
+          rolle: 'rolle',
+          sskDstNr: '1',
+          typ: OrganisationsTyp.Schule,
+        });
+
+        const result: ZuordnungWithKlasse[] | undefined = computeZuordnungenWithKlasse(
+          DoFactory.getPersonenUebersicht(
+            undefined,
+            withoutFirst ? [withoutDstNr, withDstNr] : [withDstNr, withoutDstNr],
+          ),
+        );
+
+        expect(result).toEqual([withDstNr, withoutDstNr]);
+      },
+    );
+  });
+
+  describe('cloneZuordnungen', () => {
+    test('it returns undefined without Zuordnungen', () => {
+      expect(cloneZuordnungen(undefined)).toBeUndefined();
+    });
+
+    test('it creates an independent deep copy including the Klasse', () => {
+      const { schulZuordnung, klassenZuordnung }: SchuleWithKlasse = getSchuleWithKlasse();
+      const original: ZuordnungWithKlasse[] = computeZuordnungenWithKlasse(
+        DoFactory.getPersonenUebersicht(undefined, [schulZuordnung, klassenZuordnung]),
+      )!;
+
+      const copy: ZuordnungWithKlasse[] = cloneZuordnungen(original)!;
+
+      expect(copy).toEqual(original);
+      expect(copy[0]).not.toBe(original[0]);
+      expect(copy[0]!.merkmale).not.toBe(original[0]!.merkmale);
+      expect(copy[0]!.admins).not.toBe(original[0]!.admins);
+      expect(copy[0]!.klasse).toBe(original[0]!.klasse);
+    });
   });
 
   describe('getKlassenZuordnungenToKeep', () => {
@@ -104,6 +148,29 @@ describe('zuordnungen', () => {
         expect(result).toEqual([kept.klassenZuordnung]);
       },
     );
+  });
+
+  describe('getKlassenZuordnungenToKeep (edge cases)', () => {
+    test('it returns no Klassen for remaining Zuordnungen without Klasse', () => {
+      const { schulZuordnung }: SchuleWithKlasse = getSchuleWithKlasse();
+
+      expect(getKlassenZuordnungenToKeep([schulZuordnung], [schulZuordnung], 'rolleId')).toEqual([]);
+    });
+
+    test('it collects all Klassen Zuordnungen with the same Schule, Klasse and Rolle', () => {
+      const { schulZuordnung, klassenZuordnung }: SchuleWithKlasse = getSchuleWithKlasse();
+      const remaining: ZuordnungWithKlasse[] = computeZuordnungenWithKlasse(
+        DoFactory.getPersonenUebersicht(undefined, [schulZuordnung, klassenZuordnung]),
+      )!;
+
+      const result: Zuordnung[] = getKlassenZuordnungenToKeep(
+        remaining,
+        [klassenZuordnung, klassenZuordnung],
+        'rolleId',
+      );
+
+      expect(result).toEqual([klassenZuordnung, klassenZuordnung]);
+    });
   });
 
   describe('buildZuordnungenForDeletion', () => {
@@ -181,6 +248,23 @@ describe('zuordnungen', () => {
       expect(result.zuordnungenToBePersisted[3]).toEqual(existing.klassenZuordnung);
     });
 
+    test('it falls back to empty values for a Klasse without kennung and administriertVon', () => {
+      const schule: Organisation = DoFactory.getSchule();
+      const klasse: Organisation = DoFactory.getKlasse(schule, { kennung: undefined, administriertVon: undefined });
+
+      const result: ZuordnungChange = buildZuordnungenForCreation({
+        currentZuordnungen: [],
+        existingZuordnungen: undefined,
+        organisation: schule,
+        klasse,
+        rolleId: rolle.value,
+        rolle: undefined,
+        befristung: null,
+      });
+
+      expect(result.zuordnungenToBePersisted[1]).toMatchObject({ rolle: '', sskDstNr: '', administriertVon: '' });
+    });
+
     test('it handles a missing Klasse and Rolle', () => {
       const schule: Organisation = DoFactory.getSchule({ kennung: undefined, administriertVon: undefined });
 
@@ -239,6 +323,23 @@ describe('zuordnungen', () => {
         expect.objectContaining({ sskId: newKlasse.id, rolleId: selected.rolleId, typ: OrganisationsTyp.Klasse }),
       ]);
       expect(result.zuordnungenToBePersisted).not.toContainEqual(selectedSchule.klassenZuordnung);
+    });
+
+    test('it falls back to empty values for a Schule and Klasse without kennung and administriertVon', () => {
+      const schule: Organisation = DoFactory.getSchule({ kennung: undefined, administriertVon: undefined });
+      const newKlasse: Organisation = DoFactory.getKlasse(schule, { kennung: undefined, administriertVon: undefined });
+      const schulZuordnung: Zuordnung = DoFactory.getZuordnung({}, { organisation: schule });
+
+      const result: ZuordnungChange = buildZuordnungenForKlassenwechsel({
+        currentZuordnungen: [schulZuordnung],
+        existingZuordnungen: [schulZuordnung],
+        selectedZuordnungen: [schulZuordnung],
+        schule,
+        newKlasse,
+      });
+
+      expect(result.newZuordnung).toMatchObject({ sskDstNr: '', administriertVon: '' });
+      expect(result.zuordnungenToBePersisted.at(-1)).toMatchObject({ sskDstNr: '', administriertVon: '' });
     });
 
     test('it does not add a Klasse without new Klasse', () => {

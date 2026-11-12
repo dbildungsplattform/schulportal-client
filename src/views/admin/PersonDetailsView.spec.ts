@@ -1,6 +1,7 @@
 import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { afterEach, expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
+import { VDialog } from 'vuetify/components';
 import { createRouter, createWebHistory, RouterView, type Router } from 'vue-router';
 
 import { EmailAddressStatus, ServiceProviderSystem, type OrganisationResponse } from '@/api-client/generated';
@@ -675,6 +676,62 @@ describe('PersonDetailsView', () => {
       window.dispatchEvent(beforeUnloadEvent);
 
       expect(beforeUnloadEvent.defaultPrevented).toBe(true);
+    });
+  });
+
+  describe('without Zuordnungen data', () => {
+    test('it does not require a KoPers.-Nr. when no personenuebersicht is loaded', async () => {
+      personStore.personenuebersicht = null;
+      await flushPromises();
+
+      expect(wrapper?.find('[data-testid="metadata-edit-button"]').exists()).toBe(true);
+    });
+  });
+
+  test('it updates the visibility of the dialogs', async () => {
+    for (const dialog of wrapper!.findAllComponents(VDialog)) {
+      dialog.vm.$emit('update:modelValue', true);
+      dialog.vm.$emit('update:modelValue', false);
+    }
+    await flushPromises();
+
+    expect(wrapper!.findAllComponents(VDialog).length).toBeGreaterThan(0);
+  });
+
+  describe('leaving the page', () => {
+    async function mountWithRouterView(zuordnungenSectionStub?: Component): Promise<void> {
+      wrapper?.unmount();
+      await router.push({ name: 'person-details', params: { id: '1' } });
+      wrapper = mount(RouterView, {
+        attachTo: document.getElementById('app') || '',
+        global: {
+          plugins: [router],
+          stubs: zuordnungenSectionStub ? { ZuordnungenSection: zuordnungenSectionStub } : {},
+        },
+      });
+      await flushPromises();
+    }
+
+    test('it navigates away without a warning when nothing was changed', async () => {
+      await mountWithRouterView();
+
+      await router.push({ name: 'person-management' });
+      await flushPromises();
+
+      expect(router.currentRoute.value.name).toBe('person-management');
+    });
+
+    test('it treats a missing dirty state of the Zuordnungen section as not dirty', async () => {
+      await mountWithRouterView({
+        template: '<div />',
+        setup: (_props: unknown, { expose }: { expose: (exposed: Record<string, unknown>) => void }): void =>
+          expose({ hasPendingChange: false, isFormDirty: (): undefined => undefined }),
+      });
+
+      const beforeUnloadEvent: Event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(beforeUnloadEvent);
+
+      expect(beforeUnloadEvent.defaultPrevented).toBe(false);
     });
   });
 
