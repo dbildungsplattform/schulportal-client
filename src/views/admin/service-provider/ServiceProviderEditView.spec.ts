@@ -1,6 +1,7 @@
 import SuccessTemplate from '@/components/admin/service-provider/SuccessTemplate.vue';
 import { ServiceProviderFormProps } from '@/components/admin/service-provider/types';
 import routes from '@/router/routes';
+import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
 import { RollenArt, RollenSystemRecht } from '@/stores/RolleStore';
 import {
   ServiceProviderKategorie,
@@ -129,6 +130,7 @@ describe('ServiceProviderEditView', () => {
       routes,
     });
     serviceProviderStore.$reset();
+    useOrganisationStore().$reset();
     const testServiceProvider: ManageableServiceProviderDetail = DoFactory.getManageableServiceProviderDetail({
       relevantSystemrechte: [RollenSystemRecht.AngeboteVerwalten],
     });
@@ -145,6 +147,60 @@ describe('ServiceProviderEditView', () => {
   it('renders the headline and form', () => {
     expect(wrapper?.find('[data-testid="admin-headline"]').exists()).toBe(true);
     expect(wrapper?.findComponent({ name: 'ServiceProviderForm' }).exists()).toBe(true);
+  });
+
+  it('loads the initial organisation at the view boundary and supplies the object to the form', async () => {
+    await flushPromises();
+    wrapper?.unmount();
+    const organisationStore: OrganisationStore = useOrganisationStore();
+    const organisation: Organisation = DoFactory.getSchule({
+      id: serviceProviderStore.currentServiceProvider!.administrationsebene.id,
+    });
+    vi.mocked(organisationStore.loadOrganisationForSelection).mockClear();
+    vi.mocked(organisationStore.loadOrganisationForSelection).mockImplementationOnce((): Promise<void> => {
+      organisationStore.organisationForSelection = organisation;
+      return Promise.resolve();
+    });
+    await router.push({ name: 'angebot-details', params: { id: serviceProviderStore.currentServiceProvider!.id } });
+    wrapper = await mountComponent();
+    await flushPromises();
+
+    expect(organisationStore.loadOrganisationForSelection).toHaveBeenCalledWith(organisation.id);
+    expect(organisationStore.organisationForSelection).toEqual(organisation);
+    expect(wrapper.findComponent({ name: 'ServiceProviderForm' }).props('initialOrganisation')).toEqual(organisation);
+    expect(wrapper.findComponent({ name: 'SchulenFilter' }).props('selectedSchulen')).toEqual(organisation);
+  });
+
+  it('retries a failed initial lookup instead of restoring an unresolved selection', async () => {
+    await flushPromises();
+    wrapper?.unmount();
+    const organisationStore: OrganisationStore = useOrganisationStore();
+    const organisation: Organisation = DoFactory.getSchule({
+      id: serviceProviderStore.currentServiceProvider!.administrationsebene.id,
+    });
+    vi.mocked(organisationStore.loadOrganisationForSelection).mockClear();
+    vi.mocked(organisationStore.loadOrganisationForSelection)
+      .mockImplementationOnce((): Promise<void> => {
+        organisationStore.organisationForSelection = null;
+        organisationStore.errorCode = 'UNSPECIFIED_ERROR';
+        return Promise.resolve();
+      })
+      .mockImplementationOnce((): Promise<void> => {
+        organisationStore.organisationForSelection = organisation;
+        organisationStore.errorCode = '';
+        return Promise.resolve();
+      });
+    await router.push({ name: 'angebot-details', params: { id: serviceProviderStore.currentServiceProvider!.id } });
+    wrapper = await mountComponent();
+    await flushPromises();
+    expect(organisationStore.loadOrganisationForSelection).toHaveBeenCalledOnce();
+    expect(serviceProviderStore.errorCode).toBe('UNSPECIFIED_ERROR');
+    expect(wrapper.findComponent({ name: 'ServiceProviderForm' }).exists()).toBe(false);
+
+    await wrapper.get('[data-testid="spsh-alert-button"]').trigger('click');
+    await flushPromises();
+    expect(serviceProviderStore.errorCode).toBe('');
+    expect(wrapper.findComponent({ name: 'SchulenFilter' }).props('selectedSchulen')).toEqual(organisation);
   });
 
   it('passes anbietenInMerkmale in initialValues when corresponding merkmale exist', async () => {

@@ -3,7 +3,7 @@ import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import type { Organisation } from './OrganisationStore';
 import { SortField } from './PersonStore';
 import { RollenArt, RollenMerkmal, type RolleResponse } from './RolleStore';
-import { ServiceProviderKategorie } from './ServiceProviderStore';
+import { ServiceProviderKategorie, type ServiceProviderIdNameResponse } from './ServiceProviderStore';
 
 export enum PersonStatusFilter {
   Locked = 'locked',
@@ -37,51 +37,43 @@ type SearchFilterState = {
   searchStringForPersonen: string | null;
   searchStringForSchulen: string | null;
   searchStringForServiceProvider: string | null;
-  selectedKlassen: Array<string> | null;
-  selectedRollen: Array<string> | null;
+  selectedKlassen: Array<Organisation> | null;
+  selectedRollen: RolleResponse[] | null;
   selectedStatusForPersonen: PersonStatusFilter[];
-  selectedRollenObjects: RolleResponse[];
-  selectedOrganisationen: Array<string> | null;
-  selectedOrgaObjects: Organisation[] | null;
+  selectedOrganisationen: Organisation[] | null;
   personenSortField: string | null;
   personenSortOrder: string | null;
   organisationenSortField: OrganisationSortField | null;
   organisationenSortOrder: SortOrder | null;
   currentSort: { key: string; order: 'asc' | 'desc' } | null;
-  selectedSchuleForKlassen: string | null;
-  selectedKlassenForKlassen: Array<string> | null;
-  selectedSchuleForMptRollen: string | null;
-  selectedSchuleForSchulischeServiceProvider: string | null;
+  selectedSchuleForKlassen: Organisation | null;
+  selectedKlassenForKlassen: Array<Organisation> | null;
+  selectedSchuleForMptRollen: Organisation | null;
+  selectedSchuleForSchulischeServiceProvider: Organisation | null;
   selectedMerkmaleForRollen: Array<RollenMerkmal>;
   selectedRollenartenForRollen: Array<RollenArt>;
-  selectedOrganisationenForRollen: Array<string>;
-  selectedAngeboteForRollen: Array<string>;
-  selectedAngeboteNamesForRollen: Record<string, string>;
+  selectedOrganisationenForRollen: Array<Organisation>;
+  selectedServiceProvidersForRollen: ServiceProviderIdNameResponse[];
   selectedKategorienForServiceProvider: Array<ServiceProviderKategorie>;
 };
 
 type SearchFilterActions = {
-  setKlasseFilterForPersonen: (selectedKlassen: Array<string> | null) => void;
-  setRolleFilterForPersonen: (selectedRollen: Array<string> | null) => void;
-  setStatusFilterForPersonen: (selectedStatus: PersonStatusFilter[]) => void;
-  setRolleFilterWithObjectsForPersonen: (selectedRollen: Array<string> | null, rollenObjects: RolleResponse[]) => void;
-  setOrganisationFilterForPersonen: (
-    selectedOrganisationen: Array<string> | null,
-    orgaObjects?: Organisation[],
-  ) => void;
+  setKlasseFilterForPersonen: (selectedKlassen: Array<Organisation> | null) => void;
+  setRolleFilterForPersonen: (selectedRollen: RolleResponse[] | null) => void;
+  setOrganisationFilterForPersonen: (selectedOrganisationen: Organisation[] | null) => void;
   setSearchFilterForRollen: (searchFilter: string | null) => void;
   setSearchFilterForPersonen: (searchStringForPersonen: string | null) => void;
+  setStatusFilterForPersonen: (selectedStatus: PersonStatusFilter[]) => void;
   setSearchFilterForSchulen: (searchStringForSchulen: string | null) => void;
   setSearchFilterForServiceProvider: (searchStringForServiceProvider: string | null) => void;
-  setSchuleFilterForKlassen: (selectedSchuleForKlassen: string | null) => void;
-  setKlasseFilterForKlassen: (selectedKlassenForKlassen: Array<string> | null) => void;
-  setSchuleForMptRollen: (selectedSchuleForMptRollen: string | null) => void;
-  setSchuleForSchulischeServiceProvider: (selectedSchuleForSchulischeServiceProvider: string | null) => void;
+  setSchuleFilterForKlassen: (selectedSchuleForKlassen: Organisation | null) => void;
+  setKlasseFilterForKlassen: (selectedKlassenForKlassen: Array<Organisation> | null) => void;
+  setSchuleForMptRollen: (selectedSchuleForMptRollen: Organisation | null) => void;
+  setSchuleForSchulischeServiceProvider: (selectedSchuleForSchulischeServiceProvider: Organisation | null) => void;
   setMerkmaleFilterForRollen: (selectedMerkmale: Array<RollenMerkmal>) => void;
   setRollenartenFilterForRollen: (selectedRollenarten: Array<RollenArt>) => void;
-  setOrganisationenFilterForRollen: (selectedOrganisationen: Array<string>) => void;
-  setAngeboteFilterForRollen: (selectedAngebote: Array<string>) => void;
-  setAngeboteNamesForRollen: (names: Record<string, string>) => void;
+  setOrganisationenFilterForRollen: (selectedOrganisationen: Array<Organisation>) => void;
+  setServiceProvidersFilterForRollen: (selectedServiceProviders: ServiceProviderIdNameResponse[]) => void;
   setKategorienForServiceProvider: (selectedKategorienForServiceProvider: Array<ServiceProviderKategorie>) => void;
   resetKategorienForServiceProvider: () => void;
 };
@@ -120,10 +112,7 @@ export const useSearchFilterStore: StoreDefinition<
     searchStringForRollen: '',
     selectedKlassen: [],
     selectedRollen: [],
-    selectedStatusForPersonen: [],
-    selectedRollenObjects: [],
     selectedOrganisationen: [],
-    selectedOrgaObjects: [],
     personenSortField: SortField.Familienname,
     personenSortOrder: SortOrder.Asc,
     organisationenSortField: null,
@@ -131,31 +120,26 @@ export const useSearchFilterStore: StoreDefinition<
     currentSort: { key: SortField.Familienname, order: SortOrder.Asc },
     selectedSchuleForKlassen: null,
     selectedKlassenForKlassen: [],
+    selectedStatusForPersonen: [],
     selectedSchuleForMptRollen: null,
     selectedSchuleForSchulischeServiceProvider: null,
     selectedMerkmaleForRollen: [],
     selectedRollenartenForRollen: [],
     selectedOrganisationenForRollen: [],
-    selectedAngeboteForRollen: [],
-    selectedAngeboteNamesForRollen: {},
+    selectedServiceProvidersForRollen: [],
     selectedKategorienForServiceProvider: [...DEFAULT_SERVICE_PROVIDER_KATEGORIEN],
   }),
   actions: {
-    setKlasseFilterForPersonen(selectedKlassen: Array<string> | null) {
+    setKlasseFilterForPersonen(selectedKlassen: Array<Organisation> | null) {
       this.selectedKlassen = selectedKlassen;
     },
 
-    setRolleFilterForPersonen(selectedRollen: Array<string> | null) {
+    setRolleFilterForPersonen(selectedRollen: RolleResponse[] | null) {
       this.selectedRollen = selectedRollen;
     },
 
-    setStatusFilterForPersonen(selectedStatus: PersonStatusFilter[]): void {
-      this.selectedStatusForPersonen = selectedStatus;
-    },
-
-    setOrganisationFilterForPersonen(selectedOrganisationen: Array<string> | null, orgaObjects?: Organisation[]) {
+    setOrganisationFilterForPersonen(selectedOrganisationen: Organisation[] | null) {
       this.selectedOrganisationen = selectedOrganisationen;
-      this.selectedOrgaObjects = orgaObjects ?? [];
     },
 
     setSearchFilterForPersonen(searchStringForPersonen: string | null) {
@@ -166,6 +150,10 @@ export const useSearchFilterStore: StoreDefinition<
       this.searchStringForRollen = searchStringForRollen ?? '';
     },
 
+    setStatusFilterForPersonen(selectedStatus: PersonStatusFilter[]): void {
+      this.selectedStatusForPersonen = selectedStatus;
+    },
+
     setSearchFilterForSchulen(searchStringForSchulen: string | null) {
       this.searchStringForSchulen = searchStringForSchulen ?? '';
     },
@@ -174,24 +162,19 @@ export const useSearchFilterStore: StoreDefinition<
       this.searchStringForServiceProvider = searchStringForServiceProvider ?? '';
     },
 
-    setRolleFilterWithObjectsForPersonen(selectedRollen: Array<string> | null, rollenObjects: RolleResponse[]) {
-      this.selectedRollen = selectedRollen;
-      this.selectedRollenObjects = rollenObjects;
-    },
-
-    setSchuleFilterForKlassen(selectedSchuleForKlassen: string | null) {
+    setSchuleFilterForKlassen(selectedSchuleForKlassen: Organisation | null) {
       this.selectedSchuleForKlassen = selectedSchuleForKlassen;
     },
 
-    setKlasseFilterForKlassen(selectedKlassenForKlassen: Array<string> | null) {
+    setKlasseFilterForKlassen(selectedKlassenForKlassen: Array<Organisation> | null) {
       this.selectedKlassenForKlassen = selectedKlassenForKlassen;
     },
 
-    setSchuleForMptRollen(selectedSchuleForMptRollen: string | null) {
+    setSchuleForMptRollen(selectedSchuleForMptRollen: Organisation | null) {
       this.selectedSchuleForMptRollen = selectedSchuleForMptRollen;
     },
 
-    setSchuleForSchulischeServiceProvider(selectedSchuleForSchulischeServiceProvider: string | null) {
+    setSchuleForSchulischeServiceProvider(selectedSchuleForSchulischeServiceProvider: Organisation | null) {
       this.selectedSchuleForSchulischeServiceProvider = selectedSchuleForSchulischeServiceProvider;
     },
 
@@ -203,16 +186,12 @@ export const useSearchFilterStore: StoreDefinition<
       this.selectedRollenartenForRollen = selectedRollenarten;
     },
 
-    setOrganisationenFilterForRollen(selectedOrganisationen: Array<string>) {
+    setOrganisationenFilterForRollen(selectedOrganisationen: Array<Organisation>) {
       this.selectedOrganisationenForRollen = selectedOrganisationen;
     },
 
-    setAngeboteFilterForRollen(selectedAngebote: Array<string>) {
-      this.selectedAngeboteForRollen = selectedAngebote;
-    },
-
-    setAngeboteNamesForRollen(names: Record<string, string>) {
-      this.selectedAngeboteNamesForRollen = names;
+    setServiceProvidersFilterForRollen(selectedServiceProviders: ServiceProviderIdNameResponse[]) {
+      this.selectedServiceProvidersForRollen = selectedServiceProviders;
     },
 
     setKategorienForServiceProvider(selectedKategorienForServiceProvider: Array<ServiceProviderKategorie>) {

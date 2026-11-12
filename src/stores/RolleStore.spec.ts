@@ -310,7 +310,6 @@ describe('rolleStore', () => {
         limit: 15,
         searchString: 'MPT',
         organisationIds: ['organisation-1', 'organisation-2'],
-        rolleIds: ['rolle-1', 'rolle-2'],
       });
       expect(rolleStore.loading).toBe(true);
       await promise;
@@ -320,7 +319,6 @@ describe('rolleStore', () => {
       expect(query.get('limit')).toBe('15');
       expect(query.get('searchStr')).toBe('MPT');
       expect(query.getAll('organisationIds')).toEqual(['organisation-1', 'organisation-2']);
-      expect(query.getAll('rolleIds')).toEqual(['rolle-1', 'rolle-2']);
       expect(rolleStore.allRollen).toEqual(mockResponse);
       expect(rolleStore.totalRollen).toBe(4);
       expect(rolleStore.loading).toBe(false);
@@ -820,7 +818,6 @@ describe('rolleStore', () => {
         limit: 20,
         rollenartForPerson: RollenArt.Lehr,
         rolleName: 'Lehrer',
-        rollenIds: ['rolle-1', 'rolle-2'],
         systemrecht: RollenSystemRechtEnum.RollenVerwalten,
       });
 
@@ -836,8 +833,7 @@ describe('rolleStore', () => {
       expect(rolleStore.rollenForPersonenkontextCreation[1]?.rollenart).toBe(rolleB.rollenart);
       expect(mockadapter.history.get[0]?.url).toContain('organisationId=organisation-1');
       expect(mockadapter.history.get[0]?.url).toContain('rollenartForPerson=LEHR');
-      expect(mockadapter.history.get[0]?.url).toContain('rollenIds=rolle-1');
-      expect(mockadapter.history.get[0]?.url).toContain('rollenIds=rolle-2');
+      expect(mockadapter.history.get[0]?.url).not.toContain('rollenIds');
       expect(rolleStore.errorCode).toBe('');
       expect(rolleStore.loading).toBe(false);
     });
