@@ -5,6 +5,10 @@ import { SortField } from './PersonStore';
 import { RollenArt, RollenMerkmal, type RolleResponse } from './RolleStore';
 import { ServiceProviderKategorie, type ServiceProviderIdNameResponse } from './ServiceProviderStore';
 
+export enum PersonStatusFilter {
+  Locked = 'locked',
+}
+
 export const DEFAULT_SERVICE_PROVIDER_KATEGORIEN: ReadonlyArray<ServiceProviderKategorie> = [
   ServiceProviderKategorie.Email,
   ServiceProviderKategorie.Unterricht,
@@ -35,6 +39,7 @@ type SearchFilterState = {
   searchStringForServiceProvider: string | null;
   selectedKlassen: Array<Organisation> | null;
   selectedRollen: RolleResponse[] | null;
+  selectedStatusForPersonen: PersonStatusFilter[];
   selectedOrganisationen: Organisation[] | null;
   personenSortField: string | null;
   personenSortOrder: string | null;
@@ -58,6 +63,7 @@ type SearchFilterActions = {
   setOrganisationFilterForPersonen: (selectedOrganisationen: Organisation[] | null) => void;
   setSearchFilterForRollen: (searchFilter: string | null) => void;
   setSearchFilterForPersonen: (searchStringForPersonen: string | null) => void;
+  setStatusFilterForPersonen: (selectedStatus: PersonStatusFilter[]) => void;
   setSearchFilterForSchulen: (searchStringForSchulen: string | null) => void;
   setSearchFilterForServiceProvider: (searchStringForServiceProvider: string | null) => void;
   setSchuleFilterForKlassen: (selectedSchuleForKlassen: Organisation | null) => void;
@@ -114,6 +120,7 @@ export const useSearchFilterStore: StoreDefinition<
     currentSort: { key: SortField.Familienname, order: SortOrder.Asc },
     selectedSchuleForKlassen: null,
     selectedKlassenForKlassen: [],
+    selectedStatusForPersonen: [],
     selectedSchuleForMptRollen: null,
     selectedSchuleForSchulischeServiceProvider: null,
     selectedMerkmaleForRollen: [],
@@ -141,6 +148,10 @@ export const useSearchFilterStore: StoreDefinition<
 
     setSearchFilterForRollen(searchStringForRollen: string | null) {
       this.searchStringForRollen = searchStringForRollen ?? '';
+    },
+
+    setStatusFilterForPersonen(selectedStatus: PersonStatusFilter[]): void {
+      this.selectedStatusForPersonen = selectedStatus;
     },
 
     setSearchFilterForSchulen(searchStringForSchulen: string | null) {

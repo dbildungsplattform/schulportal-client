@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { PersonLockOccasion } from '@/api-client/generated/api';
   import ResultTable, { type Headers, type TableRow } from '@/components/admin/ResultTable.vue';
   import SearchField from '@/components/admin/SearchField.vue';
   import SpshTooltip from '@/components/admin/SpshTooltip.vue';
@@ -12,11 +13,10 @@
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import KlassenFilter from '@/components/filter/KlassenFilter.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
-  import type { SelectedSchulen } from '@/types';
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
   import {
-    useRollenForPersonAdministrationAutocomplete,
     type UseRollenForPersonAdministrationAutocompleteReturn,
+    useRollenForPersonAdministrationAutocomplete,
   } from '@/composables/useRollenForPersonAdministrationAutocomplete';
   import { type AuthStore, useAuthStore } from '@/stores/AuthStore';
   import { type Organisation, type OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
@@ -32,11 +32,11 @@
     TranslatedRolleWithAttrs,
     useRolleStore,
   } from '@/stores/RolleStore';
-  import { type SearchFilterStore, useSearchFilterStore } from '@/stores/SearchFilterStore';
+  import { PersonStatusFilter, type SearchFilterStore, useSearchFilterStore } from '@/stores/SearchFilterStore';
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
   import { OperationType } from '@/stores/types/bulkOperationTypes';
+  import type { SelectedSchulen } from '@/types';
   import { type TranslatedObject } from '@/types.d';
-  import { blurActiveElement } from '@/utils/focus';
   import { SortOrder } from '@/utils/sorting';
   import { type ComponentPublicInstance, type ComputedRef, type Ref, computed, onMounted, ref, watch } from 'vue';
   import { type Composer, useI18n } from 'vue-i18n';
@@ -121,7 +121,6 @@
   const selectedOrganisationIds: ComputedRef<string[]> = computed(() =>
     selectedOrganisationen.value.map((organisation: Organisation) => organisation.id),
   );
-  const selectedStatus: Ref<string | null> = ref(null);
   const searchFilter: Ref<string> = ref('');
 
   const sortField: Ref<string | null> = ref(SortField.Familienname);
@@ -199,7 +198,7 @@
       !!searchFilterStore.selectedRollen?.length ||
       !!searchFilterStore.searchStringForPersonen ||
       (selectedKlassen.value && selectedKlassen.value.length > 0) ||
-      !!selectedStatus.value,
+      searchFilterStore.selectedStatusForPersonen.length > 0,
   );
 
   const selectedOrganisationKennung: ComputedRef<string> = computed(() => {
@@ -220,7 +219,9 @@
     );
   });
 
-  const statuses: Array<string> = ['Aktiv', 'Inaktiv'];
+  const statuses: ComputedRef<TranslatedObject[]> = computed(() => [
+    { value: PersonStatusFilter.Locked, title: t('admin.person.lockedStatus') },
+  ]);
 
   async function applySearchAndFilters(): Promise<void> {
     await personStore.getAllPersons({
@@ -230,6 +231,9 @@
         ? searchFilterStore.selectedKlassen.map((klasse: Organisation) => klasse.id)
         : (searchFilterStore.selectedOrganisationen?.map((organisation: Organisation) => organisation.id) ?? []),
       rolleIDs: searchFilterStore.selectedRollen?.map((rolle: RolleResponse): string => rolle.id) ?? [],
+      sperrgruende: searchFilterStore.selectedStatusForPersonen.includes(PersonStatusFilter.Locked)
+        ? [PersonLockOccasion.ManuellGesperrt, PersonLockOccasion.KopersGesperrt]
+        : undefined,
       searchFilter: searchFilterStore.searchStringForPersonen || '',
       sortField: searchFilterStore.personenSortField as SortField,
       sortOrder: searchFilterStore.personenSortOrder as SortOrder,
@@ -248,6 +252,13 @@
     }
 
     searchFilterStore.personenPerPage = limit;
+    await applySearchAndFilters();
+  }
+
+  async function setStatusFilter(newValue: PersonStatusFilter[]): Promise<void> {
+    searchFilterStore.setStatusFilterForPersonen(newValue);
+    searchFilterStore.personenPage = 1;
+
     await applySearchAndFilters();
   }
 
@@ -292,7 +303,7 @@
     rollenFilter.searchStr = '';
     selectedRollen.value = [];
     selectedKlassen.value = [];
-    selectedStatus.value = null;
+    searchFilterStore.setStatusFilterForPersonen([]);
     searchFilterStore.personenPage = 1;
     searchFilterStore.personenPerPage = 30;
     sortField.value = SortField.Familienname;
@@ -536,10 +547,6 @@
     }
   });
 
-  watch(selectedStatus, () => {
-    blurActiveElement();
-  });
-
   // Used for to show the number of klassen found in the filter
   const totalKlassen: ComputedRef<number> = computed(
     () => organisationStore.klassenFilters.get('personen-management')?.total ?? 0,
@@ -747,9 +754,9 @@
           md="2"
           class="py-md-0"
         >
-          <v-autocomplete
+          <v-select
             id="status-select"
-            v-model="selectedStatus"
+            :model-value="searchFilterStore.selectedStatusForPersonen"
             autocomplete="off"
             chips
             class="filter-dropdown"
@@ -757,13 +764,15 @@
             data-testid="status-select"
             density="compact"
             hide-details
+            multiple
             :items="statuses"
             item-value="value"
-            item-text="title"
+            item-title="title"
             :no-data-text="$t('noDataFound')"
             :placeholder="$t('admin.status')"
-            required="true"
             variant="outlined"
+            :aria-label="$t('admin.status')"
+            @update:model-value="setStatusFilter"
           />
         </v-col>
       </v-row>

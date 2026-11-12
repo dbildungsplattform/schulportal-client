@@ -383,6 +383,7 @@
       "unknownOrganisation": "Unbekannte Organisation"
     },
     "person": {
+      "lockedStatus": "gesperrt",
       "addedSuccessfully": "{firstname} {lastname} wurde erfolgreich hinzugefügt.",
       "createdSuccessfully": "{firstname} {lastname} wurde erfolgreich angelegt.",
       "addNew": "Neuen Benutzer hinzufügen",
