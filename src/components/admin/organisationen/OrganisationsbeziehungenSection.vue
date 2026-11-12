@@ -22,8 +22,8 @@
   type BeziehungTableItem = {
     id: string;
     typ: string;
-    name: string;
-    dienststellennummer: string;
+    andereOrganisationName: string;
+    andereOrganisationDienststellennummer: string;
   };
 
   const { t }: Composer = useI18n({ useScope: 'global' });
@@ -38,15 +38,18 @@
     order: SortOrder.Asc,
   });
 
-  /* The backend only sorts by quelle or ziel fields. Since the displayed organisation switches between both per row, only the typ column is sortable. */
+  /* The header keys equal the sort fields of the endpoint. */
   const headers: Headers = [
     { title: t('admin.organisation.beziehungen.typ'), key: SortFieldOrganisationsbeziehung.Typ, align: 'start' },
-    { title: t('admin.organisation.beziehungen.name'), key: 'name', align: 'start', sortable: false },
+    {
+      title: t('admin.organisation.beziehungen.name'),
+      key: SortFieldOrganisationsbeziehung.AndereOrganisationName,
+      align: 'start',
+    },
     {
       title: t('admin.organisation.beziehungen.dienststellennummer'),
-      key: 'dienststellennummer',
+      key: SortFieldOrganisationsbeziehung.AndereOrganisationDienststellennummer,
       align: 'start',
-      sortable: false,
     },
   ];
 
@@ -75,8 +78,8 @@
           {
             id: beziehung.id,
             typ: t(`admin.organisation.beziehungen.typen.${beziehung.typ}`),
-            name: related.name,
-            dienststellennummer: related.dienststellennummer ?? '---',
+            andereOrganisationName: related.name,
+            andereOrganisationDienststellennummer: related.dienststellennummer ?? '---',
           },
         ];
       },
@@ -211,12 +214,12 @@
                 @on-page-update="handlePageUpdate"
                 @on-table-update="handleTableSorting"
               >
-                <template #[`item.name`]="{ item }">
+                <template #[`item.andereOrganisationName`]="{ item }">
                   <div
                     class="ellipsis-wrapper"
-                    :title="item.name"
+                    :title="item.andereOrganisationName"
                   >
-                    {{ item.name }}
+                    {{ item.andereOrganisationName }}
                   </div>
                 </template>
               </ResultTable>

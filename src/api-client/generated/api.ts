@@ -4518,10 +4518,8 @@ export type Sichtfreigabe = typeof Sichtfreigabe[keyof typeof Sichtfreigabe];
 
 export const SortFieldOrganisationsbeziehung = {
     Typ: 'typ',
-    QuelleName: 'quelleName',
-    QuelleDienststellennummer: 'quelleDienststellennummer',
-    ZielName: 'zielName',
-    ZielDienststellennummer: 'zielDienststellennummer'
+    AndereOrganisationName: 'andereOrganisationName',
+    AndereOrganisationDienststellennummer: 'andereOrganisationDienststellennummer'
 } as const;
 
 export type SortFieldOrganisationsbeziehung = typeof SortFieldOrganisationsbeziehung[keyof typeof SortFieldOrganisationsbeziehung];
@@ -9393,12 +9391,12 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
             };
         },
         /**
-         * Get all relationships of an organisation (stub, returns fake data).
+         * Get all relationships of an organisation
          * @summary 
          * @param {string} organisationId The id of an organization
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
-         * @param {string} [searchString] Search string used to filter the organisation relationships.
+         * @param {string} [searchString] Search string used to filter the organisation relationships by name or Dienststellennummer of the other organisation.
          * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
          * @param {SortFieldOrganisationsbeziehung} [sortField] Field to sort by.
          * @param {*} [options] Override http request option.
@@ -9832,12 +9830,12 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
-         * Get all relationships of an organisation (stub, returns fake data).
+         * Get all relationships of an organisation
          * @summary 
          * @param {string} organisationId The id of an organization
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
-         * @param {string} [searchString] Search string used to filter the organisation relationships.
+         * @param {string} [searchString] Search string used to filter the organisation relationships by name or Dienststellennummer of the other organisation.
          * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
          * @param {SortFieldOrganisationsbeziehung} [sortField] Field to sort by.
          * @param {*} [options] Override http request option.
@@ -10019,12 +10017,12 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
             return localVarFp.organisationControllerGetAdministrierteOrganisationen(organisationId, offset, limit, searchFilter, options).then((request) => request(axios, basePath));
         },
         /**
-         * Get all relationships of an organisation (stub, returns fake data).
+         * Get all relationships of an organisation
          * @summary 
          * @param {string} organisationId The id of an organization
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
-         * @param {string} [searchString] Search string used to filter the organisation relationships.
+         * @param {string} [searchString] Search string used to filter the organisation relationships by name or Dienststellennummer of the other organisation.
          * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
          * @param {SortFieldOrganisationsbeziehung} [sortField] Field to sort by.
          * @param {*} [options] Override http request option.
@@ -10198,12 +10196,12 @@ export interface OrganisationenApiInterface {
     organisationControllerGetAdministrierteOrganisationen(organisationId: string, offset?: number, limit?: number, searchFilter?: string, options?: AxiosRequestConfig): AxiosPromise<Array<OrganisationResponse>>;
 
     /**
-     * Get all relationships of an organisation (stub, returns fake data).
+     * Get all relationships of an organisation
      * @summary 
      * @param {string} organisationId The id of an organization
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
-     * @param {string} [searchString] Search string used to filter the organisation relationships.
+     * @param {string} [searchString] Search string used to filter the organisation relationships by name or Dienststellennummer of the other organisation.
      * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
      * @param {SortFieldOrganisationsbeziehung} [sortField] Field to sort by.
      * @param {*} [options] Override http request option.
@@ -10395,12 +10393,12 @@ export class OrganisationenApi extends BaseAPI implements OrganisationenApiInter
     }
 
     /**
-     * Get all relationships of an organisation (stub, returns fake data).
+     * Get all relationships of an organisation
      * @summary 
      * @param {string} organisationId The id of an organization
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
-     * @param {string} [searchString] Search string used to filter the organisation relationships.
+     * @param {string} [searchString] Search string used to filter the organisation relationships by name or Dienststellennummer of the other organisation.
      * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
      * @param {SortFieldOrganisationsbeziehung} [sortField] Field to sort by.
      * @param {*} [options] Override http request option.

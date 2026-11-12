@@ -44,7 +44,7 @@ describe('OrganisationsbeziehungStore', () => {
         offset: 30,
         limit: 30,
         searchString: 'abc',
-        sortField: SortFieldOrganisationsbeziehung.ZielName,
+        sortField: SortFieldOrganisationsbeziehung.AndereOrganisationName,
         sortOrder: SortOrder.Desc,
       });
 
@@ -52,7 +52,7 @@ describe('OrganisationsbeziehungStore', () => {
       expect(requestUrl).toContain('offset=30');
       expect(requestUrl).toContain('limit=30');
       expect(requestUrl).toContain('searchString=abc');
-      expect(requestUrl).toContain('sortField=zielName');
+      expect(requestUrl).toContain('sortField=andereOrganisationName');
       expect(requestUrl).toContain('sortOrder=desc');
     });
 
