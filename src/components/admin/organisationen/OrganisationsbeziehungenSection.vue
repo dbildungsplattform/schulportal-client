@@ -139,13 +139,13 @@
 <template>
   <div data-testid="organisationsbeziehungen-section">
     <v-divider
-      class="border-opacity-100 rounded"
+      class="border-opacity-100 rounded my-6"
       color="#E5EAEF"
       thickness="6"
     ></v-divider>
 
     <v-row
-      class="mt-2 align-center"
+      class="align-center"
       no-gutters
     >
       <v-col cols="auto">
