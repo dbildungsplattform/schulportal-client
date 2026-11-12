@@ -1,5 +1,5 @@
 import type { Organisation } from '@/stores/OrganisationStore';
-import { VueWrapper, mount } from '@vue/test-utils';
+import { VueWrapper, flushPromises, mount } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { expect, test } from 'vitest';
 import { nextTick, type Component } from 'vue';
@@ -56,6 +56,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  wrapper?.unmount();
   vi.clearAllTimers();
   vi.clearAllMocks();
 });
@@ -70,10 +71,13 @@ describe('KlasseChange', () => {
     await wrapper?.find('[data-testid="schule-select"]').trigger('change');
     await nextTick();
 
+    const klasse: Organisation = DoFactory.getKlasse();
     await wrapper
       ?.findComponent({ name: 'KlassenFilter' })
       .findComponent({ ref: 'klasse-change-klasse-select' })
-      .setValue('2');
+      .setValue(klasse);
+    await flushPromises();
+    expect(wrapper?.emitted('update:selectedNewKlasse')).toContainEqual([klasse]);
     await wrapper
       ?.findComponent({ name: 'KlassenFilter' })
       .findComponent({ ref: 'klasse-change-klasse-select' })
@@ -107,14 +111,5 @@ describe('KlasseChange', () => {
 
     const klassenAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ name: 'KlassenFilter' });
     expect(klassenAutocomplete?.props()).toEqual(expect.objectContaining({ administriertVon: ['1'] }));
-  });
-
-  test('it forwards the selected Klasse object from the KlassenFilter', async () => {
-    const klasse: Organisation = DoFactory.getKlasse();
-    const klassenFilter: VueWrapper | undefined = wrapper?.findComponent({ name: 'KlassenFilter' });
-    klassenFilter?.vm.$emit('update:selectedKlassenObjects', [klasse]);
-    await nextTick();
-
-    expect(wrapper?.emitted('update:selectedNewKlasseObject')).toEqual([[klasse]]);
   });
 });

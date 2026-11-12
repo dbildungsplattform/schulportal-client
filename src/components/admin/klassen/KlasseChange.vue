@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import KlassenFilter from '@/components/filter/KlassenFilter.vue';
   import FormRow from '@/components/form/FormRow.vue';
-  import type { Organisation } from '@/stores/OrganisationStore';
+  import { Organisation } from '@/stores/OrganisationStore';
   import { type BaseFieldProps } from 'vee-validate';
   import { type Ref, ref, type ModelRef, watch } from 'vue';
 
@@ -13,15 +13,12 @@
     onSubmit: () => void;
   };
 
-  type Emits = {
-    (event: 'update:selectedNewKlasseObject', value: Organisation | undefined): void;
-  };
-
   defineProps<Props>();
-  const emits: Emits = defineEmits<Emits>();
 
   const selectedSchule: ModelRef<string | undefined, string> = defineModel('selectedSchule');
-  const selectedNewKlasse: ModelRef<string | undefined, string> = defineModel('selectedNewKlasse');
+  const selectedNewKlasse: ModelRef<Organisation | undefined, string> = defineModel<Organisation | undefined, string>(
+    'selectedNewKlasse',
+  );
 
   // we need to cast the selectedSchule into an array
   // doing it this way prevents an issue where the reactive system constantly re-runs which causes requests to be issued in a loop
@@ -86,10 +83,7 @@
         :administriertVon
         :parentId="'klasse-change'"
         :placeholder-text="$t('admin.klasse.selectKlasse')"
-        @update:selectedKlassen="(newValue: string | undefined) => (selectedNewKlasse = newValue)"
-        @update:selectedKlassenObjects="
-          (klassen: Array<Organisation>) => emits('update:selectedNewKlasseObject', klassen[0])
-        "
+        @update:selectedKlassen="(newValue: Organisation | undefined) => (selectedNewKlasse = newValue)"
       />
     </FormRow>
   </v-form>

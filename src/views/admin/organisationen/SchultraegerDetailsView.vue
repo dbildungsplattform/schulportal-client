@@ -77,7 +77,7 @@
   }: SchultraegerFieldDefinitions = getSchultraegerFieldDefinitions(formContext);
 
   const rootChildSchultraegerList: ComputedRef<Organisation[]> = computed(() => {
-    return organisationStore.schultraeger;
+    return organisationStore.rootChildren;
   });
 
   const isFormDirty: ComputedRef<boolean> = computed(() => getDirtyState(formContext));
@@ -315,7 +315,7 @@
     progress.value = 0;
     successMessage.value = '';
 
-    await organisationStore.getRootKinderSchultraeger();
+    await organisationStore.getRootChildren();
     await organisationStore.getOrganisationById(currentSchultraegerId, OrganisationsTyp.Traeger);
     await organisationStore.fetchSchulen(
       {

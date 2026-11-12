@@ -25,7 +25,13 @@
     type PersonenkontextStore,
     type PersonenkontextUpdate,
   } from '@/stores/PersonenkontextStore';
-  import { RollenArt, useRolleStore, type RolleStore, type TranslatedRolleWithAttrs } from '@/stores/RolleStore';
+  import {
+    RollenArt,
+    RollenMerkmal,
+    useRolleStore,
+    type RolleStore,
+    type TranslatedRolleWithAttrs,
+  } from '@/stores/RolleStore';
   import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
   import type { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
   import type { Zuordnung } from '@/stores/types/Zuordnung';
@@ -38,8 +44,6 @@
     getPersonenkontextFieldDefinitions,
     getValidationSchema,
     getVuetifyConfig,
-    isKopersRolle,
-    isLernRolle,
     type PersonenkontextFieldDefinitions,
   } from '@/utils/validationPersonenkontext';
   import {
@@ -68,7 +72,7 @@
   import { useI18n, type Composer } from 'vue-i18n';
   import { useRouter, type Router } from 'vue-router';
   import { useDisplay } from 'vuetify';
-  import { object, string, StringSchema, type AnyObject } from 'yup';
+  import { mixed, object, type MixedSchema } from 'yup';
 
   type Props = {
     personId: string;
@@ -91,8 +95,8 @@
   const rolleStore: RolleStore = useRolleStore();
 
   type ZuordnungCreationForm = {
-    selectedRolle: string;
-    selectedOrganisation: string;
+    selectedRolle: TranslatedRolleWithAttrs;
+    selectedOrganisation: Organisation;
     selectedKlasse: string;
     selectedBefristung: Date;
     selectedBefristungOption: string;
@@ -101,7 +105,7 @@
 
   type ChangeKlasseForm = {
     selectedSchule: string;
-    selectedNewKlasse: string;
+    selectedNewKlasse: Organisation;
   };
 
   type ChangeBefristungForm = {
@@ -146,16 +150,11 @@
   const hasNoKopersNr: Ref<boolean | undefined> = ref(false);
   const showNoKopersNrConfirmationDialog: Ref<boolean> = ref(false);
 
-  const cachedSelectedOrganisation: Ref<string> = ref('');
-  const cachedSelectedRolle: Ref<string> = ref('');
+  const cachedSelectedOrganisation: Ref<Organisation | undefined> = ref();
+  const cachedSelectedRolle: Ref<TranslatedRolleWithAttrs | undefined> = ref();
   const cachedSelectedKopersNr: Ref<string> = ref('');
 
   const calculatedBefristung: Ref<string | undefined> = ref('');
-
-  // Klassen emitted by the KlassenFilters of the creation and change Klasse forms
-  const selectedKlasseObject: Ref<Organisation | undefined> = ref(undefined);
-  const selectedNewKlasseObject: Ref<Organisation | undefined> = ref(undefined);
-  const selectedNewKlasseTitle: Ref<string | undefined> = ref(undefined);
 
   const organisationen: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
 
@@ -177,9 +176,9 @@
   // Validation schema for the form for changing the Klasse (Versetzen)
   const changeKlasseValidationSchema: TypedSchema = toTypedSchema(
     object({
-      selectedNewKlasse: string().when('selectedSchule', {
+      selectedNewKlasse: mixed<Organisation>().when('selectedSchule', {
         is: (selectedSchule: string) => selectedSchule,
-        then: (schema: StringSchema<string | undefined, AnyObject, undefined, ''>) =>
+        then: (schema: MixedSchema<Organisation | undefined>) =>
           schema.required(t('admin.klasse.rules.klasse.required')),
       }),
     }),
@@ -196,7 +195,7 @@
     selectedRolleProps,
     selectedOrganisation,
     selectedOrganisationProps,
-    selectedKlasse,
+    selectedKlasse: selectedKlasseId,
     selectedKlasseProps,
     selectedBefristung,
     selectedBefristungProps,
@@ -205,6 +204,13 @@
     selectedKopersNr,
     selectedKopersNrProps,
   }: PersonenkontextFieldDefinitions = getPersonenkontextFieldDefinitions(formContext);
+  const selectedKlasse: Ref<Organisation | undefined> = ref();
+
+  watch(selectedKlasseId, (klasseId: string | undefined): void => {
+    if (!klasseId) {
+      selectedKlasse.value = undefined;
+    }
+  });
 
   // eslint-disable-next-line @typescript-eslint/typedef
   const {
@@ -227,7 +233,7 @@
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = defineFieldChangeKlasse('selectedSchule', getVuetifyConfig);
   const [selectedNewKlasse, selectedNewKlasseProps]: [
-    Ref<string | undefined>,
+    Ref<Organisation | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = defineFieldChangeKlasse('selectedNewKlasse', getVuetifyConfig);
 
@@ -280,8 +286,12 @@
     personenkontextStore.errorCode = '';
     pendingCreation.value = false;
     isZuordnungFormActive.value = true;
-    formContext.setFieldValue('selectedOrganisation', cachedSelectedOrganisation.value);
-    formContext.setFieldValue('selectedRolle', cachedSelectedRolle.value);
+    if (cachedSelectedOrganisation.value) {
+      formContext.setFieldValue('selectedOrganisation', cachedSelectedOrganisation.value);
+    }
+    if (cachedSelectedRolle.value) {
+      formContext.setFieldValue('selectedRolle', cachedSelectedRolle.value);
+    }
     formContext.setFieldValue('selectedKopersNr', cachedSelectedKopersNr.value);
 
     // Rollback the zuordnungen to be added
@@ -320,9 +330,7 @@
       (z: Zuordnung) => z.sskName === selectedZuordnungen.value[0]?.klasse,
     );
     // Auto select the new Klasse
-    selectedNewKlasse.value = klassenZuordnung?.sskId;
-    selectedNewKlasseObject.value = undefined;
-    selectedNewKlasseTitle.value = selectedZuordnungen.value[0]?.klasse;
+    selectedNewKlasse.value = klassenZuordnung?.getOrganisation();
     isChangeKlasseFormActive.value = true;
   };
 
@@ -381,8 +389,6 @@
     formContext.resetForm();
     resetChangeKlasseForm();
     changeBefristungFormContext.resetForm();
-    selectedKlasseObject.value = undefined;
-    selectedNewKlasseObject.value = undefined;
     zuordnungenWithPendingChanges.value = originalZuordnungen.value
       ? (JSON.parse(JSON.stringify(originalZuordnungen.value)) as ZuordnungWithKlasse[])
       : undefined;
@@ -475,7 +481,7 @@
     );
     createSuccessDialogVisible.value = !personenkontextStore.errorCode;
     // Cache the selected values to avoid losing them on form reset (Useful for when Kopers is already assigned and we want to redirect back to form)
-    cachedSelectedOrganisation.value = selectedOrganisation.value!;
+    cachedSelectedOrganisation.value = selectedOrganisation.value;
     cachedSelectedRolle.value = selectedRolle.value!;
     cachedSelectedKopersNr.value = selectedKopersNr.value!;
     formContext.resetForm();
@@ -544,7 +550,7 @@
       return rolleStore.rollenForPersonenkontextCreation;
     }
 
-    const selectedOrgaId: string | undefined = selectedOrganisation.value;
+    const selectedOrgaId: string | undefined = selectedOrganisation.value.id;
 
     // Filter out Rollen that the user already has in the selected organization
     return rolleStore.rollenForPersonenkontextCreation?.filter(
@@ -560,19 +566,12 @@
     (): RollenArt | undefined => personStore.personenuebersicht?.zuordnungen[0]?.rollenArt,
   );
 
-  const selectedRolleWithAttrs: ComputedRef<TranslatedRolleWithAttrs | undefined> = computed(() => {
-    return rolleStore.rollenForPersonenkontextCreation?.find(
-      (rolle: TranslatedRolleWithAttrs) => rolle.value === selectedRolle.value,
-    );
-  });
-
   // The Klasse can only be selected (and the KlassenFilter is only shown) for a Lern-Rolle
-  const selectedKlasseForCreation: ComputedRef<Organisation | undefined> = computed(() => {
-    if (!selectedRolle.value || !isLernRolle(selectedRolle.value, rolleStore.rollenForPersonenkontextCreation)) {
-      return undefined;
-    }
-    return selectedKlasseObject.value?.id === selectedKlasse.value ? selectedKlasseObject.value : undefined;
-  });
+  const selectedKlasseForCreation: ComputedRef<Organisation | undefined> = computed(() =>
+    selectedRolle.value?.rollenart === RollenArt.Lern ? selectedKlasse.value : undefined,
+  );
+
+  const selectedNewKlasseTitle: ComputedRef<string | undefined> = computed(() => selectedNewKlasse.value?.name);
 
   const isSubmitDisabled: ComputedRef<boolean> = computed(() => {
     return selectedNewKlasseTitle.value === selectedZuordnungen.value[0]?.klasse;
@@ -587,11 +586,6 @@
     return currentBefristungDate !== newBefristungDate;
   });
 
-  function handleSelectedNewKlasseObject(klasse: Organisation | undefined): void {
-    selectedNewKlasseObject.value = klasse;
-    selectedNewKlasseTitle.value = klasse?.name;
-  }
-
   const onSubmitChangeKlasse: (e?: Event) => Promise<void | undefined> = handleSubmitChangeKlasse(() => {
     changeKlasseConfirmationDialogMessage.value = t('person.changeKlasseConfirmation', {
       oldKlasse: selectedZuordnungen.value[0]?.klasse,
@@ -602,14 +596,14 @@
 
   const onSubmitCreateZuordnung: (e?: Event) => Promise<void | undefined> = formContext.handleSubmit(() => {
     if (selectedRolle.value) {
-      if (isLernRolle(selectedRolle.value, rolleStore.rollenForPersonenkontextCreation)) {
+      if (selectedRolle.value.rollenart === RollenArt.Lern) {
         createZuordnungConfirmationDialogMessage.value = t('person.addZuordnungKlasseConfirmation', {
-          rollenname: selectedRolleWithAttrs.value?.title,
+          rollenname: selectedRolle.value.title,
           klassenname: selectedKlasseForCreation.value?.name,
         });
       } else {
         createZuordnungConfirmationDialogMessage.value = t('person.addZuordnungConfirmation', {
-          rollenname: selectedRolleWithAttrs.value?.title,
+          rollenname: selectedRolle.value.title,
         });
       }
       createZuordnungConfirmationDialogVisible.value = true;
@@ -634,7 +628,7 @@
     createZuordnungConfirmationDialogVisible.value = false;
     hasNoKopersNr.value = false;
     const organisation: Organisation | undefined = personenkontextStore.workflowStepResponse?.organisations.find(
-      (orga: Organisation) => orga.id === selectedOrganisation.value,
+      (orga: Organisation) => orga.id === selectedOrganisation.value?.id,
     );
 
     const befristungDate: string | undefined = selectedBefristung.value
@@ -647,8 +641,8 @@
         existingZuordnungen: personStore.personenuebersicht?.zuordnungen,
         organisation,
         klasse: selectedKlasseForCreation.value,
-        rolleId: selectedRolle.value ?? '',
-        rolle: selectedRolleWithAttrs.value,
+        rolleId: selectedRolle.value?.value ?? '',
+        rolle: selectedRolle.value,
         befristung: formatDateToISO(befristungDate) ?? null,
       });
       newZuordnung.value = change.newZuordnung;
@@ -678,7 +672,7 @@
         existingZuordnungen: personStore.personenuebersicht?.zuordnungen,
         selectedZuordnungen: selectedZuordnungen.value,
         schule,
-        newKlasse: selectedNewKlasseObject.value,
+        newKlasse: selectedNewKlasse.value,
       });
       newZuordnung.value = change.newZuordnung;
       zuordnungenToBePersisted.value = change.zuordnungenToBePersisted;
@@ -718,13 +712,16 @@
     changeBefristungConfirmationDialogVisible.value = false;
   };
 
+  function handleKlasseUpdate(newSelection: Organisation | undefined): void {
+    selectedKlasse.value = newSelection;
+    selectedKlasseId.value = selectedKlasse.value?.id;
+  }
+
   function handleFieldReset(field: string): void {
     if (field === 'selectedRolle') {
       selectedRolle.value = undefined;
     } else if (field === 'selectedKlasse') {
-      if (selectedKlasse.value) {
-        selectedKlasse.value = undefined;
-      }
+      handleKlasseUpdate(undefined);
     }
   }
 
@@ -1179,13 +1176,11 @@
               ref="personenkontext-create"
               v-model:selected-organisation="selectedOrganisation"
               v-model:selected-rolle="selectedRolle"
-              v-model:selected-klasse="selectedKlasse"
               :person-id="props.personId"
               :rollenart-for-person="existingRollenArt"
               :operation-context="OperationContext.PERSON_BEARBEITEN"
               :allow-multiple-rollen="false"
               :show-headline="false"
-              :organisationen="organisationen"
               :rollen="filteredRollen"
               :selected-organisation-props="selectedOrganisationProps"
               :selected-rolle-props="selectedRolleProps"
@@ -1202,12 +1197,14 @@
               @update:can-commit="canCommit = $event"
               @update:befristung="handleBefristungUpdate($event)"
               @update:calculated-befristung-option="handleBefristungOptionUpdate($event)"
-              @update:selected-klasse-object="(klasse: Organisation | undefined) => (selectedKlasseObject = klasse)"
+              @update:selected-klasse="handleKlasseUpdate"
               @field-reset="handleFieldReset($event)"
             />
             <KopersInput
               v-if="
-                !hasKopersNummer && isKopersRolle([selectedRolle as string], filteredRollen) && selectedOrganisation
+                !hasKopersNummer &&
+                selectedRolle?.merkmale?.includes(RollenMerkmal.KopersPflicht) &&
+                selectedOrganisation
               "
               v-model:selected-kopers-nr="selectedKopersNr"
               :has-no-kopers-nr="hasNoKopersNr"
@@ -1275,7 +1272,6 @@
               :selected-schule-props="selectedSchuleProps"
               :selected-new-klasse-props="selectedNewKlasseProps"
               :on-submit="onSubmitChangeKlasse"
-              @update:selected-new-klasse-object="handleSelectedNewKlasseObject"
             />
           </v-container>
           <v-row class="py-3 px-2 justify-center">

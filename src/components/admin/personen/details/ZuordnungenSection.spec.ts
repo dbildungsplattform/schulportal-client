@@ -170,62 +170,77 @@ describe('ZuordnungenSection', () => {
     expect(wrapper.find('[data-testid="zuordnung-creation-form"]').exists()).toBe(true);
   });
 
-  test('it preserves existing Rolle metadata when changing Klasse with no creation Rollen available', async () => {
-    rolleStore.rollenForPersonenkontextCreation = [];
-    const newKlasse: Organisation = DoFactory.getKlasse(schule, { name: '9b' });
-    wrapper = mountComponent();
-    await flushPromises();
+  test.each([true, false])(
+    'it preserves existing Rolle metadata when changing Klasse with no creation Rollen available (selected Klasse remains in results: %s)',
+    async (retainSelection: boolean) => {
+      rolleStore.rollenForPersonenkontextCreation = [];
+      const newKlasse: Organisation = DoFactory.getKlasse(schule, { name: '9b' });
+      wrapper = mountComponent();
+      await flushPromises();
 
-    await wrapper.get('[data-testid="zuordnung-edit-button"]').trigger('click');
-    await wrapper.get(`[data-testid="person-zuordnung-${schule.id}"] input[type="checkbox"]`).setValue(true);
-    await flushPromises();
-    await wrapper.get('[data-testid="klasse-change-button"]').trigger('click');
-    await flushPromises();
+      await wrapper.get('[data-testid="zuordnung-edit-button"]').trigger('click');
+      await wrapper.get(`[data-testid="person-zuordnung-${schule.id}"] input[type="checkbox"]`).setValue(true);
+      await flushPromises();
+      await wrapper.get('[data-testid="klasse-change-button"]').trigger('click');
+      await flushPromises();
 
-    expect(wrapper.get('[data-testid="klasse-change-submit-button"]').attributes('disabled')).toBeDefined();
+      expect(wrapper.get('[data-testid="klasse-change-submit-button"]').attributes('disabled')).toBeDefined();
 
-    const klassenFilter: VueWrapper = wrapper.findComponent(KlasseChange).findComponent({ name: 'KlassenFilter' });
-    klassenFilter.vm.$emit('update:selectedKlassen', newKlasse.id);
-    klassenFilter.vm.$emit('update:selectedKlassenObjects', [newKlasse]);
-    await flushPromises();
-    await wrapper.get('[data-testid="klasse-change-submit-button"]').trigger('click');
-    await flushPromises();
+      organisationStore.klassenFilters.set('klasse-change', {
+        filterResult: [oldKlasse, newKlasse],
+        total: 2,
+        loading: false,
+      });
+      const klassenFilter: VueWrapper = wrapper.findComponent(KlasseChange).findComponent({ name: 'KlassenFilter' });
+      klassenFilter.vm.$emit('update:selectedKlassen', newKlasse);
+      await flushPromises();
+      if (!retainSelection) {
+        organisationStore.klassenFilters.set('klasse-change', {
+          filterResult: [oldKlasse],
+          total: 1,
+          loading: false,
+        });
+        await flushPromises();
+      }
+      await wrapper.get('[data-testid="klasse-change-submit-button"]').trigger('click');
+      await flushPromises();
 
-    const confirmButton: Element = await vi.waitUntil(() =>
-      document.body.querySelector('[data-testid="confirm-change-klasse-button"]'),
-    );
-    confirmButton.dispatchEvent(new Event('click'));
-    await flushPromises();
-
-    const pendingItems: VueWrapper<InstanceType<typeof PersonenkontextItem>>[] = wrapper
-      .findAllComponents(PersonenkontextItem)
-      .filter(
-        (item: VueWrapper<InstanceType<typeof PersonenkontextItem>>) =>
-          item.props('pendingState') === PendingState.CREATED,
+      const confirmButton: Element = await vi.waitUntil(() =>
+        document.body.querySelector('[data-testid="confirm-change-klasse-button"]'),
       );
-    expect(pendingItems).toHaveLength(1);
-    expect.soft(pendingItems[0]!.props('zuordnung')).toMatchObject({
-      sskId: schule.id,
-      rolleId: schulZuordnung.rolleId,
-      rolle: schulZuordnung.rolle,
-      rollenArt: schulZuordnung.rollenArt,
-      klasse: newKlasse.name,
-    });
-    expect(getVm().hasPendingChange).toBe(true);
+      confirmButton.dispatchEvent(new Event('click'));
+      await flushPromises();
 
-    const newKlasseZuordnung: Zuordnung | undefined = getVm().zuordnungenToBePersisted.find(
-      (zuordnung: Zuordnung) =>
-        zuordnung.sskId === newKlasse.id &&
-        zuordnung.rolleId === schulZuordnung.rolleId &&
-        zuordnung.typ === OrganisationsTyp.Klasse,
-    );
-    expect(newKlasseZuordnung).toBeDefined();
-    expect.soft(newKlasseZuordnung).toMatchObject({
-      rolle: schulZuordnung.rolle,
-      rollenArt: schulZuordnung.rollenArt,
-    });
-    expect(getVm().zuordnungenToBePersisted).not.toContainEqual(klassenZuordnung);
-  });
+      const pendingItems: VueWrapper<InstanceType<typeof PersonenkontextItem>>[] = wrapper
+        .findAllComponents(PersonenkontextItem)
+        .filter(
+          (item: VueWrapper<InstanceType<typeof PersonenkontextItem>>) =>
+            item.props('pendingState') === PendingState.CREATED,
+        );
+      expect(pendingItems).toHaveLength(1);
+      expect.soft(pendingItems[0]!.props('zuordnung')).toMatchObject({
+        sskId: schule.id,
+        rolleId: schulZuordnung.rolleId,
+        rolle: schulZuordnung.rolle,
+        rollenArt: schulZuordnung.rollenArt,
+        klasse: newKlasse.name,
+      });
+      expect(getVm().hasPendingChange).toBe(true);
+
+      const newKlasseZuordnung: Zuordnung | undefined = getVm().zuordnungenToBePersisted.find(
+        (zuordnung: Zuordnung) =>
+          zuordnung.sskId === newKlasse.id &&
+          zuordnung.rolleId === schulZuordnung.rolleId &&
+          zuordnung.typ === OrganisationsTyp.Klasse,
+      );
+      expect(newKlasseZuordnung).toBeDefined();
+      expect.soft(newKlasseZuordnung).toMatchObject({
+        rolle: schulZuordnung.rolle,
+        rollenArt: schulZuordnung.rollenArt,
+      });
+      expect(getVm().zuordnungenToBePersisted).not.toContainEqual(klassenZuordnung);
+    },
+  );
 
   test('it prevents deleting the own Zuordnungen', async () => {
     authStore.currentUser = { ...DoFactory.getUserinfoResponse(), personId: person.id };
@@ -311,15 +326,15 @@ describe('ZuordnungenSection', () => {
     const klassenFilter: VueWrapper = sectionWrapper
       .findComponent(KlasseChange)
       .findComponent({ name: 'KlassenFilter' });
-    klassenFilter.vm.$emit('update:selectedKlassen', newKlasse.id);
-    klassenFilter.vm.$emit('update:selectedKlassenObjects', [newKlasse]);
+    klassenFilter.vm.$emit('update:selectedKlassen', newKlasse);
     await flushPromises();
     await sectionWrapper.get('[data-testid="klasse-change-submit-button"]').trigger('click');
     await flushPromises();
 
-    expect(document.body.querySelector('[data-testid="change-klasse-confirmation-dialog-text"]')?.textContent).toContain(
-      newKlasse.name,
+    const dialogText: Element = await vi.waitUntil(() =>
+      document.body.querySelector('[data-testid="change-klasse-confirmation-dialog-text"]'),
     );
+    expect(dialogText.textContent).toContain(newKlasse.name);
     const closeButtons: NodeListOf<HTMLElement> = document.body.querySelectorAll(
       '[data-testid="close-layout-card-button"]',
     );
@@ -351,27 +366,44 @@ describe('ZuordnungenSection', () => {
     expect(sectionWrapper.get('[data-testid="change-befristung-submit-button"]').attributes('disabled')).toBeDefined();
   });
 
-  test.each([['selectedRolle'], ['selectedKlasse']])(
-    'it resets %s when PersonenkontextCreate requests it',
-    async (field: string) => {
-      const personenkontextCreate: VueWrapper = await openZuordnungCreationForm();
-      const modelEvent: string = field === 'selectedRolle' ? 'update:selectedRolle' : 'update:selectedKlasse';
+  test('it resets the Rolle when PersonenkontextCreate requests it', async () => {
+    const personenkontextCreate: VueWrapper = await openZuordnungCreationForm();
 
-      personenkontextCreate.vm.$emit(modelEvent, 'some-id');
-      await nextTick();
-      expect(personenkontextCreate.props(field)).toBe('some-id');
+    personenkontextCreate.vm.$emit('update:selectedRolle', rollen[1]);
+    await nextTick();
+    expect(personenkontextCreate.props()).toHaveProperty('selectedRolle', rollen[1]);
 
-      personenkontextCreate.vm.$emit('fieldReset', field);
-      await nextTick();
-      expect(personenkontextCreate.props(field)).toBeUndefined();
-    },
-  );
+    personenkontextCreate.vm.$emit('fieldReset', 'selectedRolle');
+    await nextTick();
+    expect(personenkontextCreate.props()).toHaveProperty('selectedRolle', undefined);
+  });
+
+  test('it resets the Klasse when PersonenkontextCreate requests it', async () => {
+    const personenkontextCreate: VueWrapper = await openZuordnungCreationForm();
+    personenkontextCreate.vm.$emit('update:selectedOrganisation', schule);
+    personenkontextCreate.vm.$emit('update:selectedRolle', rollen[1]);
+    personenkontextCreate.vm.$emit('update:selectedKlasse', oldKlasse);
+    await flushPromises();
+    personenkontextCreate.vm.$emit('fieldReset', 'selectedKlasse');
+    await flushPromises();
+
+    await wrapper!.get('[data-testid="zuordnung-creation-submit-button"]').trigger('click');
+    await flushPromises();
+
+    await vi.waitFor(() => {
+      expect(personenkontextCreate.props()).toHaveProperty(
+        'selectedKlasseProps',
+        expect.objectContaining({ error: true }),
+      );
+    });
+    expect(document.body.querySelector('[data-testid="confirm-zuordnung-dialog-addition"]')).toBeNull();
+  });
 
   test('it asks for confirmation when the person has no KoPers.-Nr.', async () => {
     personStore.currentPerson = { person: { ...person, personalnummer: null } };
     const personenkontextCreate: VueWrapper = await openZuordnungCreationForm();
-    personenkontextCreate.vm.$emit('update:selectedOrganisation', schule.id);
-    personenkontextCreate.vm.$emit('update:selectedRolle', 'lehr-rolle');
+    personenkontextCreate.vm.$emit('update:selectedOrganisation', schule);
+    personenkontextCreate.vm.$emit('update:selectedRolle', rollen[0]);
     await flushPromises();
 
     const kopersInput: VueWrapper = wrapper!.findComponent(KopersInput);
@@ -385,6 +417,6 @@ describe('ZuordnungenSection', () => {
     cancelButton.dispatchEvent(new Event('click'));
     await flushPromises();
 
-    expect(kopersInput.props('hasNoKopersNr')).toBe(false);
+    expect(kopersInput.props()).toHaveProperty('hasNoKopersNr', false);
   });
 });

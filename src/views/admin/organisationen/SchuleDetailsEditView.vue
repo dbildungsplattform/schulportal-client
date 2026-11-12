@@ -65,7 +65,7 @@
   };
 
   const schultraegerList: ComputedRef<Organisation[] | undefined> = computed(() => {
-    return organisationStore.schultraeger;
+    return organisationStore.rootChildren;
   });
 
   let blockedNext = (): void => {
@@ -111,7 +111,7 @@
 
   onMounted(async () => {
     await organisationStore.fetchSchulDetails(currentSchuleId.value);
-    await organisationStore.getRootKinderSchultraeger();
+    await organisationStore.getRootChildren();
     /* listen for browser changes and prevent them when form is dirty */
     window.addEventListener('beforeunload', preventNavigation);
   });

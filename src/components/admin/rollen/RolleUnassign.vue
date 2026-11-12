@@ -11,16 +11,20 @@
     RolleDialogMode,
     usePersonenkontextStore,
   } from '@/stores/PersonenkontextStore';
-  import { RollenArt, type RolleResponse, RolleStore, useRolleStore } from '@/stores/RolleStore';
+  import {
+    RollenArt,
+    type RolleResponse,
+    RolleStore,
+    type TranslatedRolleWithAttrs,
+    useRolleStore,
+  } from '@/stores/RolleStore';
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
-  import type { TranslatedObject } from '@/types';
-  import { isLernRolle } from '@/utils/validationPersonenkontext';
   import { toTypedSchema } from '@vee-validate/yup';
-  import { type BaseFieldProps, type TypedSchema, useForm } from 'vee-validate';
+  import { type BaseFieldProps, type FormContext, type TypedSchema, useForm } from 'vee-validate';
   import { computed, type ComputedRef, ref, type Ref, watch } from 'vue';
   import { type Composer, useI18n } from 'vue-i18n';
   import { useDisplay } from 'vuetify';
-  import { object, string } from 'yup';
+  import { mixed, object } from 'yup';
 
   const { t }: Composer = useI18n({ useScope: 'global' });
   const { mdAndDown }: { mdAndDown: Ref<boolean> } = useDisplay();
@@ -30,7 +34,6 @@
 
   type Props = {
     isDialogVisible: boolean;
-    organisationen: TranslatedObject[] | undefined;
     selectedPersonen: Map<string, PersonWithZuordnungen>;
     selectedOrganisationFromFilter: Organisation;
     selectedRolleFromFilter?: RolleResponse;
@@ -51,27 +54,29 @@
   const showErrorDialog: Ref<boolean, boolean> = ref(false);
 
   // Local state for selectedOrganisation to avoid mutating the prop directly
-  const selectedOrganisationFromFilterId: Ref<string> = ref<string>(props.selectedOrganisationFromFilter.id);
+  const selectedOrganisationFromFilter: Ref<Organisation> = ref<Organisation>(props.selectedOrganisationFromFilter);
 
   // Define the error list for the selected persons using the useBulkErrors composable
   const bulkErrorList: ComputedRef<BulkErrorList[]> = computed(() => useBulkErrors(t, props.selectedPersonen));
 
-  export type RolleUnassignForm = {
-    selectedRolle: string;
-  };
-
-  export type PersonenkontextFieldDefinitions = {
-    selectedRolle: Ref<string | undefined>;
-    selectedRolleProps: Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>;
+  type RolleUnassignForm = {
+    selectedRolle: TranslatedRolleWithAttrs;
   };
 
   const validationSchema = (): TypedSchema<RolleUnassignForm> => {
     return toTypedSchema(
       object({
-        selectedRolle: string().required(t('admin.rolle.rules.rolle.required')),
+        selectedRolle: mixed<TranslatedRolleWithAttrs>().required(t('admin.rolle.rules.rolle.required')),
       }),
     );
   };
+
+  const initialRolle: ComputedRef<TranslatedRolleWithAttrs | undefined> = computed(() => {
+    const rolle: RolleResponse | undefined = props.selectedRolleFromFilter;
+    return rolle
+      ? { value: rolle.id, title: rolle.name, rollenart: rolle.rollenart, merkmale: rolle.merkmale }
+      : undefined;
+  });
 
   const getVuetifyConfig = (state: {
     errors: Array<string>;
@@ -82,12 +87,15 @@
     },
   });
 
-  const formContext: ReturnType<typeof useForm> = useForm<RolleUnassignForm>({
-    validationSchema,
+  const formContext: FormContext<RolleUnassignForm, RolleUnassignForm> = useForm<RolleUnassignForm>({
+    validationSchema: validationSchema(),
+    initialValues: {
+      selectedRolle: initialRolle.value,
+    },
   });
 
   const [selectedRolle, selectedRolleProps]: [
-    Ref<string | undefined>,
+    Ref<TranslatedRolleWithAttrs | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedRolle', getVuetifyConfig);
 
@@ -97,24 +105,21 @@
     }
   }
 
-  async function handleRolleUnassign(): Promise<void> {
-    const rolleId: string = selectedRolle.value ?? props.selectedRolleFromFilter?.id ?? '';
-    const isRolleLern: boolean =
-      selectedRolle.value != null
-        ? isLernRolle(selectedRolle.value, rolleStore.rollenForPersonenkontextCreation)
-        : props.selectedRolleFromFilter?.rollenart === RollenArt.Lern;
+  const handleRolleUnassign: (event?: Event) => Promise<Promise<void> | undefined> = formContext.handleSubmit(
+    async (values: RolleUnassignForm): Promise<void> => {
+      const selectedRolleValue: TranslatedRolleWithAttrs = values.selectedRolle;
+      await bulkOperationStore.bulkUnassignPersonenFromRolle(
+        selectedOrganisationFromFilter.value.id,
+        selectedRolleValue.value,
+        [...props.selectedPersonen.keys()],
+        selectedRolleValue.rollenart === RollenArt.Lern,
+      );
 
-    await bulkOperationStore.bulkUnassignPersonenFromRolle(
-      selectedOrganisationFromFilterId.value,
-      rolleId,
-      [...props.selectedPersonen.keys()],
-      isRolleLern,
-    );
-
-    if (bulkOperationStore.currentOperation?.errors && bulkOperationStore.currentOperation.errors.size > 0) {
-      showErrorDialog.value = true;
-    }
-  }
+      if (bulkOperationStore.currentOperation?.errors && bulkOperationStore.currentOperation.errors.size > 0) {
+        showErrorDialog.value = true;
+      }
+    },
+  );
 
   watch(
     () => props.selectedOrganisationFromFilter.id,
@@ -152,12 +157,11 @@
             :operation-context="OperationContext.PERSON_BEARBEITEN"
             :rolleDialogMode="RolleDialogMode.UNASSIGN"
             :show-headline="false"
-            :selected-organisation="selectedOrganisationFromFilterId"
-            :organisationen="props.organisationen"
+            :selected-organisation="selectedOrganisationFromFilter"
+            :initial-organisation="props.selectedOrganisationFromFilter"
             :rollen="rolleStore.rollenForPersonenkontextCreation"
             :selected-rolle-props="selectedRolleProps"
-            :selected-rolle="props.selectedRolleFromFilter ? props.selectedRolleFromFilter.id : undefined"
-            @update:selected-rolle="selectedRolle = $event"
+            v-model:selected-rolle="selectedRolle"
             @field-reset="handleFieldReset($event)"
           />
         </template>
