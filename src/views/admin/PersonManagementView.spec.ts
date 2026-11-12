@@ -160,7 +160,7 @@ beforeEach(async () => {
 
 describe('PersonManagementView', () => {
   describe('status filter', () => {
-    test('should start without a status selection and offer only locked accounts', async () => {
+    test('should start without a status selection', async () => {
       await flushPromises();
       const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
         '[data-testid="status-select"]',
@@ -282,11 +282,13 @@ describe('PersonManagementView', () => {
         '[data-testid="status-select"]',
       );
       searchFilterStore.selectedStatusForPersonen = [PersonStatusFilter.Locked];
-      await nextTick();
+      await flushPromises();
+      vi.mocked(personStore.getAllPersons).mockClear();
       await statusSelect.get('.v-field__clearable .v-icon').trigger('click');
       await flushPromises();
 
       expect(searchFilterStore.setStatusFilterForPersonen).toHaveBeenCalledWith([]);
+      expect(personStore.getAllPersons).toHaveBeenCalledOnce();
       searchFilterStore.selectedStatusForPersonen = [];
       await nextTick();
       expect(statusSelect.props('modelValue')).toEqual([]);
