@@ -33,7 +33,6 @@
     type TranslatedRolleWithAttrs,
   } from '@/stores/RolleStore';
   import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
-  import type { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
   import type { Zuordnung } from '@/stores/types/Zuordnung';
   import type { TranslatedObject } from '@/types';
   import { isBefristungspflichtRolle, useBefristungUtils, type BefristungUtilsType } from '@/utils/befristung';
@@ -51,7 +50,9 @@
     buildZuordnungenForCreation,
     buildZuordnungenForDeletion,
     buildZuordnungenForKlassenwechsel,
+    cloneZuordnungen,
     computeZuordnungenWithKlasse,
+    type PersonWithZuordnungenSource,
     withoutKlassen,
     type ZuordnungChange,
     type ZuordnungWithKlasse,
@@ -316,9 +317,7 @@
     isEditActive.value = true;
     // Deep copy of the zuordnungenResult to keep track of the Zuordnungen before any changes were done.
     // This is necessary if a user cancels the editing at some point and the zuordnungenResult was mutated at the time.
-    originalZuordnungen.value = JSON.parse(
-      JSON.stringify(zuordnungenWithPendingChanges.value),
-    ) as ZuordnungWithKlasse[];
+    originalZuordnungen.value = cloneZuordnungen(zuordnungenWithPendingChanges.value ?? []);
   };
 
   // Triggers the template to change the Klasse. Also pre-select the Schule and Klasse.
@@ -390,7 +389,7 @@
     resetChangeKlasseForm();
     changeBefristungFormContext.resetForm();
     zuordnungenWithPendingChanges.value = originalZuordnungen.value
-      ? (JSON.parse(JSON.stringify(originalZuordnungen.value)) as ZuordnungWithKlasse[])
+      ? cloneZuordnungen(originalZuordnungen.value)
       : undefined;
   };
 
@@ -737,7 +736,7 @@
 
   watch(
     () => personStore.personenuebersicht,
-    (newValue: PersonenUebersicht | null) => {
+    (newValue: PersonWithZuordnungenSource | null) => {
       zuordnungenWithPendingChanges.value = computeZuordnungenWithKlasse(newValue);
     },
     { immediate: true },

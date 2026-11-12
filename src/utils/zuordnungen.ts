@@ -1,10 +1,13 @@
 import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
 import type { RollenArt, TranslatedRolleWithAttrs } from '@/stores/RolleStore';
-import type { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
 import { Zuordnung } from '@/stores/types/Zuordnung';
 
 export type ZuordnungWithKlasse = Zuordnung & {
   klasse?: string;
+};
+
+export type PersonWithZuordnungenSource = {
+  zuordnungen: Zuordnung[];
 };
 
 export type ZuordnungChange = {
@@ -21,9 +24,20 @@ export function withoutKlassen<T extends Zuordnung>(zuordnungen: T[]): T[] {
   return zuordnungen.filter((zuordnung: T) => !isKlasse(zuordnung));
 }
 
+// Deep copy that is safe for reactive (proxied) Zuordnungen, which structuredClone cannot handle
+export function cloneZuordnungen(zuordnungen: ZuordnungWithKlasse[]): ZuordnungWithKlasse[] {
+  return zuordnungen.map((zuordnung: ZuordnungWithKlasse) => {
+    const copy: ZuordnungWithKlasse = Zuordnung.from(zuordnung);
+    copy.merkmale = [...zuordnung.merkmale];
+    copy.admins = [...zuordnung.admins];
+    copy.klasse = zuordnung.klasse;
+    return copy;
+  });
+}
+
 // Merges every Klasse into its administrating Zuordnung (same Rolle) and sorts the result
 export function computeZuordnungenWithKlasse(
-  personenuebersicht: PersonenUebersicht | null,
+  personenuebersicht: PersonWithZuordnungenSource | null,
 ): ZuordnungWithKlasse[] | undefined {
   const zuordnungen: Zuordnung[] | undefined = personenuebersicht?.zuordnungen;
 
@@ -47,26 +61,25 @@ export function computeZuordnungenWithKlasse(
 
   for (const zuordnung of withoutKlassen(zuordnungen)) {
     // Only add Zuordnungen that don't have the same sskId and rolleId to avoid redundancy in the final result
-    if (!result.find((z: Zuordnung) => z.sskId === zuordnung.sskId && z.rolleId === zuordnung.rolleId)) {
+    if (!result.some((z: Zuordnung) => z.sskId === zuordnung.sskId && z.rolleId === zuordnung.rolleId)) {
       result.push(zuordnung);
     }
   }
 
   // Sort by klasse, rolle and SSK
-  result
-    .sort((a: ZuordnungWithKlasse, b: ZuordnungWithKlasse) =>
-      a.klasse && b.klasse ? a.klasse.localeCompare(b.klasse) : 0,
-    )
-    .sort((a: ZuordnungWithKlasse, b: ZuordnungWithKlasse) => a.rolle.localeCompare(b.rolle))
-    .sort((a: ZuordnungWithKlasse, b: ZuordnungWithKlasse) => {
-      if (a.sskDstNr == null) {
-        return 1;
-      }
-      if (b.sskDstNr == null) {
-        return -1;
-      }
-      return a.sskDstNr.localeCompare(b.sskDstNr);
-    });
+  result.sort((a: ZuordnungWithKlasse, b: ZuordnungWithKlasse) =>
+    a.klasse && b.klasse ? a.klasse.localeCompare(b.klasse) : 0,
+  );
+  result.sort((a: ZuordnungWithKlasse, b: ZuordnungWithKlasse) => a.rolle.localeCompare(b.rolle));
+  result.sort((a: ZuordnungWithKlasse, b: ZuordnungWithKlasse) => {
+    if (a.sskDstNr == null) {
+      return 1;
+    }
+    if (b.sskDstNr == null) {
+      return -1;
+    }
+    return a.sskDstNr.localeCompare(b.sskDstNr);
+  });
   return result;
 }
 
