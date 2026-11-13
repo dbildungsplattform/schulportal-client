@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ServiceProviderSystem, type LockUserBodyParams } from '@/api-client/generated';
+  import { LockUserBodyParams, ServiceProviderSystem } from '@/api-client/generated';
   import SpshTooltip from '@/components/admin/SpshTooltip.vue';
   import KlasseChange from '@/components/admin/klassen/KlasseChange.vue';
   import BefristungInput from '@/components/admin/personen/BefristungInput.vue';
@@ -28,6 +28,7 @@
   } from '@/stores/OrganisationStore';
   import { EmailStatus, usePersonStore, type PersonStore } from '@/stores/PersonStore';
   import {
+    CreationType,
     mapZuordnungToPersonenkontextUpdate,
     OperationContext,
     usePersonenkontextStore,
@@ -435,7 +436,11 @@
     );
 
     // Update the personenkontexte with the filtered list
-    await personenkontextStore.updatePersonenkontexte(zuordnungenUpdate, currentPersonId);
+    await personenkontextStore.updatePersonenkontexte(
+      zuordnungenUpdate,
+      currentPersonId,
+      OperationContext.PERSON_BEARBEITEN,
+    );
     zuordnungenWithPendingChanges.value = remainingZuordnungen;
     selectedZuordnungen.value = [];
 
@@ -921,6 +926,7 @@
     await personenkontextStore.updatePersonenkontexte(
       finalZuordnungenUpdate.value,
       currentPersonId,
+      OperationContext.PERSON_BEARBEITEN,
       selectedKopersNr.value,
     );
     createSuccessDialogVisible.value = !personenkontextStore.errorCode;
@@ -934,14 +940,22 @@
 
   // This will send the updated list of Zuordnungen to the Backend with the selected Zuordnung but with the new Klasse.
   async function confirmChangeKlasse(): Promise<void> {
-    await personenkontextStore.updatePersonenkontexte(finalZuordnungenUpdate.value, currentPersonId);
+    await personenkontextStore.updatePersonenkontexte(
+      finalZuordnungenUpdate.value,
+      currentPersonId,
+      OperationContext.PERSON_BEARBEITEN,
+    );
     changeKlasseSuccessDialogVisible.value = !personenkontextStore.errorCode;
     selectedZuordnungen.value = [];
     resetChangeKlasseForm();
   }
 
   async function confirmChangeBefristung(): Promise<void> {
-    await personenkontextStore.updatePersonenkontexte(finalZuordnungenUpdate.value, currentPersonId);
+    await personenkontextStore.updatePersonenkontexte(
+      finalZuordnungenUpdate.value,
+      currentPersonId,
+      OperationContext.PERSON_BEARBEITEN,
+    );
     changeBefristungSuccessDialogVisible.value = !personenkontextStore.errorCode;
     selectedZuordnungen.value = [];
     changeBefristungFormContext.resetForm();
@@ -2310,6 +2324,7 @@
                   v-model:selected-rolle="selectedRolle"
                   :person-id="currentPersonId"
                   :rollenart-for-person="existingRollenArt"
+                  :create-type="CreationType.AddPersonToOwnSchule"
                   :operation-context="OperationContext.PERSON_BEARBEITEN"
                   :allow-multiple-rollen="false"
                   :show-headline="false"

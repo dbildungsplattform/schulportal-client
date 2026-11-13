@@ -12,11 +12,10 @@
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import KlassenFilter from '@/components/filter/KlassenFilter.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
-  import type { SelectedSchulen } from '@/types';
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
   import {
-    useRollenForPersonAdministrationAutocomplete,
     type UseRollenForPersonAdministrationAutocompleteReturn,
+    useRollenForPersonAdministrationAutocomplete,
   } from '@/composables/useRollenForPersonAdministrationAutocomplete';
   import { type AuthStore, useAuthStore } from '@/stores/AuthStore';
   import { type Organisation, type OrganisationStore, useOrganisationStore } from '@/stores/OrganisationStore';
@@ -35,6 +34,7 @@
   import { type SearchFilterStore, useSearchFilterStore } from '@/stores/SearchFilterStore';
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
   import { OperationType } from '@/stores/types/bulkOperationTypes';
+  import type { SelectedSchulen } from '@/types';
   import { type TranslatedObject } from '@/types.d';
   import { blurActiveElement } from '@/utils/focus';
   import { SortOrder } from '@/utils/sorting';

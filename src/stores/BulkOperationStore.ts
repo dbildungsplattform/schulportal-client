@@ -24,7 +24,11 @@ import {
 import { getResponseErrorCode } from '@/utils/errorHandlers';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import type { Organisation } from './OrganisationStore';
-import { mapZuordnungToPersonenkontextUpdate, type PersonenkontextUpdate } from './PersonenkontextStore';
+import {
+  mapZuordnungToPersonenkontextUpdate,
+  OperationContext,
+  type PersonenkontextUpdate,
+} from './PersonenkontextStore';
 import { OperationType, type CurrentOperation, type InternalZuordnung } from './types/bulkOperationTypes';
 import { PersonenUebersicht } from './types/PersonenUebersicht';
 import { Zuordnung } from './types/Zuordnung';
@@ -47,12 +51,14 @@ async function updatePersonenkontexte(
   updatedPersonenkontexte: PersonenkontextUpdate[] | undefined,
   personId: string,
   cachedUebersicht: DBiamPersonenuebersichtResponse,
+  operationContext: OperationContext,
 ): Promise<PersonenkontexteUpdateResponse> {
   const uebersicht: DBiamPersonenuebersichtResponse = cachedUebersicht;
 
   const updateParams: DbiamUpdatePersonenkontexteBodyParams = {
     lastModified: uebersicht.lastModifiedZuordnungen ?? undefined,
     count: uebersicht.zuordnungen.length ?? 0,
+    operationContext,
     personenkontexte:
       updatedPersonenkontexte?.map((personenkontextUpdate: PersonenkontextUpdate) => ({
         personId: personId,
@@ -229,7 +235,12 @@ export const useBulkOperationStore: StoreDefinition<
             const newZuordnungen: InternalZuordnung[] = [orgaZuordnung, ...klassenZuordnungen];
             const combinedZuordnungen: PersonenkontextUpdate[] = combineZuordnungen(currentZuordnungen, newZuordnungen);
 
-            await updatePersonenkontexte(combinedZuordnungen, personId, uebersichtResponse);
+            await updatePersonenkontexte(
+              combinedZuordnungen,
+              personId,
+              uebersichtResponse,
+              OperationContext.PERSON_BEARBEITEN,
+            );
           } catch (error: unknown) {
             this.currentOperation?.errors.set(personId, getResponseErrorCode(error, 'UNSPECIFIED_ERROR'));
           }
@@ -257,6 +268,7 @@ export const useBulkOperationStore: StoreDefinition<
             updatedZuordnungen.map(mapZuordnungToPersonenkontextUpdate),
             personId,
             uebersichtResponse,
+            OperationContext.PERSON_BEARBEITEN,
           );
         } catch (error: unknown) {
           this.currentOperation?.errors.set(personId, getResponseErrorCode(error, 'UNSPECIFIED_ERROR'));
@@ -331,6 +343,7 @@ export const useBulkOperationStore: StoreDefinition<
               updatedZuordnungen.map(mapZuordnungToPersonenkontextUpdate),
               personId,
               uebersichtResponse,
+              OperationContext.PERSON_BEARBEITEN,
             );
           } catch (error: unknown) {
             this.currentOperation?.errors.set(personId, getResponseErrorCode(error, 'UNSPECIFIED_ERROR'));
@@ -377,6 +390,7 @@ export const useBulkOperationStore: StoreDefinition<
               combinedZuordnungen.map(mapZuordnungToPersonenkontextUpdate),
               personId,
               uebersichtResponse,
+              OperationContext.PERSON_BEARBEITEN,
             );
           } catch (error: unknown) {
             this.currentOperation?.errors.set(personId, getResponseErrorCode(error, 'UNSPECIFIED_ERROR'));

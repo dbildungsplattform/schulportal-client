@@ -161,15 +161,16 @@
     return filter;
   });
 
-  const useLandesbediensteteWorkflow: ComputedRef<boolean> = computed((): boolean => {
-    return props.createType === CreationType.AddPersonToOwnSchule;
-  });
-
   const requestedWithSystemrecht: ComputedRef<RollenSystemRecht | undefined> = computed(
     (): RollenSystemRecht | undefined => {
-      return props.createType === CreationType.Limited
-        ? RollenSystemRecht.EingeschraenktNeueBenutzerErstellen
-        : undefined;
+      switch (props.createType) {
+        case CreationType.Limited:
+          return RollenSystemRecht.EingeschraenktNeueBenutzerErstellen;
+        case CreationType.AddPersonToOwnSchule:
+          return RollenSystemRecht.LandesbediensteteSuchenUndHinzufuegen;
+        default:
+          return undefined;
+      }
     },
   );
 
@@ -186,16 +187,10 @@
   }
 
   async function handleWorkflowStep(filter: WorkflowFilter | LandesbediensteterWorkflowFilter): Promise<void> {
-    const useLandesbediensteteWorkflows: boolean = props.createType === CreationType.AddPersonToOwnSchule;
-
-    if (useLandesbediensteteWorkflows) {
-      await personenkontextStore.processWorkflowStepLandesbedienstete(filter);
-    } else {
-      await personenkontextStore.processWorkflowStep({
-        operationContext: props.operationContext,
-        ...filter,
-      });
-    }
+    await personenkontextStore.processWorkflowStep({
+      operationContext: props.operationContext,
+      ...filter,
+    });
 
     canCommit.value = personenkontextStore.workflowStepResponse?.canCommit ?? false;
   }
@@ -403,9 +398,6 @@
         :multiple="false"
         :systemrechteForSearch="[requestedWithSystemrecht].filter((v): v is RollenSystemRecht => v !== undefined)"
         :selectedSchuleProps="selectedOrganisationProps"
-        :useWorkflowEndpoints="true"
-        :useLandesbediensteteWorkflow="useLandesbediensteteWorkflow"
-        :operationContext="props.operationContext"
         :isRolleUnassignForm="rolleDialogMode === RolleDialogMode.UNASSIGN"
         :includeAll="true"
         :placeholderText="$t('admin.organisation.selectOrganisation')"
