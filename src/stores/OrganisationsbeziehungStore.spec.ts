@@ -51,7 +51,7 @@ describe('OrganisationsbeziehungStore', () => {
         sortOrder: SortOrder.Desc,
       });
 
-      const requestUrl: string = mockadapter.history['get']![0]!.url!;
+      const requestUrl: string = mockadapter.history['get'][0]!.url!;
       expect(requestUrl).toContain('offset=30');
       expect(requestUrl).toContain('limit=30');
       expect(requestUrl).toContain('searchString=abc');
@@ -64,7 +64,7 @@ describe('OrganisationsbeziehungStore', () => {
 
       await store.loadBeziehungen('org-1', { searchString: '' });
 
-      expect(mockadapter.history['get']![0]!.url).not.toContain('searchString');
+      expect(mockadapter.history['get'][0]!.url).not.toContain('searchString');
     });
 
     it('should handle error code', async () => {

@@ -40,24 +40,23 @@
   });
 
   /* The header keys equal the sort fields of the endpoint. */
-  const headers: ComputedRef<Headers> = computed(() => {
-    const result: Headers = [
-      { title: t('admin.organisation.beziehungen.typ'), key: SortFieldOrganisationsbeziehung.Typ, align: 'start' },
-      {
-        title: t('admin.organisation.beziehungen.name'),
-        key: SortFieldOrganisationsbeziehung.AndereOrganisationName,
-        align: 'start',
-      },
-    ];
-    if (props.showDienststellennummerColumn) {
-      result.push({
-        title: t('admin.organisation.beziehungen.dienststellennummer'),
-        key: SortFieldOrganisationsbeziehung.AndereOrganisationDienststellennummer,
-        align: 'start',
-      });
-    }
-    return result;
-  });
+  const headers: ComputedRef<Headers> = computed(() => [
+    { title: t('admin.organisation.beziehungen.typ'), key: SortFieldOrganisationsbeziehung.Typ, align: 'start' },
+    {
+      title: t('admin.organisation.beziehungen.name'),
+      key: SortFieldOrganisationsbeziehung.AndereOrganisationName,
+      align: 'start',
+    },
+    ...(props.showDienststellennummerColumn
+      ? [
+          {
+            title: t('admin.organisation.beziehungen.dienststellennummer'),
+            key: SortFieldOrganisationsbeziehung.AndereOrganisationDienststellennummer,
+            align: 'start' as const,
+          },
+        ]
+      : []),
+  ]);
 
   /* Either quelle or ziel is the current organisation; the other one is the related organisation to display. */
   function getRelatedOrganisation(

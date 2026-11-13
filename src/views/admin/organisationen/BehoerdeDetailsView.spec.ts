@@ -73,7 +73,9 @@ describe('BehoerdeDetailsView', (): void => {
 
   it('should render the Organisationsbeziehungen section for the Behoerde including the Dienststellennummer column', async (): Promise<void> => {
     await mountView();
-    const section: VueWrapper = wrapper.findComponent(OrganisationsbeziehungenSection);
+    const section: VueWrapper<ComponentInstance<typeof OrganisationsbeziehungenSection>> = wrapper.findComponent(
+      OrganisationsbeziehungenSection,
+    );
     expect(section.exists()).toBe(true);
     expect(section.props()).toMatchObject({ organisationId: behoerde.id, showDienststellennummerColumn: true });
   });
