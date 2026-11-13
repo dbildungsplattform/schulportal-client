@@ -1,5 +1,10 @@
-import type { TranslatedRolleWithAttrs } from '@/stores/RolleStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
+import {
+  mapZuordnungToPersonenkontextUpdate,
+  usePersonenkontextStore,
+  type PersonenkontextStore,
+} from '@/stores/PersonenkontextStore';
+import type { TranslatedRolleWithAttrs } from '@/stores/RolleStore';
 import { isBefristungspflichtRolle, useBefristungUtils, type BefristungUtilsType } from '@/utils/befristung';
 import { adjustDateForTimezoneAndFormat, formatDateToISO, getNextSchuljahresende } from '@/utils/date';
 import { getBefristungSchema, getVuetifyConfig } from '@/utils/validationPersonenkontext';
@@ -33,29 +38,44 @@ export type ZuordnungChangeBefristung = {
   handleChangeBefristungOptionUpdate: BefristungUtilsType['handleBefristungOptionUpdate'];
   changeBefristungConfirmationDialogVisible: Ref<boolean>;
   changeBefristungConfirmationDialogMessage: Ref<string>;
+  changeBefristungSuccessDialogVisible: Ref<boolean>;
   differentDateSelected: ComputedRef<boolean>;
   onSubmitChangeBefristung: (e?: Event) => Promise<void | undefined>;
   triggerChangeBefristung: () => void;
   confirmDialogChangeBefristung: () => void;
   cancelChangeBefristung: () => void;
+  confirmChangeBefristung: () => Promise<void>;
+  closeChangeBefristungSuccessDialog: () => void;
 };
 
 // Form, fields and handlers for changing the Befristung of a selected Zuordnung
 export function useZuordnungChangeBefristung(params: {
   t: Composer['t'];
+  personId: Readonly<Ref<string>>;
+  isEditActive: Ref<boolean>;
   state: ZuordnungenWorkingState;
   // Shared with the creation form, which also calculates and requires a Befristung
   calculatedBefristung: Ref<string | undefined>;
   isUnbefristetDisabled: Ref<boolean>;
   isBefristungRequired: Ref<boolean>;
 }): ZuordnungChangeBefristung {
-  const { t, state, calculatedBefristung, isUnbefristetDisabled, isBefristungRequired }: typeof params = params;
+  const {
+    t,
+    personId,
+    isEditActive,
+    state,
+    calculatedBefristung,
+    isUnbefristetDisabled,
+    isBefristungRequired,
+  }: typeof params = params;
   const personStore: PersonStore = usePersonStore();
+  const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
 
   const isChangeBefristungActive: Ref<boolean> = ref(false);
   const pendingChangeBefristung: Ref<boolean> = ref(false);
   const changeBefristungConfirmationDialogVisible: Ref<boolean> = ref(false);
   const changeBefristungConfirmationDialogMessage: Ref<string> = ref('');
+  const changeBefristungSuccessDialogVisible: Ref<boolean> = ref(false);
 
   const changeBefristungFormContext: FormContext<ChangeBefristungForm, ChangeBefristungForm> =
     useForm<ChangeBefristungForm>({
@@ -157,6 +177,24 @@ export function useZuordnungChangeBefristung(params: {
     changeBefristungConfirmationDialogVisible.value = false;
   };
 
+  async function confirmChangeBefristung(): Promise<void> {
+    await personenkontextStore.updatePersonenkontexte(
+      state.zuordnungenToBePersisted.value.map(mapZuordnungToPersonenkontextUpdate),
+      personId.value,
+    );
+    changeBefristungSuccessDialogVisible.value = !personenkontextStore.errorCode;
+    state.selectedZuordnungen.value = [];
+    changeBefristungFormContext.resetForm();
+  }
+
+  const closeChangeBefristungSuccessDialog = (): void => {
+    personStore.getPersonenuebersichtById(personId.value);
+    changeBefristungSuccessDialogVisible.value = false;
+    isChangeBefristungActive.value = false;
+    pendingChangeBefristung.value = false;
+    isEditActive.value = false;
+  };
+
   return {
     changeBefristungFormContext,
     isChangeBefristungActive,
@@ -169,10 +207,13 @@ export function useZuordnungChangeBefristung(params: {
     handleChangeBefristungOptionUpdate,
     changeBefristungConfirmationDialogVisible,
     changeBefristungConfirmationDialogMessage,
+    changeBefristungSuccessDialogVisible,
     differentDateSelected,
     onSubmitChangeBefristung,
     triggerChangeBefristung,
     confirmDialogChangeBefristung,
     cancelChangeBefristung,
+    confirmChangeBefristung,
+    closeChangeBefristungSuccessDialog,
   };
 }

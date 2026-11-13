@@ -1,7 +1,7 @@
 import { mount, type VueWrapper } from '@vue/test-utils';
-import ZuordnungSuccessDialog from './ZuordnungSuccessDialog.vue';
+import ZuordnungInfoDialog from './ZuordnungInfoDialog.vue';
 
-describe('ZuordnungSuccessDialog', () => {
+describe('ZuordnungInfoDialog', () => {
   let wrapper: VueWrapper | null = null;
 
   afterEach(() => {
@@ -10,7 +10,7 @@ describe('ZuordnungSuccessDialog', () => {
   });
 
   test('it renders the message and emits close', async () => {
-    wrapper = mount(ZuordnungSuccessDialog, {
+    wrapper = mount(ZuordnungInfoDialog, {
       attachTo: document.body,
       props: {
         modelValue: true,

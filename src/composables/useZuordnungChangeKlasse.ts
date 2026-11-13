@@ -1,5 +1,9 @@
 import type { Organisation } from '@/stores/OrganisationStore';
-import { usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
+import {
+  mapZuordnungToPersonenkontextUpdate,
+  usePersonenkontextStore,
+  type PersonenkontextStore,
+} from '@/stores/PersonenkontextStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import type { Zuordnung } from '@/stores/types/Zuordnung';
 import { getVuetifyConfig } from '@/utils/validationPersonenkontext';
@@ -33,19 +37,24 @@ export type ZuordnungChangeKlasse = {
   isChangeKlasseFieldDirty: FormContext<ChangeKlasseForm, ChangeKlasseForm>['isFieldDirty'];
   changeKlasseConfirmationDialogVisible: Ref<boolean>;
   changeKlasseConfirmationDialogMessage: Ref<string>;
+  changeKlasseSuccessDialogVisible: Ref<boolean>;
   isSubmitDisabled: ComputedRef<boolean>;
   onSubmitChangeKlasse: (e?: Event) => Promise<void | undefined>;
   triggerChangeKlasse: () => void;
   confirmDialogChangeKlasse: () => void;
   cancelChangeKlasse: () => void;
+  confirmChangeKlasse: () => Promise<void>;
+  closeChangeKlasseSuccessDialog: () => void;
 };
 
 // Form, fields and handlers for changing the Klasse of a selected Zuordnung (Versetzen)
 export function useZuordnungChangeKlasse(params: {
   t: Composer['t'];
+  personId: Readonly<Ref<string>>;
+  isEditActive: Ref<boolean>;
   state: ZuordnungenWorkingState;
 }): ZuordnungChangeKlasse {
-  const { t, state }: { t: Composer['t']; state: ZuordnungenWorkingState } = params;
+  const { t, personId, isEditActive, state }: typeof params = params;
   const personStore: PersonStore = usePersonStore();
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
 
@@ -53,6 +62,7 @@ export function useZuordnungChangeKlasse(params: {
   const pendingChangeKlasse: Ref<boolean> = ref(false);
   const changeKlasseConfirmationDialogVisible: Ref<boolean> = ref(false);
   const changeKlasseConfirmationDialogMessage: Ref<string> = ref('');
+  const changeKlasseSuccessDialogVisible: Ref<boolean> = ref(false);
 
   const changeKlasseValidationSchema: TypedSchema = toTypedSchema(
     object({
@@ -147,6 +157,24 @@ export function useZuordnungChangeKlasse(params: {
     changeKlasseConfirmationDialogVisible.value = false;
   };
 
+  // This will send the updated list of Zuordnungen to the Backend with the selected Zuordnung but with the new Klasse.
+  async function confirmChangeKlasse(): Promise<void> {
+    await personenkontextStore.updatePersonenkontexte(
+      state.zuordnungenToBePersisted.value.map(mapZuordnungToPersonenkontextUpdate),
+      personId.value,
+    );
+    changeKlasseSuccessDialogVisible.value = !personenkontextStore.errorCode;
+    state.selectedZuordnungen.value = [];
+    resetChangeKlasseForm();
+  }
+
+  const closeChangeKlasseSuccessDialog = (): void => {
+    personStore.getPersonenuebersichtById(personId.value);
+    changeKlasseSuccessDialogVisible.value = false;
+    isEditActive.value = false;
+    pendingChangeKlasse.value = false;
+  };
+
   return {
     isChangeKlasseFormActive,
     pendingChangeKlasse,
@@ -158,10 +186,13 @@ export function useZuordnungChangeKlasse(params: {
     isChangeKlasseFieldDirty,
     changeKlasseConfirmationDialogVisible,
     changeKlasseConfirmationDialogMessage,
+    changeKlasseSuccessDialogVisible,
     isSubmitDisabled,
     onSubmitChangeKlasse,
     triggerChangeKlasse,
     confirmDialogChangeKlasse,
     cancelChangeKlasse,
+    confirmChangeKlasse,
+    closeChangeKlasseSuccessDialog,
   };
 }

@@ -5,7 +5,7 @@
 
   type Props = {
     header: string;
-    closeButtonTestId: string;
+    closeButtonTestId?: string;
   };
 
   const props: Props = defineProps<Props>();
