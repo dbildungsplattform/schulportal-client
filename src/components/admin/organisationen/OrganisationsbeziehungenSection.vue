@@ -71,6 +71,15 @@
     return undefined;
   }
 
+  const relatedOrganisationen: ComputedRef<Array<OrganisationsbeziehungOrganisationResponse>> = computed(() =>
+    organisationsbeziehungStore.beziehungen.flatMap(
+      (beziehung: OrganisationsbeziehungWithOrganisationenResponse): Array<OrganisationsbeziehungOrganisationResponse> => {
+        const related: OrganisationsbeziehungOrganisationResponse | undefined = getRelatedOrganisation(beziehung);
+        return related ? [related] : [];
+      },
+    ),
+  );
+
   /* Rows where neither quelle nor ziel is the current organisation are a backend error and are skipped. */
   const tableItems: ComputedRef<Array<BeziehungTableItem>> = computed(() =>
     organisationsbeziehungStore.beziehungen.flatMap(
@@ -113,6 +122,9 @@
   }
 
   async function handleSearchFilter(filter: string): Promise<void> {
+    if (filter === searchString.value) {
+      return;
+    }
     searchString.value = filter;
     page.value = 1;
     await fetchBeziehungen();
@@ -198,6 +210,7 @@
         <template v-else>
           <OrganisationsbeziehungenFilter
             :initial-value="searchString"
+            :items="relatedOrganisationen"
             @on-apply-search-filter="handleSearchFilter"
           />
           <v-row class="ma-3">

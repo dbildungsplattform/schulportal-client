@@ -136,14 +136,37 @@ describe('OrganisationsbeziehungenSection', () => {
     await openSection();
     vi.mocked(store.loadBeziehungen).mockClear();
 
-    await wrapper!.get('[data-testid="search-filter-input"] input').setValue('Schule');
-    await wrapper!.get('[data-testid="apply-search-filter-button"]').trigger('click');
+    wrapper!.findComponent({ name: 'OrganisationsbeziehungenFilter' }).vm.$emit('onApplySearchFilter', 'Schule');
     await flushPromises();
 
     expect(store.loadBeziehungen).toHaveBeenCalledExactlyOnceWith(
       'org-1',
       expect.objectContaining({ offset: 0, searchString: 'Schule' }),
     );
+  });
+
+  test('it does not reload when the applied search string did not change', async () => {
+    await openSection();
+    vi.mocked(store.loadBeziehungen).mockClear();
+
+    wrapper!.findComponent({ name: 'OrganisationsbeziehungenFilter' }).vm.$emit('onApplySearchFilter', '');
+    await flushPromises();
+
+    expect(store.loadBeziehungen).not.toHaveBeenCalled();
+  });
+
+  test('it passes the related organisations as items to the filter', async () => {
+    store.beziehungen = [
+      DoFactory.getOrganisationsbeziehung({
+        quelle: { id: 'org-1', name: 'Aktuelle Schule', dienststellennummer: '1111111' },
+        ziel: { id: 'z-1', name: 'Zielträger', dienststellennummer: null },
+      }),
+    ];
+    await openSection();
+
+    expect(wrapper!.findComponent({ name: 'OrganisationsbeziehungenFilter' }).props('items')).toEqual([
+      { id: 'z-1', name: 'Zielträger', dienststellennummer: null },
+    ]);
   });
 
   test('it shows an error alert instead of the table when loading failed', async () => {
