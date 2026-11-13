@@ -82,6 +82,8 @@
 
   const props: Props = defineProps<Props>();
   const isEditActive: ModelRef<boolean> = defineModel<boolean>('isEditActive', { default: false });
+  const isFormDirty: ModelRef<boolean> = defineModel<boolean>('isFormDirty', { default: false });
+  const hasPendingChange: ModelRef<boolean> = defineModel<boolean>('hasPendingChange', { default: false });
 
   const { mdAndDown }: { mdAndDown: Ref<boolean> } = useDisplay();
   const { t }: Composer = useI18n({ useScope: 'global' });
@@ -515,9 +517,17 @@
     }
   };
 
-  const hasPendingChange: ComputedRef<boolean> = computed(() => {
+  const hasPendingChangeComputed: ComputedRef<boolean> = computed(() => {
     return pendingCreation.value || pendingDeletion.value || pendingChangeKlasse.value || pendingChangeBefristung.value;
   });
+
+  watch(
+    hasPendingChangeComputed,
+    (value: boolean) => {
+      hasPendingChange.value = value;
+    },
+    { immediate: true, flush: 'sync' },
+  );
 
   // The save button is always disabled if there is no pending creation, deletion nor changeKlasse.
   const isSaveButtonDisabled: ComputedRef<boolean> = computed(() => !hasPendingChange.value);
@@ -723,15 +733,16 @@
     }
   }
 
-  // Checks for dirtiness depending on the active form
-  function isFormDirty(): boolean {
+  // Syncs dirtiness depending on the active form
+  watchEffect(() => {
     if (isChangeKlasseFormActive.value) {
-      return isChangeKlasseFieldDirty('selectedSchule') || isChangeKlasseFieldDirty('selectedNewKlasse');
+      isFormDirty.value = isChangeKlasseFieldDirty('selectedSchule') || isChangeKlasseFieldDirty('selectedNewKlasse');
     } else if (isEditActive.value) {
-      return isZuordnungCreationFormDirty.value;
+      isFormDirty.value = isZuordnungCreationFormDirty.value;
+    } else {
+      isFormDirty.value = false;
     }
-    return false;
-  }
+  });
 
   watch(
     () => personStore.personenuebersicht,
@@ -795,7 +806,7 @@
     });
   });
 
-  defineExpose({ hasPendingChange, isFormDirty, navigateToZuordnungForm });
+  defineExpose({ navigateToZuordnungForm });
 </script>
 
 <template>

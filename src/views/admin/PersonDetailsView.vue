@@ -77,14 +77,14 @@
   const password: Ref<string> = ref('');
 
   type ZuordnungenSectionExposed = {
-    hasPendingChange: boolean;
-    isFormDirty: () => boolean;
     navigateToZuordnungForm: () => void;
   };
   const zuordnungenSection: Readonly<ShallowRef<ZuordnungenSectionExposed | null>> =
     useTemplateRef<ZuordnungenSectionExposed>('zuordnungen-section');
 
   const isEditActive: Ref<boolean> = ref(false);
+  const isZuordnungenFormDirty: Ref<boolean> = ref(false);
+  const hasPendingZuordnungenChange: Ref<boolean> = ref(false);
 
   const isEditPersonMetadataActive: Ref<boolean> = ref(false);
 
@@ -505,7 +505,7 @@
         isChangePersonMetadataFieldDirty('selectedFamilienname')
       );
     }
-    return zuordnungenSection.value?.isFormDirty() ?? false;
+    return isZuordnungenFormDirty.value;
   }
 
   function handleConfirmUnsavedChanges(): void {
@@ -522,7 +522,7 @@
   }
 
   onBeforeRouteLeave((_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
-    if (isFormDirty() || zuordnungenSection.value?.hasPendingChange) {
+    if (isFormDirty() || hasPendingZuordnungenChange.value) {
       showUnsavedChangesDialog.value = true;
       blockedNext = next;
     } else {
@@ -1002,6 +1002,8 @@
         v-show="!personStore.errorCode && !personenkontextStore.errorCode"
         ref="zuordnungen-section"
         v-model:is-edit-active="isEditActive"
+        v-model:is-form-dirty="isZuordnungenFormDirty"
+        v-model:has-pending-change="hasPendingZuordnungenChange"
         :person-id="currentPersonId"
         :is-edit-person-metadata-active="isEditPersonMetadataActive"
       />

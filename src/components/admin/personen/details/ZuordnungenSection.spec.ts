@@ -36,8 +36,6 @@ import ZuordnungenSection from './ZuordnungenSection.vue';
 type ZuordnungenSectionVm = {
   filteredRollen: TranslatedRolleWithAttrs[];
   zuordnungenToBePersisted: Zuordnung[];
-  hasPendingChange: boolean;
-  isFormDirty: () => boolean;
   navigateToZuordnungForm: () => void;
 };
 
@@ -73,6 +71,14 @@ function mountComponent(props: Record<string, unknown> = {}): VueWrapper<Instanc
 
 function getVm(): ZuordnungenSectionVm {
   return wrapper!.vm as unknown as ZuordnungenSectionVm;
+}
+
+function isFormDirty(): boolean {
+  return wrapper!.emitted<[boolean]>('update:isFormDirty')?.at(-1)?.[0] ?? false;
+}
+
+function hasPendingChange(): boolean {
+  return wrapper!.emitted<[boolean]>('update:hasPendingChange')?.at(-1)?.[0] ?? false;
 }
 
 // State and handlers of the script setup that are not exposed but needed to reach states the UI prevents
@@ -179,8 +185,8 @@ describe('ZuordnungenSection', () => {
     wrapper = mountComponent({ isEditActive: true });
     await flushPromises();
 
-    expect(getVm().hasPendingChange).toBe(false);
-    expect(getVm().isFormDirty()).toBe(false);
+    expect(hasPendingChange()).toBe(false);
+    expect(isFormDirty()).toBe(false);
   });
 
   test('it navigates back to the creation form and resets the error', async () => {
@@ -250,7 +256,7 @@ describe('ZuordnungenSection', () => {
         rollenArt: schulZuordnung.rollenArt,
         klasse: newKlasse.name,
       });
-      expect(getVm().hasPendingChange).toBe(true);
+      expect(hasPendingChange()).toBe(true);
 
       const newKlasseZuordnung: Zuordnung | undefined = getVm().zuordnungenToBePersisted.find(
         (zuordnung: Zuordnung) =>
@@ -312,11 +318,11 @@ describe('ZuordnungenSection', () => {
   test('it cancels editing and discards the pending change', async () => {
     const sectionWrapper: VueWrapper = await startEditingWithSelection();
     await prepareDeletion(sectionWrapper);
-    expect(getVm().hasPendingChange).toBe(true);
+    expect(hasPendingChange()).toBe(true);
 
     await sectionWrapper.get('[data-testid="zuordnung-edit-cancel"]').trigger('click');
 
-    expect(getVm().hasPendingChange).toBe(false);
+    expect(hasPendingChange()).toBe(false);
     expect(sectionWrapper.emitted('update:isEditActive')?.at(-1)).toEqual([false]);
     expect(sectionWrapper.find('[data-testid="person-zuordnungen-section-view"]').exists()).toBe(true);
   });
@@ -346,7 +352,7 @@ describe('ZuordnungenSection', () => {
     await sectionWrapper.get('[data-testid="klasse-change-button"]').trigger('click');
     await flushPromises();
 
-    expect(getVm().isFormDirty()).toBe(true);
+    expect(isFormDirty()).toBe(true);
 
     const klassenFilter: VueWrapper = sectionWrapper
       .findComponent(KlasseChange)
@@ -366,7 +372,7 @@ describe('ZuordnungenSection', () => {
     closeButtons[closeButtons.length - 1]!.dispatchEvent(new Event('click'));
     await flushPromises();
 
-    expect(getVm().hasPendingChange).toBe(false);
+    expect(hasPendingChange()).toBe(false);
     expect(sectionWrapper.find('[data-testid="klasse-change-form"]').exists()).toBe(true);
   });
 
@@ -471,7 +477,7 @@ describe('ZuordnungenSection', () => {
 
       expect(getVm().zuordnungenToBePersisted).toHaveLength(1);
       expect(getVm().zuordnungenToBePersisted[0]).toMatchObject({ sskId: schule.id, rolleId: '' });
-      expect(getVm().hasPendingChange).toBe(true);
+      expect(hasPendingChange()).toBe(true);
     });
 
     test('it ignores an unknown Organisation when adding a Zuordnung', async () => {
@@ -481,7 +487,7 @@ describe('ZuordnungenSection', () => {
       getInternals().confirmDialogAddition();
 
       expect(getVm().zuordnungenToBePersisted).toEqual([]);
-      expect(getVm().hasPendingChange).toBe(true);
+      expect(hasPendingChange()).toBe(true);
     });
 
     test('it changes the Klasse of a selected Zuordnung', async () => {
@@ -522,7 +528,7 @@ describe('ZuordnungenSection', () => {
     wrapper = mountComponent();
     await flushPromises();
 
-    expect(getVm().isFormDirty()).toBe(false);
+    expect(isFormDirty()).toBe(false);
   });
 
   test('it is dirty as soon as the new Klasse differs while changing the Klasse', async () => {
@@ -532,7 +538,7 @@ describe('ZuordnungenSection', () => {
 
     getInternals().resetChangeKlasseForm();
     await flushPromises();
-    expect(getVm().isFormDirty()).toBe(false);
+    expect(isFormDirty()).toBe(false);
 
     sectionWrapper.findComponent(KlasseChange).vm.$emit('update:selectedSchule', schule.id);
     await flushPromises();
@@ -542,7 +548,7 @@ describe('ZuordnungenSection', () => {
 
     getInternals().selectedNewKlasse = DoFactory.getKlasse(schule, { name: '9c' });
     await flushPromises();
-    expect(getVm().isFormDirty()).toBe(true);
+    expect(isFormDirty()).toBe(true);
   });
 
   describe('scrolling to the creation form', () => {
@@ -643,7 +649,7 @@ describe('ZuordnungenSection', () => {
       getInternals().cancelAddition();
       getInternals().cancelChangeBefristung();
 
-      expect(getVm().hasPendingChange).toBe(false);
+      expect(hasPendingChange()).toBe(false);
     });
 
     test('it keeps the KoPers.-Nr. confirmation dialog closed after proceeding', async () => {
@@ -698,7 +704,7 @@ describe('ZuordnungenSection', () => {
       confirmButton.dispatchEvent(new Event('click'));
       await flushPromises();
 
-      expect(getVm().hasPendingChange).toBe(true);
+      expect(hasPendingChange()).toBe(true);
       expect(
         getVm().zuordnungenToBePersisted.find((zuordnung: Zuordnung) => zuordnung.rolleId === rollen[0]!.value),
       ).toMatchObject({ sskId: schule.id });
@@ -745,7 +751,7 @@ describe('ZuordnungenSection', () => {
       const message: string = await submitAndConfirm(sectionWrapper);
 
       expect(message).toContain('unbefristet');
-      expect(getVm().hasPendingChange).toBe(true);
+      expect(hasPendingChange()).toBe(true);
       expect(getVm().zuordnungenToBePersisted[0]).toMatchObject({ befristung: null });
     });
 

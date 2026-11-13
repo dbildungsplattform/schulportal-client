@@ -699,14 +699,13 @@ describe('PersonDetailsView', () => {
   });
 
   describe('leaving the page', () => {
-    async function mountWithRouterView(zuordnungenSectionStub?: Component): Promise<void> {
+    async function mountWithRouterView(): Promise<void> {
       wrapper?.unmount();
       await router.push({ name: 'person-details', params: { id: '1' } });
       wrapper = mount(RouterView, {
         attachTo: document.getElementById('app') || '',
         global: {
           plugins: [router],
-          stubs: zuordnungenSectionStub ? { ZuordnungenSection: zuordnungenSectionStub } : {},
         },
       });
       await flushPromises();
@@ -719,19 +718,6 @@ describe('PersonDetailsView', () => {
       await flushPromises();
 
       expect(router.currentRoute.value.name).toBe('person-management');
-    });
-
-    test('it treats a missing dirty state of the Zuordnungen section as not dirty', async () => {
-      await mountWithRouterView({
-        template: '<div />',
-        setup: (_props: unknown, { expose }: { expose: (exposed: Record<string, unknown>) => void }): void =>
-          expose({ hasPendingChange: false, isFormDirty: (): undefined => undefined }),
-      });
-
-      const beforeUnloadEvent: Event = new Event('beforeunload', { cancelable: true });
-      window.dispatchEvent(beforeUnloadEvent);
-
-      expect(beforeUnloadEvent.defaultPrevented).toBe(false);
     });
   });
 
