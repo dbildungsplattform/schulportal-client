@@ -1,7 +1,4 @@
-import {
-  useOrganisationsbeziehungStore,
-  type OrganisationsbeziehungStore,
-} from '@/stores/OrganisationsbeziehungStore';
+import { useOrganisationsbeziehungStore, type OrganisationsbeziehungStore } from '@/stores/OrganisationsbeziehungStore';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import OrganisationsbeziehungenSection from './OrganisationsbeziehungenSection.vue';
@@ -39,7 +36,9 @@ describe('OrganisationsbeziehungenSection', () => {
   });
 
   test('it toggles aria-expanded and loads data when opened', async () => {
-    const toggle: ReturnType<VueWrapper['get']> = wrapper!.get('[data-testid="organisationsbeziehungen-toggle-button"]');
+    const toggle: ReturnType<VueWrapper['get']> = wrapper!.get(
+      '[data-testid="organisationsbeziehungen-toggle-button"]',
+    );
     expect(toggle.attributes('aria-expanded')).toBe('false');
 
     await openSection();

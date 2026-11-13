@@ -1,4 +1,7 @@
-import { SortFieldOrganisationsbeziehung, type OrganisationsbeziehungWithOrganisationenResponse } from '@/api-client/generated';
+import {
+  SortFieldOrganisationsbeziehung,
+  type OrganisationsbeziehungWithOrganisationenResponse,
+} from '@/api-client/generated';
 import axiosApiInstance from '@/services/ApiService';
 import { SortOrder } from '@/utils/sorting';
 import MockAdapter from 'axios-mock-adapter';
