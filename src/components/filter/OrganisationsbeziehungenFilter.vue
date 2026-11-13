@@ -4,7 +4,8 @@
   type Props = {
     initialValue?: string;
   };
-  const props: Props = withDefaults(defineProps<Props>(), { initialValue: '' });
+  type ResolvedProps = Omit<Props, 'initialValue'> & { initialValue: string };
+  const props: ResolvedProps = withDefaults(defineProps<Props>(), { initialValue: '' });
 
   type Emits = {
     (event: 'onApplySearchFilter', searchFilter: string): void;
