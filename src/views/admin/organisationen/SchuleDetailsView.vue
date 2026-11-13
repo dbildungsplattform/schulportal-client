@@ -109,7 +109,10 @@
                 </v-btn>
               </v-col>
             </v-row>
-            <OrganisationsbeziehungenSection :organisation-id="currentSchuleId" />
+            <OrganisationsbeziehungenSection
+              :organisation-id="currentSchuleId"
+              :show-dienststellennummer-column="false"
+            />
           </div>
           <div v-else-if="organisationStore.loading">
             <v-progress-circular indeterminate></v-progress-circular>

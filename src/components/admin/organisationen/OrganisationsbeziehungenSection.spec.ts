@@ -109,6 +109,25 @@ describe('OrganisationsbeziehungenSection', () => {
     expect(text).not.toContain('Fremdes Ziel');
   });
 
+  test('it shows the Dienststellennummer column by default', async () => {
+    await openSection();
+
+    expect(wrapper!.get('[data-testid="organisationsbeziehungen-table"]').text()).toContain('Dienststellennummer');
+  });
+
+  test('it hides the Dienststellennummer column when showDienststellennummerColumn is false', async () => {
+    wrapper!.unmount();
+    wrapper = mount(OrganisationsbeziehungenSection, {
+      attachTo: document.body,
+      props: { organisationId: 'org-1', showDienststellennummerColumn: false },
+    });
+    await openSection();
+
+    const text: string = wrapper.get('[data-testid="organisationsbeziehungen-table"]').text();
+    expect(text).toContain('Name');
+    expect(text).not.toContain('Dienststellennummer');
+  });
+
   test('it reloads from the first page when a search is applied', async () => {
     await openSection();
     vi.mocked(store.loadBeziehungen).mockClear();
