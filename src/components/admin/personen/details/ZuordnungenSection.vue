@@ -5,8 +5,10 @@
   import KopersInput from '@/components/admin/personen/KopersInput.vue';
   import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
   import PersonenkontextDelete from '@/components/admin/personen/PersonenkontextDelete.vue';
+  import ZuordnungConfirmationDialog from '@/components/admin/personen/details/ZuordnungConfirmationDialog.vue';
   import { PendingState } from '@/components/admin/personen/details/PersonenkontextItem.types';
   import PersonenkontextItem from '@/components/admin/personen/details/PersonenkontextItem.vue';
+  import ZuordnungSuccessDialog from '@/components/admin/personen/details/ZuordnungSuccessDialog.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import { useOrganisationen } from '@/composables/useOrganisationen';
   import { useAuthStore, type AuthStore, type PersonenkontextRolleFields } from '@/stores/AuthStore';
@@ -1385,286 +1387,115 @@
       </template>
     </v-container>
 
-    <!-- Success Dialog after deleting the Zuordnung-->
-    <v-dialog
+    <ZuordnungSuccessDialog
       v-model="deleteSuccessDialogVisible"
-      persistent
-      max-width="600px"
+      :header="t('person.editZuordnungen')"
+      close-button-test-id="close-zuordnung-delete-success-button"
+      @close="closeDeleteSuccessDialog"
     >
-      <LayoutCard
-        :closable="true"
-        :header="t('person.editZuordnungen')"
-        @on-close-clicked="closeDeleteSuccessDialog"
-      >
-        <v-card-text>
-          <v-container>
-            <v-row class="text-body bold px-md-16">
-              <v-col
-                offset="1"
-                cols="10"
-              >
-                <span>{{ t('person.deleteZuordnungSuccess') }}</span>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-        <v-card-actions class="justify-center">
-          <v-row class="justify-center">
+      <template #message>
+        <v-container>
+          <v-row class="text-body bold px-md-16">
             <v-col
-              cols="12"
-              sm="6"
-              md="4"
+              offset="1"
+              cols="10"
             >
-              <v-btn
-                :block="mdAndDown"
-                class="primary"
-                data-testId="close-zuordnung-delete-success-button"
-                @click.stop="closeDeleteSuccessDialog"
-              >
-                {{ t('close') }}
-              </v-btn>
+              <span>{{ t('person.deleteZuordnungSuccess') }}</span>
             </v-col>
           </v-row>
-        </v-card-actions>
-      </LayoutCard>
-    </v-dialog>
-    <!-- Success Dialog after creating the Zuordnung-->
-    <v-dialog
+        </v-container>
+      </template>
+    </ZuordnungSuccessDialog>
+    <ZuordnungSuccessDialog
       v-model="createSuccessDialogVisible"
-      persistent
-      max-width="600px"
+      :header="t('person.editZuordnungen')"
+      close-button-test-id="close-zuordnung-create-success-button"
+      @close="closeCreateSuccessDialog"
     >
-      <LayoutCard
-        :closable="true"
-        :header="t('person.editZuordnungen')"
-        @on-close-clicked="closeCreateSuccessDialog"
-      >
-        <v-card-text>
-          <v-container>
-            <v-row class="text-body bold px-md-16">
-              <v-col class="text-center">
-                <span>{{ t('person.addZuordnungSuccess') }}</span>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-        <v-card-actions class="justify-center">
-          <v-row class="justify-center">
-            <v-col
-              cols="12"
-              sm="6"
-              md="4"
-            >
-              <v-btn
-                :block="mdAndDown"
-                class="primary"
-                data-testId="close-zuordnung-create-success-button"
-                @click.stop="closeCreateSuccessDialog"
-              >
-                {{ t('close') }}
-              </v-btn>
+      <template #message>
+        <v-container>
+          <v-row class="text-body bold px-md-16">
+            <v-col class="text-center">
+              <span>{{ t('person.addZuordnungSuccess') }}</span>
             </v-col>
           </v-row>
-        </v-card-actions>
-      </LayoutCard>
-    </v-dialog>
-    <!-- Success Dialog after chagning the name of the Klasse-->
-    <v-dialog
+        </v-container>
+      </template>
+    </ZuordnungSuccessDialog>
+    <ZuordnungSuccessDialog
       v-model="changeKlasseSuccessDialogVisible"
-      persistent
-      max-width="600px"
+      :header="t('transfer')"
+      close-button-test-id="change-klasse-success-dialog-close-button"
+      @close="closeChangeKlasseSuccessDialog"
     >
-      <LayoutCard
-        :closable="true"
-        :header="t('transfer')"
-        @on-close-clicked="closeChangeKlasseSuccessDialog"
-      >
-        <v-card-text>
-          <v-container>
-            <v-row class="text-body bold">
-              <v-col
-                class="text-center"
-                cols="12"
-              >
-                <span data-testid="change-klasse-success-dialog-text">{{ t('person.changeKlasseSuccess') }}</span>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-        <v-card-actions class="justify-center">
-          <v-row class="justify-center">
+      <template #message>
+        <v-container>
+          <v-row class="text-body bold">
             <v-col
+              class="text-center"
               cols="12"
-              sm="6"
-              md="4"
             >
-              <v-btn
-                :block="mdAndDown"
-                class="primary"
-                data-testid="change-klasse-success-dialog-close-button"
-                @click.stop="closeChangeKlasseSuccessDialog"
-              >
-                {{ t('close') }}
-              </v-btn>
+              <span data-testid="change-klasse-success-dialog-text">{{ t('person.changeKlasseSuccess') }}</span>
             </v-col>
           </v-row>
-        </v-card-actions>
-      </LayoutCard>
-    </v-dialog>
-    <!-- Success Dialog after changing Befristung-->
-    <v-dialog
+        </v-container>
+      </template>
+    </ZuordnungSuccessDialog>
+    <ZuordnungSuccessDialog
       v-model="changeBefristungSuccessDialogVisible"
-      persistent
-      max-width="600px"
+      :header="t('person.changeBefristung')"
+      close-button-test-id="change-befristung-success-dialog-close-button"
+      @close="closeChangeBefristungSuccessDialog"
     >
-      <LayoutCard
-        :closable="true"
-        :header="t('person.changeBefristung')"
-        @on-close-clicked="closeChangeBefristungSuccessDialog"
-      >
-        <v-card-text>
-          <v-container>
-            <v-row class="text-body bold justify-center">
-              <v-col
-                class="text-center"
-                cols="10"
-              >
-                <span>{{ t('person.changeBefristungSuccess') }}</span>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-        <v-card-actions class="justify-center">
-          <v-row class="justify-center">
+      <template #message>
+        <v-container>
+          <v-row class="text-body bold justify-center">
             <v-col
-              cols="12"
-              sm="6"
-              md="4"
+              class="text-center"
+              cols="10"
             >
-              <v-btn
-                :block="mdAndDown"
-                class="primary"
-                data-testid="change-befristung-success-dialog-close-button"
-                @click.stop="closeChangeBefristungSuccessDialog"
-              >
-                {{ t('close') }}
-              </v-btn>
+              <span>{{ t('person.changeBefristungSuccess') }}</span>
             </v-col>
           </v-row>
-        </v-card-actions>
-      </LayoutCard>
-    </v-dialog>
-    <!-- Confirmation Dialog after filling the form and adding the Zuordnung-->
-    <v-dialog
+        </v-container>
+      </template>
+    </ZuordnungSuccessDialog>
+    <ZuordnungConfirmationDialog
       v-model="createZuordnungConfirmationDialogVisible"
-      persistent
-      max-width="600px"
+      :header="t('person.editZuordnungen')"
+      confirm-button-test-id="confirm-zuordnung-dialog-addition"
+      :confirm-first="true"
+      @confirm="confirmDialogAddition"
+      @cancel="cancelAddition"
     >
-      <LayoutCard
-        :closable="true"
-        :header="t('person.editZuordnungen')"
-        @on-close-clicked="cancelAddition"
-      >
-        <v-card-text>
-          <v-container>
-            <v-row class="text-body bold justify-center">
-              <v-col
-                class="text-center"
-                cols="10"
-              >
-                <span>{{ createZuordnungConfirmationDialogMessage }}</span>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-        <v-card-actions class="justify-center">
-          <v-row class="justify-center">
-            <v-col
-              cols="12"
-              sm="6"
-              md="4"
-            >
-              <v-btn
-                :block="mdAndDown"
-                class="primary"
-                data-testid="confirm-zuordnung-dialog-addition"
-                @click.stop="confirmDialogAddition"
-              >
-                {{ t('yes') }}
-              </v-btn>
-            </v-col>
-            <v-col
-              cols="12"
-              sm="6"
-              md="4"
-            >
-              <v-btn
-                :block="mdAndDown"
-                class="secondary"
-                @click.stop="cancelAddition"
-              >
-                {{ t('no') }}
-              </v-btn>
-            </v-col>
-          </v-row>
-        </v-card-actions>
-      </LayoutCard>
-    </v-dialog>
-    <!-- Confirmation Dialog after filling the form to change Klasse-->
-    <v-dialog
+      <template #message>
+        <v-row class="text-body bold justify-center">
+          <v-col
+            class="text-center"
+            cols="10"
+          >
+            <span>{{ createZuordnungConfirmationDialogMessage }}</span>
+          </v-col>
+        </v-row>
+      </template>
+    </ZuordnungConfirmationDialog>
+    <ZuordnungConfirmationDialog
       v-model="changeKlasseConfirmationDialogVisible"
-      persistent
-      max-width="600px"
+      :header="t('transfer')"
+      confirm-button-test-id="confirm-change-klasse-button"
+      @confirm="confirmDialogChangeKlasse"
+      @cancel="cancelChangeKlasse"
     >
-      <LayoutCard
-        :closable="true"
-        :header="t('transfer')"
-        @on-close-clicked="cancelChangeKlasse"
-      >
-        <v-card-text>
-          <v-container>
-            <v-row class="text-body text-center bold">
-              <v-col cols="12">
-                <span data-testid="change-klasse-confirmation-dialog-text">{{
-                  changeKlasseConfirmationDialogMessage
-                }}</span>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-        <v-card-actions class="justify-center">
-          <v-row class="justify-center">
-            <v-col
-              cols="12"
-              sm="6"
-              md="4"
-            >
-              <v-btn
-                :block="mdAndDown"
-                class="secondary"
-                @click.stop="cancelChangeKlasse"
-              >
-                {{ t('no') }}
-              </v-btn>
-            </v-col>
-            <v-col
-              cols="12"
-              sm="6"
-              md="4"
-            >
-              <v-btn
-                :block="mdAndDown"
-                class="primary"
-                data-testid="confirm-change-klasse-button"
-                @click.stop="confirmDialogChangeKlasse"
-              >
-                {{ t('yes') }}
-              </v-btn>
-            </v-col>
-          </v-row>
-        </v-card-actions>
-      </LayoutCard>
-    </v-dialog>
+      <template #message>
+        <v-row class="text-body text-center bold">
+          <v-col cols="12">
+            <span data-testid="change-klasse-confirmation-dialog-text">{{
+              changeKlasseConfirmationDialogMessage
+            }}</span>
+          </v-col>
+        </v-row>
+      </template>
+    </ZuordnungConfirmationDialog>
     <!-- Dialog to inform the user that he can't delete his own Zuordnungen -->
     <v-dialog
       v-model="cannotDeleteDialogVisible"
@@ -1707,62 +1538,24 @@
         </v-card-actions>
       </LayoutCard>
     </v-dialog>
-    <!-- Confirmation Dialog after filling the form to change Befristung -->
-    <v-dialog
+    <ZuordnungConfirmationDialog
       v-model="changeBefristungConfirmationDialogVisible"
-      persistent
-      max-width="600px"
+      :header="t('person.editZuordnungen')"
+      confirm-button-test-id="confirm-change-befristung-button"
+      @confirm="confirmDialogChangeBefristung"
+      @cancel="cancelChangeBefristung"
     >
-      <LayoutCard
-        :closable="true"
-        :header="t('person.editZuordnungen')"
-        @on-close-clicked="cancelChangeBefristung"
-      >
-        <v-card-text>
-          <v-container>
-            <v-row class="text-body bold justify-center">
-              <v-col
-                class="text-center"
-                cols="10"
-              >
-                <span>{{ changeBefristungConfirmationDialogMessage }}</span>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-        <v-card-actions class="justify-center">
-          <v-row class="justify-center">
-            <v-col
-              cols="12"
-              sm="6"
-              md="4"
-            >
-              <v-btn
-                :block="mdAndDown"
-                class="secondary"
-                @click.stop="cancelChangeBefristung"
-              >
-                {{ t('no') }}
-              </v-btn>
-            </v-col>
-            <v-col
-              cols="12"
-              sm="6"
-              md="4"
-            >
-              <v-btn
-                :block="mdAndDown"
-                class="primary"
-                data-testid="confirm-change-befristung-button"
-                @click.stop="confirmDialogChangeBefristung"
-              >
-                {{ t('yes') }}
-              </v-btn>
-            </v-col>
-          </v-row>
-        </v-card-actions>
-      </LayoutCard>
-    </v-dialog>
+      <template #message>
+        <v-row class="text-body bold justify-center">
+          <v-col
+            class="text-center"
+            cols="10"
+          >
+            <span>{{ changeBefristungConfirmationDialogMessage }}</span>
+          </v-col>
+        </v-row>
+      </template>
+    </ZuordnungConfirmationDialog>
 
     <v-dialog
       v-model="showNoKopersNrConfirmationDialog"
