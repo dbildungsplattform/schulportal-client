@@ -2,6 +2,7 @@
   import { computed, onMounted, ref, type ComputedRef, type Ref } from 'vue';
   import { onBeforeRouteLeave, useRoute, useRouter, type RouteLocationNormalizedLoaded, type Router } from 'vue-router';
   import LabeledField from '@/components/admin/LabeledField.vue';
+  import OrganisationsbeziehungenSection from '@/components/admin/organisationen/OrganisationsbeziehungenSection.vue';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import {
@@ -105,6 +106,7 @@
             />
           </v-col>
         </v-row>
+        <OrganisationsbeziehungenSection :organisation-id="organisationStore.currentOrganisation.id" />
       </v-container>
     </LayoutCard>
   </div>

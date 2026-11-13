@@ -1,4 +1,4 @@
-import { enableAutoUnmount, flushPromises, mount, type VueWrapper } from '@vue/test-utils';
+import { enableAutoUnmount, flushPromises, mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils';
 import type { ComponentInstance } from 'vue';
 import { createMemoryHistory, createRouter, RouterView, type Router } from 'vue-router';
 import { DoFactory } from 'test/DoFactory';
@@ -13,6 +13,8 @@ import {
   type OrganisationStore,
 } from '@/stores/OrganisationStore';
 import BehoerdeDetailsView from './BehoerdeDetailsView.vue';
+import LabeledField from '@/components/admin/LabeledField.vue';
+import OrganisationsbeziehungenSection from '@/components/admin/organisationen/OrganisationsbeziehungenSection.vue';
 
 enableAutoUnmount(afterEach);
 
@@ -57,8 +59,23 @@ describe('BehoerdeDetailsView', (): void => {
     expect(wrapper.get('[data-testid="behoerde-details-headline"]').text()).toBe('Behörde bearbeiten');
     expect(wrapper.get('[data-testid="behoerde-name"]').text()).toBe(behoerde.name);
     expect(wrapper.get('[data-testid="behoerde-zustaendigkeitsbereich"]').text()).toBe(parent.name);
-    expect(wrapper.text()).not.toContain('Dienststellennummer');
-    expect(wrapper.find('input').exists()).toBe(false);
+    expect(wrapper.findAllComponents(LabeledField).map((field: VueWrapper): string => field.text())).not.toEqual(
+      expect.arrayContaining([expect.stringContaining('Dienststellennummer')]),
+    );
+    const inputsOutsideSection: Array<DOMWrapper<HTMLInputElement>> = wrapper
+      .findAll<HTMLInputElement>('input')
+      .filter(
+        (input: DOMWrapper<HTMLInputElement>): boolean =>
+          !input.element.closest('[data-testid="organisationsbeziehungen-section"]'),
+      );
+    expect(inputsOutsideSection).toHaveLength(0);
+  });
+
+  it('should render the Organisationsbeziehungen section for the Behoerde including the Dienststellennummer column', async (): Promise<void> => {
+    await mountView();
+    const section: VueWrapper = wrapper.findComponent(OrganisationsbeziehungenSection);
+    expect(section.exists()).toBe(true);
+    expect(section.props()).toMatchObject({ organisationId: behoerde.id, showDienststellennummerColumn: true });
   });
 
   it.each([OrganisationsTyp.Schule, OrganisationsTyp.Traeger, OrganisationsTyp.Land])(
