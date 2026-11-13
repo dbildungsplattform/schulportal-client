@@ -96,9 +96,9 @@ describe('BehoerdeDetailsView', (): void => {
   it('should close the overview and return to the list', async (): Promise<void> => {
     await mountView();
     await wrapper.get('[data-testid="close-layout-card-button"]').trigger('click');
-    await vi.dynamicImportSettled();
-    await flushPromises();
-    expect(router.currentRoute.value.name).toBe('behoerde-management');
+    await vi.waitFor((): void => {
+      expect(router.currentRoute.value.name).toBe('behoerde-management');
+    });
   });
 
   it('should display the Land ancestor rather than the direct parent', async (): Promise<void> => {

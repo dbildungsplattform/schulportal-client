@@ -1,4 +1,5 @@
 import { useOrganisationsbeziehungStore, type OrganisationsbeziehungStore } from '@/stores/OrganisationsbeziehungStore';
+import { SortFieldOrganisationsbeziehung } from '@/api-client/generated/api';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import OrganisationsbeziehungenSection from './OrganisationsbeziehungenSection.vue';
@@ -27,6 +28,10 @@ afterEach(() => {
 async function openSection(): Promise<void> {
   await wrapper!.get('[data-testid="organisationsbeziehungen-toggle-button"]').trigger('click');
   await flushPromises();
+}
+
+function getResultTable(): VueWrapper {
+  return wrapper!.findComponent({ name: 'ResultTable' });
 }
 
 describe('OrganisationsbeziehungenSection', () => {
@@ -147,5 +152,77 @@ describe('OrganisationsbeziehungenSection', () => {
 
     expect(wrapper!.find('[data-testid="organisationsbeziehungen-error-alert"]').exists()).toBe(true);
     expect(wrapper!.find('[data-testid="organisationsbeziehungen-table"]').exists()).toBe(false);
+  });
+
+  test('it does not reload data when the section is collapsed again', async () => {
+    await openSection();
+    vi.mocked(store.loadBeziehungen).mockClear();
+
+    await openSection();
+
+    expect(wrapper!.get('[data-testid="organisationsbeziehungen-toggle-button"]').attributes('aria-expanded')).toBe(
+      'false',
+    );
+    expect(store.loadBeziehungen).not.toHaveBeenCalled();
+  });
+
+  test('it loads the requested page when the page is updated', async () => {
+    await openSection();
+    vi.mocked(store.loadBeziehungen).mockClear();
+
+    getResultTable().vm.$emit('onPageUpdate', 2);
+    await flushPromises();
+
+    expect(store.loadBeziehungen).toHaveBeenCalledWith(
+      'org-1',
+      expect.objectContaining({ offset: 30, limit: 30 }),
+    );
+  });
+
+  test('it resets to the first page when the items per page are updated', async () => {
+    await openSection();
+    getResultTable().vm.$emit('onPageUpdate', 3);
+    await flushPromises();
+    vi.mocked(store.loadBeziehungen).mockClear();
+
+    getResultTable().vm.$emit('onItemsPerPageUpdate', 10);
+    await flushPromises();
+
+    expect(store.loadBeziehungen).toHaveBeenCalledExactlyOnceWith(
+      'org-1',
+      expect.objectContaining({ offset: 0, limit: 10 }),
+    );
+  });
+
+  test('it reloads from the first page with the new sorting when the table is sorted', async () => {
+    await openSection();
+    getResultTable().vm.$emit('onPageUpdate', 2);
+    await flushPromises();
+    vi.mocked(store.loadBeziehungen).mockClear();
+
+    getResultTable().vm.$emit('onTableUpdate', {
+      sortField: SortFieldOrganisationsbeziehung.AndereOrganisationName,
+      sortOrder: 'desc',
+    });
+    await flushPromises();
+
+    expect(store.loadBeziehungen).toHaveBeenCalledExactlyOnceWith(
+      'org-1',
+      expect.objectContaining({
+        offset: 0,
+        sortField: SortFieldOrganisationsbeziehung.AndereOrganisationName,
+        sortOrder: 'desc',
+      }),
+    );
+  });
+
+  test('it ignores table updates without a sort field', async () => {
+    await openSection();
+    vi.mocked(store.loadBeziehungen).mockClear();
+
+    getResultTable().vm.$emit('onTableUpdate', { sortField: undefined, sortOrder: 'asc' });
+    await flushPromises();
+
+    expect(store.loadBeziehungen).not.toHaveBeenCalled();
   });
 });
