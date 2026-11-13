@@ -6,8 +6,8 @@
   import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
   import PersonenkontextDelete from '@/components/admin/personen/PersonenkontextDelete.vue';
   import ZuordnungConfirmationDialog from '@/components/admin/personen/details/ZuordnungConfirmationDialog.vue';
-  import { PendingState } from '@/components/admin/personen/details/PersonenkontextItem.types';
   import PersonenkontextItem from '@/components/admin/personen/details/PersonenkontextItem.vue';
+  import ZuordnungenEditList from '@/components/admin/personen/details/ZuordnungenEditList.vue';
   import ZuordnungSuccessDialog from '@/components/admin/personen/details/ZuordnungSuccessDialog.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import { useOrganisationen } from '@/composables/useOrganisationen';
@@ -926,93 +926,16 @@
               {{ t('person.checkAndSave') }}:
             </h3>
           </v-col>
-          <v-col
-            v-for="zuordnung in zuordnungenWithPendingChanges?.filter((zuordnung: Zuordnung) => zuordnung.editable)"
-            :key="zuordnung.sskId"
-            cols="12"
-            :md="hasPendingChange ? '12' : '7'"
-            :data-testid="`person-zuordnung-${zuordnung.sskId}`"
-            :title="zuordnung.sskName"
-            class="py-0 d-flex align-items-center"
-          >
-            <template v-if="!hasPendingChange">
-              <div class="mb-n4 checkbox-top-align">
-                <v-checkbox
-                  :ref="`checkbox-zuordnung-${zuordnung.sskId}`"
-                  v-model="selectedZuordnungen"
-                  :value="zuordnung"
-                >
-                  <template #label>
-                    <PersonenkontextItem
-                      :zuordnung="zuordnung"
-                      :no-margin="true"
-                    />
-                  </template>
-                </v-checkbox>
-              </div>
-            </template>
-            <!-- Template to show when the creation of a Zuordnung is pending -->
-            <template v-else-if="pendingCreation && !pendingDeletion">
-              <PersonenkontextItem
-                :pending-state="
-                  newZuordnung && zuordnung.sskId === newZuordnung.sskId && zuordnung.rolleId === newZuordnung.rolleId
-                    ? PendingState.CREATED
-                    : undefined
-                "
-                :zuordnung="zuordnung"
-              />
-            </template>
-            <!-- Template to show when the deletion of a Zuordnung is pending -->
-            <template v-else-if="pendingDeletion">
-              <PersonenkontextItem
-                :pending-state="selectedZuordnungen.includes(zuordnung) ? PendingState.DELETED : undefined"
-                :zuordnung="zuordnung"
-              />
-            </template>
-            <!-- Template to show when the change Klasse is pending -->
-            <template v-else-if="pendingChangeKlasse">
-              <div class="d-flex flex-column">
-                <PersonenkontextItem
-                  :pending-state="selectedZuordnungen.includes(zuordnung) ? PendingState.DELETED : undefined"
-                  :zuordnung="zuordnung"
-                />
-
-                <PersonenkontextItem
-                  v-if="
-                    newZuordnung && zuordnung.sskId === newZuordnung.sskId && zuordnung.rolleId === newZuordnung.rolleId
-                  "
-                  :pending-state="PendingState.CREATED"
-                  :zuordnung="newZuordnung"
-                />
-              </div>
-            </template>
-            <!-- Template to show when the change Befristung is pending -->
-            <template v-else-if="pendingChangeBefristung">
-              <div class="d-flex flex-column">
-                <PersonenkontextItem
-                  v-if="selectedZuordnungen.includes(zuordnung)"
-                  :pending-state="PendingState.DELETED"
-                  :zuordnung="zuordnung"
-                  :show-unlimited-befristung="true"
-                  :hide-pending-label="true"
-                />
-                <PersonenkontextItem
-                  v-else
-                  :zuordnung="zuordnung"
-                  :show-unlimited-befristung="true"
-                />
-                <PersonenkontextItem
-                  v-if="
-                    newZuordnung && zuordnung.sskId === newZuordnung.sskId && zuordnung.rolleId === newZuordnung.rolleId
-                  "
-                  :pending-state="PendingState.CREATED"
-                  :zuordnung="newZuordnung"
-                  :show-unlimited-befristung="true"
-                  :hide-pending-label="true"
-                />
-              </div>
-            </template>
-          </v-col>
+          <ZuordnungenEditList
+            v-model:selected-zuordnungen="selectedZuordnungen"
+            :zuordnungen="zuordnungenWithPendingChanges?.filter((zuordnung: Zuordnung) => zuordnung.editable) ?? []"
+            :new-zuordnung="newZuordnung"
+            :has-pending-change="hasPendingChange"
+            :pending-creation="pendingCreation"
+            :pending-deletion="pendingDeletion"
+            :pending-change-klasse="pendingChangeKlasse"
+            :pending-change-befristung="pendingChangeBefristung"
+          />
           <v-spacer />
           <v-col
             v-if="!hasPendingChange"
