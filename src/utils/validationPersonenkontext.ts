@@ -1,16 +1,17 @@
-import { RollenArt, RollenMerkmal, RolleStore, TranslatedRolleWithAttrs, useRolleStore } from '@/stores/RolleStore';
+import { RollenArt, RollenMerkmal, TranslatedRolleWithAttrs } from '@/stores/RolleStore';
 import { DDMMYYYY, NO_LEADING_TRAILING_SPACES } from '@/utils/validation'; // Assuming you have this validation in place
 import { toTypedSchema } from '@vee-validate/yup';
 import { useForm, type BaseFieldProps, type TypedSchema } from 'vee-validate';
 import type { Ref } from 'vue';
-import { object, string, StringSchema, type AnyObject } from 'yup';
+import { mixed, object, string, StringSchema, type AnyObject } from 'yup';
 import { isBefristungspflichtRolle } from './befristung';
 import { isValidDate, notInPast } from './date';
+import { Organisation } from '@/stores/OrganisationStore';
 
 // Define the form validation schema for the Personenkontext
 export type ZuordnungCreationForm = {
-  selectedRolle: string;
-  selectedOrganisation: string;
+  selectedRolle: TranslatedRolleWithAttrs;
+  selectedOrganisation: Organisation;
   selectedKlasse: string;
   selectedBefristung: Date;
   selectedBefristungOption: string;
@@ -27,9 +28,9 @@ export function isLernRolle(selectedRolleId: string, rollen: TranslatedRolleWith
 
 // Define the field properties for Personenkontext
 export type PersonenkontextFieldDefinitions = {
-  selectedRolle: Ref<string | undefined>;
+  selectedRolle: Ref<TranslatedRolleWithAttrs | undefined>;
   selectedRolleProps: Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>;
-  selectedOrganisation: Ref<string | undefined>;
+  selectedOrganisation: Ref<Organisation | undefined>;
   selectedOrganisationProps: Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>;
   selectedKlasse: Ref<string | undefined>;
   selectedKlasseProps: Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>;
@@ -70,8 +71,11 @@ export const befristungSchema = (t: (key: string) => string): StringSchema =>
       const {
         selectedRolle,
         selectedBefristungOption,
-      }: { selectedRolle: string | undefined; selectedBefristungOption: string | undefined } = this.parent as {
-        selectedRolle: string | undefined;
+      }: {
+        selectedRolle: string | TranslatedRolleWithAttrs | undefined;
+        selectedBefristungOption: string | undefined;
+      } = this.parent as {
+        selectedRolle: string | TranslatedRolleWithAttrs | undefined;
         selectedBefristungOption: string | undefined;
       };
 
@@ -94,13 +98,12 @@ export const getValidationSchema = (
   hasNoKopersNr: Ref<boolean | undefined>,
   hasKopersNummer: Ref<boolean>,
 ): TypedSchema<ZuordnungCreationForm> => {
-  const rolleStore: RolleStore = useRolleStore();
   return toTypedSchema(
     object({
-      selectedRolle: string().required(t('admin.rolle.rules.rolle.required')),
-      selectedOrganisation: string().required(t('admin.organisation.rules.organisation.required')),
+      selectedRolle: mixed<TranslatedRolleWithAttrs>().required(t('admin.rolle.rules.rolle.required')),
+      selectedOrganisation: mixed<Organisation>().required(t('admin.organisation.rules.organisation.required')),
       selectedKlasse: string().when('selectedRolle', {
-        is: (selectedRolleId: string) => isLernRolle(selectedRolleId, rolleStore.rollenForPersonenkontextCreation), // This helper function will check if it's a learning role
+        is: (selectedRolle: TranslatedRolleWithAttrs | undefined) => selectedRolle?.rollenart === RollenArt.Lern,
         then: (schema: Schema) => schema.required(t('admin.klasse.rules.klasse.required')),
       }),
       selectedNewKlasse: string().when('selectedSchule', {
@@ -111,11 +114,9 @@ export const getValidationSchema = (
       selectedKopersNr: string()
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.person.rules.kopersNr.noLeadingTrailingSpaces'))
         .when('selectedRolle', {
-          is: (selectedRolleId: string) => {
+          is: (selectedRolle: TranslatedRolleWithAttrs | undefined) => {
             // Check if the selected role requires a KopersNr
-            return (
-              isKopersRolle([selectedRolleId], rolleStore.rollenForPersonenkontextCreation) && !hasKopersNummer.value
-            );
+            return selectedRolle?.merkmale?.includes(RollenMerkmal.KopersPflicht) && !hasKopersNummer.value;
           },
           // Now apply the conditional logic based on `hasNoKopersNr`
           then: (schema: StringSchema<string | undefined, AnyObject, undefined, ''>) =>
@@ -154,12 +155,12 @@ export const getPersonenkontextFieldDefinitions = (
   const { defineField } = formContext;
 
   const [selectedRolle, selectedRolleProps]: [
-    Ref<string | undefined>,
+    Ref<TranslatedRolleWithAttrs | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = defineField('selectedRolle', getVuetifyConfig);
 
   const [selectedOrganisation, selectedOrganisationProps]: [
-    Ref<string | undefined>,
+    Ref<Organisation | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = defineField('selectedOrganisation', getVuetifyConfig);
 

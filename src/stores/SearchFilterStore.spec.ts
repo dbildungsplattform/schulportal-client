@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { DoFactory } from 'test/DoFactory';
+import type { Organisation } from './OrganisationStore';
 import { RollenArt, RollenMerkmal, type RolleResponse } from './RolleStore';
 import {
   DEFAULT_SERVICE_PROVIDER_KATEGORIEN,
@@ -7,20 +8,20 @@ import {
   useSearchFilterStore,
   type SearchFilterStore,
 } from './SearchFilterStore';
-import { ServiceProviderKategorie } from './ServiceProviderStore';
+import { ServiceProviderKategorie, type ServiceProviderIdNameResponse } from './ServiceProviderStore';
 
 describe('SearchFilterStore', () => {
   let searchFilterStore: SearchFilterStore;
   beforeEach(() => {
     setActivePinia(createPinia());
     searchFilterStore = useSearchFilterStore();
+    searchFilterStore.$reset();
   });
 
   it('should initalize state correctly', () => {
     expect(searchFilterStore.selectedKlassen).toEqual([]);
     expect(searchFilterStore.selectedRollen).toEqual([]);
     expect(searchFilterStore.selectedOrganisationen).toEqual([]);
-    expect(searchFilterStore.selectedRollenObjects).toEqual([]);
     expect(searchFilterStore.searchStringForRollen).toEqual('');
     expect(searchFilterStore.searchStringForPersonen).toEqual('');
     expect(searchFilterStore.searchStringForSchulen).toEqual('');
@@ -36,22 +37,28 @@ describe('SearchFilterStore', () => {
     expect(searchFilterStore.selectedOrganisationenForRollen).toEqual([]);
     expect(searchFilterStore.rollenPerPage).toEqual(rollenPerPageDefault);
     expect(searchFilterStore.selectedKategorienForServiceProvider).toEqual(DEFAULT_SERVICE_PROVIDER_KATEGORIEN);
-    expect(searchFilterStore.selectedAngeboteForRollen).toEqual([]);
-    expect(searchFilterStore.selectedAngeboteNamesForRollen).toEqual({});
+    expect(searchFilterStore.selectedServiceProvidersForRollen).toEqual([]);
   });
 
   it('should change the state', () => {
+    const selectedKlassen: Organisation[] = [DoFactory.getKlasse(), DoFactory.getKlasse()];
     // it sets the selectedKlassen
-    searchFilterStore.setKlasseFilterForPersonen(['1', '2']);
-    expect(searchFilterStore.selectedKlassen).toEqual(['1', '2']);
+    searchFilterStore.setKlasseFilterForPersonen(selectedKlassen);
+    expect(searchFilterStore.selectedKlassen).toEqual(selectedKlassen);
 
     // it sets the selectedRollen
-    searchFilterStore.setRolleFilterForPersonen(['5', '8']);
-    expect(searchFilterStore.selectedRollen).toEqual(['5', '8']);
+    const selectedRollen: RolleResponse[] = [DoFactory.getRolleResponse(), DoFactory.getRolleResponse()];
+    searchFilterStore.setRolleFilterForPersonen(selectedRollen);
+    expect(searchFilterStore.selectedRollen).toEqual(selectedRollen);
+    searchFilterStore.setRolleFilterForPersonen(null);
+    expect(searchFilterStore.selectedRollen).toBeNull();
 
     // it sets the selectedOrganisationen
-    searchFilterStore.setOrganisationFilterForPersonen(['10', '20']);
-    expect(searchFilterStore.selectedOrganisationen).toEqual(['10', '20']);
+    const schulen: Organisation[] = [DoFactory.getSchule(), DoFactory.getSchule()];
+    searchFilterStore.setOrganisationFilterForPersonen(schulen);
+    expect(searchFilterStore.selectedOrganisationen).toEqual(schulen);
+    searchFilterStore.setOrganisationFilterForPersonen(null);
+    expect(searchFilterStore.selectedOrganisationen).toBeNull();
 
     // it sets the searchFilter for personen
     searchFilterStore.setSearchFilterForPersonen('search');
@@ -77,26 +84,22 @@ describe('SearchFilterStore', () => {
     searchFilterStore.setSearchFilterForServiceProvider(null);
     expect(searchFilterStore.searchStringForServiceProvider).toEqual('');
 
-    // it sets the selectedRolleFilterWithObjects
-    const rolleFilterObject: RolleResponse = DoFactory.getRolleResponse();
-    searchFilterStore.setRolleFilterWithObjectsForPersonen(['5'], [rolleFilterObject]);
-    expect(searchFilterStore.selectedRollenObjects).toEqual([rolleFilterObject]);
-
     // it sets the selectedSchuleForKlassen
-    searchFilterStore.setSchuleFilterForKlassen('10');
-    expect(searchFilterStore.selectedSchuleForKlassen).toEqual('10');
+    const schule: Organisation = DoFactory.getSchule();
+    searchFilterStore.setSchuleFilterForKlassen(schule);
+    expect(searchFilterStore.selectedSchuleForKlassen).toEqual(schule);
 
     // it sets the selectedKlassenForKlassen
-    searchFilterStore.setKlasseFilterForKlassen(['10', '20']);
-    expect(searchFilterStore.selectedKlassenForKlassen).toEqual(['10', '20']);
+    searchFilterStore.setKlasseFilterForKlassen(selectedKlassen);
+    expect(searchFilterStore.selectedKlassenForKlassen).toEqual(selectedKlassen);
 
-    searchFilterStore.setSchuleForMptRollen('10');
-    expect(searchFilterStore.selectedSchuleForMptRollen).toEqual('10');
+    searchFilterStore.setSchuleForMptRollen(schule);
+    expect(searchFilterStore.selectedSchuleForMptRollen).toEqual(schule);
     searchFilterStore.setSchuleForMptRollen(null);
     expect(searchFilterStore.selectedSchuleForMptRollen).toEqual(null);
 
-    searchFilterStore.setSchuleForSchulischeServiceProvider('10');
-    expect(searchFilterStore.selectedSchuleForSchulischeServiceProvider).toEqual('10');
+    searchFilterStore.setSchuleForSchulischeServiceProvider(schule);
+    expect(searchFilterStore.selectedSchuleForSchulischeServiceProvider).toEqual(schule);
 
     searchFilterStore.setKategorienForServiceProvider([ServiceProviderKategorie.Email]);
     expect(searchFilterStore.selectedKategorienForServiceProvider).toEqual([ServiceProviderKategorie.Email]);
@@ -117,23 +120,27 @@ describe('SearchFilterStore', () => {
   });
 
   it('should set organisationen filter for rollen', () => {
-    searchFilterStore.setOrganisationenFilterForRollen(['org1', 'org2']);
-    expect(searchFilterStore.selectedOrganisationenForRollen).toEqual(['org1', 'org2']);
+    const organisations: Organisation[] = [DoFactory.getSchule(), DoFactory.getSchule()];
+    searchFilterStore.setOrganisationenFilterForRollen(organisations);
+    expect(searchFilterStore.selectedOrganisationenForRollen).toEqual(organisations);
   });
 
-  it('should set angebote filter for rollen', () => {
-    searchFilterStore.setAngeboteFilterForRollen(['angebot1', 'angebot2']);
-    expect(searchFilterStore.selectedAngeboteForRollen).toEqual(['angebot1', 'angebot2']);
-  });
+  it('should set selected service providers for rollen', () => {
+    const firstProvider: ServiceProviderIdNameResponse = DoFactory.getServiceProviderResponse({
+      id: 'sp1',
+      name: 'Provider One',
+    });
+    const secondProvider: ServiceProviderIdNameResponse = DoFactory.getServiceProviderResponse({
+      id: 'sp2',
+      name: 'Provider Two',
+    });
+    const selectedServiceProviders: ServiceProviderIdNameResponse[] = [
+      { id: firstProvider.id, name: firstProvider.name },
+      { id: secondProvider.id, name: secondProvider.name },
+    ];
 
-  it('should set angebote names for rollen', () => {
-    searchFilterStore.setAngeboteNamesForRollen({ sp1: 'Provider One', sp2: 'Provider Two' });
-    expect(searchFilterStore.selectedAngeboteNamesForRollen).toEqual({ sp1: 'Provider One', sp2: 'Provider Two' });
-  });
+    searchFilterStore.setServiceProvidersFilterForRollen(selectedServiceProviders);
 
-  it('should overwrite existing angebote names for rollen', () => {
-    searchFilterStore.setAngeboteNamesForRollen({ sp1: 'Provider One' });
-    searchFilterStore.setAngeboteNamesForRollen({ sp2: 'Provider Two' });
-    expect(searchFilterStore.selectedAngeboteNamesForRollen).toEqual({ sp2: 'Provider Two' });
+    expect(searchFilterStore.selectedServiceProvidersForRollen).toEqual(selectedServiceProviders);
   });
 });
