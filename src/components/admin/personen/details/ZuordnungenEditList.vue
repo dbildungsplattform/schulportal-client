@@ -15,9 +15,12 @@
   };
 
   const props: Props = defineProps<Props>();
-  const selectedZuordnungen: ModelRef<ZuordnungWithKlasse[]> = defineModel<ZuordnungWithKlasse[]>('selectedZuordnungen', {
-    required: true,
-  });
+  const selectedZuordnungen: ModelRef<ZuordnungWithKlasse[]> = defineModel<ZuordnungWithKlasse[]>(
+    'selectedZuordnungen',
+    {
+      required: true,
+    },
+  );
 </script>
 
 <template>
@@ -49,7 +52,9 @@
     <template v-else-if="props.pendingCreation && !props.pendingDeletion">
       <PersonenkontextItem
         :pending-state="
-          props.newZuordnung && zuordnung.sskId === props.newZuordnung.sskId && zuordnung.rolleId === props.newZuordnung.rolleId
+          props.newZuordnung &&
+          zuordnung.sskId === props.newZuordnung.sskId &&
+          zuordnung.rolleId === props.newZuordnung.rolleId
             ? PendingState.CREATED
             : undefined
         "
@@ -108,3 +113,10 @@
     </template>
   </v-col>
 </template>
+
+<style scoped>
+  span {
+    white-space: normal;
+    text-wrap: pretty;
+  }
+</style>

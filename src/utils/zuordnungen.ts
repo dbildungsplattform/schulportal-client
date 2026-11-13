@@ -1,9 +1,18 @@
 import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
 import type { RollenArt, TranslatedRolleWithAttrs } from '@/stores/RolleStore';
 import { Zuordnung } from '@/stores/types/Zuordnung';
+import type { Ref } from 'vue';
 
 export type ZuordnungWithKlasse = Zuordnung & {
   klasse?: string;
+};
+
+// The Zuordnungen state of the edit flow that is shared between the different kinds of changes
+export type ZuordnungenWorkingState = {
+  selectedZuordnungen: Ref<ZuordnungWithKlasse[]>;
+  zuordnungenWithPendingChanges: Ref<ZuordnungWithKlasse[] | undefined>;
+  newZuordnung: Ref<ZuordnungWithKlasse | undefined>;
+  zuordnungenToBePersisted: Ref<Zuordnung[]>;
 };
 
 export type PersonWithZuordnungenSource = {
