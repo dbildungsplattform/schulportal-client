@@ -9,6 +9,8 @@ import {
   type OrganisationResponse,
   type OrganisationResponseLegacy,
   OrganisationsTyp,
+  type OrganisationsbeziehungWithOrganisationenResponse,
+  OrganisationsbeziehungsTyp,
   type PersonendatensatzResponse,
   type PersonenkontexteUpdateResponse,
   type PersonenkontextRolleFieldsResponse,
@@ -222,6 +224,26 @@ export class DoFactory {
       emailAdress: '',
       namensergaenzung: null,
       version: 1,
+      ...props,
+    };
+  }
+
+  public static getOrganisationsbeziehung(
+    props?: Partial<OrganisationsbeziehungWithOrganisationenResponse>,
+  ): OrganisationsbeziehungWithOrganisationenResponse {
+    return {
+      id: faker.string.uuid(),
+      typ: OrganisationsbeziehungsTyp.Schultraeger,
+      quelle: {
+        id: faker.string.uuid(),
+        name: DoFactory.getFakeSchuleName(),
+        dienststellennummer: faker.string.numeric(7),
+      },
+      ziel: {
+        id: faker.string.uuid(),
+        name: faker.company.name(),
+        dienststellennummer: faker.string.numeric(7),
+      },
       ...props,
     };
   }
