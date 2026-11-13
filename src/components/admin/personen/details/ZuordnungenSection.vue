@@ -5,8 +5,7 @@
   import KopersInput from '@/components/admin/personen/KopersInput.vue';
   import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
   import ZuordnungConfirmationDialog from '@/components/admin/personen/details/ZuordnungConfirmationDialog.vue';
-  import ZuordnungenEditActions from '@/components/admin/personen/details/ZuordnungenEditActions.vue';
-  import ZuordnungenEditList from '@/components/admin/personen/details/ZuordnungenEditList.vue';
+  import ZuordnungenEditOverview from '@/components/admin/personen/details/ZuordnungenEditOverview.vue';
   import ZuordnungenReadOnlyView from '@/components/admin/personen/details/ZuordnungenReadOnlyView.vue';
   import ZuordnungFormActions from '@/components/admin/personen/details/ZuordnungFormActions.vue';
   import ZuordnungInfoDialog from '@/components/admin/personen/details/ZuordnungInfoDialog.vue';
@@ -19,20 +18,22 @@
   import { useZuordnungChangeKlasse, type ZuordnungChangeKlasse } from '@/composables/useZuordnungChangeKlasse';
   import { useZuordnungCreation, type ZuordnungCreation } from '@/composables/useZuordnungCreation';
   import { useZuordnungDeletion, type ZuordnungDeletion } from '@/composables/useZuordnungDeletion';
+  import {
+    useZuordnungEditMode,
+    type ZuordnungEditMode,
+    type ZuordnungOperation,
+  } from '@/composables/useZuordnungEditMode';
+  import {
+    useZuordnungenWorkingState,
+    type ZuordnungenWorkingStateResult,
+  } from '@/composables/useZuordnungenWorkingState';
   import { OrganisationsTyp, useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
   import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
   import { OperationContext, usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
-  import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
+  import { RollenMerkmal } from '@/stores/RolleStore';
   import type { Zuordnung } from '@/stores/types/Zuordnung';
   import type { TranslatedObject } from '@/types';
   import { getNextSchuljahresende } from '@/utils/date';
-  import {
-    cloneZuordnungen,
-    computeZuordnungenWithKlasse,
-    type PersonWithZuordnungenSource,
-    type ZuordnungenWorkingState,
-    type ZuordnungWithKlasse,
-  } from '@/utils/zuordnungen';
   import {
     computed,
     onBeforeMount,
@@ -64,23 +65,17 @@
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
   const organisationStore: OrganisationStore = useOrganisationStore();
 
-  const zuordnungenWithPendingChanges: Ref<ZuordnungWithKlasse[] | undefined> = ref<ZuordnungWithKlasse[] | undefined>(
-    undefined,
-  );
-  const selectedZuordnungen: Ref<ZuordnungWithKlasse[]> = ref<ZuordnungWithKlasse[]>([]);
-  const newZuordnung: Ref<ZuordnungWithKlasse | undefined> = ref<ZuordnungWithKlasse | undefined>(undefined);
-  const zuordnungenToBePersisted: Ref<Zuordnung[]> = ref<Zuordnung[]>([]);
-  const zuordnungenWorkingState: ZuordnungenWorkingState = {
+  const personId: Readonly<Ref<string>> = toRef(props, 'personId');
+  const workingState: ZuordnungenWorkingStateResult = useZuordnungenWorkingState({ personId });
+  const {
     selectedZuordnungen,
     zuordnungenWithPendingChanges,
     newZuordnung,
-    zuordnungenToBePersisted,
-  };
-  const originalZuordnungen: Ref<ZuordnungWithKlasse[] | undefined> = ref(undefined);
+    editableZuordnungen,
+    canChangeKlasse,
+  }: ZuordnungenWorkingStateResult = workingState;
   const isUnbefristetDisabled: Ref<boolean, boolean> = ref(false);
   const isBefristungRequired: Ref<boolean, boolean> = ref(false);
-  // Check if the button to change the Klasse should be active or not. Activate only if there is 1 selected Zuordnung and if it is of type LERN.
-  const isLernRolleForChangeKlasseResult: Ref<boolean> = ref(false);
 
   const calculatedBefristung: Ref<string | undefined> = ref('');
 
@@ -93,11 +88,12 @@
       ) ?? false,
   );
 
-  const personId: Readonly<Ref<string>> = toRef(props, 'personId');
+  const editMode: ZuordnungEditMode = useZuordnungEditMode();
+  const isAnyFormActive: ComputedRef<boolean> = editMode.isFormActive;
+  const pendingOperation: ComputedRef<ZuordnungOperation | undefined> = editMode.pendingOperation;
 
   const {
     isZuordnungFormActive,
-    pendingCreation,
     createSuccessDialogVisible,
     createZuordnungConfirmationDialogVisible,
     createZuordnungConfirmationDialogMessage,
@@ -135,14 +131,14 @@
     t,
     personId,
     isEditActive,
-    state: zuordnungenWorkingState,
+    mode: editMode.forOperation('creation'),
+    state: workingState,
     calculatedBefristung,
     isUnbefristetDisabled,
     isBefristungRequired,
   });
 
   const {
-    pendingDeletion,
     deleteSuccessDialogVisible,
     cannotDeleteDialogVisible,
     isDeleteExternZuordnungDisabled,
@@ -150,11 +146,15 @@
     confirmDeletion,
     closeDeleteSuccessDialog,
     closeCannotDeleteDialog,
-  }: ZuordnungDeletion = useZuordnungDeletion({ personId, isEditActive, state: zuordnungenWorkingState });
+  }: ZuordnungDeletion = useZuordnungDeletion({
+    personId,
+    isEditActive,
+    mode: editMode.forOperation('deletion'),
+    state: workingState,
+  });
 
   const {
     isChangeKlasseFormActive,
-    pendingChangeKlasse,
     selectedSchule,
     selectedSchuleProps,
     selectedNewKlasse,
@@ -175,13 +175,13 @@
     t,
     personId,
     isEditActive,
-    state: zuordnungenWorkingState,
+    mode: editMode.forOperation('changeKlasse'),
+    state: workingState,
   });
 
   const {
     changeBefristungFormContext,
     isChangeBefristungActive,
-    pendingChangeBefristung,
     selectedChangeBefristung,
     selectedChangeBefristungProps,
     selectedChangeBefristungOption,
@@ -202,7 +202,8 @@
     t,
     personId,
     isEditActive,
-    state: zuordnungenWorkingState,
+    mode: editMode.forOperation('changeBefristung'),
+    state: workingState,
     calculatedBefristung,
     isUnbefristetDisabled,
     isBefristungRequired,
@@ -211,65 +212,41 @@
   // Triggers the template to start editing
   const triggerEdit = (): void => {
     isEditActive.value = true;
-    // Deep copy of the zuordnungenResult to keep track of the Zuordnungen before any changes were done.
-    // This is necessary if a user cancels the editing at some point and the zuordnungenResult was mutated at the time.
-    originalZuordnungen.value = cloneZuordnungen(zuordnungenWithPendingChanges.value);
+    workingState.startEditing();
   };
 
   // Cancels editing
   const cancelEdit = (): void => {
     isEditActive.value = false;
-    pendingDeletion.value = false;
-    pendingCreation.value = false;
-    pendingChangeKlasse.value = false;
-    selectedZuordnungen.value = [];
-    isZuordnungFormActive.value = false;
-    isChangeKlasseFormActive.value = false;
-    isChangeBefristungActive.value = false;
-    pendingChangeBefristung.value = false;
+    editMode.reset();
+    workingState.discardChanges();
     resetCreationForm();
     resetChangeKlasseForm();
     changeBefristungFormContext.resetForm();
-    zuordnungenWithPendingChanges.value = cloneZuordnungen(originalZuordnungen.value);
   };
 
   // The save button will act according to what kind of pending action we have.
   const handleSaveClick = async (): Promise<void> => {
-    if (pendingCreation.value) {
+    const operation: ZuordnungOperation | undefined = pendingOperation.value;
+    if (operation === 'creation') {
       await confirmAddition();
-    } else if (pendingDeletion.value) {
+    } else if (operation === 'deletion') {
       await confirmDeletion();
-    } else if (pendingChangeKlasse.value) {
+    } else if (operation === 'changeKlasse') {
       await confirmChangeKlasse();
-    } else if (pendingChangeBefristung.value) {
+    } else if (operation === 'changeBefristung') {
       await confirmChangeBefristung();
       resetCreationForm();
     }
   };
 
-  const hasPendingChangeComputed: ComputedRef<boolean> = computed(() => {
-    return pendingCreation.value || pendingDeletion.value || pendingChangeKlasse.value || pendingChangeBefristung.value;
-  });
-
   watch(
-    hasPendingChangeComputed,
+    editMode.hasPendingChange,
     (value: boolean) => {
       hasPendingChange.value = value;
     },
     { immediate: true, flush: 'sync' },
   );
-
-  // The save button is always disabled if there is no pending creation, deletion nor changeKlasse.
-  const isSaveButtonDisabled: ComputedRef<boolean> = computed(() => !hasPendingChange.value);
-
-  const editableZuordnungen: ComputedRef<ZuordnungWithKlasse[]> = computed(
-    () => zuordnungenWithPendingChanges.value?.filter((zuordnung: Zuordnung) => zuordnung.editable) ?? [],
-  );
-
-  const canChangeKlasse: ComputedRef<boolean> = computed(() => {
-    const hasOneSelectedZuordnung: boolean = selectedZuordnungen.value.length === 1;
-    return !!selectedZuordnungen.value[0]?.rolleId && isLernRolleForChangeKlasseResult.value && hasOneSelectedZuordnung;
-  });
 
   // Syncs dirtiness depending on the active form
   watchEffect(() => {
@@ -281,32 +258,6 @@
       isFormDirty.value = false;
     }
   });
-
-  watch(
-    () => personStore.personenuebersicht,
-    (newValue: PersonWithZuordnungenSource | null) => {
-      zuordnungenWithPendingChanges.value = computeZuordnungenWithKlasse(newValue);
-    },
-    { immediate: true },
-  );
-
-  watch(
-    () => selectedZuordnungen.value[0], // Watch the first selected Zuordnung
-    (newValue: Zuordnung | undefined) => {
-      if (newValue) {
-        personenkontextStore.processWorkflowStep({
-          personId: props.personId,
-          operationContext: OperationContext.PERSON_BEARBEITEN,
-          organisationId: newValue.sskId,
-          rollenIds: [newValue.rolleId],
-          limit: 25,
-        });
-      }
-
-      isLernRolleForChangeKlasseResult.value = newValue?.rollenArt === RollenArt.Lern;
-    },
-    { immediate: true }, // Run on initialization if there's already a selected Zuordnung
-  );
 
   onBeforeMount(async () => {
     await personenkontextStore.processWorkflowStep({
@@ -335,113 +286,26 @@
       v-if="isEditActive"
       data-testid="person-zuordnungen-section-edit"
     >
-      <template v-if="!isZuordnungFormActive && !isChangeKlasseFormActive && !isChangeBefristungActive">
-        <v-row class="ml-md-16">
-          <v-col
-            v-if="!hasPendingChange"
-            cols="12"
-            sm="auto"
-          >
-            <h3 class="subtitle-1">{{ t('person.editZuordnungen') }}: {{ t('pleaseSelect') }}</h3>
-          </v-col>
-        </v-row>
-        <v-row class="ml-md-16 mb-12">
-          <v-col
-            v-if="pendingDeletion || pendingCreation || pendingChangeKlasse || pendingChangeBefristung"
-            cols="12"
-            sm="auto"
-          >
-            <h3
-              class="subtitle-1"
-              data-testid="check-and-save-headline"
-            >
-              {{ t('person.checkAndSave') }}:
-            </h3>
-          </v-col>
-          <ZuordnungenEditList
-            v-model:selected-zuordnungen="selectedZuordnungen"
-            :zuordnungen="editableZuordnungen"
-            :new-zuordnung="newZuordnung"
-            :has-pending-change="hasPendingChange"
-            :pending-creation="pendingCreation"
-            :pending-deletion="pendingDeletion"
-            :pending-change-klasse="pendingChangeKlasse"
-            :pending-change-befristung="pendingChangeBefristung"
-          />
-          <v-spacer />
-          <ZuordnungenEditActions
-            v-if="!hasPendingChange"
-            :selected-count="selectedZuordnungen.length"
-            :editable-zuordnungen-count="editableZuordnungen.length"
-            :pending-deletion="pendingDeletion"
-            :is-delete-extern-zuordnung-disabled="isDeleteExternZuordnungDisabled"
-            :can-change-klasse="canChangeKlasse"
-            :has-klassen-zuordnung="hasKlassenZuordnung"
-            @delete="prepareDeletion"
-            @add="triggerAddZuordnung"
-            @change-befristung="triggerChangeBefristung"
-            @change-klasse="triggerChangeKlasse"
-          />
-        </v-row>
-        <v-row
-          v-if="
-            personStore.personenuebersicht?.zuordnungen &&
-            personStore.personenuebersicht?.zuordnungen.length === 0 &&
-            !pendingCreation &&
-            !pendingDeletion
-          "
-        >
-          <v-col
-            class="mt-n12 mb-16"
-            cols="10"
-            offset="1"
-          >
-            <h3 class="text-body">
-              {{ t('person.noZuordnungenFound') }}
-            </h3>
-          </v-col>
-        </v-row>
-        <v-row class="save-cancel-row ml-md-16 mb-3 pt-14">
-          <v-col
-            class="cancel-col"
-            cols="12"
-            sm="6"
-            md="auto"
-          >
-            <v-btn
-              class="secondary small"
-              data-testid="zuordnung-edit-cancel"
-              :block="mdAndDown"
-              @click="cancelEdit"
-            >
-              {{ t('cancel') }}
-            </v-btn>
-          </v-col>
-          <v-col
-            cols="12"
-            sm="6"
-            md="auto"
-          >
-            <SpshTooltip
-              :enabled-condition="!isSaveButtonDisabled"
-              :disabled-text="t('person.noChangesToSave')"
-              :enabled-text="t('person.saveChanges')"
-            >
-              <v-btn
-                class="primary small"
-                data-testid="zuordnung-changes-save-button"
-                :block="mdAndDown"
-                :disabled="isSaveButtonDisabled || personenkontextStore.loading"
-                @click="handleSaveClick"
-              >
-                {{ t('save') }}
-              </v-btn>
-            </SpshTooltip>
-          </v-col>
-        </v-row>
-      </template>
+      <ZuordnungenEditOverview
+        v-if="!isAnyFormActive"
+        v-model:selected-zuordnungen="selectedZuordnungen"
+        :zuordnungen="editableZuordnungen"
+        :new-zuordnung="newZuordnung"
+        :pending-operation="pendingOperation"
+        :has-no-zuordnungen="personStore.personenuebersicht?.zuordnungen?.length === 0"
+        :is-delete-extern-zuordnung-disabled="isDeleteExternZuordnungDisabled"
+        :can-change-klasse="canChangeKlasse"
+        :has-klassen-zuordnung="hasKlassenZuordnung"
+        :is-loading="personenkontextStore.loading"
+        @delete="prepareDeletion"
+        @add="triggerAddZuordnung"
+        @change-befristung="triggerChangeBefristung"
+        @change-klasse="triggerChangeKlasse"
+        @cancel="cancelEdit"
+        @save="handleSaveClick"
+      />
       <!-- Form to add Zuordnung -->
-      <template v-if="isZuordnungFormActive && !pendingDeletion && !pendingChangeKlasse">
+      <template v-if="isZuordnungFormActive">
         <v-form
           data-testid="zuordnung-creation-form"
           @submit="onSubmitCreateZuordnung"
@@ -515,7 +379,7 @@
         </v-form>
       </template>
       <!-- Form to change Klasse -->
-      <template v-if="isChangeKlasseFormActive && !pendingChangeKlasse">
+      <template v-if="isChangeKlasseFormActive">
         <v-form
           data-testid="klasse-change-form"
           @submit="onSubmitChangeKlasse"
@@ -565,7 +429,7 @@
         </v-form>
       </template>
       <!-- Form to change Befristung-->
-      <template v-if="isChangeBefristungActive && !pendingChangeBefristung">
+      <template v-if="isChangeBefristungActive">
         <v-form
           data-testid="change-befristung-form"
           @submit="onSubmitChangeBefristung"
@@ -817,16 +681,6 @@
 </template>
 
 <style scoped>
-  @media only screen and (max-width: 600px) {
-    .save-cancel-row {
-      margin-top: -40px;
-    }
-
-    .cancel-col {
-      margin-bottom: -15px;
-    }
-  }
-
   span {
     white-space: normal;
     text-wrap: pretty;

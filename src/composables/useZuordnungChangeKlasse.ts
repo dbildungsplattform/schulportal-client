@@ -1,3 +1,4 @@
+import type { ZuordnungOperationMode } from '@/composables/useZuordnungEditMode';
 import type { Organisation } from '@/stores/OrganisationStore';
 import {
   mapZuordnungToPersonenkontextUpdate,
@@ -27,8 +28,7 @@ type ChangeKlasseForm = {
 type FieldProps = Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>;
 
 export type ZuordnungChangeKlasse = {
-  isChangeKlasseFormActive: Ref<boolean>;
-  pendingChangeKlasse: Ref<boolean>;
+  isChangeKlasseFormActive: ComputedRef<boolean>;
   selectedSchule: Ref<string | undefined>;
   selectedSchuleProps: FieldProps;
   selectedNewKlasse: Ref<Organisation | undefined>;
@@ -52,14 +52,13 @@ export function useZuordnungChangeKlasse(params: {
   t: Composer['t'];
   personId: Readonly<Ref<string>>;
   isEditActive: Ref<boolean>;
+  mode: ZuordnungOperationMode;
   state: ZuordnungenWorkingState;
 }): ZuordnungChangeKlasse {
-  const { t, personId, isEditActive, state }: typeof params = params;
+  const { t, personId, isEditActive, mode, state }: typeof params = params;
   const personStore: PersonStore = usePersonStore();
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
 
-  const isChangeKlasseFormActive: Ref<boolean> = ref(false);
-  const pendingChangeKlasse: Ref<boolean> = ref(false);
   const changeKlasseConfirmationDialogVisible: Ref<boolean> = ref(false);
   const changeKlasseConfirmationDialogMessage: Ref<string> = ref('');
   const changeKlasseSuccessDialogVisible: Ref<boolean> = ref(false);
@@ -109,7 +108,7 @@ export function useZuordnungChangeKlasse(params: {
     );
     // Auto select the new Klasse
     selectedNewKlasse.value = klassenZuordnung?.getOrganisation();
-    isChangeKlasseFormActive.value = true;
+    mode.showForm();
   };
 
   const onSubmitChangeKlasse: (e?: Event) => Promise<void | undefined> = handleSubmit(() => {
@@ -122,8 +121,7 @@ export function useZuordnungChangeKlasse(params: {
 
   // Triggers the template to prepare the change of Klasse
   const prepareChangeKlasse = (): void => {
-    pendingChangeKlasse.value = true;
-    isChangeKlasseFormActive.value = false;
+    mode.showReview();
   };
 
   // When the button "Yes" from the Dialog after filling the form for changing the Klasse is clicked
@@ -172,12 +170,11 @@ export function useZuordnungChangeKlasse(params: {
     personStore.getPersonenuebersichtById(personId.value);
     changeKlasseSuccessDialogVisible.value = false;
     isEditActive.value = false;
-    pendingChangeKlasse.value = false;
+    mode.end();
   };
 
   return {
-    isChangeKlasseFormActive,
-    pendingChangeKlasse,
+    isChangeKlasseFormActive: mode.isFormActive,
     selectedSchule,
     selectedSchuleProps,
     selectedNewKlasse,

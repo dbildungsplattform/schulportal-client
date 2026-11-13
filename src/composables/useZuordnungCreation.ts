@@ -1,3 +1,4 @@
+import type { ZuordnungOperationMode } from '@/composables/useZuordnungEditMode';
 import type { Organisation } from '@/stores/OrganisationStore';
 import {
   mapZuordnungToPersonenkontextUpdate,
@@ -36,8 +37,7 @@ type ZuordnungCreationForm = {
 };
 
 export type ZuordnungCreation = Omit<PersonenkontextFieldDefinitions, 'selectedKlasse'> & {
-  isZuordnungFormActive: Ref<boolean>;
-  pendingCreation: Ref<boolean>;
+  isZuordnungFormActive: ComputedRef<boolean>;
   createSuccessDialogVisible: Ref<boolean>;
   createZuordnungConfirmationDialogVisible: Ref<boolean>;
   createZuordnungConfirmationDialogMessage: Ref<string>;
@@ -67,6 +67,7 @@ export function useZuordnungCreation(params: {
   t: Composer['t'];
   personId: Readonly<Ref<string>>;
   isEditActive: Ref<boolean>;
+  mode: ZuordnungOperationMode;
   state: ZuordnungenWorkingState;
   // Shared with the change Befristung form, which also calculates and requires a Befristung
   calculatedBefristung: Ref<string | undefined>;
@@ -77,6 +78,7 @@ export function useZuordnungCreation(params: {
     t,
     personId,
     isEditActive,
+    mode,
     state,
     calculatedBefristung,
     isUnbefristetDisabled,
@@ -87,8 +89,6 @@ export function useZuordnungCreation(params: {
   const rolleStore: RolleStore = useRolleStore();
   const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
 
-  const isZuordnungFormActive: Ref<boolean> = ref(false);
-  const pendingCreation: Ref<boolean> = ref(false);
   const createSuccessDialogVisible: Ref<boolean> = ref(false);
   const createZuordnungConfirmationDialogVisible: Ref<boolean> = ref(false);
   const createZuordnungConfirmationDialogMessage: Ref<string> = ref('');
@@ -207,13 +207,12 @@ export function useZuordnungCreation(params: {
 
   // Triggers the template to add a new Zuordnung
   const triggerAddZuordnung = (): void => {
-    isZuordnungFormActive.value = true;
+    mode.showForm();
   };
 
   // Triggers the template to prepare the creation
   const prepareCreation = (): void => {
-    pendingCreation.value = true;
-    isZuordnungFormActive.value = false;
+    mode.showReview();
   };
 
   const onSubmitCreateZuordnung: (e?: Event) => Promise<void | undefined> = formContext.handleSubmit(() => {
@@ -291,14 +290,13 @@ export function useZuordnungCreation(params: {
     serviceProviderStore.getServiceProvidersByPersonId(personId.value);
     createSuccessDialogVisible.value = false;
     isEditActive.value = false;
-    pendingCreation.value = false;
+    mode.end();
   };
 
   // Restores the creation form after the submission failed, e.g. because the KoPers.-Nr. is not unique
   function navigateToZuordnungForm(): void {
     personenkontextStore.errorCode = '';
-    pendingCreation.value = false;
-    isZuordnungFormActive.value = true;
+    mode.showForm();
     if (cachedSelectedOrganisation.value) {
       formContext.setFieldValue('selectedOrganisation', cachedSelectedOrganisation.value);
     }
@@ -325,8 +323,7 @@ export function useZuordnungCreation(params: {
   }
 
   return {
-    isZuordnungFormActive,
-    pendingCreation,
+    isZuordnungFormActive: mode.isFormActive,
     createSuccessDialogVisible,
     createZuordnungConfirmationDialogVisible,
     createZuordnungConfirmationDialogMessage,

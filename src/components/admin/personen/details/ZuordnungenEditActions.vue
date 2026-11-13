@@ -10,7 +10,6 @@
   type Props = {
     selectedCount: number;
     editableZuordnungenCount: number;
-    pendingDeletion: boolean;
     isDeleteExternZuordnungDisabled: boolean;
     canChangeKlasse: boolean;
     hasKlassenZuordnung: boolean;
@@ -44,7 +43,6 @@
       md="auto"
     >
       <PersonenkontextDelete
-        v-if="!props.pendingDeletion"
         :error-code="personStore.errorCode"
         :person="personStore.currentPerson"
         :disabled="props.selectedCount === 0 || props.isDeleteExternZuordnungDisabled"

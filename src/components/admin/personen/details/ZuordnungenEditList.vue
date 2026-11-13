@@ -1,17 +1,15 @@
 <script setup lang="ts">
   import { PendingState } from '@/components/admin/personen/details/PersonenkontextItem.types';
   import PersonenkontextItem from '@/components/admin/personen/details/PersonenkontextItem.vue';
+  import type { ZuordnungOperation } from '@/composables/useZuordnungEditMode';
   import type { ZuordnungWithKlasse } from '@/utils/zuordnungen';
   import type { ModelRef } from 'vue';
 
   type Props = {
     zuordnungen: ZuordnungWithKlasse[];
     newZuordnung: ZuordnungWithKlasse | undefined;
-    hasPendingChange: boolean;
-    pendingCreation: boolean;
-    pendingDeletion: boolean;
-    pendingChangeKlasse: boolean;
-    pendingChangeBefristung: boolean;
+    // The operation whose change is pending. Without one, the Zuordnungen can be selected.
+    pendingOperation: ZuordnungOperation | undefined;
   };
 
   const props: Props = defineProps<Props>();
@@ -28,12 +26,12 @@
     v-for="zuordnung in props.zuordnungen"
     :key="zuordnung.sskId"
     cols="12"
-    :md="props.hasPendingChange ? '12' : '7'"
+    :md="props.pendingOperation ? '12' : '7'"
     :data-testid="`person-zuordnung-${zuordnung.sskId}`"
     :title="zuordnung.sskName"
     class="py-0 d-flex align-items-center"
   >
-    <template v-if="!props.hasPendingChange">
+    <template v-if="!props.pendingOperation">
       <div class="mb-n4 checkbox-top-align">
         <v-checkbox
           :ref="`checkbox-zuordnung-${zuordnung.sskId}`"
@@ -49,7 +47,7 @@
         </v-checkbox>
       </div>
     </template>
-    <template v-else-if="props.pendingCreation && !props.pendingDeletion">
+    <template v-else-if="props.pendingOperation === 'creation'">
       <PersonenkontextItem
         :pending-state="
           props.newZuordnung &&
@@ -61,13 +59,13 @@
         :zuordnung="zuordnung"
       />
     </template>
-    <template v-else-if="props.pendingDeletion">
+    <template v-else-if="props.pendingOperation === 'deletion'">
       <PersonenkontextItem
         :pending-state="selectedZuordnungen.includes(zuordnung) ? PendingState.DELETED : undefined"
         :zuordnung="zuordnung"
       />
     </template>
-    <template v-else-if="props.pendingChangeKlasse">
+    <template v-else-if="props.pendingOperation === 'changeKlasse'">
       <div class="d-flex flex-column">
         <PersonenkontextItem
           :pending-state="selectedZuordnungen.includes(zuordnung) ? PendingState.DELETED : undefined"
@@ -84,7 +82,7 @@
         />
       </div>
     </template>
-    <template v-else-if="props.pendingChangeBefristung">
+    <template v-else-if="props.pendingOperation === 'changeBefristung'">
       <div class="d-flex flex-column">
         <PersonenkontextItem
           v-if="selectedZuordnungen.includes(zuordnung)"

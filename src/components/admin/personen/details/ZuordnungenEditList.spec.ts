@@ -20,11 +20,7 @@ describe('ZuordnungenEditList', () => {
       props: {
         zuordnungen: [zuordnung],
         newZuordnung: undefined,
-        hasPendingChange: false,
-        pendingCreation: false,
-        pendingDeletion: false,
-        pendingChangeKlasse: false,
-        pendingChangeBefristung: false,
+        pendingOperation: undefined,
         selectedZuordnungen: [],
       },
     });
@@ -41,11 +37,7 @@ describe('ZuordnungenEditList', () => {
       props: {
         zuordnungen: [zuordnung],
         newZuordnung: zuordnung,
-        hasPendingChange: true,
-        pendingCreation: true,
-        pendingDeletion: false,
-        pendingChangeKlasse: false,
-        pendingChangeBefristung: false,
+        pendingOperation: 'creation',
         selectedZuordnungen: [],
       },
     });

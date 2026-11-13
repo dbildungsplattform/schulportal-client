@@ -1,3 +1,4 @@
+import type { ZuordnungOperationMode } from '@/composables/useZuordnungEditMode';
 import { useAuthStore, type AuthStore, type PersonenkontextRolleFields } from '@/stores/AuthStore';
 import { OrganisationsTyp } from '@/stores/OrganisationStore';
 import {
@@ -19,7 +20,6 @@ import { computed, ref, type ComputedRef, type Ref } from 'vue';
 import { useRouter, type Router } from 'vue-router';
 
 export type ZuordnungDeletion = {
-  pendingDeletion: Ref<boolean>;
   deleteSuccessDialogVisible: Ref<boolean>;
   cannotDeleteDialogVisible: Ref<boolean>;
   isDeleteExternZuordnungDisabled: ComputedRef<boolean>;
@@ -33,16 +33,16 @@ export type ZuordnungDeletion = {
 export function useZuordnungDeletion(params: {
   personId: Readonly<Ref<string>>;
   isEditActive: Ref<boolean>;
+  mode: ZuordnungOperationMode;
   state: ZuordnungenWorkingState;
 }): ZuordnungDeletion {
-  const { personId, isEditActive, state }: typeof params = params;
+  const { personId, isEditActive, mode, state }: typeof params = params;
   const personStore: PersonStore = usePersonStore();
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
   const authStore: AuthStore = useAuthStore();
   const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
   const router: Router = useRouter();
 
-  const pendingDeletion: Ref<boolean> = ref(false);
   const deleteSuccessDialogVisible: Ref<boolean> = ref(false);
   const cannotDeleteDialogVisible: Ref<boolean> = ref(false);
   // If no editable Zuordnungen are left, the person table is shown after the success dialog is closed
@@ -62,7 +62,7 @@ export function useZuordnungDeletion(params: {
 
   // Triggers the template to prepare the deletion
   const prepareDeletion = (): void => {
-    pendingDeletion.value = true;
+    mode.showReview();
   };
 
   const confirmDeletion = async (): Promise<void> => {
@@ -102,7 +102,7 @@ export function useZuordnungDeletion(params: {
   const closeDeleteSuccessDialog = (): void => {
     deleteSuccessDialogVisible.value = false;
     isEditActive.value = false;
-    pendingDeletion.value = false;
+    mode.end();
     if (navigateToPersonTableOnClose.value) {
       router.push({ name: 'person-management' });
       return;
@@ -116,7 +116,6 @@ export function useZuordnungDeletion(params: {
   };
 
   return {
-    pendingDeletion,
     deleteSuccessDialogVisible,
     cannotDeleteDialogVisible,
     isDeleteExternZuordnungDisabled,

@@ -1,3 +1,4 @@
+import type { ZuordnungOperationMode } from '@/composables/useZuordnungEditMode';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import {
   mapZuordnungToPersonenkontextUpdate,
@@ -28,8 +29,7 @@ type FieldProps = Ref<BaseFieldProps & { error: boolean; 'error-messages': Array
 
 export type ZuordnungChangeBefristung = {
   changeBefristungFormContext: FormContext<ChangeBefristungForm, ChangeBefristungForm>;
-  isChangeBefristungActive: Ref<boolean>;
-  pendingChangeBefristung: Ref<boolean>;
+  isChangeBefristungActive: ComputedRef<boolean>;
   selectedChangeBefristung: Ref<string | undefined>;
   selectedChangeBefristungProps: FieldProps;
   selectedChangeBefristungOption: Ref<string | undefined>;
@@ -53,6 +53,7 @@ export function useZuordnungChangeBefristung(params: {
   t: Composer['t'];
   personId: Readonly<Ref<string>>;
   isEditActive: Ref<boolean>;
+  mode: ZuordnungOperationMode;
   state: ZuordnungenWorkingState;
   // Shared with the creation form, which also calculates and requires a Befristung
   calculatedBefristung: Ref<string | undefined>;
@@ -63,6 +64,7 @@ export function useZuordnungChangeBefristung(params: {
     t,
     personId,
     isEditActive,
+    mode,
     state,
     calculatedBefristung,
     isUnbefristetDisabled,
@@ -71,8 +73,6 @@ export function useZuordnungChangeBefristung(params: {
   const personStore: PersonStore = usePersonStore();
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
 
-  const isChangeBefristungActive: Ref<boolean> = ref(false);
-  const pendingChangeBefristung: Ref<boolean> = ref(false);
   const changeBefristungConfirmationDialogVisible: Ref<boolean> = ref(false);
   const changeBefristungConfirmationDialogMessage: Ref<string> = ref('');
   const changeBefristungSuccessDialogVisible: Ref<boolean> = ref(false);
@@ -124,7 +124,7 @@ export function useZuordnungChangeBefristung(params: {
 
   const triggerChangeBefristung = (): void => {
     changeBefristungRolle.value = state.selectedZuordnungen.value[0]?.rolleId;
-    isChangeBefristungActive.value = true;
+    mode.showForm();
     if (!state.selectedZuordnungen.value[0]?.befristung) {
       handleChangeBefristungOptionUpdate(undefined);
       return;
@@ -154,8 +154,7 @@ export function useZuordnungChangeBefristung(params: {
   );
 
   const prepareChangeBefristung = (): void => {
-    pendingChangeBefristung.value = true;
-    isChangeBefristungActive.value = false;
+    mode.showReview();
   };
 
   const confirmDialogChangeBefristung = (): void => {
@@ -190,15 +189,13 @@ export function useZuordnungChangeBefristung(params: {
   const closeChangeBefristungSuccessDialog = (): void => {
     personStore.getPersonenuebersichtById(personId.value);
     changeBefristungSuccessDialogVisible.value = false;
-    isChangeBefristungActive.value = false;
-    pendingChangeBefristung.value = false;
+    mode.end();
     isEditActive.value = false;
   };
 
   return {
     changeBefristungFormContext,
-    isChangeBefristungActive,
-    pendingChangeBefristung,
+    isChangeBefristungActive: mode.isFormActive,
     selectedChangeBefristung,
     selectedChangeBefristungProps,
     selectedChangeBefristungOption,

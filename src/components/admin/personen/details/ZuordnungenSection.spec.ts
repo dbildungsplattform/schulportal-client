@@ -35,7 +35,6 @@ import ZuordnungenSection from './ZuordnungenSection.vue';
 
 type ZuordnungenSectionVm = {
   filteredRollen: TranslatedRolleWithAttrs[];
-  zuordnungenToBePersisted: Zuordnung[];
   navigateToZuordnungForm: () => void;
 };
 
@@ -89,6 +88,7 @@ type ZuordnungenSectionInternals = {
   selectedNewKlasse: Organisation | undefined;
   selectedChangeBefristung: string | undefined;
   selectedZuordnungen: Zuordnung[];
+  workingState: { zuordnungenToBePersisted: { value: Zuordnung[] } };
   handleSaveClick: () => Promise<void>;
   confirmDialogAddition: () => void;
   confirmDialogChangeKlasse: () => void;
@@ -102,6 +102,10 @@ type ZuordnungenSectionInternals = {
 
 function getInternals(): ZuordnungenSectionInternals {
   return wrapper!.vm as unknown as ZuordnungenSectionInternals;
+}
+
+function getPersistedZuordnungen(): Zuordnung[] {
+  return getInternals().workingState.zuordnungenToBePersisted.value;
 }
 
 describe('ZuordnungenSection', () => {
@@ -258,7 +262,7 @@ describe('ZuordnungenSection', () => {
       });
       expect(hasPendingChange()).toBe(true);
 
-      const newKlasseZuordnung: Zuordnung | undefined = getVm().zuordnungenToBePersisted.find(
+      const newKlasseZuordnung: Zuordnung | undefined = getPersistedZuordnungen().find(
         (zuordnung: Zuordnung) =>
           zuordnung.sskId === newKlasse.id &&
           zuordnung.rolleId === schulZuordnung.rolleId &&
@@ -269,7 +273,7 @@ describe('ZuordnungenSection', () => {
         rolle: schulZuordnung.rolle,
         rollenArt: schulZuordnung.rollenArt,
       });
-      expect(getVm().zuordnungenToBePersisted).not.toContainEqual(klassenZuordnung);
+      expect(getPersistedZuordnungen()).not.toContainEqual(klassenZuordnung);
     },
   );
 
@@ -344,6 +348,33 @@ describe('ZuordnungenSection', () => {
 
     expect(pushSpy).toHaveBeenCalledWith({ name: 'person-management' });
     expect(personStore.getPersonenuebersichtById).not.toHaveBeenCalled();
+  });
+
+  test('it refreshes the person instead of navigating when editable Zuordnungen remain after the deletion', async () => {
+    const otherZuordnung: Zuordnung = DoFactory.getZuordnung(
+      { rolleId: 'lehr-rolle', rolle: 'Lehrkraft', rollenArt: RollenArt.Lehr, editable: true },
+      { organisation: DoFactory.getSchule() },
+    );
+    personStore.personenuebersicht = DoFactory.getPersonenUebersicht(person, [
+      schulZuordnung,
+      klassenZuordnung,
+      otherZuordnung,
+    ]);
+    const pushSpy: MockInstance = vi.spyOn(router, 'push');
+    const sectionWrapper: VueWrapper = await startEditingWithSelection();
+    await prepareDeletion(sectionWrapper);
+
+    await sectionWrapper.get('[data-testid="zuordnung-changes-save-button"]').trigger('click');
+    await flushPromises();
+
+    const closeButton: Element = await vi.waitUntil(() =>
+      document.body.querySelector('[data-testid="close-zuordnung-delete-success-button"]'),
+    );
+    closeButton.dispatchEvent(new Event('click'));
+    await flushPromises();
+
+    expect(pushSpy).not.toHaveBeenCalledWith({ name: 'person-management' });
+    expect(personStore.getPersonenuebersichtById).toHaveBeenCalledWith(person.id);
   });
 
   test('it keeps the change Klasse form open when the confirmation is cancelled', async () => {
@@ -475,8 +506,8 @@ describe('ZuordnungenSection', () => {
 
       getInternals().confirmDialogAddition();
 
-      expect(getVm().zuordnungenToBePersisted).toHaveLength(1);
-      expect(getVm().zuordnungenToBePersisted[0]).toMatchObject({ sskId: schule.id, rolleId: '' });
+      expect(getPersistedZuordnungen()).toHaveLength(1);
+      expect(getPersistedZuordnungen()[0]).toMatchObject({ sskId: schule.id, rolleId: '' });
       expect(hasPendingChange()).toBe(true);
     });
 
@@ -486,7 +517,7 @@ describe('ZuordnungenSection', () => {
 
       getInternals().confirmDialogAddition();
 
-      expect(getVm().zuordnungenToBePersisted).toEqual([]);
+      expect(getPersistedZuordnungen()).toEqual([]);
       expect(hasPendingChange()).toBe(true);
     });
 
@@ -499,7 +530,7 @@ describe('ZuordnungenSection', () => {
 
       getInternals().confirmDialogChangeKlasse();
 
-      expect(getVm().zuordnungenToBePersisted).toEqual([
+      expect(getPersistedZuordnungen()).toEqual([
         expect.objectContaining({ sskId: oldKlasse.id, typ: OrganisationsTyp.Klasse }),
       ]);
     });
@@ -511,7 +542,7 @@ describe('ZuordnungenSection', () => {
 
     getInternals().confirmDialogAddition();
 
-    expect(getVm().zuordnungenToBePersisted).toEqual([]);
+    expect(getPersistedZuordnungen()).toEqual([]);
     expect(wrapper.findAllComponents(PersonenkontextItem)).toHaveLength(1);
   });
 
@@ -706,7 +737,7 @@ describe('ZuordnungenSection', () => {
 
       expect(hasPendingChange()).toBe(true);
       expect(
-        getVm().zuordnungenToBePersisted.find((zuordnung: Zuordnung) => zuordnung.rolleId === rollen[0]!.value),
+        getPersistedZuordnungen().find((zuordnung: Zuordnung) => zuordnung.rolleId === rollen[0]!.value),
       ).toMatchObject({ sskId: schule.id });
     });
   });
@@ -752,7 +783,7 @@ describe('ZuordnungenSection', () => {
 
       expect(message).toContain('unbefristet');
       expect(hasPendingChange()).toBe(true);
-      expect(getVm().zuordnungenToBePersisted[0]).toMatchObject({ befristung: null });
+      expect(getPersistedZuordnungen()[0]).toMatchObject({ befristung: null });
     });
 
     test('it changes an unlimited Befristung to a date', async () => {
@@ -763,7 +794,7 @@ describe('ZuordnungenSection', () => {
       const message: string = await submitAndConfirm(sectionWrapper);
 
       expect(message).toContain('31.07.2099');
-      expect(getVm().zuordnungenToBePersisted[0]).toMatchObject({ befristung: expect.any(String) });
+      expect(getPersistedZuordnungen()[0]).toMatchObject({ befristung: expect.any(String) });
     });
 
     test('it falls back to the calculated Befristung when confirming without a selected date', async () => {
@@ -773,7 +804,7 @@ describe('ZuordnungenSection', () => {
       getInternals().confirmDialogChangeBefristung();
 
       expect(sectionWrapper.exists()).toBe(true);
-      expect(getVm().zuordnungenToBePersisted[0]).toMatchObject({ befristung: null });
+      expect(getPersistedZuordnungen()[0]).toMatchObject({ befristung: null });
     });
   });
 });
