@@ -38,7 +38,7 @@ export enum PersonenKontextTyp {
 export enum OperationContext {
   PERSON_ANLEGEN = 'PERSON_ANLEGEN',
   PERSON_BEARBEITEN = 'PERSON_BEARBEITEN',
-  PERSON_HINZUFÜGEN = 'PERSON_HINZUFÜGEN',
+  PERSONEN_KONTEXT_ERWEITERN = 'PERSONEN_KONTEXT_ERWEITERN',
 }
 
 export enum CreationType {

@@ -1908,9 +1908,9 @@ export type MeldungResponseStatusEnum = typeof MeldungResponseStatusEnum[keyof t
  */
 
 export const OperationContext = {
-    Anlegen: 'PERSON_ANLEGEN',
-    Bearbeiten: 'PERSON_BEARBEITEN',
-    Hinzufgen: 'PERSON_HINZUFÜGEN'
+    PersonAnlegen: 'PERSON_ANLEGEN',
+    PersonBearbeiten: 'PERSON_BEARBEITEN',
+    PersonenKontextErweitern: 'PERSONEN_KONTEXT_ERWEITERN'
 } as const;
 
 export type OperationContext = typeof OperationContext[keyof typeof OperationContext];

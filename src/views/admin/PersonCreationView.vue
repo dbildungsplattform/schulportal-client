@@ -550,7 +550,7 @@
     selectedRolleCache.value = selectedRollen.value?.map((rolle: TranslatedRolleWithAttrs) => rolle.value);
     const operationContext: OperationContext =
       createType.value === CreationType.AddPersonToOwnSchule
-        ? OperationContext.PERSON_HINZUFÜGEN
+        ? OperationContext.PERSONEN_KONTEXT_ERWEITERN
         : OperationContext.PERSON_ANLEGEN;
     await personenkontextStore.updatePersonenkontexte(
       newKontexte,
@@ -861,7 +861,7 @@
                 v-model:selected-organisation="selectedOrganisation"
                 :initial-organisation="selectedOrganisationObject"
                 v-model:selected-rollen="selectedRollen"
-                :operation-context="OperationContext.PERSON_HINZUFÜGEN"
+                :operation-context="OperationContext.PERSONEN_KONTEXT_ERWEITERN"
                 :allow-multiple-rollen="true"
                 :create-type="createType"
                 :rollenart-for-person="rollenartForPerson"
