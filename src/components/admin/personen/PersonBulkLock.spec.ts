@@ -118,7 +118,7 @@ describe('PersonBulkLock', (): void => {
     await click('person-bulk-lock-submit-button');
 
     expect(document.body.textContent).toContain(
-      'Bitte schließen Sie diesen Tab nicht, bis die Aktion vollständig ausgeführt wurde.',
+      'Benutzer sperren Bitte den Browser während der Bearbeitung nicht schließen',
     );
     expect(document.body.querySelector('[data-testid="person-bulk-lock-progress"]')).not.toBeNull();
     expect(document.body.querySelector('[data-testid="person-bulk-lock-cancel-button"]')).toBeNull();
