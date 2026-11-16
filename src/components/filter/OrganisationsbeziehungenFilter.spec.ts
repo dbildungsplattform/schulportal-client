@@ -10,7 +10,11 @@ const schule: OrganisationsbeziehungOrganisationResponse = {
   name: 'Grundschule',
   dienststellennummer: '1234567',
 };
-const traeger: OrganisationsbeziehungOrganisationResponse = { id: 'org-2', name: 'Schulträger', dienststellennummer: null };
+const traeger: OrganisationsbeziehungOrganisationResponse = {
+  id: 'org-2',
+  name: 'Schulträger',
+  dienststellennummer: null,
+};
 
 beforeEach(() => {
   vi.useFakeTimers();

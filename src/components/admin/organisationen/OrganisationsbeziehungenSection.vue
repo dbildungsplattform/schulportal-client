@@ -73,7 +73,9 @@
 
   const relatedOrganisationen: ComputedRef<Array<OrganisationsbeziehungOrganisationResponse>> = computed(() =>
     organisationsbeziehungStore.beziehungen.flatMap(
-      (beziehung: OrganisationsbeziehungWithOrganisationenResponse): Array<OrganisationsbeziehungOrganisationResponse> => {
+      (
+        beziehung: OrganisationsbeziehungWithOrganisationenResponse,
+      ): Array<OrganisationsbeziehungOrganisationResponse> => {
         const related: OrganisationsbeziehungOrganisationResponse | undefined = getRelatedOrganisation(beziehung);
         return related ? [related] : [];
       },

@@ -196,10 +196,7 @@ describe('OrganisationsbeziehungenSection', () => {
     getResultTable().vm.$emit('onPageUpdate', 2);
     await flushPromises();
 
-    expect(store.loadBeziehungen).toHaveBeenCalledWith(
-      'org-1',
-      expect.objectContaining({ offset: 30, limit: 30 }),
-    );
+    expect(store.loadBeziehungen).toHaveBeenCalledWith('org-1', expect.objectContaining({ offset: 30, limit: 30 }));
   });
 
   test('it resets to the first page when the items per page are updated', async () => {
