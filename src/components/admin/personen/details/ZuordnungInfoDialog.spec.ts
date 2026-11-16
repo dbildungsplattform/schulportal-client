@@ -32,4 +32,26 @@ describe('ZuordnungInfoDialog', () => {
 
     expect(wrapper.emitted('close')).toHaveLength(1);
   });
+
+  test('it emits close when the card is closed', async () => {
+    wrapper = mount(ZuordnungInfoDialog, {
+      attachTo: document.body,
+      props: {
+        modelValue: true,
+        header: 'Info',
+      },
+      slots: {
+        message: 'Info message',
+      },
+      global: {
+        stubs: {
+          VDialog: { template: '<div><slot /></div>' },
+        },
+      },
+    });
+
+    await wrapper.get('[data-testid="close-layout-card-button"]').trigger('click');
+
+    expect(wrapper.emitted('close')).toHaveLength(1);
+  });
 });
