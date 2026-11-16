@@ -63,7 +63,9 @@
     selectedFiles: Array<File>;
   };
 
-  const { autoselectedSchule }: ReturnType<typeof useAutoselectedSchule> = useAutoselectedSchule([]);
+  const { autoselectedSchule }: ReturnType<typeof useAutoselectedSchule> = useAutoselectedSchule([
+    RollenSystemRecht.ImportDurchfuehren,
+  ]);
   const formContext: FormContext<PersonImportForm, PersonImportForm> = useForm<PersonImportForm>({
     validationSchema,
     initialValues: { selectedSchule: autoselectedSchule.value?.id },
