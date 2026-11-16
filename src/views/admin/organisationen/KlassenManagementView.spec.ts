@@ -349,7 +349,6 @@ describe('KlassenManagementView', () => {
       includeTyp: OrganisationsTyp.Klasse,
       limit: searchFilterStore.klassenPerPage,
       offset: 0,
-      organisationIds: [],
       systemrechte: [RollenSystemRechtEnum.KlassenVerwalten],
     };
     expect(organisationStore.getAllOrganisationen).toHaveBeenLastCalledWith(expectedFilter);
@@ -395,7 +394,6 @@ describe('KlassenManagementView', () => {
       systemrechte: [RollenSystemRechtEnum.KlassenVerwalten],
       offset: 0,
       limit: searchFilterStore.klassenPerPage,
-      organisationIds: [klasse.id],
       administriertVon: [schule.id],
     });
   });
@@ -477,6 +475,23 @@ describe('KlassenManagementView', () => {
         sortOrder: 'asc',
       }),
     );
+  });
+
+  test('it still shows selected Klassen that are missing from the search result', async () => {
+    const missingKlasse: Organisation = DoFactory.getKlasse(schule1, {
+      name: '7x-selektiert',
+      schuleDetails: schule1.name,
+    });
+    searchFilterStore.selectedKlassenForKlassen = [missingKlasse];
+    try {
+      wrapper = await mountComponent();
+      await flushPromises();
+
+      expect(organisationStore.allKlassen.some((klasse: Organisation) => klasse.id === missingKlasse.id)).toBe(false);
+      expect(wrapper.find('[data-testid="klasse-table"]').text()).toContain('7x-selektiert');
+    } finally {
+      searchFilterStore.selectedKlassenForKlassen = [];
+    }
   });
 
   test('it should call deleteOrganisationById when deleting a Klasse', async () => {
