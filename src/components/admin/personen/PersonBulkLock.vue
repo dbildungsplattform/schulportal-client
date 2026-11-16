@@ -109,7 +109,7 @@
       >
         <output
           v-if="successMessage"
-          class="d-block text-body text-center"
+          class="d-block mt-2 text-center"
           data-testid="person-bulk-lock-success-text"
         >
           {{ successMessage }}
