@@ -4010,6 +4010,56 @@ export interface ProviderControllerGetManageableServiceProvidersForOrganisationI
 /**
  * 
  * @export
+ * @interface RolleControllerFindRollen200Response
+ */
+export interface RolleControllerFindRollen200Response {
+    /**
+     * 
+     * @type {number}
+     * @memberof RolleControllerFindRollen200Response
+     */
+    'total': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof RolleControllerFindRollen200Response
+     */
+    'offset': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof RolleControllerFindRollen200Response
+     */
+    'limit': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof RolleControllerFindRollen200Response
+     */
+    'pageTotal'?: number;
+    /**
+     * 
+     * @type {Array<RolleWithServiceProvidersResponse>}
+     * @memberof RolleControllerFindRollen200Response
+     */
+    'items': Array<RolleWithServiceProvidersResponse>;
+}
+/**
+ * 
+ * @export
+ * @interface RolleControllerFindRollen200ResponseAllOf
+ */
+export interface RolleControllerFindRollen200ResponseAllOf {
+    /**
+     * 
+     * @type {Array<RolleWithServiceProvidersResponse>}
+     * @memberof RolleControllerFindRollen200ResponseAllOf
+     */
+    'items': Array<RolleWithServiceProvidersResponse>;
+}
+/**
+ * 
+ * @export
  * @interface RolleControllerFindRollenAvailableForPersonAdministration200Response
  */
 export interface RolleControllerFindRollenAvailableForPersonAdministration200Response {
@@ -14800,7 +14850,7 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<RolleWithServiceProvidersResponse>>> {
+        async rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RolleControllerFindRollen200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollen(offset, limit, searchStr, organisationIds, rolleIds, rollenarten, merkmale, serviceProviderIds, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -14816,7 +14866,7 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<RolleWithServiceProvidersResponse>>> {
+        async rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RolleControllerFindRollen200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollenAvailableForErweiterung(organisationId, offset, limit, searchStr, rollenarten, systemrechte, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -14831,7 +14881,7 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async rolleControllerFindRollenAvailableForImport(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<RolleWithServiceProvidersResponse>>> {
+        async rolleControllerFindRollenAvailableForImport(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RolleControllerFindRollen200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollenAvailableForImport(organisationId, offset, limit, searchStr, rollenarten, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -14861,7 +14911,7 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<RolleWithServiceProvidersResponse>>> {
+        async rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RolleControllerFindRollen200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollenForMptZuordnung(offset, limit, searchStr, organisationIds, rolleIds, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -15005,7 +15055,7 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: any): AxiosPromise<Array<RolleWithServiceProvidersResponse>> {
+        rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: any): AxiosPromise<RolleControllerFindRollen200Response> {
             return localVarFp.rolleControllerFindRollen(offset, limit, searchStr, organisationIds, rolleIds, rollenarten, merkmale, serviceProviderIds, options).then((request) => request(axios, basePath));
         },
         /**
@@ -15020,7 +15070,7 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: any): AxiosPromise<Array<RolleWithServiceProvidersResponse>> {
+        rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: any): AxiosPromise<RolleControllerFindRollen200Response> {
             return localVarFp.rolleControllerFindRollenAvailableForErweiterung(organisationId, offset, limit, searchStr, rollenarten, systemrechte, options).then((request) => request(axios, basePath));
         },
         /**
@@ -15034,7 +15084,7 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollenAvailableForImport(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, options?: any): AxiosPromise<Array<RolleWithServiceProvidersResponse>> {
+        rolleControllerFindRollenAvailableForImport(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, options?: any): AxiosPromise<RolleControllerFindRollen200Response> {
             return localVarFp.rolleControllerFindRollenAvailableForImport(organisationId, offset, limit, searchStr, rollenarten, options).then((request) => request(axios, basePath));
         },
         /**
@@ -15062,7 +15112,7 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: any): AxiosPromise<Array<RolleWithServiceProvidersResponse>> {
+        rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: any): AxiosPromise<RolleControllerFindRollen200Response> {
             return localVarFp.rolleControllerFindRollenForMptZuordnung(offset, limit, searchStr, organisationIds, rolleIds, options).then((request) => request(axios, basePath));
         },
         /**
@@ -15200,7 +15250,7 @@ export interface RolleApiInterface {
      * @throws {RequiredError}
      * @memberof RolleApiInterface
      */
-    rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<Array<RolleWithServiceProvidersResponse>>;
+    rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<RolleControllerFindRollen200Response>;
 
     /**
      * List all rollen that are available for the Rollenerweiterung workflow.
@@ -15215,7 +15265,7 @@ export interface RolleApiInterface {
      * @throws {RequiredError}
      * @memberof RolleApiInterface
      */
-    rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): AxiosPromise<Array<RolleWithServiceProvidersResponse>>;
+    rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): AxiosPromise<RolleControllerFindRollen200Response>;
 
     /**
      * List all rollen that are available for the Personen-Import workflow.
@@ -15229,7 +15279,7 @@ export interface RolleApiInterface {
      * @throws {RequiredError}
      * @memberof RolleApiInterface
      */
-    rolleControllerFindRollenAvailableForImport(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, options?: AxiosRequestConfig): AxiosPromise<Array<RolleWithServiceProvidersResponse>>;
+    rolleControllerFindRollenAvailableForImport(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, options?: AxiosRequestConfig): AxiosPromise<RolleControllerFindRollen200Response>;
 
     /**
      * List rollen available for person administration.
@@ -15257,7 +15307,7 @@ export interface RolleApiInterface {
      * @throws {RequiredError}
      * @memberof RolleApiInterface
      */
-    rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<Array<RolleWithServiceProvidersResponse>>;
+    rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<RolleControllerFindRollen200Response>;
 
     /**
      * Get Erweiterte Angebote for a rolle.
