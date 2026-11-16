@@ -120,7 +120,7 @@
         >
           <v-col
             cols="12"
-            class="text-center"
+            class="text-center subtitle-2"
             data-testid="person-bulk-lock-progress-notice"
             role="status"
           >
@@ -129,7 +129,7 @@
               aria-hidden="true"
               class="mr-2"
             />
-            {{ t('admin.person.bulkLock.progressNotice') }}
+            {{ t('admin.doNotCloseBrowserNotice') }}
           </v-col>
         </v-row>
         <v-progress-linear

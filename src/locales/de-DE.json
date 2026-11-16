@@ -441,8 +441,7 @@
       },
       "bulkLock": {
         "confirmation": "Möchten Sie die ausgewählten Benutzer wirklich sperren? Eine Anmeldung am Schulportal SH ist dann für diese Benutzer nicht mehr möglich.",
-        "success": "Die Benutzer wurden erfolgreich gesperrt.",
-        "progressNotice": "Bitte schließen Sie diesen Tab nicht, bis die Aktion vollständig ausgeführt wurde."
+        "success": "Die Benutzer wurden erfolgreich gesperrt."
       },
       "bulkUnlock": {
         "confirmation": "Möchten Sie die ausgewählten Benutzer wirklich entsperren?",
