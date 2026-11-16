@@ -9,14 +9,15 @@ import {
   type OrganisationStore,
 } from '@/stores/OrganisationStore';
 import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
-import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
-import { expect, test, type MockInstance } from 'vitest';
+import { afterEach, expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component, type ComputedRef, type DefineComponent } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import KlassenManagementView from './KlassenManagementView.vue';
 
 let wrapper: VueWrapper | null = null;
+enableAutoUnmount(afterEach);
 
 async function mountComponent(): Promise<VueWrapper> {
   const router: Router = createRouter({
@@ -492,6 +493,50 @@ describe('KlassenManagementView', () => {
     } finally {
       searchFilterStore.selectedKlassenForKlassen = [];
     }
+  });
+
+  test('it counts only the selected Klassen in the table when a selection exists', async () => {
+    organisationStore.totalKlassen = 30;
+    searchFilterStore.selectedKlassenForKlassen = [
+      DoFactory.getKlasse(schule1, { name: '7x-a' }),
+      DoFactory.getKlasse(schule1, { name: '7x-b' }),
+    ];
+    try {
+      wrapper = await mountComponent();
+      await flushPromises();
+
+      interface KlassenManagementView extends DefineComponent {
+        totalKlassenCount: ComputedRef<number>;
+        totalKlassen: ComputedRef<number>;
+      }
+      const vm: KlassenManagementView = wrapper.vm as unknown as KlassenManagementView;
+
+      expect(vm.totalKlassenCount).toBe(2);
+      expect(vm.totalKlassen).toBe(42);
+    } finally {
+      searchFilterStore.selectedKlassenForKlassen = [];
+    }
+  });
+
+  test('it requests the selected page of the search with offset and without organisationIds', async () => {
+    wrapper = await mountComponent();
+    await flushPromises();
+
+    interface KlassenManagementView extends DefineComponent {
+      setKlassenPage: (page: number) => void;
+    }
+    // Totals above the page size, otherwise the table clamps the page to 1 on updates
+    organisationStore.totalKlassen = 100;
+    organisationStore.totalOrganisationen = 100;
+    (wrapper.vm as unknown as KlassenManagementView).setKlassenPage(2);
+    await flushPromises();
+
+    const lastFilter: OrganisationenFilter | undefined = vi.mocked(organisationStore.getAllOrganisationen).mock
+      .lastCall?.[0];
+    expect(lastFilter?.offset).toBe(searchFilterStore.klassenPerPage);
+    expect(lastFilter).not.toHaveProperty('organisationIds');
+
+    searchFilterStore.klassenPage = 1;
   });
 
   test('it should call deleteOrganisationById when deleting a Klasse', async () => {
