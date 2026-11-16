@@ -1,4 +1,6 @@
-import { VueWrapper, mount } from '@vue/test-utils';
+import type { Organisation } from '@/stores/OrganisationStore';
+import { VueWrapper, flushPromises, mount } from '@vue/test-utils';
+import { DoFactory } from 'test/DoFactory';
 import { expect, test } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import KlasseChange from './KlasseChange.vue';
@@ -54,6 +56,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  wrapper?.unmount();
   vi.clearAllTimers();
   vi.clearAllMocks();
 });
@@ -68,10 +71,13 @@ describe('KlasseChange', () => {
     await wrapper?.find('[data-testid="schule-select"]').trigger('change');
     await nextTick();
 
+    const klasse: Organisation = DoFactory.getKlasse();
     await wrapper
       ?.findComponent({ name: 'KlassenFilter' })
       .findComponent({ ref: 'klasse-change-klasse-select' })
-      .setValue('2');
+      .setValue(klasse);
+    await flushPromises();
+    expect(wrapper?.emitted('update:selectedNewKlasse')).toContainEqual([klasse]);
     await wrapper
       ?.findComponent({ name: 'KlassenFilter' })
       .findComponent({ ref: 'klasse-change-klasse-select' })

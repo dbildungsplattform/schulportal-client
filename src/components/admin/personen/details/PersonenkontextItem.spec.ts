@@ -34,7 +34,7 @@ describe('PersonenkontextItem', () => {
       }
       const klasse: string = DoFactory.getKlasse().name;
       const props: Props = {
-        zuordnung: { ...zuordnung, klasse },
+        zuordnung: Object.assign(zuordnung, { klasse }),
         pendingState: undefined,
       };
       const wrapper: VueWrapper = mountComponent(props) as VueWrapper;

@@ -3,6 +3,7 @@
   import RolleSuccessTemplate from '@/components/admin/rollen/RolleSuccessTemplate.vue';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
+  import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
   import { useMasterDataStore, type MasterDataStore } from '@/stores/MasterDataStore';
   import { OrganisationsTyp, useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
   import {
@@ -55,7 +56,13 @@
   type TranslatedSystemrecht = { value: RollenSystemRecht; title: string };
   const translatedSystemrechte: Ref<TranslatedSystemrecht[]> = ref([]);
 
-  const formContext: FormContext<RolleFormType, RolleFormType> = useForm<RolleFormType>({ validationSchema });
+  const { autoselectedSchule }: ReturnType<typeof useAutoselectedSchule> = useAutoselectedSchule([
+    RollenSystemRecht.RollenVerwalten,
+  ]);
+  const formContext: FormContext<RolleFormType, RolleFormType> = useForm<RolleFormType>({
+    validationSchema,
+    initialValues: { selectedAdministrationsebene: autoselectedSchule.value?.id },
+  });
 
   const {
     selectedAdministrationsebene,
@@ -296,6 +303,7 @@
       <!-- The form to create a new Rolle -->
       <template v-if="!rolleStore.createdRolle">
         <RolleForm
+          :initial-organisation="autoselectedSchule"
           :error-code="rolleStore.errorCode"
           :on-handle-confirm-unsaved-changes="handleConfirmUnsavedChanges"
           :on-handle-discard="navigateToRolleManagement"

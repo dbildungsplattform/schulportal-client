@@ -15,7 +15,7 @@
   } from '@/stores/OrganisationStore';
   import { RollenSystemRecht } from '@/stores/RolleStore';
   import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
-  import { type Mutable } from '@/types.d';
+  import { type Mutable, type SelectedSchulen } from '@/types.d';
   import { OrganisationSortField, SortOrder } from '@/utils/sorting';
   import { computed, ref, watch, watchEffect, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
@@ -58,18 +58,19 @@
     () => (searchFilterStore.klassenPage - 1) * searchFilterStore.klassenPerPage,
   );
 
-  const selectedSchule: Ref<string | undefined> = ref(searchFilterStore.selectedSchuleForKlassen || undefined);
+  const selectedOrganisation: Ref<Organisation | null> = ref(searchFilterStore.selectedSchuleForKlassen);
+  const selectedSchule: ComputedRef<string | undefined> = computed(() => selectedOrganisation.value?.id);
   const hasSelectedSchule: ComputedRef<boolean> = computed(
     () => (selectedSchule.value !== undefined && selectedSchule.value !== '') || hasAutoselectedSchule.value,
   );
-  const selectedKlassen: Ref<Array<string>> = ref(searchFilterStore.selectedKlassenForKlassen || []);
+  const selectedKlassen: Ref<Array<Organisation>> = ref(searchFilterStore.selectedKlassenForKlassen || []);
   const klassenListFilter: ComputedRef<OrganisationenFilter> = computed(() => {
     const initialFilter: OrganisationenFilter = {
       includeTyp: OrganisationsTyp.Klasse,
       systemrechte: [RollenSystemRecht.KlassenVerwalten],
       offset: pageOffset.value,
       limit: searchFilterStore.klassenPerPage,
-      organisationIds: selectedKlassen.value,
+      organisationIds: selectedKlassen.value.map((k: Organisation) => k.id),
       sortField: searchFilterStore.organisationenSortField ?? undefined,
       sortOrder: searchFilterStore.organisationenSortOrder ?? undefined,
     };
@@ -82,7 +83,8 @@
   const finalKlassen: ComputedRef<Organisation[]> = computed(() => {
     // If there are selected Klassen, filter allKlassen to show only those that are selected
     if (selectedKlassen.value.length > 0) {
-      return organisationStore.allKlassen.filter((klasse: Organisation) => selectedKlassen.value.includes(klasse.id));
+      const selectedIds: Set<string> = new Set(selectedKlassen.value.map((klasse: Organisation) => klasse.id));
+      return organisationStore.allKlassen.filter((klasse: Organisation) => selectedIds.has(klasse.id));
     }
 
     // Otherwise, return allKlassen as is
@@ -145,7 +147,7 @@
     // Clear selected Klassen
     selectedKlassen.value = [];
     // Clear the store
-    searchFilterStore.setSchuleFilterForKlassen(null);
+    searchFilterStore.setSchuleFilterForKlassen(hasAutoselectedSchule.value ? selectedOrganisation.value : null);
     searchFilterStore.setKlasseFilterForKlassen([]);
     searchFilterStore.klassenPage = 1;
     searchFilterStore.organisationenSortField = null;
@@ -153,25 +155,26 @@
 
     // If the user has an autoselected Schule, do not reset it
     if (!hasAutoselectedSchule.value) {
-      selectedSchule.value = undefined;
+      selectedOrganisation.value = null;
     }
   }
 
-  function updateSchuleSelection(id: string | undefined): void {
+  function updateSchuleSelection(organisation: SelectedSchulen<false>): void {
+    const id: string | undefined = organisation?.id;
     if (selectedSchule.value === id) {
       return;
     }
-    selectedSchule.value = id;
-    searchFilterStore.setSchuleFilterForKlassen(id ?? null);
+    selectedOrganisation.value = organisation ?? null;
+    searchFilterStore.setSchuleFilterForKlassen(organisation ?? null);
     searchFilterStore.klassenPage = 1;
     if (!id) {
       resetSearchAndFilter();
     }
   }
 
-  function updateKlassenSelection(ids: string[] | undefined): void {
-    selectedKlassen.value = ids ?? [];
-    searchFilterStore.setKlasseFilterForKlassen(ids ?? null);
+  function updateKlassenSelection(newSelection: Organisation[] | undefined): void {
+    selectedKlassen.value = newSelection ?? [];
+    searchFilterStore.setKlasseFilterForKlassen(newSelection ?? null);
   }
 
   async function reloadData(filter: OrganisationenFilter): Promise<void> {
@@ -295,7 +298,7 @@
               :multiple="false"
               :hide-details="true"
               :highlight-selection="true"
-              :selected-schulen="selectedSchule"
+              :selected-schulen="selectedOrganisation ?? undefined"
               :placeholder-text="t('admin.schule.schule')"
               @update:selected-schulen="updateSchuleSelection"
             >

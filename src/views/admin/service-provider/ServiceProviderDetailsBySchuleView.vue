@@ -312,7 +312,7 @@
       }),
     ]);
 
-    if (!organisationStore.currentOrganisation && organisationIdFromQuery.value) {
+    if (organisationIdFromQuery.value && organisationStore.currentOrganisation?.id !== organisationIdFromQuery.value) {
       await organisationStore.getOrganisationById(organisationIdFromQuery.value);
     }
     if (autoEdit.value) {

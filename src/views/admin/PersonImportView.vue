@@ -5,6 +5,8 @@
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
   import FormRow from '@/components/form/FormRow.vue';
   import FormWrapper from '@/components/form/FormWrapper.vue';
+  import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
+  import { useOrganisationSelection } from '@/composables/useOrganisationSelection';
   import {
     useImportStore,
     type ImportedUserResponse,
@@ -12,7 +14,7 @@
     type ImportStore,
   } from '@/stores/ImportStore';
   import { RollenArt, useRolleStore, type RolleResponse, type RolleStore } from '@/stores/RolleStore';
-  import type { TranslatedObject } from '@/types';
+  import type { SelectedSchulen, TranslatedObject } from '@/types';
   import { toTypedSchema } from '@vee-validate/yup';
   import { useForm, type BaseFieldProps, type FormContext, type TypedSchema } from 'vee-validate';
   import { computed, onMounted, onUnmounted, ref, watch, type ComputedRef, type Ref } from 'vue';
@@ -61,14 +63,20 @@
     selectedFiles: Array<File>;
   };
 
+  const { autoselectedSchule }: ReturnType<typeof useAutoselectedSchule> = useAutoselectedSchule([]);
   const formContext: FormContext<PersonImportForm, PersonImportForm> = useForm<PersonImportForm>({
     validationSchema,
+    initialValues: { selectedSchule: autoselectedSchule.value?.id },
   });
 
   const [selectedSchule, selectedSchuleProps]: [
     Ref<string | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedSchule', vuetifyConfig);
+  const selectedOrganisation: ReturnType<typeof useOrganisationSelection> = useOrganisationSelection(
+    selectedSchule,
+    () => autoselectedSchule.value,
+  );
 
   const [selectedRolle, selectedRolleProps]: [
     Ref<string | undefined>,
@@ -89,25 +97,29 @@
       .sort((a: TranslatedObject, b: TranslatedObject) => a.title.localeCompare(b.title));
   });
 
-  watch(selectedSchule, async (newValue: string | undefined, oldValue: string | undefined) => {
-    if (newValue && newValue !== oldValue) {
-      // Fetch rollen after selecting the organization
-      await rolleStore.getRollenAvailableForImport({
-        organisationId: newValue,
-        rollenarten: [RollenArt.Lern],
-      });
+  watch(
+    selectedSchule,
+    async (newValue: string | undefined, oldValue: string | undefined) => {
+      if (newValue && newValue !== oldValue) {
+        // Fetch rollen after selecting the organization
+        await rolleStore.getRollenAvailableForImport({
+          organisationId: newValue,
+          rollenarten: [RollenArt.Lern],
+        });
 
-      // Reset the selectedRolle field only if oldValue was not undefined
-      if (oldValue !== undefined) {
+        // Reset the selectedRolle field only if oldValue was not undefined
+        if (oldValue !== undefined) {
+          selectedRolle.value = undefined;
+        }
+      } else if (!newValue) {
+        // If the organization is cleared, reset selectedRolle
         selectedRolle.value = undefined;
       }
-    } else if (!newValue) {
-      // If the organization is cleared, reset selectedRolle
-      selectedRolle.value = undefined;
-    }
 
-    importStore.uploadResponse = null;
-  });
+      importStore.uploadResponse = null;
+    },
+    { immediate: true },
+  );
 
   watch(selectedFile, (newValue: File | undefined, oldValue: File | undefined) => {
     if (newValue && newValue !== oldValue) {
@@ -378,8 +390,8 @@
     event.returnValue = '';
   }
 
-  function updateSelectedSchule(id: string | undefined): void {
-    formContext.setFieldValue('selectedSchule', id);
+  function updateSelectedSchule(selection: SelectedSchulen<false>): void {
+    selectedOrganisation.value = selection;
   }
 
   onBeforeRouteLeave((_to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
@@ -637,7 +649,7 @@
               parent-id="person-import"
               :placeholder-text="t('admin.schule.selectSchule')"
               :selected-schule-props="selectedSchuleProps"
-              :selected-schulen="selectedSchule"
+              :selected-schulen="selectedOrganisation ?? undefined"
               @update:selected-schulen="updateSelectedSchule"
               ref="schulFilter"
             />
