@@ -196,8 +196,8 @@ export function buildZuordnungenForCreation({
 export type KlassenwechselParams = {
   currentZuordnungen: ZuordnungWithKlasse[];
   existingZuordnungen: Zuordnung[] | undefined;
+  // The Schule is the one of the first selected Zuordnung
   selectedZuordnungen: ZuordnungWithKlasse[];
-  schule: Organisation;
   newKlasse: Organisation | undefined;
 };
 
@@ -205,10 +205,10 @@ export function buildZuordnungenForKlassenwechsel({
   currentZuordnungen,
   existingZuordnungen,
   selectedZuordnungen,
-  schule,
   newKlasse,
 }: KlassenwechselParams): ZuordnungChange {
   const selectedZuordnung: ZuordnungWithKlasse = selectedZuordnungen[0]!;
+  const schule: Organisation = selectedZuordnung.getOrganisation();
   const remainingZuordnungen: ZuordnungWithKlasse[] = currentZuordnungen.filter(
     (zuordnung: ZuordnungWithKlasse) => !selectedZuordnungen.includes(zuordnung),
   );

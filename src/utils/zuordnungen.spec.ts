@@ -306,7 +306,6 @@ describe('zuordnungen', () => {
         currentZuordnungen: current,
         existingZuordnungen: existing,
         selectedZuordnungen: [selected],
-        schule: selectedSchule.schule,
         newKlasse,
       });
 
@@ -334,7 +333,6 @@ describe('zuordnungen', () => {
         currentZuordnungen: [schulZuordnung],
         existingZuordnungen: [schulZuordnung],
         selectedZuordnungen: [schulZuordnung],
-        schule,
         newKlasse,
       });
 
@@ -343,13 +341,12 @@ describe('zuordnungen', () => {
     });
 
     test('it does not add a Klasse without new Klasse', () => {
-      const { schule, schulZuordnung }: SchuleWithKlasse = getSchuleWithKlasse();
+      const { schulZuordnung }: SchuleWithKlasse = getSchuleWithKlasse();
 
       const result: ZuordnungChange = buildZuordnungenForKlassenwechsel({
         currentZuordnungen: [schulZuordnung],
         existingZuordnungen: [schulZuordnung],
         selectedZuordnungen: [schulZuordnung],
-        schule,
         newKlasse: undefined,
       });
 

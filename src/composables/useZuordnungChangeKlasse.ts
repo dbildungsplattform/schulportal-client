@@ -127,22 +127,15 @@ export function useZuordnungChangeKlasse(params: {
   // When the button "Yes" from the Dialog after filling the form for changing the Klasse is clicked
   const confirmDialogChangeKlasse = (): void => {
     changeKlasseConfirmationDialogVisible.value = false;
-    // Find the Orga object for the selected Schule (unchangeable anyways)
-    const schule: Organisation | undefined = personenkontextStore.workflowStepResponse?.organisations.find(
-      (orga: Organisation) => orga.id === selectedSchule.value,
-    );
 
-    if (schule) {
-      const change: ZuordnungChange = buildZuordnungenForKlassenwechsel({
-        currentZuordnungen: state.zuordnungenWithPendingChanges.value ?? [],
-        existingZuordnungen: personStore.personenuebersicht?.zuordnungen,
-        selectedZuordnungen: state.selectedZuordnungen.value,
-        schule,
-        newKlasse: selectedNewKlasse.value,
-      });
-      state.newZuordnung.value = change.newZuordnung;
-      state.zuordnungenToBePersisted.value = change.zuordnungenToBePersisted;
-    }
+    const change: ZuordnungChange = buildZuordnungenForKlassenwechsel({
+      currentZuordnungen: state.zuordnungenWithPendingChanges.value ?? [],
+      existingZuordnungen: personStore.personenuebersicht?.zuordnungen,
+      selectedZuordnungen: state.selectedZuordnungen.value,
+      newKlasse: selectedNewKlasse.value,
+    });
+    state.newZuordnung.value = change.newZuordnung;
+    state.zuordnungenToBePersisted.value = change.zuordnungenToBePersisted;
 
     // Zuordnungen of type Klasse are merged into the ones of type Schule, so they are not shown on their own
     if (state.zuordnungenWithPendingChanges.value) {

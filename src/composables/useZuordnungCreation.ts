@@ -234,33 +234,27 @@ export function useZuordnungCreation(params: {
   const confirmDialogAddition = (): void => {
     createZuordnungConfirmationDialogVisible.value = false;
     hasNoKopersNr.value = false;
-    const organisation: Organisation | undefined = personenkontextStore.workflowStepResponse?.organisations.find(
-      (orga: Organisation) => orga.id === selectedOrganisation.value?.id,
-    );
 
     const befristungDate: string | undefined = selectedBefristung.value
       ? selectedBefristung.value
       : calculatedBefristung.value;
 
-    if (organisation) {
-      const change: ZuordnungChange = buildZuordnungenForCreation({
-        currentZuordnungen: state.zuordnungenWithPendingChanges.value ?? [],
-        existingZuordnungen: personStore.personenuebersicht?.zuordnungen,
-        organisation,
-        klasse: selectedKlasseForCreation.value,
-        rolleId: selectedRolle.value?.value ?? '',
-        rolle: selectedRolle.value,
-        befristung: formatDateToISO(befristungDate) ?? null,
-      });
-      state.newZuordnung.value = change.newZuordnung;
-      state.zuordnungenToBePersisted.value = change.zuordnungenToBePersisted;
-      state.zuordnungenWithPendingChanges.value = [
-        ...withoutKlassen(state.zuordnungenWithPendingChanges.value ?? []),
-        change.newZuordnung,
-      ];
-    } else if (state.zuordnungenWithPendingChanges.value) {
-      state.zuordnungenWithPendingChanges.value = withoutKlassen(state.zuordnungenWithPendingChanges.value);
-    }
+    const change: ZuordnungChange = buildZuordnungenForCreation({
+      currentZuordnungen: state.zuordnungenWithPendingChanges.value ?? [],
+      existingZuordnungen: personStore.personenuebersicht?.zuordnungen,
+      // The Organisation is required by the validation schema
+      organisation: selectedOrganisation.value!,
+      klasse: selectedKlasseForCreation.value,
+      rolleId: selectedRolle.value?.value ?? '',
+      rolle: selectedRolle.value,
+      befristung: formatDateToISO(befristungDate) ?? null,
+    });
+    state.newZuordnung.value = change.newZuordnung;
+    state.zuordnungenToBePersisted.value = change.zuordnungenToBePersisted;
+    state.zuordnungenWithPendingChanges.value = [
+      ...withoutKlassen(state.zuordnungenWithPendingChanges.value ?? []),
+      change.newZuordnung,
+    ];
 
     prepareCreation();
   };

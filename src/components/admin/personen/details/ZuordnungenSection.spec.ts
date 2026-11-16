@@ -511,21 +511,10 @@ describe('ZuordnungenSection', () => {
       expect(hasPendingChange()).toBe(true);
     });
 
-    test('it ignores an unknown Organisation when adding a Zuordnung', async () => {
-      wrapper = mountComponent();
-      await flushPromises();
-
-      getInternals().confirmDialogAddition();
-
-      expect(getPersistedZuordnungen()).toEqual([]);
-      expect(hasPendingChange()).toBe(true);
-    });
-
     test('it changes the Klasse of a selected Zuordnung', async () => {
       wrapper = mountComponent();
       await flushPromises();
       getInternals().selectedZuordnungen = [schulZuordnung];
-      getInternals().selectedSchule = schule.id;
       getInternals().selectedNewKlasse = oldKlasse;
 
       getInternals().confirmDialogChangeKlasse();
@@ -534,16 +523,6 @@ describe('ZuordnungenSection', () => {
         expect.objectContaining({ sskId: oldKlasse.id, typ: OrganisationsTyp.Klasse }),
       ]);
     });
-  });
-
-  test('it ignores an unknown Organisation when adding a Zuordnung and keeps the existing ones without Klassen', async () => {
-    wrapper = mountComponent();
-    await flushPromises();
-
-    getInternals().confirmDialogAddition();
-
-    expect(getPersistedZuordnungen()).toEqual([]);
-    expect(wrapper.findAllComponents(PersonenkontextItem)).toHaveLength(1);
   });
 
   test('it does nothing when saving without a pending change', async () => {
