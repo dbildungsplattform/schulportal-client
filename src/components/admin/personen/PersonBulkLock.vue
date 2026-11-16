@@ -94,7 +94,7 @@
           <v-col
             :id="confirmationId"
             cols="12"
-            class="text-body font-weight-bold text-center"
+            class="text-body bold text-center"
             data-testid="person-bulk-lock-confirmation-text"
             aria-live="polite"
             aria-atomic="true"
