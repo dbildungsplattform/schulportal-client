@@ -1,5 +1,6 @@
 import type { OrganisationsbeziehungOrganisationResponse } from '@/api-client/generated/api';
 import { mount, type VueWrapper } from '@vue/test-utils';
+import { VAutocomplete } from 'vuetify/components';
 import OrganisationsbeziehungenFilter from './OrganisationsbeziehungenFilter.vue';
 
 let wrapper: VueWrapper | null = null;
@@ -20,8 +21,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function getAutocomplete(): VueWrapper {
-  return wrapper!.findComponent({ name: 'VAutocomplete' });
+function getAutocomplete(): VueWrapper<InstanceType<typeof VAutocomplete>> {
+  return wrapper!.findComponent(VAutocomplete);
 }
 
 describe('OrganisationsbeziehungenFilter', () => {
