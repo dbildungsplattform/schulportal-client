@@ -724,13 +724,7 @@ describe('PersonManagementView', () => {
         persons.map((person: PersonWithZuordnungen): [string, PersonWithZuordnungen] => [person.id, person]),
       );
       const schulenFilter: Omit<VueWrapper, 'exists'> = wrapper!.getComponent({ ref: 'schulenFilter' });
-      schulenFilter.vm.$emit(
-        'update:selectedSchulen',
-        schulen.map((selectedSchule: Organisation): string => selectedSchule.id),
-      );
-      await flushPromises();
-      searchFilterStore.selectedOrgaObjects = schulen;
-      schulenFilter.vm.$emit('update:selectedSchulenObjects', schulen);
+      schulenFilter.vm.$emit('update:selectedSchulen', schulen);
       await flushPromises();
       const resultTable: Omit<VueWrapper, 'exists'> = wrapper!.getComponent({ name: 'ResultTable' });
       resultTable.vm.$emit(
