@@ -645,7 +645,7 @@
             :label="$t('admin.schule.schule')"
           >
             <SchulenFilter
-              :systemrechte-for-search="[RollenSystemRecht.PersonenVerwalten]"
+              :systemrechte-for-search="[RollenSystemRecht.ImportDurchfuehren]"
               :multiple="false"
               parent-id="person-import"
               :placeholder-text="t('admin.schule.selectSchule')"

@@ -446,7 +446,10 @@
   }
 
   async function navigateToPersonDetails(): Promise<void> {
-    const personId: string | undefined = personenkontextStore.createdPersonWithKontext?.person.id;
+    const personId: string | undefined =
+      createType.value === CreationType.AddPersonToOwnSchule
+        ? personenkontextStore.updatedPersonenkontexte?.dBiamPersonenkontextResponses[0]?.personId
+        : personenkontextStore.createdPersonWithKontext?.person.id;
 
     if (personId) {
       await router.push({

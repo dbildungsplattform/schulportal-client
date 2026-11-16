@@ -167,7 +167,9 @@
         case CreationType.Limited:
           return RollenSystemRecht.EingeschraenktNeueBenutzerErstellen;
         case CreationType.AddPersonToOwnSchule:
-          return RollenSystemRecht.LandesbediensteteSuchenUndHinzufuegen;
+          return props.operationContext === OperationContext.PERSON_BEARBEITEN
+            ? RollenSystemRecht.PersonenVerwalten
+            : RollenSystemRecht.LandesbediensteteSuchenUndHinzufuegen;
         default:
           return undefined;
       }
