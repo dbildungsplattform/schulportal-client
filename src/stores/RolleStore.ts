@@ -171,7 +171,7 @@ type RolleActions = {
 
 export type RolleStore = Store<'rolleStore', RolleState, RolleGetters, RolleActions>;
 
-function mapRolleResponseToRolle(response: RolleResponse): Rolle {
+function mapRolleWithServiceProvidersResponseToRolle(response: RolleWithServiceProvidersResponse): Rolle {
   return {
     administeredBySchulstrukturknoten: response.administeredBySchulstrukturknoten,
     id: response.id,
@@ -180,12 +180,6 @@ function mapRolleResponseToRolle(response: RolleResponse): Rolle {
     rollenart: response.rollenart,
     systemrechte: new Set(response.systemrechte.map((recht: SystemRechtResponse) => recht.name)),
     version: response.version,
-  };
-}
-
-function mapRolleWithServiceProvidersResponseToRolle(response: RolleWithServiceProvidersResponse): Rolle {
-  return {
-    ...mapRolleResponseToRolle(response),
     serviceProviders: response.serviceProviders,
   };
 }
@@ -231,8 +225,9 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
             systemrechte: systemrechte as unknown as Set<RollenSystemRechtEnum>,
             serviceProviderIds: serviceProvider as unknown as Set<string>,
           };
-          const { data }: { data: RolleResponse } = await rolleApi.rolleControllerCreateRolle(createRolleBodyParams);
-          this.createdRolle = mapRolleResponseToRolle(data);
+          const { data }: { data: RolleWithServiceProvidersResponse } =
+            await rolleApi.rolleControllerCreateRolle(createRolleBodyParams);
+          this.createdRolle = mapRolleWithServiceProvidersResponseToRolle(data);
           this.currentRolle = this.createdRolle;
         } catch (error: unknown) {
           this.errorCode = getResponseErrorCode(error, 'ROLLE_ERROR');
@@ -368,7 +363,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
             (rolle: RolleWithServiceProvidersResponse): boolean => rolle.id === rolleId,
           );
           if (rolleFromList) {
-            this.currentMptRolle = mapRolleResponseToRolle(rolleFromList);
+            this.currentMptRolle = mapRolleWithServiceProvidersResponseToRolle(rolleFromList);
             return;
           }
 
@@ -385,7 +380,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
             this.errorCode = 'UNSPECIFIED_ERROR';
             return;
           }
-          this.currentMptRolle = mapRolleResponseToRolle(rolle);
+          this.currentMptRolle = mapRolleWithServiceProvidersResponseToRolle(rolle);
         } catch (error: unknown) {
           this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
         } finally {

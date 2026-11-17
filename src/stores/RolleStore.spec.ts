@@ -49,12 +49,18 @@ describe('rolleStore', () => {
 
   describe('createRolle', () => {
     it('should create rolle and update state', async () => {
-      const mockResponse: RolleResponse = DoFactory.getRolleResponse({
+      const mockResponse: RolleWithServiceProvidersResponse = DoFactory.getRolleWithServiceProviders({
         administeredBySchulstrukturknoten: '1234',
         rollenart: RollenArt.Lehr,
         name: 'Lehrer',
         merkmale: [RollenMerkmal.KopersPflicht],
         systemrechte: [{ name: RollenSystemRechtEnum.RollenVerwalten, isTechnical: false }],
+        serviceProviders: [
+          {
+            id: '5678',
+            name: 'Testangebot',
+          },
+        ],
       });
 
       mockadapter.onPost('/api/rolle').replyOnce(200, mockResponse);
@@ -73,6 +79,7 @@ describe('rolleStore', () => {
       expect(rolleStore.createdRolle!.rollenart).toEqual(RollenArt.Lehr);
       expect(rolleStore.createdRolle!.merkmale).toEqual([RollenMerkmal.KopersPflicht]);
       expect(rolleStore.createdRolle!.systemrechte).toEqual(new Set([RollenSystemRechtEnum.RollenVerwalten]));
+      expect(rolleStore.createdRolle!.serviceProviders).toEqual([{ id: '5678', name: 'Testangebot' }]);
       expect(rolleStore.createdRolle).toEqual(rolleStore.currentRolle);
       expect(rolleStore.loading).toBe(false);
     });
