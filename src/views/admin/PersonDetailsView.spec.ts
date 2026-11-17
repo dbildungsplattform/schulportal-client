@@ -620,6 +620,71 @@ describe('PersonDetailsView', () => {
     });
   });
 
+  describe('two factor authentication info', () => {
+    test.each([
+      [
+        true,
+        true,
+        'Um einen neuen Token einzurichten, muss der aktuelle Token durch die schulischen Administratorinnen und Administratoren zurückgesetzt werden.',
+      ],
+      [
+        true,
+        false,
+        'Dieser Benutzer hat keinen Zugriff mehr auf sicherheitskritische Bereiche und benötigt aktuell den eingerichteten Token nicht.',
+      ],
+      [false, true, 'Für diesen Benutzer ist aktuell keine 2FA eingerichtet.'],
+    ])(
+      'it shows the matching info when a token is set up: %s and 2FA is required: %s',
+      async (hasToken: boolean, required: boolean, text: string) => {
+        twoFactorAuthenticationStore.loading = false;
+        twoFactorAuthenticationStore.hasToken = hasToken;
+        twoFactorAuthenticationStore.required = required;
+        await nextTick();
+
+        expect(wrapper?.text()).toContain(text);
+      },
+    );
+  });
+
+  test('it marks a missing KoPers.-Nr. of a person with a KoPers.-Rolle', async () => {
+    personStore.personenuebersicht = DoFactory.getPersonenUebersicht(undefined, [
+      DoFactory.getZuordnung({ merkmale: [RollenMerkmal.KopersPflicht] }),
+    ]);
+    personStore.currentPerson = { person: { ...mockPerson.person, personalnummer: null } };
+    await nextTick();
+
+    expect(wrapper?.find('[data-testid="person-kopersnr"]').text()).toBe('fehlt');
+  });
+
+  test('it shows a spinner in the device password section while the person is loading', async () => {
+    serviceProviderStore.assignedServiceProviders = [
+      DoFactory.getServiceProviderResponse({ externalSystem: ServiceProviderSystem.Uem }),
+    ];
+    personStore.loading = true;
+    await nextTick();
+
+    expect(wrapper?.find('[data-testid="device-password-info"] .v-progress-circular').exists()).toBe(true);
+  });
+
+  test('it closes the success dialog after the person metadata were changed', async () => {
+    type PersonDetailsViewInternals = { changePersonMetadataSuccessVisible: boolean };
+    const internals: PersonDetailsViewInternals = wrapper!.vm as unknown as PersonDetailsViewInternals;
+    internals.changePersonMetadataSuccessVisible = true;
+    await flushPromises();
+    const successCard: Element | null | undefined = document.body
+      .querySelector('.metadata-success-message')
+      ?.closest('.v-card');
+    const closeButton: HTMLButtonElement | undefined = Array.from(successCard?.querySelectorAll('button') ?? []).find(
+      (button: HTMLButtonElement) => button.textContent?.trim() === 'Schließen',
+    );
+
+    closeButton!.click();
+    await flushPromises();
+
+    expect(personStore.getPersonById).toHaveBeenCalled();
+    expect(internals.changePersonMetadataSuccessVisible).toBe(false);
+  });
+
   test('it shows loading spinner', async () => {
     personStore.loading = true;
     personStore.currentPerson = null;
