@@ -93,7 +93,7 @@ describe('PersonBulkChangeKlasse', () => {
     await wrapper
       .findComponent({ name: 'KlassenFilter' })
       .findComponent('[data-testid="bulk-change-klasse-klasse-select"]')
-      .setValue(mockKlassen[0]!.id);
+      .setValue(mockKlassen[0]!);
     const button: Element = document.querySelector('[data-testid="bulk-change-klasse-button"]')!;
     expect(button).not.toBeNull();
     expect(button.hasAttribute('disabled')).toBe(false);
@@ -109,7 +109,7 @@ describe('PersonBulkChangeKlasse', () => {
     await wrapper
       .findComponent({ name: 'KlassenFilter' })
       .findComponent('[data-testid="bulk-change-klasse-klasse-select"]')
-      .setValue(mockKlassen[0]!.id);
+      .setValue(mockKlassen[0]!);
 
     const button: Element = document.body.querySelector('[data-testid="bulk-change-klasse-button"]')!;
     expect(button).not.toBeNull();
@@ -134,7 +134,7 @@ describe('PersonBulkChangeKlasse', () => {
     await wrapper
       .findComponent({ name: 'KlassenFilter' })
       .findComponent(`[data-testid="${storeKey}-klasse-select"]`)
-      .setValue(mockKlassen[0]!.id);
+      .setValue(mockKlassen[0]!);
     const button: Element = document.body.querySelector('[data-testid="bulk-change-klasse-button"]')!;
     expect(button).not.toBeNull();
     button.dispatchEvent(new Event('click'));

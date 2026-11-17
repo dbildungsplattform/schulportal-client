@@ -5,10 +5,10 @@
   import FormRow from '@/components/form/FormRow.vue';
   import FormWrapper from '@/components/form/FormWrapper.vue';
   import LogoSelector from '@/components/form/LogoSelector.vue';
-  import { type Organisation } from '@/stores/OrganisationStore';
+  import { useOrganisationSelection } from '@/composables/useOrganisationSelection';
   import { RollenArt, RollenSystemRecht } from '@/stores/RolleStore';
   import { ServiceProviderKategorie, ServiceProviderMerkmal } from '@/stores/ServiceProviderStore';
-  import { TranslatedObject } from '@/types';
+  import { type SelectedSchulen, TranslatedObject } from '@/types';
   import { getLogoPath } from '@/utils/logosConfig';
   import { DIN_91379A_EXT, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
   import { toTypedSchema } from '@vee-validate/yup';
@@ -87,9 +87,11 @@
     },
   });
 
-  const [selectedOrganisationId, selectedOrganisationIdProps]: FieldDefinition<string> = formContext.defineField(
-    'selectedOrganisationId',
-    vuetifyConfig,
+  const [selectedOrganisationId, selectedOrganisationIdProps]: FieldDefinition<string | undefined> =
+    formContext.defineField('selectedOrganisationId', vuetifyConfig);
+  const selectedOrganisation: ReturnType<typeof useOrganisationSelection> = useOrganisationSelection(
+    selectedOrganisationId,
+    () => props.initialOrganisation,
   );
   const [name, nameProps]: FieldDefinition<string> = formContext.defineField('name', vuetifyConfig);
   const [url, urlProps]: FieldDefinition<string> = formContext.defineField('url', vuetifyConfig);
@@ -185,17 +187,11 @@
     formContext.setValues(cached);
   }
 
-  const cachedOrga: Ref<Organisation | undefined> = ref();
-
-  function updateSelectedOrganisation(selectedOrgas: Organisation[]): void {
+  function updateSelectedOrganisation(selection: SelectedSchulen<false>): void {
     if (props.isEditMode) {
       return;
     }
-    const org: Organisation | undefined = selectedOrgas.at(0);
-    if (org) {
-      formContext.setFieldValue('selectedOrganisationId', org.id);
-      cachedOrga.value = org;
-    }
+    selectedOrganisation.value = selection;
   }
 
   function openUrlInNewTab(): void {
@@ -213,7 +209,7 @@
   }
 
   const onSubmit: (e?: Event) => Promise<void> = formContext.handleSubmit((values: ServiceProviderForm) => {
-    if (!props.isEditMode && !cachedOrga.value) {
+    if (!props.isEditMode && !selectedOrganisation.value) {
       return;
     }
 
@@ -223,7 +219,7 @@
     }
 
     const payload: ServiceProviderFormSubmitData = {
-      selectedOrganisation: cachedOrga.value,
+      selectedOrganisation: selectedOrganisation.value ?? undefined,
       name: values.name,
       url: normalizedUrl,
       logoId: values.logoId,
@@ -324,8 +320,8 @@
             :placeholderText="$t('admin.organisation.selectOrganisation')"
             :includeAll="true"
             :selected-schule-props="selectedOrganisationIdProps"
-            :selected-schulen="selectedOrganisationId"
-            @update:selected-schulen-objects="updateSelectedOrganisation"
+            :selected-schulen="selectedOrganisation ?? undefined"
+            @update:selected-schulen="updateSelectedOrganisation"
           />
         </FormRow>
 

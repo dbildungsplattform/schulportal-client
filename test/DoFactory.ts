@@ -34,7 +34,12 @@ import {
 } from '@/api-client/generated/api';
 import type { Organisation } from '@/stores/OrganisationStore';
 import { type Personendatensatz } from '@/stores/PersonStore';
-import type { Rolle, RolleResponse, RolleWithServiceProvidersResponse } from '@/stores/RolleStore';
+import type {
+  Rolle,
+  RolleResponse,
+  RolleWithServiceProvidersResponse,
+  TranslatedRolleWithAttrs,
+} from '@/stores/RolleStore';
 import {
   type ManageableServiceProviderDetail,
   type RollenErweiterungenUebersicht,
@@ -349,6 +354,17 @@ export class DoFactory {
       systemrechte: [],
       administeredBySchulstrukturknotenName: this.getFakeSchuleName(),
       administeredBySchulstrukturknotenKennung: faker.string.numeric(7),
+      ...props,
+    };
+  }
+
+  public static getTranslatedRolleWithAttrs(props?: Partial<TranslatedRolleWithAttrs>): TranslatedRolleWithAttrs {
+    const rolle: Rolle = this.getRolle();
+    return {
+      value: rolle.id,
+      title: rolle.name,
+      rollenart: rolle.rollenart,
+      merkmale: rolle.merkmale,
       ...props,
     };
   }
