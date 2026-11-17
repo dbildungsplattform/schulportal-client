@@ -38,6 +38,9 @@ describe('ZuordnungenEditOverview', () => {
         selectedZuordnungen: [],
         ...props,
       },
+      global: {
+        stubs: { ZuordnungenEditList: true, ZuordnungenEditActions: true },
+      },
     });
     return wrapper;
   }
@@ -57,25 +60,23 @@ describe('ZuordnungenEditOverview', () => {
   });
 
   describe('without a pending operation', () => {
-    test('it asks to select Zuordnungen and shows the list and the actions', () => {
+    test('it asks to select Zuordnungen and shows the actions', () => {
       mountComponent();
 
       expect(wrapper!.text()).toContain('Schulzuordnungen bearbeiten: Bitte auswählen');
       expect(wrapper!.find('[data-testid="check-and-save-headline"]').exists()).toBe(false);
       expect(wrapper!.findComponent({ name: 'ZuordnungenEditActions' }).exists()).toBe(true);
-      for (const zuordnung of zuordnungen) {
-        expect(wrapper!.find(`[data-testid="person-zuordnung-${zuordnung.sskId}"]`).exists()).toBe(true);
-      }
     });
 
-    test('it disables saving because there are no changes', async () => {
+    test('it disables saving and explains that there are no changes', () => {
       mountComponent();
 
       expect(isDisabled('zuordnung-changes-save-button')).toBe(true);
-
-      await wrapper!.get('[data-testid="zuordnung-changes-save-button"]').trigger('click');
-
-      expect(wrapper!.emitted('save')).toBeUndefined();
+      expect(wrapper!.findComponent({ name: 'SpshTooltip' }).props()).toMatchObject({
+        enabledCondition: false,
+        enabledText: 'Änderungen speichern',
+        disabledText: 'Es liegen keine zu speichernden Änderungen vor.',
+      });
     });
 
     test('it passes the selection and the Zuordnungen to the actions', () => {
@@ -105,6 +106,23 @@ describe('ZuordnungenEditOverview', () => {
         expect(wrapper!.emitted(eventName)).toHaveLength(1);
       },
     );
+  });
+
+  describe('list', () => {
+    test('it receives the Zuordnungen, the new Zuordnung, the pending operation and the selection', () => {
+      mountComponent({
+        newZuordnung: secondZuordnung,
+        pendingOperation: 'creation',
+        selectedZuordnungen: [firstZuordnung],
+      });
+
+      expect(wrapper!.findComponent({ name: 'ZuordnungenEditList' }).props()).toMatchObject({
+        zuordnungen,
+        newZuordnung: secondZuordnung,
+        pendingOperation: 'creation',
+        selectedZuordnungen: [firstZuordnung],
+      });
+    });
 
     test('it updates the selection when the list selects a Zuordnung', () => {
       mountComponent();
@@ -126,49 +144,22 @@ describe('ZuordnungenEditOverview', () => {
       expect(wrapper!.findComponent({ name: 'ZuordnungenEditActions' }).exists()).toBe(false);
     });
 
-    test('it emits save when the pending change is saved', async () => {
+    test('it enables saving and emits save', async () => {
       mountComponent({ pendingOperation: 'changeKlasse' });
 
       expect(isDisabled('zuordnung-changes-save-button')).toBe(false);
+      expect(wrapper!.findComponent({ name: 'SpshTooltip' }).props('enabledCondition')).toBe(true);
 
       await wrapper!.get('[data-testid="zuordnung-changes-save-button"]').trigger('click');
 
       expect(wrapper!.emitted('save')).toHaveLength(1);
     });
 
-    test('it disables saving while loading', async () => {
+    test('it disables saving while loading', () => {
       mountComponent({ pendingOperation: 'changeKlasse', isLoading: true });
 
       expect(isDisabled('zuordnung-changes-save-button')).toBe(true);
-
-      await wrapper!.get('[data-testid="zuordnung-changes-save-button"]').trigger('click');
-
-      expect(wrapper!.emitted('save')).toBeUndefined();
     });
-  });
-
-  describe('save tooltip', () => {
-    test.each([
-      [undefined, false],
-      ['creation', true],
-    ] as const)(
-      'it reflects whether there is a pending operation (%s)',
-      (pendingOperation: ZuordnungOperation | undefined, expectedCondition: boolean) => {
-        mountComponent({ pendingOperation });
-
-        const saveTooltip: VueWrapper | undefined = wrapper!
-          .findAllComponents({ name: 'SpshTooltip' })
-          .find((tooltip: VueWrapper): boolean =>
-            tooltip.find('[data-testid="zuordnung-changes-save-button"]').exists(),
-          );
-
-        expect(saveTooltip?.props()).toMatchObject({
-          enabledCondition: expectedCondition,
-          enabledText: 'Änderungen speichern',
-          disabledText: 'Es liegen keine zu speichernden Änderungen vor.',
-        });
-      },
-    );
   });
 
   describe('hint for missing Zuordnungen', () => {

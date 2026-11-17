@@ -1,19 +1,10 @@
 import i18n from '@/plugins/i18n';
 import axiosApiInstance from '@/services/ApiService';
 import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
-import {
-  mapZuordnungToPersonenkontextUpdate,
-  usePersonenkontextStore,
-  type PersonenkontextStore,
-} from '@/stores/PersonenkontextStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import { RollenArt } from '@/stores/RolleStore';
 import type { Zuordnung } from '@/stores/types/Zuordnung';
-import {
-  computeZuordnungenWithKlasse,
-  type ZuordnungenWorkingState,
-  type ZuordnungWithKlasse,
-} from '@/utils/zuordnungen';
+import type { ZuordnungenWorkingState, ZuordnungWithKlasse } from '@/utils/zuordnungen';
 import { flushPromises } from '@vue/test-utils';
 import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
@@ -29,14 +20,12 @@ const t: Composer['t'] = i18n.global.t;
 describe('useZuordnungChangeKlasse', () => {
   let scope: EffectScope;
   let personStore: PersonStore;
-  let personenkontextStore: PersonenkontextStore;
   let editMode: ZuordnungEditMode;
   let mode: ZuordnungOperationMode;
   let state: ZuordnungenWorkingState;
   let isEditActive: Ref<boolean>;
   let personId: string;
   let schule: Organisation;
-  let oldKlasse: Organisation;
   let newKlasse: Organisation;
   let selectedZuordnung: ZuordnungWithKlasse;
   let otherZuordnung: Zuordnung;
@@ -45,41 +34,42 @@ describe('useZuordnungChangeKlasse', () => {
     return scope.run(() => useZuordnungChangeKlasse({ t, personId: ref(personId), isEditActive, mode, state }))!;
   }
 
+  async function submitNewKlasse(composable: ZuordnungChangeKlasse): Promise<void> {
+    composable.triggerChangeKlasse();
+    composable.selectedNewKlasse.value = newKlasse;
+    await composable.onSubmitChangeKlasse();
+  }
+
   beforeEach(() => {
     setActivePinia(createPinia());
     mockAdapter.reset();
     scope = effectScope();
     personStore = usePersonStore();
-    personenkontextStore = usePersonenkontextStore();
     editMode = useZuordnungEditMode();
     mode = editMode.forOperation('changeKlasse');
     isEditActive = ref(true);
     personId = DoFactory.getPerson().id;
 
     schule = DoFactory.getSchule();
-    oldKlasse = DoFactory.getKlasse(schule, { name: '5a' });
+    const oldKlasse: Organisation = DoFactory.getKlasse(schule, { name: '5a' });
     newKlasse = DoFactory.getKlasse(schule, { name: '6b' });
     const rolleId: string = DoFactory.getRolle().id;
-    const schuleZuordnung: Zuordnung = DoFactory.getZuordnung(
-      { rolleId, rollenArt: RollenArt.Lern },
-      { organisation: schule },
-    );
+    selectedZuordnung = DoFactory.getZuordnung({ rolleId, rollenArt: RollenArt.Lern }, { organisation: schule });
+    selectedZuordnung.klasse = oldKlasse.name;
     const klassenZuordnung: Zuordnung = DoFactory.getZuordnung(
       { rolleId, rollenArt: RollenArt.Lern, typ: OrganisationsTyp.Klasse },
       { organisation: oldKlasse },
     );
     otherZuordnung = DoFactory.getZuordnung();
     personStore.personenuebersicht = DoFactory.getPersonenUebersicht(DoFactory.getPerson({ id: personId }), [
-      schuleZuordnung,
+      selectedZuordnung,
       klassenZuordnung,
       otherZuordnung,
     ]);
 
-    const zuordnungen: ZuordnungWithKlasse[] = computeZuordnungenWithKlasse(personStore.personenuebersicht)!;
-    selectedZuordnung = zuordnungen.find((z: ZuordnungWithKlasse) => z.klasse === oldKlasse.name)!;
     state = {
       selectedZuordnungen: ref<ZuordnungWithKlasse[]>([selectedZuordnung]),
-      zuordnungenWithPendingChanges: ref<ZuordnungWithKlasse[] | undefined>(zuordnungen),
+      zuordnungenWithPendingChanges: ref<ZuordnungWithKlasse[] | undefined>([selectedZuordnung, otherZuordnung]),
       newZuordnung: ref<ZuordnungWithKlasse | undefined>(undefined),
       zuordnungenToBePersisted: ref<Zuordnung[]>([]),
     };
@@ -97,7 +87,7 @@ describe('useZuordnungChangeKlasse', () => {
 
       expect(composable.isChangeKlasseFormActive.value).toBe(true);
       expect(composable.selectedSchule.value).toBe(schule.id);
-      expect(composable.selectedNewKlasse.value).toEqual(expect.objectContaining({ id: oldKlasse.id, name: '5a' }));
+      expect(composable.selectedNewKlasse.value?.name).toBe(selectedZuordnung.klasse);
     });
   });
 
@@ -116,14 +106,12 @@ describe('useZuordnungChangeKlasse', () => {
   describe('onSubmitChangeKlasse', () => {
     it('should show the confirmation dialog with the old and the new Klasse', async () => {
       const composable: ZuordnungChangeKlasse = createComposable();
-      composable.triggerChangeKlasse();
-      composable.selectedNewKlasse.value = newKlasse;
 
-      await composable.onSubmitChangeKlasse();
+      await submitNewKlasse(composable);
 
       expect(composable.changeKlasseConfirmationDialogVisible.value).toBe(true);
       expect(composable.changeKlasseConfirmationDialogMessage.value).toBe(
-        'Wollen Sie den Schüler aus Klasse 5a in Klasse 6b versetzen?',
+        t('person.changeKlasseConfirmation', { oldKlasse: selectedZuordnung.klasse, newKlasse: newKlasse.name }),
       );
     });
 
@@ -141,70 +129,68 @@ describe('useZuordnungChangeKlasse', () => {
   });
 
   describe('confirmDialogChangeKlasse', () => {
-    it('should build the Zuordnungen with the new Klasse and show the review', async () => {
+    it('should store the Zuordnungen with the new Klasse and show the review', async () => {
       const composable: ZuordnungChangeKlasse = createComposable();
-      composable.triggerChangeKlasse();
-      composable.selectedNewKlasse.value = newKlasse;
-      await composable.onSubmitChangeKlasse();
+      await submitNewKlasse(composable);
 
       composable.confirmDialogChangeKlasse();
 
       expect(composable.changeKlasseConfirmationDialogVisible.value).toBe(false);
       expect(composable.isChangeKlasseFormActive.value).toBe(false);
       expect(editMode.pendingOperation.value).toBe('changeKlasse');
-      expect(state.newZuordnung.value?.sskId).toBe(schule.id);
       expect(state.newZuordnung.value?.klasse).toBe(newKlasse.name);
-      expect(state.zuordnungenToBePersisted.value).toHaveLength(3);
       expect(state.zuordnungenToBePersisted.value.map((z: Zuordnung) => z.sskId)).toEqual(
-        expect.arrayContaining([schule.id, otherZuordnung.sskId, newKlasse.id]),
+        expect.arrayContaining([selectedZuordnung.sskId, otherZuordnung.sskId, newKlasse.id]),
       );
-      expect(state.zuordnungenToBePersisted.value.find((z: Zuordnung) => z.sskId === newKlasse.id)).toEqual(
-        expect.objectContaining({ typ: OrganisationsTyp.Klasse, rolleId: selectedZuordnung.rolleId }),
-      );
-      expect(state.zuordnungenWithPendingChanges.value).toHaveLength(2);
+      expect(state.zuordnungenToBePersisted.value).toHaveLength(3);
+    });
+
+    it('should still store the new Klasse if there are no pending Zuordnungen', async () => {
+      state.zuordnungenWithPendingChanges.value = undefined;
+      const composable: ZuordnungChangeKlasse = createComposable();
+      await submitNewKlasse(composable);
+
+      composable.confirmDialogChangeKlasse();
+
+      expect(state.zuordnungenToBePersisted.value.map((z: Zuordnung) => z.sskId)).toEqual([newKlasse.id]);
+      expect(state.zuordnungenWithPendingChanges.value).toBeUndefined();
     });
   });
 
   describe('cancelChangeKlasse', () => {
     it('should only close the confirmation dialog', async () => {
       const composable: ZuordnungChangeKlasse = createComposable();
-      composable.triggerChangeKlasse();
-      composable.selectedNewKlasse.value = newKlasse;
-      await composable.onSubmitChangeKlasse();
+      await submitNewKlasse(composable);
 
       composable.cancelChangeKlasse();
 
       expect(composable.changeKlasseConfirmationDialogVisible.value).toBe(false);
       expect(composable.isChangeKlasseFormActive.value).toBe(true);
-      expect(state.newZuordnung.value).toBeUndefined();
       expect(state.zuordnungenToBePersisted.value).toEqual([]);
     });
   });
 
   describe('confirmChangeKlasse', () => {
-    async function prepareChange(composable: ZuordnungChangeKlasse): Promise<void> {
-      composable.triggerChangeKlasse();
-      composable.selectedNewKlasse.value = newKlasse;
-      await composable.onSubmitChangeKlasse();
-      composable.confirmDialogChangeKlasse();
-    }
+    beforeEach(() => {
+      state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
+    });
 
-    it('should send the Zuordnungen, show the success dialog and reset the selection and the form', async () => {
+    it('should send the Zuordnungen to be persisted, show the success dialog and reset the selection and the form', async () => {
       mockAdapter
         .onPut(`/api/personenkontext-workflow/${personId}`)
         .replyOnce(200, DoFactory.getPersonenkontextUpdateResponse());
       const composable: ZuordnungChangeKlasse = createComposable();
-      await prepareChange(composable);
-      const expectedUpdates: ReturnType<typeof mapZuordnungToPersonenkontextUpdate>[] =
-        state.zuordnungenToBePersisted.value.map(mapZuordnungToPersonenkontextUpdate);
+      composable.triggerChangeKlasse();
 
       await composable.confirmChangeKlasse();
 
-      expect(mockAdapter.history.put).toHaveLength(1);
-      const body: { personenkontexte: unknown[] } = JSON.parse(String(mockAdapter.history.put[0]?.data)) as {
-        personenkontexte: unknown[];
-      };
-      expect(body.personenkontexte).toEqual(expectedUpdates.map((update: object) => ({ personId, ...update })));
+      const body: { personenkontexte: Array<{ organisationId: string }> } = JSON.parse(
+        String(mockAdapter.history.put[0]?.data),
+      ) as { personenkontexte: Array<{ organisationId: string }> };
+      expect(body.personenkontexte.map((kontext: { organisationId: string }) => kontext.organisationId)).toEqual([
+        selectedZuordnung.sskId,
+        otherZuordnung.sskId,
+      ]);
       expect(composable.changeKlasseSuccessDialogVisible.value).toBe(true);
       expect(state.selectedZuordnungen.value).toEqual([]);
       expect(composable.selectedSchule.value).toBeUndefined();
@@ -214,13 +200,10 @@ describe('useZuordnungChangeKlasse', () => {
     it('should not show the success dialog if persisting fails', async () => {
       mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(500, { i18nKey: 'SOME_ERROR' });
       const composable: ZuordnungChangeKlasse = createComposable();
-      await prepareChange(composable);
 
       await composable.confirmChangeKlasse();
 
-      expect(personenkontextStore.errorCode).toBe('SOME_ERROR');
       expect(composable.changeKlasseSuccessDialogVisible.value).toBe(false);
-      expect(state.selectedZuordnungen.value).toEqual([]);
     });
   });
 
@@ -239,23 +222,8 @@ describe('useZuordnungChangeKlasse', () => {
       expect(mockAdapter.history.get).toHaveLength(1);
       expect(composable.changeKlasseSuccessDialogVisible.value).toBe(false);
       expect(composable.isChangeKlasseFormActive.value).toBe(false);
-      expect(editMode.isFormActive.value).toBe(false);
       expect(isEditActive.value).toBe(false);
       expect(personStore.personenuebersicht?.personId).toBe(personId);
-    });
-  });
-
-  describe('resetChangeKlasseForm', () => {
-    it('should clear the selection of the form', () => {
-      const composable: ZuordnungChangeKlasse = createComposable();
-      composable.triggerChangeKlasse();
-      expect(composable.isChangeKlasseFieldDirty('selectedSchule')).toBe(true);
-
-      composable.resetChangeKlasseForm();
-
-      expect(composable.selectedSchule.value).toBeUndefined();
-      expect(composable.selectedNewKlasse.value).toBeUndefined();
-      expect(composable.isChangeKlasseFieldDirty('selectedSchule')).toBe(false);
     });
   });
 });

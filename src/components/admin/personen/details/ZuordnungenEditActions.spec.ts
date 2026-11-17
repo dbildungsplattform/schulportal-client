@@ -25,6 +25,9 @@ describe('ZuordnungenEditActions', () => {
         hasKlassenZuordnung: false,
         ...props,
       },
+      global: {
+        stubs: { PersonenkontextDelete: true },
+      },
     });
     return wrapper;
   }
@@ -94,26 +97,30 @@ describe('ZuordnungenEditActions', () => {
   });
 
   describe('delete button', () => {
-    test('it is disabled without a selection and uses the default disabled tooltip', () => {
-      mountComponent({ selectedCount: 0 });
+    test.each([
+      { selectedCount: 0, isDeleteExternZuordnungDisabled: false, disabled: true, disabledTooltipText: undefined },
+      { selectedCount: 1, isDeleteExternZuordnungDisabled: false, disabled: false, disabledTooltipText: undefined },
+      { selectedCount: 1, isDeleteExternZuordnungDisabled: true, disabled: true, disabledTooltipText: '' },
+    ])(
+      'it passes disabled=$disabled and tooltip text "$disabledTooltipText" for selection=$selectedCount and extern deletion disabled=$isDeleteExternZuordnungDisabled',
+      ({
+        selectedCount,
+        isDeleteExternZuordnungDisabled,
+        disabled,
+        disabledTooltipText,
+      }: Pick<EditActionsProps, 'selectedCount' | 'isDeleteExternZuordnungDisabled'> & {
+        disabled: boolean;
+        disabledTooltipText: string | undefined;
+      }) => {
+        mountComponent({ selectedCount, isDeleteExternZuordnungDisabled, editableZuordnungenCount: 3 });
 
-      expect(isDisabled('open-zuordnung-delete-dialog-button')).toBe(true);
-      expect(wrapper!.findComponent({ name: 'PersonenkontextDelete' }).props('disabledTooltipText')).toBeUndefined();
-    });
-
-    test('it is enabled with a selection and passes the editable Zuordnungen count on', () => {
-      mountComponent({ selectedCount: 1, editableZuordnungenCount: 3 });
-
-      expect(isDisabled('open-zuordnung-delete-dialog-button')).toBe(false);
-      expect(wrapper!.findComponent({ name: 'PersonenkontextDelete' }).props('zuordnungCount')).toBe(3);
-    });
-
-    test('it is disabled without tooltip text when deleting extern Zuordnungen is not allowed', () => {
-      mountComponent({ selectedCount: 1, isDeleteExternZuordnungDisabled: true });
-
-      expect(isDisabled('open-zuordnung-delete-dialog-button')).toBe(true);
-      expect(wrapper!.findComponent({ name: 'PersonenkontextDelete' }).props('disabledTooltipText')).toBe('');
-    });
+        expect(wrapper!.findComponent({ name: 'PersonenkontextDelete' }).props()).toMatchObject({
+          disabled,
+          disabledTooltipText,
+          zuordnungCount: 3,
+        });
+      },
+    );
 
     test('it emits delete when the deletion is confirmed', () => {
       mountComponent({ selectedCount: 1 });

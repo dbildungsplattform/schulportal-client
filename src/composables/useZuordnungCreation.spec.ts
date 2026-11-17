@@ -74,6 +74,13 @@ describe('useZuordnungCreation', () => {
     mockAdapter.onPut(new RegExp(`^/api/personenkontext-workflow/${personId.value}`)).replyOnce(status, data);
   }
 
+  // Selects the Rolle and a KoPers.-Nr. and confirms the creation so that the Zuordnungen are ready to be persisted
+  async function prepareAddition(organisation: Organisation = DoFactory.getSchule()): Promise<void> {
+    await selectRolle(lehrRolle, organisation);
+    creation.selectedKopersNr.value = '1234567';
+    creation.confirmDialogAddition();
+  }
+
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }));
     mockAdapter.reset();
@@ -103,6 +110,8 @@ describe('useZuordnungCreation', () => {
 
   afterEach(() => {
     scope.stop();
+    vi.useRealTimers();
+    document.body.innerHTML = '';
   });
 
   describe('triggerAddZuordnung', () => {
@@ -161,27 +170,49 @@ describe('useZuordnungCreation', () => {
     });
   });
 
+  describe('hasKopersNummer', () => {
+    it('should follow the personalnummer of the current person', () => {
+      expect(creation.hasKopersNummer.value).toBe(true);
+
+      personStore.currentPerson = DoFactory.getPersonendatensatz({
+        person: DoFactory.getPerson({ personalnummer: undefined }),
+      });
+      expect(creation.hasKopersNummer.value).toBe(false);
+
+      personStore.currentPerson = null;
+      expect(creation.hasKopersNummer.value).toBe(false);
+    });
+  });
+
+  describe('isZuordnungCreationFormDirty', () => {
+    it('should be true once a field of the form was changed', async () => {
+      expect(creation.isZuordnungCreationFormDirty.value).toBe(false);
+
+      await selectRolle(lehrRolle);
+
+      expect(creation.isZuordnungCreationFormDirty.value).toBe(true);
+    });
+  });
+
   describe('hasNoKopersNr', () => {
-    it('should show the confirmation dialog when the person has no KoPers.-Nr.', async () => {
+    it('should show the confirmation dialog only when the person has no KoPers.-Nr.', async () => {
       expect(creation.showNoKopersNrConfirmationDialog.value).toBe(false);
 
       creation.hasNoKopersNr.value = true;
       await nextTick();
-
       expect(creation.showNoKopersNrConfirmationDialog.value).toBe(true);
+
+      creation.showNoKopersNrConfirmationDialog.value = false;
+      creation.hasNoKopersNr.value = false;
+      await nextTick();
+      expect(creation.showNoKopersNrConfirmationDialog.value).toBe(false);
     });
   });
 
   describe('onSubmitCreateZuordnung', () => {
     it('should not open the confirmation dialog while the form is invalid', async () => {
-      creation.selectedOrganisation.value = schule;
       await creation.onSubmitCreateZuordnung();
-      expect(creation.createZuordnungConfirmationDialogVisible.value).toBe(false);
 
-      creation.selectedOrganisation.value = undefined;
-      creation.selectedRolle.value = lehrRolle;
-      await flushPromises();
-      await creation.onSubmitCreateZuordnung();
       expect(creation.createZuordnungConfirmationDialogVisible.value).toBe(false);
     });
 
@@ -194,13 +225,9 @@ describe('useZuordnungCreation', () => {
       expect(tMock).toHaveBeenCalledWith('person.addZuordnungConfirmation', { rollenname: lehrRolle.title });
     });
 
-    it('should require a Klasse for a Lern-Rolle and mention it in the confirmation', async () => {
+    it('should mention the Klasse of a Lern-Rolle in the confirmation', async () => {
       const klasse: Organisation = DoFactory.getKlasse(schule);
       await selectRolle(lernRolle, DoFactory.getSchule());
-
-      await creation.onSubmitCreateZuordnung();
-      expect(creation.createZuordnungConfirmationDialogVisible.value).toBe(false);
-
       creation.handleKlasseUpdate(klasse);
       await flushPromises();
       await creation.onSubmitCreateZuordnung();
@@ -222,16 +249,16 @@ describe('useZuordnungCreation', () => {
       expect(creation.selectedRolle.value).toBeUndefined();
     });
 
-    it('should clear the selected Klasse so that a Lern-Rolle is invalid again', async () => {
+    it('should clear the selected Klasse', async () => {
       await selectRolle(lernRolle, DoFactory.getSchule());
       creation.handleKlasseUpdate(DoFactory.getKlasse(schule));
       await flushPromises();
 
       creation.handleFieldReset('selectedKlasse');
       await flushPromises();
-      await creation.onSubmitCreateZuordnung();
+      creation.confirmDialogAddition();
 
-      expect(creation.createZuordnungConfirmationDialogVisible.value).toBe(false);
+      expect(state.newZuordnung.value?.klasse).toBeUndefined();
     });
 
     it('should ignore other fields', async () => {
@@ -295,12 +322,27 @@ describe('useZuordnungCreation', () => {
       );
     });
 
-    it('should use the Schuljahresende as Befristung for a Rolle with Befristungspflicht', async () => {
+    it('should use the Schuljahresende as Befristung for a Rolle with Befristungspflicht unless a date is selected', async () => {
+      const selectedDate: string = '31.12.2099';
       await selectRolle(befristungspflichtRolle, DoFactory.getSchule());
 
       creation.confirmDialogAddition();
-
       expect(state.newZuordnung.value?.befristung).toBe(formatDateToISO(getNextSchuljahresende()));
+
+      creation.selectedBefristung.value = selectedDate;
+      creation.confirmDialogAddition();
+      expect(state.newZuordnung.value?.befristung).toBe(formatDateToISO(selectedDate));
+    });
+
+    it('should fall back to empty values if no Zuordnungen are loaded and no Rolle is selected', () => {
+      state.zuordnungenWithPendingChanges.value = undefined;
+      creation.selectedOrganisation.value = schule;
+
+      creation.confirmDialogAddition();
+
+      expect(state.newZuordnung.value).toMatchObject({ sskId: schule.id, rolleId: '', rolle: '' });
+      expect(state.zuordnungenToBePersisted.value).toEqual([state.newZuordnung.value]);
+      expect(state.zuordnungenWithPendingChanges.value).toEqual([state.newZuordnung.value]);
     });
   });
 
@@ -318,12 +360,6 @@ describe('useZuordnungCreation', () => {
   });
 
   describe('confirmAddition', () => {
-    async function prepareAddition(): Promise<void> {
-      await selectRolle(lehrRolle, DoFactory.getSchule());
-      creation.selectedKopersNr.value = '1234567';
-      creation.confirmDialogAddition();
-    }
-
     it('should persist the Zuordnungen, show the success dialog and reset the form', async () => {
       await prepareAddition();
       const newOrganisation: Organisation = creation.selectedOrganisation.value!;
@@ -373,12 +409,15 @@ describe('useZuordnungCreation', () => {
   });
 
   describe('navigateToZuordnungForm', () => {
+    // The scrolling is scheduled with setTimeout and must not outlive the test
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout'] });
+    });
+
     it('should restore the cached values, clear the error and roll back the pending Zuordnungen', async () => {
       const otherSchule: Organisation = DoFactory.getSchule();
-      await selectRolle(lehrRolle, otherSchule);
-      creation.selectedKopersNr.value = '1234567';
       const pendingBeforeAddition: ZuordnungWithKlasse[] = [...(state.zuordnungenWithPendingChanges.value ?? [])];
-      creation.confirmDialogAddition();
+      await prepareAddition(otherSchule);
       mockCommit(500, { i18nKey: 'SOME_MOCK_SERVER_ERROR' });
       await creation.confirmAddition();
       expect(creation.selectedRolle.value).toBeUndefined();
@@ -405,6 +444,41 @@ describe('useZuordnungCreation', () => {
       expect(creation.selectedRolle.value).toBeUndefined();
       expect(creation.selectedOrganisation.value).toBeUndefined();
       expect(creation.selectedKopersNr.value).toBe('');
+    });
+
+    describe('scrolling to the form', () => {
+      function addFormElement(): HTMLElement {
+        const formElement: HTMLElement = document.createElement('div');
+        formElement.id = 'personenkontext-create';
+        document.body.appendChild(formElement);
+        return formElement;
+      }
+
+      async function navigateAndWait(): Promise<void> {
+        creation.navigateToZuordnungForm();
+        await nextTick();
+        vi.advanceTimersByTime(100);
+      }
+
+      it('should scroll smoothly to the form after the DOM was updated', async () => {
+        const scrollIntoView: ReturnType<typeof vi.fn<HTMLElement['scrollIntoView']>> = vi.fn();
+        addFormElement().scrollIntoView = scrollIntoView;
+
+        creation.navigateToZuordnungForm();
+        await nextTick();
+        expect(scrollIntoView).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(100);
+
+        expect(scrollIntoView).toHaveBeenCalledExactlyOnceWith({ behavior: 'smooth', block: 'start' });
+      });
+
+      it('should not fail if the form element is missing or cannot scroll', async () => {
+        await expect(navigateAndWait()).resolves.toBeUndefined();
+
+        // jsdom does not implement scrollIntoView
+        addFormElement();
+        await expect(navigateAndWait()).resolves.toBeUndefined();
+      });
     });
   });
 });

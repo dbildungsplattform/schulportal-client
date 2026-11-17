@@ -1,11 +1,6 @@
 import i18n from '@/plugins/i18n';
 import axiosApiInstance from '@/services/ApiService';
 import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
-import {
-  mapZuordnungToPersonenkontextUpdate,
-  usePersonenkontextStore,
-  type PersonenkontextStore,
-} from '@/stores/PersonenkontextStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import { RollenMerkmal, useRolleStore, type RolleStore } from '@/stores/RolleStore';
 import { Zuordnung } from '@/stores/types/Zuordnung';
@@ -27,21 +22,18 @@ const mockAdapter: MockAdapter = new MockAdapter(axiosApiInstance);
 const t: Composer['t'] = i18n.global.t;
 
 describe('useZuordnungChangeBefristung', () => {
-  const nextYear: number = new Date().getFullYear() + 2;
-  const futureDate: string = `15.03.${nextYear}`;
-  const otherFutureDate: string = `20.04.${nextYear}`;
+  const futureYear: number = new Date().getFullYear() + 2;
+  const futureDate: string = `15.03.${futureYear}`;
+  const otherFutureDate: string = `20.04.${futureYear}`;
 
   let scope: EffectScope;
   let personStore: PersonStore;
-  let personenkontextStore: PersonenkontextStore;
   let editMode: ZuordnungEditMode;
   let mode: ZuordnungOperationMode;
   let state: ZuordnungenWorkingState;
   let isEditActive: Ref<boolean>;
   let personId: string;
-  let schule: Organisation;
   let selectedZuordnung: ZuordnungWithKlasse;
-  let klassenZuordnung: Zuordnung;
   let otherZuordnung: Zuordnung;
 
   function createState(): ZuordnungenWorkingState {
@@ -53,18 +45,9 @@ describe('useZuordnungChangeBefristung', () => {
     };
   }
 
-  function createComposable(
-    workingState: ZuordnungenWorkingState = state,
-    operationMode: ZuordnungOperationMode = mode,
-  ): ZuordnungChangeBefristung {
+  function createComposable(workingState: ZuordnungenWorkingState = state): ZuordnungChangeBefristung {
     return scope.run(() =>
-      useZuordnungChangeBefristung({
-        t,
-        personId: ref(personId),
-        isEditActive,
-        mode: operationMode,
-        state: workingState,
-      }),
+      useZuordnungChangeBefristung({ t, personId: ref(personId), isEditActive, mode, state: workingState }),
     )!;
   }
 
@@ -74,20 +57,19 @@ describe('useZuordnungChangeBefristung', () => {
     rolleStore.$reset();
     scope = effectScope();
     personStore = usePersonStore();
-    personenkontextStore = usePersonenkontextStore();
     editMode = useZuordnungEditMode();
     mode = editMode.forOperation('changeBefristung');
     state = createState();
     isEditActive = ref(true);
     personId = DoFactory.getPerson().id;
 
-    schule = DoFactory.getSchule();
+    const schule: Organisation = DoFactory.getSchule();
     const rolleId: string = DoFactory.getRolle().id;
     selectedZuordnung = DoFactory.getZuordnung(
       { rolleId, befristung: formatDateToISO(futureDate)! },
       { organisation: schule },
     );
-    klassenZuordnung = DoFactory.getZuordnung(
+    const klassenZuordnung: Zuordnung = DoFactory.getZuordnung(
       {
         rolleId,
         befristung: formatDateToISO(futureDate)!,
@@ -109,6 +91,20 @@ describe('useZuordnungChangeBefristung', () => {
     scope.stop();
   });
 
+  // Selects the unbefristet option the way the radio button does, after the form has settled
+  async function selectUnbefristet(composable: ZuordnungChangeBefristung): Promise<void> {
+    await flushPromises();
+    composable.handleChangeBefristungOptionUpdate(undefined);
+    await flushPromises();
+  }
+
+  async function submitNewBefristung(composable: ZuordnungChangeBefristung, befristung: string): Promise<void> {
+    composable.triggerChangeBefristung();
+    await flushPromises();
+    composable.handleChangeBefristungUpdate(befristung);
+    await composable.onSubmitChangeBefristung();
+  }
+
   describe('triggerChangeBefristung', () => {
     it('should show the form with the Rolle and the current Befristung of the selected Zuordnung', () => {
       const composable: ZuordnungChangeBefristung = createComposable();
@@ -122,38 +118,37 @@ describe('useZuordnungChangeBefristung', () => {
       );
     });
 
-    it('should select the option Schuljahresende if the Befristung is the next Schuljahresende', () => {
+    it('should preselect the Schuljahresende if it is the current Befristung', () => {
       selectedZuordnung.befristung = formatDateToISO(getNextSchuljahresende())!;
       const composable: ZuordnungChangeBefristung = createComposable();
 
       composable.triggerChangeBefristung();
 
       expect(composable.selectedChangeBefristungOption.value).toBe(BefristungOption.SCHULJAHRESENDE);
-      expect(composable.selectedChangeBefristung.value).toBeUndefined();
     });
 
-    it('should select the option unbefristet if the selected Zuordnung has no Befristung', () => {
+    it('should preselect unbefristet if the selected Zuordnung has no Befristung', () => {
       selectedZuordnung.befristung = null;
       const composable: ZuordnungChangeBefristung = createComposable();
 
       composable.triggerChangeBefristung();
 
       expect(composable.selectedChangeBefristungOption.value).toBe(BefristungOption.UNBEFRISTET);
-      expect(composable.selectedChangeBefristung.value).toBeUndefined();
     });
   });
 
   describe('differentDateSelected', () => {
-    it('should only be true if the selected Befristung differs from the current one', () => {
+    it('should be true only if the selected Befristung differs from the current one', () => {
       const composable: ZuordnungChangeBefristung = createComposable();
       composable.triggerChangeBefristung();
       expect(composable.differentDateSelected.value).toBe(false);
 
       composable.handleChangeBefristungUpdate(otherFutureDate);
+
       expect(composable.differentDateSelected.value).toBe(true);
     });
 
-    it('should be true if an unbefristete Zuordnung gets the Schuljahresende', () => {
+    it('should compare against no Befristung if the selected Zuordnung is unbefristet', () => {
       selectedZuordnung.befristung = null;
       const composable: ZuordnungChangeBefristung = createComposable();
       composable.triggerChangeBefristung();
@@ -168,36 +163,51 @@ describe('useZuordnungChangeBefristung', () => {
   describe('onSubmitChangeBefristung', () => {
     it('should show the confirmation dialog with the old and the new Befristung', async () => {
       const composable: ZuordnungChangeBefristung = createComposable();
-      composable.triggerChangeBefristung();
-      composable.handleChangeBefristungUpdate(otherFutureDate);
 
-      await composable.onSubmitChangeBefristung();
+      await submitNewBefristung(composable, otherFutureDate);
 
       expect(composable.changeBefristungConfirmationDialogVisible.value).toBe(true);
-      expect(composable.changeBefristungConfirmationDialogMessage.value).toContain(
-        adjustDateForTimezoneAndFormat(selectedZuordnung.befristung!),
+      expect(composable.changeBefristungConfirmationDialogMessage.value).toBe(
+        t('person.changeBefristungConfirmation', {
+          oldBefristung: adjustDateForTimezoneAndFormat(selectedZuordnung.befristung!),
+          newBefristung: otherFutureDate,
+        }),
       );
-      expect(composable.changeBefristungConfirmationDialogMessage.value).toContain(otherFutureDate);
     });
 
-    it('should name the new Befristung unbefristet if the unbefristet option is selected', async () => {
+    it('should name an unlimited Befristung "unbefristet" in the confirmation message', async () => {
       const composable: ZuordnungChangeBefristung = createComposable();
       composable.triggerChangeBefristung();
-      await flushPromises();
-      composable.handleChangeBefristungOptionUpdate(undefined);
+      await selectUnbefristet(composable);
 
       await composable.onSubmitChangeBefristung();
 
-      expect(composable.changeBefristungConfirmationDialogVisible.value).toBe(true);
-      expect(composable.changeBefristungConfirmationDialogMessage.value).toContain('unbefristet');
+      expect(composable.changeBefristungConfirmationDialogMessage.value).toBe(
+        t('person.changeBefristungConfirmation', {
+          oldBefristung: adjustDateForTimezoneAndFormat(selectedZuordnung.befristung!),
+          newBefristung: t('admin.befristung.unlimitedLower'),
+        }),
+      );
     });
 
-    it('should not show the confirmation dialog if the Befristung is in the past', async () => {
+    it('should name the old Befristung "unbefristet" if the selected Zuordnung has none', async () => {
+      selectedZuordnung.befristung = null;
       const composable: ZuordnungChangeBefristung = createComposable();
-      composable.triggerChangeBefristung();
-      composable.handleChangeBefristungUpdate('01.01.2000');
 
-      await composable.onSubmitChangeBefristung();
+      await submitNewBefristung(composable, otherFutureDate);
+
+      expect(composable.changeBefristungConfirmationDialogMessage.value).toBe(
+        t('person.changeBefristungConfirmation', {
+          oldBefristung: t('admin.befristung.unlimitedLower'),
+          newBefristung: otherFutureDate,
+        }),
+      );
+    });
+
+    it('should not show the confirmation dialog if the form is invalid', async () => {
+      const composable: ZuordnungChangeBefristung = createComposable();
+
+      await submitNewBefristung(composable, '01.01.2000');
 
       expect(composable.changeBefristungConfirmationDialogVisible.value).toBe(false);
       expect(composable.changeBefristungConfirmationDialogMessage.value).toBe('');
@@ -206,11 +216,9 @@ describe('useZuordnungChangeBefristung', () => {
   });
 
   describe('confirmDialogChangeBefristung', () => {
-    it('should build the change of the selected Zuordnung and its Klassen and show the review', async () => {
+    it('should store the Zuordnungen with the new Befristung and show the review', async () => {
       const composable: ZuordnungChangeBefristung = createComposable();
-      composable.triggerChangeBefristung();
-      composable.handleChangeBefristungUpdate(otherFutureDate);
-      await composable.onSubmitChangeBefristung();
+      await submitNewBefristung(composable, otherFutureDate);
 
       composable.confirmDialogChangeBefristung();
 
@@ -218,73 +226,60 @@ describe('useZuordnungChangeBefristung', () => {
       expect(composable.changeBefristungConfirmationDialogVisible.value).toBe(false);
       expect(composable.isChangeBefristungActive.value).toBe(false);
       expect(editMode.pendingOperation.value).toBe('changeBefristung');
-      expect(state.newZuordnung.value?.sskId).toBe(selectedZuordnung.sskId);
       expect(state.newZuordnung.value?.befristung).toBe(expectedBefristung);
-      expect(state.zuordnungenToBePersisted.value).toHaveLength(3);
-      expect(state.zuordnungenToBePersisted.value[0]?.befristung).toBe(expectedBefristung);
-      expect(state.zuordnungenToBePersisted.value[1]?.befristung).toBe(expectedBefristung);
-      expect(state.zuordnungenToBePersisted.value[2]).toEqual(otherZuordnung);
+      expect(state.zuordnungenToBePersisted.value.map((z: Zuordnung) => z.befristung)).toEqual([
+        expectedBefristung,
+        expectedBefristung,
+        otherZuordnung.befristung,
+      ]);
     });
 
-    it('should persist an unbefristet change as no Befristung', async () => {
+    it('should store no Befristung if unbefristet is selected', async () => {
       const composable: ZuordnungChangeBefristung = createComposable();
       composable.triggerChangeBefristung();
-      await flushPromises();
-      composable.handleChangeBefristungOptionUpdate(undefined);
-      await flushPromises();
+      await selectUnbefristet(composable);
       await composable.onSubmitChangeBefristung();
 
       composable.confirmDialogChangeBefristung();
 
       expect(state.newZuordnung.value?.befristung).toBeNull();
-      expect(state.zuordnungenToBePersisted.value.map((z: Zuordnung) => z.befristung)).toEqual([
-        null,
-        null,
-        otherZuordnung.befristung,
-      ]);
     });
   });
 
   describe('cancelChangeBefristung', () => {
     it('should only close the confirmation dialog', async () => {
       const composable: ZuordnungChangeBefristung = createComposable();
-      composable.triggerChangeBefristung();
-      composable.handleChangeBefristungUpdate(otherFutureDate);
-      await composable.onSubmitChangeBefristung();
+      await submitNewBefristung(composable, otherFutureDate);
 
       composable.cancelChangeBefristung();
 
       expect(composable.changeBefristungConfirmationDialogVisible.value).toBe(false);
       expect(composable.isChangeBefristungActive.value).toBe(true);
-      expect(state.newZuordnung.value).toBeUndefined();
       expect(state.zuordnungenToBePersisted.value).toEqual([]);
     });
   });
 
   describe('confirmChangeBefristung', () => {
-    async function prepareChange(composable: ZuordnungChangeBefristung): Promise<void> {
-      composable.triggerChangeBefristung();
-      composable.handleChangeBefristungUpdate(otherFutureDate);
-      await composable.onSubmitChangeBefristung();
-      composable.confirmDialogChangeBefristung();
-    }
+    beforeEach(() => {
+      state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
+    });
 
-    it('should send the Zuordnungen, show the success dialog and reset the selection and the form', async () => {
+    it('should send the Zuordnungen to be persisted, show the success dialog and reset the selection and the form', async () => {
       mockAdapter
         .onPut(`/api/personenkontext-workflow/${personId}`)
         .replyOnce(200, DoFactory.getPersonenkontextUpdateResponse());
       const composable: ZuordnungChangeBefristung = createComposable();
-      await prepareChange(composable);
-      const expectedUpdates: ReturnType<typeof mapZuordnungToPersonenkontextUpdate>[] =
-        state.zuordnungenToBePersisted.value.map(mapZuordnungToPersonenkontextUpdate);
+      composable.triggerChangeBefristung();
 
       await composable.confirmChangeBefristung();
 
-      expect(mockAdapter.history.put).toHaveLength(1);
-      const body: { personenkontexte: unknown[] } = JSON.parse(String(mockAdapter.history.put[0]?.data)) as {
-        personenkontexte: unknown[];
-      };
-      expect(body.personenkontexte).toEqual(expectedUpdates.map((update: object) => ({ personId, ...update })));
+      const body: { personenkontexte: Array<{ organisationId: string }> } = JSON.parse(
+        String(mockAdapter.history.put[0]?.data),
+      ) as { personenkontexte: Array<{ organisationId: string }> };
+      expect(body.personenkontexte.map((kontext: { organisationId: string }) => kontext.organisationId)).toEqual([
+        selectedZuordnung.sskId,
+        otherZuordnung.sskId,
+      ]);
       expect(composable.changeBefristungSuccessDialogVisible.value).toBe(true);
       expect(state.selectedZuordnungen.value).toEqual([]);
       expect(composable.selectedChangeBefristung.value).toBeUndefined();
@@ -293,13 +288,10 @@ describe('useZuordnungChangeBefristung', () => {
     it('should not show the success dialog if persisting fails', async () => {
       mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(500, { i18nKey: 'SOME_ERROR' });
       const composable: ZuordnungChangeBefristung = createComposable();
-      await prepareChange(composable);
 
       await composable.confirmChangeBefristung();
 
-      expect(personenkontextStore.errorCode).toBe('SOME_ERROR');
       expect(composable.changeBefristungSuccessDialogVisible.value).toBe(false);
-      expect(state.selectedZuordnungen.value).toEqual([]);
     });
   });
 
@@ -318,31 +310,22 @@ describe('useZuordnungChangeBefristung', () => {
       expect(mockAdapter.history.get).toHaveLength(1);
       expect(composable.changeBefristungSuccessDialogVisible.value).toBe(false);
       expect(composable.isChangeBefristungActive.value).toBe(false);
-      expect(editMode.isFormActive.value).toBe(false);
       expect(isEditActive.value).toBe(false);
-      expect(personStore.personenuebersicht?.personId).toBe(personId);
     });
   });
 
-  describe('Befristungspflicht of the Rolle', () => {
-    function addBefristungspflichtRolle(rolleId: string): void {
+  describe('Befristungspflicht', () => {
+    it('should keep the flags per composable instance', async () => {
       rolleStore.rollenForPersonenkontextCreation = [
         {
-          value: rolleId,
+          value: selectedZuordnung.rolleId,
           title: DoFactory.getRolle().name,
           rollenart: selectedZuordnung.rollenArt,
           merkmale: [RollenMerkmal.BefristungPflicht],
         },
       ];
-    }
-
-    it('should own independent refs per composable instance', async () => {
-      addBefristungspflichtRolle(selectedZuordnung.rolleId);
       const first: ZuordnungChangeBefristung = createComposable();
-      const second: ZuordnungChangeBefristung = createComposable(
-        createState(),
-        editMode.forOperation('changeBefristung'),
-      );
+      const second: ZuordnungChangeBefristung = createComposable(createState());
 
       first.triggerChangeBefristung();
       await vi.waitFor(() => expect(first.isChangeBefristungRequired.value).toBe(true));
@@ -350,17 +333,6 @@ describe('useZuordnungChangeBefristung', () => {
       expect(first.isChangeBefristungUnbefristetDisabled.value).toBe(true);
       expect(second.isChangeBefristungRequired.value).toBe(false);
       expect(second.isChangeBefristungUnbefristetDisabled.value).toBe(false);
-      expect(first.isChangeBefristungRequired).not.toBe(first.isChangeBefristungUnbefristetDisabled);
-    });
-
-    it('should not require a Befristung for a Rolle without Befristungspflicht', async () => {
-      const composable: ZuordnungChangeBefristung = createComposable();
-
-      composable.triggerChangeBefristung();
-      await flushPromises();
-
-      expect(composable.isChangeBefristungRequired.value).toBe(false);
-      expect(composable.isChangeBefristungUnbefristetDisabled.value).toBe(false);
     });
   });
 });

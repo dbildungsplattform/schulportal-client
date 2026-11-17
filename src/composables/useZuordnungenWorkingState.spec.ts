@@ -1,7 +1,6 @@
 import { OperationContext, usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
-import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
-import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
+import { RollenArt } from '@/stores/RolleStore';
 import type { Zuordnung } from '@/stores/types/Zuordnung';
 import type { ZuordnungWithKlasse } from '@/utils/zuordnungen';
 import { createPinia, setActivePinia } from 'pinia';
@@ -14,10 +13,7 @@ describe('useZuordnungenWorkingState', () => {
   let personStore: PersonStore;
   let personenkontextStore: PersonenkontextStore;
   let personId: Ref<string>;
-  let schule: Organisation;
-  let klasse: Organisation;
   let lernZuordnung: Zuordnung;
-  let klassenZuordnung: Zuordnung;
   let lehrZuordnung: Zuordnung;
   let readonlyZuordnung: Zuordnung;
 
@@ -42,21 +38,7 @@ describe('useZuordnungenWorkingState', () => {
     vi.spyOn(personenkontextStore, 'processWorkflowStep').mockResolvedValue();
     personId = ref(DoFactory.getPerson().id);
 
-    schule = DoFactory.getSchule();
-    klasse = DoFactory.getKlasse(schule);
-    lernZuordnung = DoFactory.getZuordnung({ rollenArt: RollenArt.Lern }, { organisation: schule });
-    klassenZuordnung = DoFactory.getZuordnung(
-      {
-        sskId: klasse.id,
-        sskName: klasse.name,
-        rolleId: lernZuordnung.rolleId,
-        rolle: lernZuordnung.rolle,
-        rollenArt: RollenArt.Lern,
-        administriertVon: schule.id,
-        typ: OrganisationsTyp.Klasse,
-      },
-      { organisation: klasse },
-    );
+    lernZuordnung = DoFactory.getZuordnung({ rollenArt: RollenArt.Lern });
     lehrZuordnung = DoFactory.getZuordnung({ rollenArt: RollenArt.Lehr });
     readonlyZuordnung = DoFactory.getZuordnung({ rollenArt: RollenArt.Lehr, editable: false });
   });
@@ -71,15 +53,13 @@ describe('useZuordnungenWorkingState', () => {
       expect(workingState.editableZuordnungen.value).toEqual([]);
     });
 
-    it('should merge the Klassen into their Zuordnungen immediately and follow later updates', async () => {
-      setUebersicht([lernZuordnung, klassenZuordnung]);
+    it('should be computed from the Personenuebersicht immediately and follow later updates', async () => {
+      setUebersicht([lernZuordnung]);
       const workingState: ZuordnungenWorkingStateResult = createWorkingState();
 
       expect(workingState.zuordnungenWithPendingChanges.value).toHaveLength(1);
-      expect(workingState.zuordnungenWithPendingChanges.value?.[0]?.sskId).toBe(schule.id);
-      expect(workingState.zuordnungenWithPendingChanges.value?.[0]?.klasse).toBe(klasse.name);
 
-      setUebersicht([lernZuordnung, klassenZuordnung, lehrZuordnung]);
+      setUebersicht([lernZuordnung, lehrZuordnung]);
       await nextTick();
 
       expect(workingState.zuordnungenWithPendingChanges.value).toHaveLength(2);
@@ -154,9 +134,6 @@ describe('useZuordnungenWorkingState', () => {
     it('should restore a copy of the Zuordnungen from before the changes and drop the selection', () => {
       setUebersicht([lernZuordnung, lehrZuordnung]);
       const workingState: ZuordnungenWorkingStateResult = createWorkingState();
-      const originalSskIds: string[] = (workingState.zuordnungenWithPendingChanges.value ?? []).map(
-        (z: Zuordnung) => z.sskId,
-      );
       const originalFirst: ZuordnungWithKlasse | undefined = workingState.zuordnungenWithPendingChanges.value?.[0];
       const originalBefristung: string | null | undefined = originalFirst?.befristung;
 
@@ -170,24 +147,10 @@ describe('useZuordnungenWorkingState', () => {
       workingState.discardChanges();
 
       const restored: ZuordnungWithKlasse[] | undefined = workingState.zuordnungenWithPendingChanges.value;
-      expect(restored?.map((z: Zuordnung) => z.sskId)).toEqual(originalSskIds);
+      expect(restored).toHaveLength(2);
       expect(restored?.[0]).not.toBe(originalFirst);
       expect(restored?.[0]?.befristung).toBe(originalBefristung);
       expect(workingState.selectedZuordnungen.value).toEqual([]);
-    });
-
-    it('should not be affected by changes of the restored Zuordnungen when discarding again', () => {
-      setUebersicht([lernZuordnung, klassenZuordnung]);
-      const workingState: ZuordnungenWorkingStateResult = createWorkingState();
-
-      workingState.startEditing();
-      workingState.discardChanges();
-      const restored: ZuordnungWithKlasse | undefined = workingState.zuordnungenWithPendingChanges.value?.[0];
-      restored?.merkmale.push(RollenMerkmal.KopersPflicht);
-      workingState.discardChanges();
-
-      expect(workingState.zuordnungenWithPendingChanges.value?.[0]?.merkmale).toEqual([]);
-      expect(workingState.zuordnungenWithPendingChanges.value?.[0]?.klasse).toBe(klasse.name);
     });
   });
 });

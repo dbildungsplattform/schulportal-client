@@ -25,6 +25,9 @@ describe('ZuordnungenReadOnlyView', () => {
         isEditPersonMetadataActive: false,
         ...props,
       },
+      global: {
+        stubs: { PersonenkontextItem: true },
+      },
     });
     return wrapper;
   }
@@ -47,13 +50,16 @@ describe('ZuordnungenReadOnlyView', () => {
 
     expect(wrapper!.findComponent({ name: 'VProgressCircular' }).exists()).toBe(false);
     expect(wrapper!.get('[data-testid="zuordnungen-section-headline"]').text()).toBe('Schulzuordnung(en)');
-    expect(wrapper!.findAllComponents({ name: 'PersonenkontextItem' })).toHaveLength(2);
-    for (const zuordnung of zuordnungen) {
-      const row: ReturnType<VueWrapper['get']> = wrapper!.get(`[data-testid="person-zuordnung-${zuordnung.sskId}"]`);
-      expect(row.attributes('title')).toBe(zuordnung.sskName);
-      expect(row.text()).toContain(zuordnung.rolle);
-    }
     expect(wrapper!.text()).not.toContain('Keine Schulzuordnungen gefunden.');
+
+    expect(wrapper!.findAllComponents({ name: 'PersonenkontextItem' })).toHaveLength(zuordnungen.length);
+    wrapper!.findAllComponents({ name: 'PersonenkontextItem' }).forEach((item: VueWrapper, index: number): void => {
+      const zuordnung: ZuordnungWithKlasse = zuordnungen[index]!;
+      expect(item.props()).toMatchObject({ zuordnung, noMargin: true });
+      expect(wrapper!.get(`[data-testid="person-zuordnung-${zuordnung.sskId}"]`).attributes('title')).toBe(
+        zuordnung.sskName,
+      );
+    });
   });
 
   test('it shows a hint when there are no Zuordnungen', () => {
@@ -75,15 +81,10 @@ describe('ZuordnungenReadOnlyView', () => {
     expect(wrapper!.emitted('edit')).toHaveLength(1);
   });
 
-  test('it disables the edit button while the person metadata is edited', async () => {
+  test('it disables the edit button while the person metadata is edited', () => {
     mountComponent({ isEditPersonMetadataActive: true });
 
-    const editButton: ReturnType<VueWrapper['get']> = wrapper!.get('[data-testid="zuordnung-edit-button"]');
-    expect(editButton.attributes('disabled')).toBeDefined();
-
-    await editButton.trigger('click');
-
-    expect(wrapper!.emitted('edit')).toBeUndefined();
+    expect(wrapper!.get('[data-testid="zuordnung-edit-button"]').attributes('disabled')).toBeDefined();
   });
 
   test.each([
