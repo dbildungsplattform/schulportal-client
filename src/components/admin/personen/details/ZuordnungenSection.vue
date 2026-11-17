@@ -37,7 +37,6 @@
   import {
     computed,
     onBeforeMount,
-    ref,
     toRef,
     watch,
     watchEffect,
@@ -74,10 +73,6 @@
     editableZuordnungen,
     canChangeKlasse,
   }: ZuordnungenWorkingStateResult = workingState;
-  const isUnbefristetDisabled: Ref<boolean, boolean> = ref(false);
-  const isBefristungRequired: Ref<boolean, boolean> = ref(false);
-
-  const calculatedBefristung: Ref<string | undefined> = ref('');
 
   const organisationen: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
 
@@ -94,6 +89,8 @@
 
   const {
     isZuordnungFormActive,
+    isUnbefristetDisabled,
+    isBefristungRequired,
     createSuccessDialogVisible,
     createZuordnungConfirmationDialogVisible,
     createZuordnungConfirmationDialogMessage,
@@ -133,9 +130,6 @@
     isEditActive,
     mode: editMode.forOperation('creation'),
     state: workingState,
-    calculatedBefristung,
-    isUnbefristetDisabled,
-    isBefristungRequired,
   });
 
   const {
@@ -182,6 +176,8 @@
   const {
     changeBefristungFormContext,
     isChangeBefristungActive,
+    isChangeBefristungUnbefristetDisabled,
+    isChangeBefristungRequired,
     selectedChangeBefristung,
     selectedChangeBefristungProps,
     selectedChangeBefristungOption,
@@ -204,9 +200,6 @@
     isEditActive,
     mode: editMode.forOperation('changeBefristung'),
     state: workingState,
-    calculatedBefristung,
-    isUnbefristetDisabled,
-    isBefristungRequired,
   });
 
   // Triggers the template to start editing
@@ -438,8 +431,8 @@
             ref="befristung-input-wrapper"
             :befristung-props="selectedChangeBefristungProps"
             :befristung-option-props="selectedChangeBefristungOptionProps"
-            :is-unbefristet-disabled="isUnbefristetDisabled"
-            :is-befristung-required="isBefristungRequired"
+            :is-unbefristet-disabled="isChangeBefristungUnbefristetDisabled"
+            :is-befristung-required="isChangeBefristungRequired"
             :next-schuljahresende="getNextSchuljahresende()"
             :befristung="selectedChangeBefristung"
             :befristung-option="selectedChangeBefristungOption"

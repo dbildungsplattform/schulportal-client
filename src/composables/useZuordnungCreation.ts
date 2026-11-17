@@ -38,6 +38,8 @@ type ZuordnungCreationForm = {
 
 export type ZuordnungCreation = Omit<PersonenkontextFieldDefinitions, 'selectedKlasse'> & {
   isZuordnungFormActive: ComputedRef<boolean>;
+  isUnbefristetDisabled: Ref<boolean>;
+  isBefristungRequired: Ref<boolean>;
   createSuccessDialogVisible: Ref<boolean>;
   createZuordnungConfirmationDialogVisible: Ref<boolean>;
   createZuordnungConfirmationDialogMessage: Ref<string>;
@@ -69,25 +71,16 @@ export function useZuordnungCreation(params: {
   isEditActive: Ref<boolean>;
   mode: ZuordnungOperationMode;
   state: ZuordnungenWorkingState;
-  // Shared with the change Befristung form, which also calculates and requires a Befristung
-  calculatedBefristung: Ref<string | undefined>;
-  isUnbefristetDisabled: Ref<boolean>;
-  isBefristungRequired: Ref<boolean>;
 }): ZuordnungCreation {
-  const {
-    t,
-    personId,
-    isEditActive,
-    mode,
-    state,
-    calculatedBefristung,
-    isUnbefristetDisabled,
-    isBefristungRequired,
-  }: typeof params = params;
+  const { t, personId, isEditActive, mode, state }: typeof params = params;
   const personStore: PersonStore = usePersonStore();
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
   const rolleStore: RolleStore = useRolleStore();
   const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
+
+  const isUnbefristetDisabled: Ref<boolean> = ref(false);
+  const isBefristungRequired: Ref<boolean> = ref(false);
+  const calculatedBefristung: Ref<string | undefined> = ref('');
 
   const createSuccessDialogVisible: Ref<boolean> = ref(false);
   const createZuordnungConfirmationDialogVisible: Ref<boolean> = ref(false);
@@ -318,6 +311,8 @@ export function useZuordnungCreation(params: {
 
   return {
     isZuordnungFormActive: mode.isFormActive,
+    isUnbefristetDisabled,
+    isBefristungRequired,
     createSuccessDialogVisible,
     createZuordnungConfirmationDialogVisible,
     createZuordnungConfirmationDialogMessage,

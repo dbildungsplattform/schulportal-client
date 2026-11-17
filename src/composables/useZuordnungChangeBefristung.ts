@@ -30,6 +30,8 @@ type FieldProps = Ref<BaseFieldProps & { error: boolean; 'error-messages': Array
 export type ZuordnungChangeBefristung = {
   changeBefristungFormContext: FormContext<ChangeBefristungForm, ChangeBefristungForm>;
   isChangeBefristungActive: ComputedRef<boolean>;
+  isChangeBefristungUnbefristetDisabled: Ref<boolean>;
+  isChangeBefristungRequired: Ref<boolean>;
   selectedChangeBefristung: Ref<string | undefined>;
   selectedChangeBefristungProps: FieldProps;
   selectedChangeBefristungOption: Ref<string | undefined>;
@@ -55,23 +57,14 @@ export function useZuordnungChangeBefristung(params: {
   isEditActive: Ref<boolean>;
   mode: ZuordnungOperationMode;
   state: ZuordnungenWorkingState;
-  // Shared with the creation form, which also calculates and requires a Befristung
-  calculatedBefristung: Ref<string | undefined>;
-  isUnbefristetDisabled: Ref<boolean>;
-  isBefristungRequired: Ref<boolean>;
 }): ZuordnungChangeBefristung {
-  const {
-    t,
-    personId,
-    isEditActive,
-    mode,
-    state,
-    calculatedBefristung,
-    isUnbefristetDisabled,
-    isBefristungRequired,
-  }: typeof params = params;
+  const { t, personId, isEditActive, mode, state }: typeof params = params;
   const personStore: PersonStore = usePersonStore();
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
+
+  const isChangeBefristungUnbefristetDisabled: Ref<boolean> = ref(false);
+  const isChangeBefristungRequired: Ref<boolean> = ref(false);
+  const calculatedBefristung: Ref<string | undefined> = ref('');
 
   const changeBefristungConfirmationDialogVisible: Ref<boolean> = ref(false);
   const changeBefristungConfirmationDialogMessage: Ref<string> = ref('');
@@ -108,8 +101,8 @@ export function useZuordnungChangeBefristung(params: {
   watchEffect(async () => {
     if (changeBefristungRolle.value) {
       const result: boolean = await isBefristungspflichtRolle([changeBefristungRolle.value]);
-      isUnbefristetDisabled.value = result;
-      isBefristungRequired.value = result;
+      isChangeBefristungUnbefristetDisabled.value = result;
+      isChangeBefristungRequired.value = result;
     }
   });
 
@@ -196,6 +189,8 @@ export function useZuordnungChangeBefristung(params: {
   return {
     changeBefristungFormContext,
     isChangeBefristungActive: mode.isFormActive,
+    isChangeBefristungUnbefristetDisabled,
+    isChangeBefristungRequired,
     selectedChangeBefristung,
     selectedChangeBefristungProps,
     selectedChangeBefristungOption,
