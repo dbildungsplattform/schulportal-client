@@ -114,7 +114,7 @@ async function fillForm(args: Partial<FormFields>): Promise<Partial<FormSelector
   }
 
   if (emailAdresse) {
-    const emailAdresseInput: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="email-adress-input"]');
+    const emailAdresseInput: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="email-address-input"]');
     expect(emailAdresseInput?.exists()).toBe(true);
     await emailAdresseInput?.find('input').setValue(emailAdresse);
     await nextTick();
