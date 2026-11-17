@@ -305,7 +305,7 @@ describe('ZuordnungenSection', () => {
   }
 
   async function prepareDeletion(sectionWrapper: VueWrapper): Promise<void> {
-    const personenkontextDelete: VueWrapper = sectionWrapper.findComponent(PersonenkontextDelete);
+    const personenkontextDelete: VueWrapper = sectionWrapper.findComponent({ name: 'PersonenkontextDelete' });
     personenkontextDelete.vm.$emit('onDeletePersonenkontext');
     await flushPromises();
   }

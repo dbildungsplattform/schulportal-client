@@ -34,16 +34,7 @@
   import type { Zuordnung } from '@/stores/types/Zuordnung';
   import type { TranslatedObject } from '@/types';
   import { getNextSchuljahresende } from '@/utils/date';
-  import {
-    computed,
-    onBeforeMount,
-    toRef,
-    watch,
-    watchEffect,
-    type ComputedRef,
-    type ModelRef,
-    type Ref,
-  } from 'vue';
+  import { computed, onBeforeMount, toRef, watch, watchEffect, type ComputedRef, type ModelRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
   import { useDisplay } from 'vuetify';
 
