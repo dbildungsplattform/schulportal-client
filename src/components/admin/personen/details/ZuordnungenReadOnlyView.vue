@@ -3,7 +3,6 @@
   import PersonenkontextItem from '@/components/admin/personen/details/PersonenkontextItem.vue';
   import type { ZuordnungWithKlasse } from '@/utils/zuordnungen';
   import type { Ref } from 'vue';
-  import { useI18n, type Composer } from 'vue-i18n';
   import { useDisplay } from 'vuetify';
 
   type Props = {
@@ -21,7 +20,6 @@
   };
   const emit: Emits = defineEmits<Emits>();
 
-  const { t }: Composer = useI18n({ useScope: 'global' });
   const { mdAndDown }: { mdAndDown: Ref<boolean> } = useDisplay();
 </script>
 
@@ -40,7 +38,7 @@
             class="subtitle-1"
             data-testid="zuordnungen-section-headline"
           >
-            {{ t('person.zuordnungen') }}
+            {{ $t('person.zuordnungen') }}
           </h3>
 
           <template v-if="props.hasZuordnungen">
@@ -66,7 +64,7 @@
           >
             <v-col offset="1">
               <h3 class="text-body">
-                {{ t('person.noZuordnungenFound') }}
+                {{ $t('person.noZuordnungenFound') }}
               </h3>
             </v-col>
           </v-row>
@@ -84,8 +82,8 @@
             >
               <SpshTooltip
                 :enabled-condition="!props.hasSelection && !props.isEditPersonMetadataActive"
-                :disabled-text="t('person.finishEditFirst')"
-                :enabled-text="t('person.editZuordnungen')"
+                :disabled-text="$t('person.finishEditFirst')"
+                :enabled-text="$t('person.editZuordnungen')"
                 position="start"
               >
                 <v-btn
@@ -95,7 +93,7 @@
                   :block="mdAndDown"
                   @click="emit('edit')"
                 >
-                  {{ t('edit') }}
+                  {{ $t('edit') }}
                 </v-btn>
               </SpshTooltip>
             </v-col>

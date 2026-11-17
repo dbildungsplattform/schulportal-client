@@ -1,7 +1,6 @@
 <script setup lang="ts">
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import type { ModelRef, Ref } from 'vue';
-  import { useI18n, type Composer } from 'vue-i18n';
   import { useDisplay } from 'vuetify';
 
   type Props = {
@@ -19,7 +18,6 @@
   };
   const emit: Emits = defineEmits<Emits>();
 
-  const { t }: Composer = useI18n({ useScope: 'global' });
   const { mdAndDown }: { mdAndDown: Ref<boolean> } = useDisplay();
 </script>
 
@@ -53,7 +51,7 @@
                 :data-testid="props.confirmButtonTestId"
                 @click.stop="emit('confirm')"
               >
-                {{ t('yes') }}
+                {{ $t('yes') }}
               </v-btn>
             </v-col>
             <v-col
@@ -66,7 +64,7 @@
                 class="secondary"
                 @click.stop="emit('cancel')"
               >
-                {{ t('no') }}
+                {{ $t('no') }}
               </v-btn>
             </v-col>
           </template>
@@ -81,7 +79,7 @@
                 class="secondary"
                 @click.stop="emit('cancel')"
               >
-                {{ t('no') }}
+                {{ $t('no') }}
               </v-btn>
             </v-col>
             <v-col
@@ -95,7 +93,7 @@
                 :data-testid="props.confirmButtonTestId"
                 @click.stop="emit('confirm')"
               >
-                {{ t('yes') }}
+                {{ $t('yes') }}
               </v-btn>
             </v-col>
           </template>

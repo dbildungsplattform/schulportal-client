@@ -5,7 +5,6 @@
   import type { ZuordnungOperation } from '@/composables/useZuordnungEditMode';
   import type { ZuordnungWithKlasse } from '@/utils/zuordnungen';
   import type { ModelRef, Ref } from 'vue';
-  import { useI18n, type Composer } from 'vue-i18n';
   import { useDisplay } from 'vuetify';
 
   type Props = {
@@ -38,7 +37,6 @@
   };
   const emit: Emits = defineEmits<Emits>();
 
-  const { t }: Composer = useI18n({ useScope: 'global' });
   const { mdAndDown }: { mdAndDown: Ref<boolean> } = useDisplay();
 </script>
 
@@ -49,7 +47,7 @@
       cols="12"
       sm="auto"
     >
-      <h3 class="subtitle-1">{{ t('person.editZuordnungen') }}: {{ t('pleaseSelect') }}</h3>
+      <h3 class="subtitle-1">{{ $t('person.editZuordnungen') }}: {{ $t('pleaseSelect') }}</h3>
     </v-col>
   </v-row>
   <v-row class="ml-md-16 mb-12">
@@ -62,7 +60,7 @@
         class="subtitle-1"
         data-testid="check-and-save-headline"
       >
-        {{ t('person.checkAndSave') }}:
+        {{ $t('person.checkAndSave') }}:
       </h3>
     </v-col>
     <ZuordnungenEditList
@@ -94,7 +92,7 @@
       offset="1"
     >
       <h3 class="text-body">
-        {{ t('person.noZuordnungenFound') }}
+        {{ $t('person.noZuordnungenFound') }}
       </h3>
     </v-col>
   </v-row>
@@ -111,7 +109,7 @@
         :block="mdAndDown"
         @click="emit('cancel')"
       >
-        {{ t('cancel') }}
+        {{ $t('cancel') }}
       </v-btn>
     </v-col>
     <v-col
@@ -122,8 +120,8 @@
       <!-- The save button is always disabled if there is no pending change -->
       <SpshTooltip
         :enabled-condition="!!props.pendingOperation"
-        :disabled-text="t('person.noChangesToSave')"
-        :enabled-text="t('person.saveChanges')"
+        :disabled-text="$t('person.noChangesToSave')"
+        :enabled-text="$t('person.saveChanges')"
       >
         <v-btn
           class="primary small"
@@ -132,7 +130,7 @@
           :disabled="!props.pendingOperation || props.isLoading"
           @click="emit('save')"
         >
-          {{ t('save') }}
+          {{ $t('save') }}
         </v-btn>
       </SpshTooltip>
     </v-col>

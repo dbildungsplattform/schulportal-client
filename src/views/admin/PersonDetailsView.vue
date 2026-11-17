@@ -656,11 +656,11 @@
       class="text-center headline"
       data-testid="admin-headline"
     >
-      {{ t('admin.headline') }}
+      {{ $t('admin.headline') }}
     </h1>
     <LayoutCard
       :closable="!personStore.errorCode && !personenkontextStore.errorCode"
-      :header="t('admin.person.edit')"
+      :header="$t('admin.person.edit')"
       :headlineTestId="'person-details-headline'"
       @onCloseClicked="navigateToPersonTable"
       :padded="true"
@@ -679,8 +679,8 @@
             :button-action="alertButtonActionKopers"
             :closable="false"
             :show-button="true"
-            :text="t(`admin.person.errors.${personStore.errorCode}`)"
-            :title="t(`admin.person.title.${personStore.errorCode}`)"
+            :text="$t(`admin.person.errors.${personStore.errorCode}`)"
+            :title="$t(`admin.person.title.${personStore.errorCode}`)"
             :type="'error'"
             @update:model-value="handleAlertClose"
           />
@@ -707,8 +707,8 @@
             :button-action="alertButtonAction"
             :closable="false"
             :show-button="true"
-            :text="t(`admin.rolle.errors.${rolleStore.errorCode}`)"
-            :title="t(`admin.rolle.title.${rolleStore.errorCode}`)"
+            :text="$t(`admin.rolle.errors.${rolleStore.errorCode}`)"
+            :title="$t(`admin.rolle.title.${rolleStore.errorCode}`)"
             :type="'error'"
             @update:model-value="handleAlertClose"
           />
@@ -730,7 +730,7 @@
                     sm="3"
                     cols="5"
                   >
-                    <span class="subtitle-2">{{ t('person.firstName') }}:</span>
+                    <span class="subtitle-2">{{ $t('person.firstName') }}:</span>
                   </v-col>
                   <v-col
                     class="d-flex align-center"
@@ -747,7 +747,7 @@
                     sm="3"
                     cols="5"
                   >
-                    <span class="subtitle-2">{{ t('person.lastName') }}:</span>
+                    <span class="subtitle-2">{{ $t('person.lastName') }}:</span>
                   </v-col>
                   <v-col
                     class="d-flex align-center"
@@ -764,7 +764,7 @@
                     sm="3"
                     cols="5"
                   >
-                    <span class="subtitle-2">{{ t('person.userName') }}:</span>
+                    <span class="subtitle-2">{{ $t('person.userName') }}:</span>
                   </v-col>
                   <v-col
                     class="d-flex align-center"
@@ -790,7 +790,7 @@
                         'text-red': hasKopersRolle && !personStore.currentPerson.person.personalnummer,
                       }"
                     >
-                      {{ t('person.kopersNr') }}:
+                      {{ $t('person.kopersNr') }}:
                     </span>
                   </v-col>
                   <v-col
@@ -804,14 +804,14 @@
                         'text-break': true,
                       }"
                     >
-                      {{ personStore.currentPerson.person.personalnummer ?? t('missing') }}
+                      {{ personStore.currentPerson.person.personalnummer ?? $t('missing') }}
                     </span>
                   </v-col>
                 </v-row>
 
                 <!-- Email -->
                 <v-row
-                  v-if="emailStatusText.text !== t('person.emailStatusUnknown')"
+                  v-if="emailStatusText.text !== $t('person.emailStatusUnknown')"
                   class="mt-3 align-center"
                 >
                   <v-col
@@ -819,12 +819,12 @@
                     sm="3"
                     cols="5"
                   >
-                    <span class="subtitle-2">{{ t('person.email') }}:</span>
+                    <span class="subtitle-2">{{ $t('person.email') }}:</span>
                   </v-col>
                   <v-col data-testid="person-email">
                     <SpshTooltip
                       :enabled-condition="!!personStore.currentPerson.person.email"
-                      :disabled-text="t('person.changePersonMetaDataDisabledDescription')"
+                      :disabled-text="$t('person.changePersonMetaDataDisabledDescription')"
                       :enabled-text="emailStatusText.tooltip"
                       position="bottom"
                     >
@@ -860,8 +860,8 @@
                   >
                     <SpshTooltip
                       :enabled-condition="!isEditActive"
-                      :disabled-text="t('person.finishEditFirst')"
-                      :enabled-text="t('admin.person.editPersonalInfo')"
+                      :disabled-text="$t('person.finishEditFirst')"
+                      :enabled-text="$t('admin.person.editPersonalInfo')"
                       position="start"
                     >
                       <v-btn
@@ -871,7 +871,7 @@
                         :block="mdAndDown"
                         @click="triggerPersonMetadataEdit"
                       >
-                        {{ t('edit') }}
+                        {{ $t('edit') }}
                       </v-btn>
                     </SpshTooltip>
                   </v-col>
@@ -915,7 +915,7 @@
                   :block="mdAndDown"
                   @click="cancelEditPersonMetadata"
                 >
-                  {{ t('cancel') }}
+                  {{ $t('cancel') }}
                 </v-btn>
               </v-col>
               <v-col
@@ -926,8 +926,8 @@
               >
                 <SpshTooltip
                   :enabled-condition="!hasSameMetadata"
-                  :disabled-text="t('person.changePersonMetaDataDisabledDescription')"
-                  :enabled-text="t('save')"
+                  :disabled-text="$t('person.changePersonMetaDataDisabledDescription')"
+                  :enabled-text="$t('save')"
                   position="start"
                 >
                   <v-btn
@@ -937,7 +937,7 @@
                     :block="mdAndDown"
                     type="submit"
                   >
-                    {{ t('save') }}
+                    {{ $t('save') }}
                   </v-btn>
                 </SpshTooltip>
               </v-col>
@@ -957,7 +957,7 @@
                 class="subtitle-1"
                 data-testid="password-reset-section-headline"
               >
-                {{ t('person.password') }}
+                {{ $t('person.password') }}
               </h3>
             </v-col>
             <v-col
@@ -969,9 +969,9 @@
               <div class="d-flex justify-sm-end">
                 <PasswordReset
                   ref="password-reset"
-                  :button-text="t('admin.person.changePassword')"
-                  :confirm-button-text="t('admin.person.resetPassword')"
-                  :dialog-header="t('admin.person.resetPassword')"
+                  :button-text="$t('admin.person.changePassword')"
+                  :confirm-button-text="$t('admin.person.resetPassword')"
+                  :dialog-header="$t('admin.person.resetPassword')"
                   :dialog-text="passwordResetDialogText"
                   :disabled="isEditActive || isEditPersonMetadataActive"
                   :error-code="personStore.errorCode"
@@ -1040,7 +1040,7 @@
                     class="subtitle-1"
                     data-testid="two-factor-section-headline"
                   >
-                    {{ t('admin.person.twoFactorAuthentication.header') }}
+                    {{ $t('admin.person.twoFactorAuthentication.header') }}
                   </h3>
                   <v-row class="align-top text-body mt-6">
                     <v-col
@@ -1069,7 +1069,7 @@
                           class="ma-0 text-body"
                           data-testid="connection-error-text"
                         >
-                          {{ t('admin.person.twoFactorAuthentication.errors.connection') }}
+                          {{ $t('admin.person.twoFactorAuthentication.errors.connection') }}
                         </p>
 
                         <p
@@ -1083,11 +1083,11 @@
                             tag="label"
                           >
                             <a
-                              :href="t('admin.person.twoFactorAuthentication.errors.iqshHelpdeskLink')"
+                              :href="$t('admin.person.twoFactorAuthentication.errors.iqshHelpdeskLink')"
                               rel="noopener noreferrer"
                               target="_blank"
                             >
-                              {{ t('admin.person.twoFactorAuthentication.errors.iqshHelpdesk') }}
+                              {{ $t('admin.person.twoFactorAuthentication.errors.iqshHelpdesk') }}
                             </a>
                           </i18n-t>
                         </p>
@@ -1099,7 +1099,7 @@
                           class="ma-0"
                           data-testid="software-factor-setup-text"
                         >
-                          {{ t('admin.person.twoFactorAuthentication.softwareTokenIsSetUp') }}
+                          {{ $t('admin.person.twoFactorAuthentication.softwareTokenIsSetUp') }}
                         </span>
 
                         <span
@@ -1107,7 +1107,7 @@
                           class="ma-0"
                           data-testid="hardware-factor-setup-text"
                         >
-                          {{ t('admin.person.twoFactorAuthentication.hardwareTokenIsSetUp') }}
+                          {{ $t('admin.person.twoFactorAuthentication.hardwareTokenIsSetUp') }}
                         </span>
 
                         <span
@@ -1117,7 +1117,7 @@
                           "
                         >
                           {{
-                            `${t('admin.person.twoFactorAuthentication.serial')}: ${twoFactorAuthentificationStore.serial}`
+                            `${$t('admin.person.twoFactorAuthentication.serial')}: ${twoFactorAuthentificationStore.serial}`
                           }}
                         </span>
                       </template>
@@ -1135,19 +1135,19 @@
                     </v-col>
                     <v-col>
                       <span v-if="twoFactorAuthentificationStore.hasToken && !twoFactorAuthentificationStore.required">
-                        {{ t('admin.person.twoFactorAuthentication.noLongerNeedToken') }}
+                        {{ $t('admin.person.twoFactorAuthentication.noLongerNeedToken') }}
                       </span>
                       <span
                         v-else-if="twoFactorAuthentificationStore.hasToken"
                         data-testid="two-factor-reset-info-text"
                       >
-                        {{ t('admin.person.twoFactorAuthentication.resetInfo') }}
+                        {{ $t('admin.person.twoFactorAuthentication.resetInfo') }}
                       </span>
                       <span
                         v-if="!twoFactorAuthentificationStore.hasToken"
                         data-testid="two-factor-not-setup-text"
                       >
-                        {{ t('admin.person.twoFactorAuthentication.notSetUp') }}
+                        {{ $t('admin.person.twoFactorAuthentication.notSetUp') }}
                       </span>
                     </v-col>
                   </v-row>
@@ -1166,8 +1166,8 @@
                     >
                       <SpshTooltip
                         :enabled-condition="!isEditActive && !isEditPersonMetadataActive"
-                        :disabled-text="t('person.finishEditFirst')"
-                        :enabled-text="t('admin.person.twoFactorAuthentication.tokenReset')"
+                        :disabled-text="$t('person.finishEditFirst')"
+                        :enabled-text="$t('admin.person.twoFactorAuthentication.tokenReset')"
                         position="start"
                       >
                         <TokenReset
@@ -1183,8 +1183,8 @@
                       </SpshTooltip>
                       <SpshTooltip
                         :enabled-condition="!isEditActive && !isEditPersonMetadataActive"
-                        :disabled-text="t('person.finishEditFirst')"
-                        :enabled-text="t('admin.person.twoFactorAuthentication.setUpShort')"
+                        :disabled-text="$t('person.finishEditFirst')"
+                        :enabled-text="$t('admin.person.twoFactorAuthentication.setUpShort')"
                         position="start"
                       >
                         <TwoFactorAuthenticationSetUp
@@ -1215,7 +1215,7 @@
                 class="subtitle-1"
                 data-testid="status-section-headline"
               >
-                {{ t('admin.person.status') }}
+                {{ $t('admin.person.status') }}
               </h3>
               <template v-if="!personStore.loading">
                 <v-row class="mt-4 text-body">
@@ -1237,8 +1237,8 @@
                       {{
                         personStore.currentPerson?.person.userLock &&
                         personStore.currentPerson.person.userLock?.length > 0
-                          ? t('person.userIsLocked')
-                          : t('person.userIsUnlocked')
+                          ? $t('person.userIsLocked')
+                          : $t('person.userIsUnlocked')
                       }}
                     </span>
                   </v-col>
@@ -1362,7 +1362,7 @@
                 class="subtitle-1"
                 data-testid="device-password-section-headline"
               >
-                {{ t('admin.person.devicePassword.header') }}
+                {{ $t('admin.person.devicePassword.header') }}
               </h3>
               <template v-if="!personStore.loading">
                 <div class="d-flex align-start mt-4 text-body">
@@ -1372,7 +1372,7 @@
                   />
 
                   <p class="ma-0">
-                    {{ t('admin.person.devicePassword.infoTextPersonDetails') }}
+                    {{ $t('admin.person.devicePassword.infoTextPersonDetails') }}
                   </p>
                 </div>
               </template>
@@ -1390,9 +1390,9 @@
               <div class="d-flex justify-sm-end">
                 <PasswordReset
                   ref="device-password-reset"
-                  :button-text="t('admin.person.devicePassword.createPassword')"
-                  :confirm-button-text="t('admin.person.devicePassword.createPassword')"
-                  :dialog-header="t('admin.person.devicePassword.createDevicePassword')"
+                  :button-text="$t('admin.person.devicePassword.createPassword')"
+                  :confirm-button-text="$t('admin.person.devicePassword.createPassword')"
+                  :dialog-header="$t('admin.person.devicePassword.createDevicePassword')"
                   :dialog-text="devicePasswordDialogText"
                   :disabled="isEditActive || isEditPersonMetadataActive"
                   :error-code="personStore.errorCode"
@@ -1416,7 +1416,7 @@
     >
       <LayoutCard
         :closable="true"
-        :header="t('admin.person.personalInfo')"
+        :header="$t('admin.person.personalInfo')"
         @on-close-clicked="closeChangePersonMetadataSuccessDialog"
       >
         <v-card-text>
@@ -1443,7 +1443,7 @@
                 class="primary"
                 @click.stop="closeChangePersonMetadataSuccessDialog"
               >
-                {{ t('close') }}
+                {{ $t('close') }}
               </v-btn>
             </v-col>
           </v-row>
@@ -1458,13 +1458,13 @@
       data-testid="unsaved-changes-dialog"
       persistent
     >
-      <LayoutCard :header="t('unsavedChanges.title')">
+      <LayoutCard :header="$t('unsavedChanges.title')">
         <v-card-text>
           <v-container>
             <v-row class="text-body bold px-md-16">
               <v-col>
                 <p data-testid="unsaved-changes-warning-text">
-                  {{ t('unsavedChanges.message') }}
+                  {{ $t('unsavedChanges.message') }}
                 </p>
               </v-col>
             </v-row>
@@ -1483,7 +1483,7 @@
                 :block="mdAndDown"
                 @click.stop="handleConfirmUnsavedChanges"
               >
-                {{ t('yes') }}
+                {{ $t('yes') }}
               </v-btn>
             </v-col>
             <v-col
@@ -1497,7 +1497,7 @@
                 :block="mdAndDown"
                 @click.stop="showUnsavedChangesDialog = false"
               >
-                {{ t('no') }}
+                {{ $t('no') }}
               </v-btn>
             </v-col>
           </v-row>

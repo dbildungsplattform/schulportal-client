@@ -1,6 +1,5 @@
 <script setup lang="ts">
   import type { Ref } from 'vue';
-  import { useI18n, type Composer } from 'vue-i18n';
   import { useDisplay } from 'vuetify';
 
   type Props = {
@@ -14,7 +13,6 @@
   };
   const emit: Emits = defineEmits<Emits>();
 
-  const { t }: Composer = useI18n({ useScope: 'global' });
   const { mdAndDown }: { mdAndDown: Ref<boolean> } = useDisplay();
 </script>
 
@@ -32,7 +30,7 @@
         :data-testid="props.cancelButtonTestId"
         @click="emit('cancel')"
       >
-        {{ t('cancel') }}
+        {{ $t('cancel') }}
       </v-btn>
     </v-col>
     <v-col

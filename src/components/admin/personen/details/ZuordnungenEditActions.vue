@@ -4,7 +4,6 @@
   import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
   import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
   import type { Ref } from 'vue';
-  import { useI18n, type Composer } from 'vue-i18n';
   import { useDisplay } from 'vuetify';
 
   type Props = {
@@ -25,7 +24,6 @@
   };
   const emit: Emits = defineEmits<Emits>();
 
-  const { t }: Composer = useI18n({ useScope: 'global' });
   const { mdAndDown }: { mdAndDown: Ref<boolean> } = useDisplay();
   const personStore: PersonStore = usePersonStore();
   const configStore: ConfigStore = useConfigStore();
@@ -52,8 +50,8 @@
       />
       <SpshTooltip
         :enabled-condition="props.selectedCount === 0"
-        :disabled-text="t('person.addZuordnungNotAllowed')"
-        :enabled-text="t('person.addZuordnung')"
+        :disabled-text="$t('person.addZuordnungNotAllowed')"
+        :enabled-text="$t('person.addZuordnung')"
         position="start"
       >
         <v-btn
@@ -63,14 +61,14 @@
           :block="mdAndDown"
           @click="emit('add')"
         >
-          {{ t('person.addZuordnung') }}
+          {{ $t('person.addZuordnung') }}
         </v-btn>
       </SpshTooltip>
       <template v-if="configStore.configData?.rolleBearbeitenEnabled">
         <SpshTooltip
           :enabled-condition="props.selectedCount > 0"
-          :disabled-text="t('person.chooseZuordnungFirst')"
-          :enabled-text="t('person.changeRolleDescription')"
+          :disabled-text="$t('person.chooseZuordnungFirst')"
+          :enabled-text="$t('person.changeRolleDescription')"
           position="start"
         >
           <v-btn
@@ -79,15 +77,15 @@
             :disabled="props.selectedCount === 0"
             :block="mdAndDown"
           >
-            {{ t('person.changeRolle') }}
+            {{ $t('person.changeRolle') }}
           </v-btn>
         </SpshTooltip>
       </template>
       <template v-if="configStore.configData?.befristungBearbeitenEnabled">
         <SpshTooltip
           :enabled-condition="props.selectedCount > 0"
-          :disabled-text="t('person.chooseZuordnungFirst')"
-          :enabled-text="t('person.modifyBefristungDescription')"
+          :disabled-text="$t('person.chooseZuordnungFirst')"
+          :enabled-text="$t('person.modifyBefristungDescription')"
           position="start"
         >
           <v-btn
@@ -97,15 +95,15 @@
             :block="mdAndDown"
             @click="emit('changeBefristung')"
           >
-            {{ t('person.modifyBefristung') }}
+            {{ $t('person.modifyBefristung') }}
           </v-btn>
         </SpshTooltip>
       </template>
       <SpshTooltip
         v-if="props.hasKlassenZuordnung"
         :enabled-condition="props.canChangeKlasse"
-        :disabled-text="t('person.chooseKlasseZuordnungFirst')"
-        :enabled-text="t('person.changeKlasseDescription')"
+        :disabled-text="$t('person.chooseKlasseZuordnungFirst')"
+        :enabled-text="$t('person.changeKlasseDescription')"
         position="start"
       >
         <v-btn
@@ -115,7 +113,7 @@
           :block="mdAndDown"
           @click="emit('changeKlasse')"
         >
-          {{ t('transfer') }}
+          {{ $t('transfer') }}
         </v-btn>
       </SpshTooltip>
     </v-col>

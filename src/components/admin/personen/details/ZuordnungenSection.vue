@@ -308,7 +308,7 @@
               cols="12"
               sm="auto"
             >
-              <h3 class="subtitle-1">{{ t('person.addZuordnung') }}:</h3>
+              <h3 class="subtitle-1">{{ $t('person.addZuordnung') }}:</h3>
             </v-col>
           </v-row>
           <v-container class="px-lg-16">
@@ -366,7 +366,7 @@
               data-testid="zuordnung-creation-submit-button"
               type="submit"
             >
-              {{ t('person.addZuordnung') }}
+              {{ $t('person.addZuordnung') }}
             </v-btn>
           </ZuordnungFormActions>
         </v-form>
@@ -382,7 +382,7 @@
               cols="12"
               sm="auto"
             >
-              <h3 class="subtitle-1">{{ t('transfer') }}:</h3>
+              <h3 class="subtitle-1">{{ $t('transfer') }}:</h3>
             </v-col>
           </v-row>
           <v-container class="px-lg-16">
@@ -404,8 +404,8 @@
           >
             <SpshTooltip
               :enabled-condition="!isSubmitDisabled"
-              :disabled-text="t('person.changeKlasseNotDisabledDescription')"
-              :enabled-text="t('transfer')"
+              :disabled-text="$t('person.changeKlasseNotDisabledDescription')"
+              :enabled-text="$t('transfer')"
               position="start"
             >
               <v-btn
@@ -415,7 +415,7 @@
                 :disabled="isSubmitDisabled || organisationStore.loading"
                 type="submit"
               >
-                {{ t('transfer') }}
+                {{ $t('transfer') }}
               </v-btn>
             </SpshTooltip>
           </ZuordnungFormActions>
@@ -445,8 +445,8 @@
           >
             <SpshTooltip
               :enabled-condition="differentDateSelected"
-              :disabled-text="t('person.changeBefristungDisabledDescription')"
-              :enabled-text="t('person.changeBefristung')"
+              :disabled-text="$t('person.changeBefristungDisabledDescription')"
+              :enabled-text="$t('person.changeBefristung')"
               position="start"
             >
               <v-btn
@@ -456,7 +456,7 @@
                 data-testid="change-befristung-submit-button"
                 type="submit"
               >
-                {{ t('person.changeBefristung') }}
+                {{ $t('person.changeBefristung') }}
               </v-btn>
             </SpshTooltip>
           </ZuordnungFormActions>
@@ -466,7 +466,7 @@
 
     <ZuordnungInfoDialog
       v-model="deleteSuccessDialogVisible"
-      :header="t('person.editZuordnungen')"
+      :header="$t('person.editZuordnungen')"
       close-button-test-id="close-zuordnung-delete-success-button"
       @close="closeDeleteSuccessDialog"
     >
@@ -477,7 +477,7 @@
               offset="1"
               cols="10"
             >
-              <span>{{ t('person.deleteZuordnungSuccess') }}</span>
+              <span>{{ $t('person.deleteZuordnungSuccess') }}</span>
             </v-col>
           </v-row>
         </v-container>
@@ -485,7 +485,7 @@
     </ZuordnungInfoDialog>
     <ZuordnungInfoDialog
       v-model="createSuccessDialogVisible"
-      :header="t('person.editZuordnungen')"
+      :header="$t('person.editZuordnungen')"
       close-button-test-id="close-zuordnung-create-success-button"
       @close="closeCreateSuccessDialog"
     >
@@ -493,7 +493,7 @@
         <v-container>
           <v-row class="text-body bold px-md-16">
             <v-col class="text-center">
-              <span>{{ t('person.addZuordnungSuccess') }}</span>
+              <span>{{ $t('person.addZuordnungSuccess') }}</span>
             </v-col>
           </v-row>
         </v-container>
@@ -501,7 +501,7 @@
     </ZuordnungInfoDialog>
     <ZuordnungInfoDialog
       v-model="changeKlasseSuccessDialogVisible"
-      :header="t('transfer')"
+      :header="$t('transfer')"
       close-button-test-id="change-klasse-success-dialog-close-button"
       @close="closeChangeKlasseSuccessDialog"
     >
@@ -512,7 +512,7 @@
               class="text-center"
               cols="12"
             >
-              <span data-testid="change-klasse-success-dialog-text">{{ t('person.changeKlasseSuccess') }}</span>
+              <span data-testid="change-klasse-success-dialog-text">{{ $t('person.changeKlasseSuccess') }}</span>
             </v-col>
           </v-row>
         </v-container>
@@ -520,7 +520,7 @@
     </ZuordnungInfoDialog>
     <ZuordnungInfoDialog
       v-model="changeBefristungSuccessDialogVisible"
-      :header="t('person.changeBefristung')"
+      :header="$t('person.changeBefristung')"
       close-button-test-id="change-befristung-success-dialog-close-button"
       @close="closeChangeBefristungSuccessDialog"
     >
@@ -531,7 +531,7 @@
               class="text-center"
               cols="10"
             >
-              <span>{{ t('person.changeBefristungSuccess') }}</span>
+              <span>{{ $t('person.changeBefristungSuccess') }}</span>
             </v-col>
           </v-row>
         </v-container>
@@ -539,7 +539,7 @@
     </ZuordnungInfoDialog>
     <ZuordnungInfoDialog
       v-model="cannotDeleteDialogVisible"
-      :header="t('person.editZuordnungen')"
+      :header="$t('person.editZuordnungen')"
       @close="closeCannotDeleteDialog"
     >
       <template #message>
@@ -549,7 +549,7 @@
               offset="1"
               cols="10"
             >
-              <span>{{ t('person.cannotDeleteOwnZuordnung') }}</span>
+              <span>{{ $t('person.cannotDeleteOwnZuordnung') }}</span>
             </v-col>
           </v-row>
         </v-container>
@@ -557,7 +557,7 @@
     </ZuordnungInfoDialog>
     <ZuordnungConfirmationDialog
       v-model="createZuordnungConfirmationDialogVisible"
-      :header="t('person.editZuordnungen')"
+      :header="$t('person.editZuordnungen')"
       confirm-button-test-id="confirm-zuordnung-dialog-addition"
       :confirm-first="true"
       @confirm="confirmDialogAddition"
@@ -576,7 +576,7 @@
     </ZuordnungConfirmationDialog>
     <ZuordnungConfirmationDialog
       v-model="changeKlasseConfirmationDialogVisible"
-      :header="t('transfer')"
+      :header="$t('transfer')"
       confirm-button-test-id="confirm-change-klasse-button"
       @confirm="confirmDialogChangeKlasse"
       @cancel="cancelChangeKlasse"
@@ -593,7 +593,7 @@
     </ZuordnungConfirmationDialog>
     <ZuordnungConfirmationDialog
       v-model="changeBefristungConfirmationDialogVisible"
-      :header="t('person.editZuordnungen')"
+      :header="$t('person.editZuordnungen')"
       confirm-button-test-id="confirm-change-befristung-button"
       @confirm="confirmDialogChangeBefristung"
       @cancel="cancelChangeBefristung"
@@ -617,7 +617,7 @@
       <LayoutCard
         v-if="showNoKopersNrConfirmationDialog"
         :closable="false"
-        :header="t('admin.person.noKopersNr')"
+        :header="$t('admin.person.noKopersNr')"
       >
         <v-card-text>
           <v-container>
@@ -627,7 +627,7 @@
                 cols="10"
               >
                 <span data-testid="no-kopersnr-confirmation-text">
-                  {{ t('admin.person.noKopersNrConfirmationDialogMessage') }}
+                  {{ $t('admin.person.noKopersNrConfirmationDialogMessage') }}
                 </span>
               </v-col>
             </v-row>
@@ -649,7 +649,7 @@
                   hasNoKopersNr = false;
                 "
               >
-                {{ t('cancel') }}
+                {{ $t('cancel') }}
               </v-btn>
             </v-col>
             <v-col
@@ -663,7 +663,7 @@
                 data-testid="confirm-no-kopersnr-button"
                 @click.stop="showNoKopersNrConfirmationDialog = false"
               >
-                {{ t('proceed') }}
+                {{ $t('proceed') }}
               </v-btn>
             </v-col>
           </v-row>
