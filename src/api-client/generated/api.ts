@@ -1910,7 +1910,7 @@ export type MeldungResponseStatusEnum = typeof MeldungResponseStatusEnum[keyof t
 export const OperationContext = {
     PersonAnlegen: 'PERSON_ANLEGEN',
     PersonBearbeiten: 'PERSON_BEARBEITEN',
-    PersonenKontextErweitern: 'PERSONEN_KONTEXT_ERWEITERN'
+    LandesbedienstetenKontextErweitern: 'LANDESBEDIENSTETEN_KONTEXT_ERWEITERN'
 } as const;
 
 export type OperationContext = typeof OperationContext[keyof typeof OperationContext];
