@@ -656,7 +656,7 @@ describe('PersonDetailsView', () => {
 
     test('it blocks leaving the page while a Zuordnung change is pending', async () => {
       await selectFirstZuordnung();
-      const personenkontextDelete: VueWrapper = wrapper!.findComponent(PersonenkontextDelete);
+      const personenkontextDelete: VueWrapper = wrapper!.findComponent({ name: 'PersonenkontextDelete' });
       personenkontextDelete.vm.$emit('onDeletePersonenkontext');
       await flushPromises();
 
@@ -875,7 +875,7 @@ describe('PersonDetailsView', () => {
     await befristungInput?.setValue('12.08.2099');
     await nextTick();
 
-    const personenkontextCreate: VueWrapper = wrapper!.findComponent(PersonenkontextCreate);
+    const personenkontextCreate: VueWrapper = wrapper!.findComponent({ name: 'PersonenkontextCreate' });
     personenkontextCreate.vm.$emit('fieldReset', 'selectedKlasse');
     await flushPromises();
     await wrapper!.get('[data-testid="zuordnung-creation-submit-button"]').trigger('click');

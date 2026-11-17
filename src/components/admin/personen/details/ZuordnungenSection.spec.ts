@@ -24,7 +24,6 @@ import {
 } from '@/stores/RolleStore';
 import type { Person } from '@/stores/types/Person';
 import type { Zuordnung } from '@/stores/types/Zuordnung';
-import BefristungInput from '@/components/admin/personen/BefristungInput.vue';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import type { Mock, MockInstance } from 'vitest';
@@ -468,7 +467,7 @@ describe('ZuordnungenSection', () => {
     personenkontextCreate.vm.$emit('update:selectedRolle', rollen[0]);
     await flushPromises();
 
-    const kopersInput: VueWrapper = wrapper!.findComponent(KopersInput);
+    const kopersInput: VueWrapper = wrapper!.findComponent({ name: 'KopersInput' });
     kopersInput.vm.$emit('update:hasNoKopersNr', true);
     await flushPromises();
 
@@ -550,7 +549,8 @@ describe('ZuordnungenSection', () => {
     await flushPromises();
     expect(isFormDirty()).toBe(false);
 
-    sectionWrapper.findComponent(KlasseChange).vm.$emit('update:selectedSchule', schule.id);
+    const klasseChange: VueWrapper = sectionWrapper.findComponent({ name: 'KlasseChange' });
+    klasseChange.vm.$emit('update:selectedSchule', schule.id);
     await flushPromises();
     expect(getInternals().selectedSchule).toBe(schule.id);
     getInternals().resetChangeKlasseForm();
@@ -668,7 +668,7 @@ describe('ZuordnungenSection', () => {
       personenkontextCreate.vm.$emit('update:selectedOrganisation', schule);
       personenkontextCreate.vm.$emit('update:selectedRolle', rollen[0]);
       await flushPromises();
-      const kopersInput: VueWrapper = wrapper!.findComponent(KopersInput);
+      const kopersInput: VueWrapper = wrapper!.findComponent({ name: 'KopersInput' });
       kopersInput.vm.$emit('update:hasNoKopersNr', true);
       await flushPromises();
 
@@ -692,7 +692,8 @@ describe('ZuordnungenSection', () => {
 
       personenkontextCreate.vm.$emit('fieldReset', 'unknown');
       personenkontextCreate.vm.$emit('update:calculatedBefristungOption', '31.07.2099');
-      wrapper!.findComponent(KopersInput).vm.$emit('update:selectedKopersNr', '1234567');
+      const kopersInputForEmit: VueWrapper = wrapper!.findComponent({ name: 'KopersInput' });
+      kopersInputForEmit.vm.$emit('update:selectedKopersNr', '1234567');
       await flushPromises();
 
       expect(personenkontextCreate.props()).toHaveProperty('selectedRolle', rollen[0]);
@@ -756,7 +757,8 @@ describe('ZuordnungenSection', () => {
     test('it changes a limited Befristung to unlimited', async () => {
       const sectionWrapper: VueWrapper = await openChangeBefristungForm('2099-07-31T00:00:00.000Z');
 
-      sectionWrapper.findComponent(BefristungInput).vm.$emit('update:calculatedBefristungOption', undefined);
+      const befristungInputForCalculatedOption: VueWrapper = sectionWrapper.findComponent({ name: 'BefristungInput' });
+      befristungInputForCalculatedOption.vm.$emit('update:calculatedBefristungOption', undefined);
       await flushPromises();
       const message: string = await submitAndConfirm(sectionWrapper);
 
@@ -768,12 +770,13 @@ describe('ZuordnungenSection', () => {
     test('it changes an unlimited Befristung to a date', async () => {
       const sectionWrapper: VueWrapper = await openChangeBefristungForm(null);
 
-      sectionWrapper.findComponent(BefristungInput).vm.$emit('update:befristung', '31.07.2099');
+      const befristungInput: VueWrapper = sectionWrapper.findComponent({ name: 'BefristungInput' });
+      befristungInput.vm.$emit('update:befristung', '31.07.2099');
       await flushPromises();
       const message: string = await submitAndConfirm(sectionWrapper);
 
       expect(message).toContain('31.07.2099');
-      expect(getPersistedZuordnungen()[0]).toMatchObject({ befristung: expect.any(String) });
+      expect(getPersistedZuordnungen()[0]).toMatchObject({ befristung: expect.any(String) as string });
     });
 
     test('it falls back to the calculated Befristung when confirming without a selected date', async () => {
