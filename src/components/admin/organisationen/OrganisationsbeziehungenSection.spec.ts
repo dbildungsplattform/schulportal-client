@@ -34,6 +34,10 @@ function getResultTable(): VueWrapper {
   return wrapper!.findComponent({ name: 'ResultTable' });
 }
 
+function getFilter(): VueWrapper {
+  return wrapper!.findComponent({ name: 'OrganisationsbeziehungenFilter' });
+}
+
 describe('OrganisationsbeziehungenSection', () => {
   test('it renders the headline and does not load data while collapsed', () => {
     expect(wrapper!.get('[data-testid="organisationsbeziehungen-headline"]').text()).toBe(
@@ -142,7 +146,7 @@ describe('OrganisationsbeziehungenSection', () => {
     await openSection();
     vi.mocked(store.loadBeziehungen).mockClear();
 
-    wrapper!.findComponent({ name: 'OrganisationsbeziehungenFilter' }).vm.$emit('onApplySearchFilter', 'Schule');
+    getFilter().vm.$emit('onApplySearchFilter', 'Schule');
     await flushPromises();
 
     expect(store.loadBeziehungen).toHaveBeenCalledExactlyOnceWith(
@@ -155,24 +159,10 @@ describe('OrganisationsbeziehungenSection', () => {
     await openSection();
     vi.mocked(store.loadBeziehungen).mockClear();
 
-    wrapper!.findComponent({ name: 'OrganisationsbeziehungenFilter' }).vm.$emit('onApplySearchFilter', '');
+    getFilter().vm.$emit('onApplySearchFilter', '');
     await flushPromises();
 
     expect(store.loadBeziehungen).not.toHaveBeenCalled();
-  });
-
-  test('it passes the related organisations as items to the filter', async () => {
-    store.beziehungen = [
-      DoFactory.getOrganisationsbeziehung({
-        quelle: { id: 'org-1', name: 'Aktuelle Schule', dienststellennummer: '1111111' },
-        ziel: { id: 'z-1', name: 'Zielträger', dienststellennummer: null },
-      }),
-    ];
-    await openSection();
-
-    expect(wrapper!.findComponent({ name: 'OrganisationsbeziehungenFilter' }).props('items')).toEqual([
-      { id: 'z-1', name: 'Zielträger', dienststellennummer: null },
-    ]);
   });
 
   test('it shows an error alert instead of the table when loading failed', async () => {

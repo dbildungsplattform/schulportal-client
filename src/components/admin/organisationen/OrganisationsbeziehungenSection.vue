@@ -59,7 +59,6 @@
       : []),
   ]);
 
-  /* Either quelle or ziel is the current organisation; the other one is the related organisation to display. */
   function getRelatedOrganisation(
     beziehung: OrganisationsbeziehungWithOrganisationenResponse,
   ): OrganisationsbeziehungOrganisationResponse | undefined {
@@ -72,18 +71,6 @@
     return undefined;
   }
 
-  const relatedOrganisationen: ComputedRef<Array<OrganisationsbeziehungOrganisationResponse>> = computed(() =>
-    organisationsbeziehungStore.beziehungen.flatMap(
-      (
-        beziehung: OrganisationsbeziehungWithOrganisationenResponse,
-      ): Array<OrganisationsbeziehungOrganisationResponse> => {
-        const related: OrganisationsbeziehungOrganisationResponse | undefined = getRelatedOrganisation(beziehung);
-        return related ? [related] : [];
-      },
-    ),
-  );
-
-  /* Rows where neither quelle nor ziel is the current organisation are a backend error and are skipped. */
   const tableItems: ComputedRef<Array<BeziehungTableItem>> = computed(() =>
     organisationsbeziehungStore.beziehungen.flatMap(
       (beziehung: OrganisationsbeziehungWithOrganisationenResponse): Array<BeziehungTableItem> => {
@@ -213,7 +200,6 @@
         <template v-else>
           <OrganisationsbeziehungenFilter
             :initial-value="searchString"
-            :items="relatedOrganisationen"
             @on-apply-search-filter="handleSearchFilter"
           />
           <v-row class="ma-3">
