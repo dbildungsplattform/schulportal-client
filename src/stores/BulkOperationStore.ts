@@ -83,6 +83,11 @@ type BulkOperationActions = {
     selectedKlasseId?: string,
   ): Promise<void>;
   bulkPersonenDelete(personIDs: string[]): Promise<void>;
+  bulkLockPersonen(
+    personIDs: string[],
+    organisationId: string,
+    operationType: OperationType.LOCK_PERSON | OperationType.UNLOCK_PERSON,
+  ): Promise<void>;
   bulkChangeKlasse(personIDs: string[], selectedOrganisationId: string, newKlasseId: string): Promise<void>;
   bulkUnassignPersonenFromRolle(
     organisationId: string,
@@ -274,6 +279,27 @@ export const useBulkOperationStore: StoreDefinition<
           this.currentOperation?.errors.set(id, errorCode);
         }
       });
+    },
+
+    async bulkLockPersonen(
+      personIDs: string[],
+      organisationId: string,
+      operationType: OperationType.LOCK_PERSON | OperationType.UNLOCK_PERSON,
+    ): Promise<void> {
+      const lock: boolean = operationType === OperationType.LOCK_PERSON;
+      const successMessage: string = lock ? 'admin.person.bulkLock.success' : 'admin.person.bulkUnlock.success';
+      await this.processPersonOperation(
+        operationType,
+        personIDs,
+        async (personId: string): Promise<void> => {
+          try {
+            await personenApi.personControllerLockPerson(personId, { lock, locked_by: organisationId });
+          } catch (error: unknown) {
+            this.currentOperation?.errors.set(personId, getResponseErrorCode(error, 'UNSPECIFIED_ERROR'));
+          }
+        },
+        successMessage,
+      );
     },
 
     async bulkPersonenDelete(personIDs: string[]): Promise<void> {
