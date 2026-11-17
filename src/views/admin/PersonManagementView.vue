@@ -1,9 +1,11 @@
 <script setup lang="ts">
+  import { PersonLockOccasion } from '@/api-client/generated/api';
   import ResultTable, { type Headers, type TableRow } from '@/components/admin/ResultTable.vue';
   import SearchField from '@/components/admin/SearchField.vue';
   import SpshTooltip from '@/components/admin/SpshTooltip.vue';
   import PersonBulkChangeKlasse from '@/components/admin/personen/PersonBulkChangeKlasse.vue';
   import PersonBulkDelete from '@/components/admin/personen/PersonBulkDelete.vue';
+  import PersonBulkLock from '@/components/admin/personen/PersonBulkLock.vue';
   import PersonBulkPasswordReset from '@/components/admin/personen/PersonBulkPasswordReset.vue';
   import RolleModify from '@/components/admin/rollen/RolleModify.vue';
   import RolleUnassign from '@/components/admin/rollen/RolleUnassign.vue';
@@ -31,12 +33,11 @@
     TranslatedRolleWithAttrs,
     useRolleStore,
   } from '@/stores/RolleStore';
-  import { type SearchFilterStore, useSearchFilterStore } from '@/stores/SearchFilterStore';
+  import { PersonStatusFilter, type SearchFilterStore, useSearchFilterStore } from '@/stores/SearchFilterStore';
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
   import { OperationType } from '@/stores/types/bulkOperationTypes';
   import type { SelectedSchulen } from '@/types';
   import { type TranslatedObject } from '@/types.d';
-  import { blurActiveElement } from '@/utils/focus';
   import { SortOrder } from '@/utils/sorting';
   import { type ComponentPublicInstance, type ComputedRef, type Ref, computed, onMounted, ref, watch } from 'vue';
   import { type Composer, useI18n } from 'vue-i18n';
@@ -121,7 +122,6 @@
   const selectedOrganisationIds: ComputedRef<string[]> = computed(() =>
     selectedOrganisationen.value.map((organisation: Organisation) => organisation.id),
   );
-  const selectedStatus: Ref<string | null> = ref(null);
   const searchFilter: Ref<string> = ref('');
 
   const sortField: Ref<string | null> = ref(SortField.Familienname);
@@ -130,6 +130,10 @@
   const rolleModifiyDialogVisible: Ref<boolean> = ref(false);
   const benutzerDeleteDialogVisible: Ref<boolean> = ref(false);
   const passwordResetDialogVisible: Ref<boolean> = ref(false);
+  const lockDialogVisible: Ref<boolean> = ref(false);
+  const lockOperationType: Ref<OperationType.LOCK_PERSON | OperationType.UNLOCK_PERSON> = ref(
+    OperationType.LOCK_PERSON,
+  );
   const organisationUnassignDialogVisible: Ref<boolean> = ref(false);
   const changeKlasseDialogVisible: Ref<boolean> = ref(false);
   const rolleUnassignDialogVisible: Ref<boolean> = ref(false);
@@ -181,6 +185,11 @@
       actionTypeTitles.set(OperationType.MODIFY_ROLLE, t('admin.rolle.assignRolle'));
     }
 
+    if (authStore.hasPersonenverwaltungPermission && authStore.hasPersonenBulkPermission) {
+      actionTypeTitles.set(OperationType.LOCK_PERSON, t('person.lockUser'));
+      actionTypeTitles.set(OperationType.UNLOCK_PERSON, t('person.unlockUser'));
+    }
+
     if (authStore.hasPersonenLoeschenPermission) {
       actionTypeTitles.set(OperationType.DELETE_PERSON, t('admin.person.deletePerson'));
     }
@@ -199,7 +208,7 @@
       !!searchFilterStore.selectedRollen?.length ||
       !!searchFilterStore.searchStringForPersonen ||
       (selectedKlassen.value && selectedKlassen.value.length > 0) ||
-      !!selectedStatus.value,
+      searchFilterStore.selectedStatusForPersonen.length > 0,
   );
 
   const selectedOrganisationKennung: ComputedRef<string> = computed(() => {
@@ -220,7 +229,9 @@
     );
   });
 
-  const statuses: Array<string> = ['Aktiv', 'Inaktiv'];
+  const statuses: ComputedRef<TranslatedObject[]> = computed(() => [
+    { value: PersonStatusFilter.Locked, title: t('admin.person.lockedStatus') },
+  ]);
 
   async function applySearchAndFilters(): Promise<void> {
     await personStore.getAllPersons({
@@ -230,6 +241,9 @@
         ? searchFilterStore.selectedKlassen.map((klasse: Organisation) => klasse.id)
         : (searchFilterStore.selectedOrganisationen?.map((organisation: Organisation) => organisation.id) ?? []),
       rolleIDs: searchFilterStore.selectedRollen?.map((rolle: RolleResponse): string => rolle.id) ?? [],
+      sperrgruende: searchFilterStore.selectedStatusForPersonen.includes(PersonStatusFilter.Locked)
+        ? [PersonLockOccasion.ManuellGesperrt, PersonLockOccasion.KopersGesperrt]
+        : undefined,
       searchFilter: searchFilterStore.searchStringForPersonen || '',
       sortField: searchFilterStore.personenSortField as SortField,
       sortOrder: searchFilterStore.personenSortOrder as SortOrder,
@@ -251,9 +265,16 @@
     await applySearchAndFilters();
   }
 
+  async function setStatusFilter(newValue: PersonStatusFilter[]): Promise<void> {
+    searchFilterStore.setStatusFilterForPersonen(newValue);
+    searchFilterStore.personenPage = 1;
+
+    await applySearchAndFilters();
+  }
+
   function updateKlassenSelection(newValue: Array<Organisation>): void {
     searchFilterStore.setKlasseFilterForPersonen(newValue);
-    applySearchAndFilters();
+    void applySearchAndFilters();
     selectedKlassen.value = newValue;
   }
 
@@ -292,7 +313,7 @@
     rollenFilter.searchStr = '';
     selectedRollen.value = [];
     selectedKlassen.value = [];
-    selectedStatus.value = null;
+    searchFilterStore.setStatusFilterForPersonen([]);
     searchFilterStore.personenPage = 1;
     searchFilterStore.personenPerPage = 30;
     sortField.value = SortField.Familienname;
@@ -354,7 +375,7 @@
     searchFilterStore.personenSortField = sortField.value;
     searchFilterStore.personenSortOrder = sortOrder.value;
 
-    getPaginatedPersonen(searchFilterStore.personenPage);
+    void getPaginatedPersonen(searchFilterStore.personenPage);
   }
 
   const invalidSelectionAlertHeader: ComputedRef<string> = computed(() => {
@@ -440,6 +461,17 @@
           passwordResetDialogVisible.value = true;
         }
         break;
+      case OperationType.LOCK_PERSON:
+      case OperationType.UNLOCK_PERSON:
+        if (selectedPersonen.value.size === 0) {
+          return;
+        }
+        if (!validateSingleSchuleSelection()) {
+          return;
+        }
+        lockOperationType.value = newValue as OperationType.LOCK_PERSON | OperationType.UNLOCK_PERSON;
+        lockDialogVisible.value = true;
+        break;
       case OperationType.ORG_UNASSIGN:
         if (validateSingleSchuleSelection()) {
           organisationUnassignDialogVisible.value = true;
@@ -480,6 +512,16 @@
   const handleBulkPasswordResetDialog = (_finished: boolean): void => {
     passwordResetDialogVisible.value = false;
     selectedOption.value = null;
+  };
+
+  const handleBulkLockDialog = async (finished: boolean): Promise<void> => {
+    lockDialogVisible.value = false;
+    selectedOption.value = null;
+    if (finished) {
+      selectedPersonIds.value = [];
+      await getPaginatedPersonen(searchFilterStore.personenPage);
+      resultTable.value?.resetSelection();
+    }
   };
 
   const handleUnassignOrgDialog = async (finished: boolean): Promise<void> => {
@@ -534,10 +576,6 @@
     if (!newValue) {
       selectedPersonIds.value = [];
     }
-  });
-
-  watch(selectedStatus, () => {
-    blurActiveElement();
   });
 
   // Used for to show the number of klassen found in the filter
@@ -747,9 +785,9 @@
           md="2"
           class="py-md-0"
         >
-          <v-autocomplete
+          <v-select
             id="status-select"
-            v-model="selectedStatus"
+            :model-value="searchFilterStore.selectedStatusForPersonen"
             autocomplete="off"
             chips
             class="filter-dropdown"
@@ -757,13 +795,15 @@
             data-testid="status-select"
             density="compact"
             hide-details
+            multiple
             :items="statuses"
             item-value="value"
-            item-text="title"
+            item-title="title"
             :no-data-text="$t('noDataFound')"
             :placeholder="$t('admin.status')"
-            required="true"
             variant="outlined"
+            :aria-label="$t('admin.status')"
+            @update:model-value="setStatusFilter"
           />
         </v-col>
       </v-row>
@@ -849,6 +889,14 @@
             :is-dialog-visible="benutzerDeleteDialogVisible"
             :selected-personen="selectedPersonen"
             @update:dialog-exit="handleBulkDeleteDialog($event)"
+          />
+          <PersonBulkLock
+            v-if="lockDialogVisible"
+            :is-dialog-visible="lockDialogVisible"
+            :selected-personen="selectedPersonen"
+            :selected-schule-id="selectedOrganisationIds[0]!"
+            :operation-type="lockOperationType"
+            @update:dialog-exit="handleBulkLockDialog"
           />
           <PersonBulkPasswordReset
             v-if="passwordResetDialogVisible"

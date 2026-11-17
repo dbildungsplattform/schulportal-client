@@ -1,22 +1,23 @@
-import { RollenArt, RollenMerkmal, RollenSystemRechtEnum } from '@/api-client/generated/api';
+import {
+  PersonLockOccasion,
+  RollenArt,
+  RollenMerkmal,
+  RollenSystemRechtEnum,
+  RolleResponse,
+} from '@/api-client/generated/api';
+import PersonBulkLock from '@/components/admin/personen/PersonBulkLock.vue';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import { usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
-import {
-  RollenSystemRecht,
-  useRolleStore,
-  type RolleResponse,
-  type RolleStore,
-  type TranslatedRolleWithAttrs,
-} from '@/stores/RolleStore';
-import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
+import { RollenSystemRecht, RolleStore, TranslatedRolleWithAttrs, useRolleStore } from '@/stores/RolleStore.js';
+import { PersonStatusFilter, SearchFilterStore, useSearchFilterStore } from '@/stores/SearchFilterStore.js';
 import type { Person } from '@/stores/types/Person';
 import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
 import type { Zuordnung } from '@/stores/types/Zuordnung';
 import { OperationType } from '@/stores/types/bulkOperationTypes';
-import { DOMWrapper, VueWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
+import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { expect, test, type MockInstance } from 'vitest';
 import {
@@ -24,12 +25,14 @@ import {
   h,
   nextTick,
   type Component,
+  type ComponentPublicInstance,
   type ComputedRef,
   type DefineComponent,
   type Slot,
   type VNode,
 } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
+import { VSelect } from 'vuetify/components';
 import PersonManagementView from './PersonManagementView.vue';
 
 let wrapper: VueWrapper | null = null;
@@ -150,6 +153,145 @@ beforeEach(async () => {
 });
 
 describe('PersonManagementView', () => {
+  describe('status filter', () => {
+    test('should start without a status selection', async () => {
+      await flushPromises();
+      const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
+        '[data-testid="status-select"]',
+      );
+
+      expect(statusSelect.props('modelValue')).toEqual([]);
+      expect(searchFilterStore.selectedStatusForPersonen).toEqual([]);
+      expect(statusSelect.props('multiple')).toBe(true);
+      expect(statusSelect.props('items')).toEqual([{ value: PersonStatusFilter.Locked, title: 'gesperrt' }]);
+      expect(personStore.getAllPersons).toHaveBeenLastCalledWith(expect.objectContaining({ sperrgruende: undefined }));
+      expect(wrapper!.get('[data-testid="reset-filter-button"]').attributes('disabled')).toBeDefined();
+    });
+
+    test('should show a checkbox and filter without a selected school', async () => {
+      await flushPromises();
+      const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
+        '[data-testid="status-select"]',
+      );
+      await statusSelect.find('.v-field').trigger('mousedown');
+      await nextTick();
+      expect(document.querySelector('.v-select__content .v-checkbox-btn')).not.toBeNull();
+      searchFilterStore.personenPage = 3;
+      const statusOption: DOMWrapper<Element> = new DOMWrapper(
+        document.querySelector('.v-select__content .v-list-item'),
+      );
+      searchFilterStore.selectedStatusForPersonen = [PersonStatusFilter.Locked];
+      await statusOption.trigger('click');
+      await flushPromises();
+
+      expect(searchFilterStore.setStatusFilterForPersonen).toHaveBeenCalledWith([PersonStatusFilter.Locked]);
+      expect(statusSelect.props('modelValue')).toEqual([PersonStatusFilter.Locked]);
+      expect(searchFilterStore.personenPage).toBe(1);
+      expect(personStore.getAllPersons).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          offset: 0,
+          organisationIDs: [],
+          sperrgruende: [PersonLockOccasion.ManuellGesperrt, PersonLockOccasion.KopersGesperrt],
+        }),
+      );
+      expect(wrapper!.get('[data-testid="reset-filter-button"]').attributes('disabled')).toBeUndefined();
+    });
+
+    test('should combine status with existing filters and remove only status when deselected', async () => {
+      const schule: Organisation = DoFactory.getSchule();
+      const klasse: Organisation = DoFactory.getKlasse(schule);
+      const rolle: RolleResponse = DoFactory.getRolleResponse();
+      searchFilterStore.selectedOrganisationen = [schule];
+      searchFilterStore.selectedKlassen = [klasse];
+      searchFilterStore.selectedRollen = [rolle];
+      searchFilterStore.searchStringForPersonen = 'search';
+      const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
+        '[data-testid="status-select"]',
+      );
+
+      searchFilterStore.selectedStatusForPersonen = [PersonStatusFilter.Locked];
+      await statusSelect.setValue([PersonStatusFilter.Locked]);
+      await flushPromises();
+      expect(personStore.getAllPersons).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          organisationIDs: [klasse.id],
+          rolleIDs: [rolle.id],
+          searchFilter: 'search',
+          sperrgruende: [PersonLockOccasion.ManuellGesperrt, PersonLockOccasion.KopersGesperrt],
+        }),
+      );
+
+      searchFilterStore.selectedStatusForPersonen = [];
+      await statusSelect.setValue([]);
+      await flushPromises();
+      expect(searchFilterStore.setStatusFilterForPersonen).toHaveBeenLastCalledWith([]);
+      expect(personStore.getAllPersons).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          organisationIDs: [klasse.id],
+          rolleIDs: [rolle.id],
+          searchFilter: 'search',
+          sperrgruende: undefined,
+        }),
+      );
+    });
+
+    test('should retain status on pagination, page-size changes and sorting', async () => {
+      searchFilterStore.selectedStatusForPersonen = [PersonStatusFilter.Locked];
+      await flushPromises();
+      vi.mocked(personStore.getAllPersons).mockClear();
+      const table: VueWrapper<ComponentPublicInstance> = wrapper!.findComponent({
+        name: 'ResultTable',
+      }) as VueWrapper<ComponentPublicInstance>;
+      table.vm.$emit('onPageUpdate', 2);
+      table.vm.$emit('onItemsPerPageUpdate', 50);
+      table.vm.$emit('onTableUpdate', { sortField: 'vorname', sortOrder: 'desc' });
+      await flushPromises();
+
+      expect(personStore.getAllPersons).toHaveBeenCalledTimes(3);
+      for (const [filter] of vi.mocked(personStore.getAllPersons).mock.calls) {
+        expect(filter.sperrgruende).toEqual([PersonLockOccasion.ManuellGesperrt, PersonLockOccasion.KopersGesperrt]);
+      }
+    });
+
+    test('should clear status when resetting filters', async () => {
+      const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
+        '[data-testid="status-select"]',
+      );
+      vi.mocked(searchFilterStore.setStatusFilterForPersonen).mockImplementationOnce(
+        (selectedStatus: PersonStatusFilter[]): void => {
+          searchFilterStore.selectedStatusForPersonen = selectedStatus;
+        },
+      );
+      searchFilterStore.selectedStatusForPersonen = [PersonStatusFilter.Locked];
+      await nextTick();
+      await wrapper!.get('[data-testid="reset-filter-button"]').trigger('click');
+      await flushPromises();
+
+      expect(searchFilterStore.setStatusFilterForPersonen).toHaveBeenCalledWith([]);
+      expect(statusSelect.props('modelValue')).toEqual([]);
+      expect(searchFilterStore.selectedStatusForPersonen).toEqual([]);
+      expect(vi.mocked(personStore.getAllPersons).mock.lastCall?.[0].sperrgruende).toBeUndefined();
+      expect(wrapper!.get('[data-testid="reset-filter-button"]').attributes('disabled')).toBeDefined();
+    });
+
+    test('should remove the lock filter when the clear button is clicked', async () => {
+      const statusSelect: VueWrapper<InstanceType<typeof VSelect>> = wrapper!.findComponent<typeof VSelect>(
+        '[data-testid="status-select"]',
+      );
+      searchFilterStore.selectedStatusForPersonen = [PersonStatusFilter.Locked];
+      await flushPromises();
+      vi.mocked(personStore.getAllPersons).mockClear();
+      await statusSelect.get('.v-field__clearable .v-icon').trigger('click');
+      await flushPromises();
+
+      expect(searchFilterStore.setStatusFilterForPersonen).toHaveBeenCalledWith([]);
+      expect(personStore.getAllPersons).toHaveBeenCalledOnce();
+      searchFilterStore.selectedStatusForPersonen = [];
+      await nextTick();
+      expect(statusSelect.props('modelValue')).toEqual([]);
+    });
+  });
+
   test('it renders person management table', () => {
     expect(wrapper?.getComponent({ name: 'ResultTable' })).toBeTruthy();
     expect(wrapper?.find('[data-testid="person-table"]').isVisible()).toBe(true);
@@ -707,6 +849,129 @@ describe('PersonManagementView', () => {
       });
     },
   );
+
+  describe('bulk locking', (): void => {
+    async function selectSchoolAndPersons(schulen: Organisation[], sameSchool: boolean = true): Promise<void> {
+      const schule: Organisation = schulen[0]!;
+      const persons: PersonWithZuordnungen[] = [RollenArt.Lern, RollenArt.Lehr, RollenArt.Leit].map(
+        (rollenArt: RollenArt): PersonWithZuordnungen =>
+          DoFactory.getPersonWithZuordnung(DoFactory.getPerson(), [
+            DoFactory.getZuordnung({ rollenArt }, { organisation: sameSchool ? schule : DoFactory.getSchule() }),
+          ]),
+      );
+      personStore.allUebersichten = new Map(
+        persons.map((person: PersonWithZuordnungen): [string, PersonWithZuordnungen] => [person.id, person]),
+      );
+      const schulenFilter: Omit<VueWrapper, 'exists'> = wrapper!.getComponent({ ref: 'schulenFilter' });
+      schulenFilter.vm.$emit('update:selectedSchulen', schulen);
+      await flushPromises();
+      const resultTable: Omit<VueWrapper, 'exists'> = wrapper!.getComponent({ name: 'ResultTable' });
+      resultTable.vm.$emit(
+        'update:selectedRows',
+        persons.map((person: PersonWithZuordnungen): string => person.id),
+      );
+      await flushPromises();
+    }
+
+    test.each([OperationType.LOCK_PERSON, OperationType.UNLOCK_PERSON])(
+      'allows mixed roles for %s and refreshes after completion',
+      async (operation: OperationType): Promise<void> => {
+        const schule: Organisation = DoFactory.getSchule();
+        await selectSchoolAndPersons([schule]);
+        const select: Omit<VueWrapper<InstanceType<typeof VSelect>>, 'exists'> = wrapper!.getComponent<typeof VSelect>({
+          ref: 'benutzer-bulk-edit-select',
+        });
+        const items: { value: OperationType; title: string }[] = select.props('items') as {
+          value: OperationType;
+          title: string;
+        }[];
+        const assignIndex: number = items.findIndex(
+          (item: { value: OperationType; title: string }): boolean => item.value === OperationType.MODIFY_ROLLE,
+        );
+        expect(
+          items
+            .slice(assignIndex + 1, assignIndex + 3)
+            .map((item: { value: OperationType; title: string }): OperationType => item.value),
+        ).toEqual([OperationType.LOCK_PERSON, OperationType.UNLOCK_PERSON]);
+        await select.setValue(operation);
+        await flushPromises();
+        const dialog: Omit<
+          VueWrapper<
+            unknown,
+            ComponentPublicInstance<{
+              operationType: OperationType;
+              selectedSchuleId: string;
+              selectedPersonen: Map<string, PersonWithZuordnungen>;
+            }>
+          >,
+          'exists'
+        > = wrapper!.getComponent(PersonBulkLock);
+        expect(dialog.props('operationType')).toBe(operation);
+        expect(dialog.props('selectedSchuleId')).toBe(schule.id);
+        const selectedPersonen: Map<string, PersonWithZuordnungen> = dialog.props('selectedPersonen');
+        expect(selectedPersonen.size).toBe(3);
+        const reload: MockInstance = vi.spyOn(personStore, 'getAllPersons');
+        reload.mockClear();
+        dialog.vm.$emit('update:dialogExit', true);
+        await flushPromises();
+        expect(reload).toHaveBeenCalledOnce();
+        expect(wrapper!.findComponent(PersonBulkLock).exists()).toBe(false);
+        expect(select.props('modelValue')).toBeNull();
+        expect(wrapper!.getComponent({ name: 'ResultTable' }).props('modelValue')).toEqual([]);
+      },
+    );
+
+    test('keeps selection when cancelled', async (): Promise<void> => {
+      await selectSchoolAndPersons([DoFactory.getSchule()]);
+      await wrapper!.getComponent({ ref: 'benutzer-bulk-edit-select' }).setValue(OperationType.LOCK_PERSON);
+      await flushPromises();
+      const reload: MockInstance = vi.spyOn(personStore, 'getAllPersons');
+      reload.mockClear();
+      const dialog: Omit<VueWrapper, 'exists'> = wrapper!.getComponent(PersonBulkLock);
+      dialog.vm.$emit('update:dialogExit', false);
+      await flushPromises();
+      expect(reload).not.toHaveBeenCalled();
+      expect(wrapper!.getComponent({ name: 'ResultTable' }).props('modelValue')).toHaveLength(3);
+    });
+
+    test.each([OperationType.LOCK_PERSON, OperationType.UNLOCK_PERSON])(
+      'rejects multiple schools for %s',
+      async (operation: OperationType): Promise<void> => {
+        await selectSchoolAndPersons([DoFactory.getSchule(), DoFactory.getSchule()]);
+        await wrapper!.getComponent({ ref: 'benutzer-bulk-edit-select' }).setValue(operation);
+        await flushPromises();
+        expect(wrapper!.findComponent(PersonBulkLock).exists()).toBe(false);
+        expect(document.body.textContent).toContain('Bitte wählen Sie im Filter genau eine Schule aus');
+      },
+    );
+
+    test('relies on the school filter without inspecting user Zuordnungen', async (): Promise<void> => {
+      await selectSchoolAndPersons([DoFactory.getSchule()], false);
+      await wrapper!.getComponent({ ref: 'benutzer-bulk-edit-select' }).setValue(OperationType.LOCK_PERSON);
+      await flushPromises();
+      expect(wrapper!.findComponent(PersonBulkLock).exists()).toBe(true);
+    });
+
+    test('does not offer locking without person administration permission', async (): Promise<void> => {
+      authStore.hasPersonenverwaltungPermission = false;
+      await flushPromises();
+      const items: { value: OperationType }[] = wrapper!
+        .getComponent({ ref: 'benutzer-bulk-edit-select' })
+        .props('items') as { value: OperationType }[];
+      expect(
+        items.some(
+          (item: { value: OperationType }): boolean =>
+            item.value === OperationType.LOCK_PERSON || item.value === OperationType.UNLOCK_PERSON,
+        ),
+      ).toBe(false);
+    });
+
+    test('does not offer bulk editing without bulk permission', async (): Promise<void> => {
+      authStore.hasPersonenBulkPermission = false;
+      await flushPromises();
+      expect(wrapper!.findComponent({ ref: 'benutzer-bulk-edit-select' }).exists()).toBe(false);
+    });
+  });
 
   type BulkOperationTestParams = {
     operationType: OperationType;
