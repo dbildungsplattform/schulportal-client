@@ -3,7 +3,7 @@ import {
   type DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response,
   type DBiamPersonenuebersichtResponse,
   type LockUserBodyParams,
-  type PersonFrontendControllerFindPersons200Response,
+  type PersonControllerFindPersons200Response,
   type PersonLandesbediensteterSearchResponse,
   type PersonLockResponse,
   type PersonMetadataBodyParams,
@@ -15,7 +15,8 @@ import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
 import { DoFactory } from 'test/DoFactory';
 import type { Organisation } from './OrganisationStore';
-import { usePersonStore, type PersonStore, type Personendatensatz } from './PersonStore';
+import { SortField, usePersonStore, type PersonFilter, type PersonStore, type Personendatensatz } from './PersonStore';
+import { SortOrder } from '@/utils/sorting';
 import type { Person } from './types/Person';
 import { PersonenUebersicht } from './types/PersonenUebersicht';
 import type { PersonWithZuordnungen } from './types/PersonWithZuordnungen';
@@ -74,7 +75,7 @@ describe('PersonStore', () => {
       ];
 
       // Mock response for persons
-      const mockPersonsResponse: PersonFrontendControllerFindPersons200Response = {
+      const mockPersonsResponse: PersonControllerFindPersons200Response = {
         offset: 0,
         limit: mockPersons.length,
         total: mockPersons.length,
@@ -107,7 +108,7 @@ describe('PersonStore', () => {
         items: [...mockUebersichten.items, DoFactory.getDBiamPersonenuebersichtResponse()],
       };
 
-      mockadapter.onGet('/api/personen-frontend').replyOnce(200, mockPersonsResponse);
+      mockadapter.onGet('/api/personen').replyOnce(200, mockPersonsResponse);
 
       // Update the mock POST request with the appropriate body
       const personIds: string[] = mockPersons.map((person: PersonendatensatzResponse) => person.person.id);
@@ -140,7 +141,7 @@ describe('PersonStore', () => {
       ];
 
       // Mock response for persons
-      const mockPersonsResponse: PersonFrontendControllerFindPersons200Response = {
+      const mockPersonsResponse: PersonControllerFindPersons200Response = {
         offset: 0,
         limit: mockPersons.length,
         total: mockPersons.length,
@@ -172,7 +173,7 @@ describe('PersonStore', () => {
         ...mockUebersichten,
       };
 
-      mockadapter.onGet('/api/personen-frontend').replyOnce(200, mockPersonsResponse);
+      mockadapter.onGet('/api/personen').replyOnce(200, mockPersonsResponse);
 
       // Update the mock POST request with the appropriate body
       const personIds: string[] = mockPersons.map((person: PersonendatensatzResponse) => person.person.id);
@@ -188,19 +189,20 @@ describe('PersonStore', () => {
 
     it('should return empty map if no persons were found', async () => {
       // Mock response for persons
-      const mockPersonsResponse: PersonFrontendControllerFindPersons200Response = {
+      const mockPersonsResponse: PersonControllerFindPersons200Response = {
         offset: 0,
         limit: 0,
         total: 0,
         items: [],
       };
 
-      mockadapter.onGet('/api/personen-frontend').replyOnce(200, mockPersonsResponse);
+      mockadapter.onGet('/api/personen').replyOnce(200, mockPersonsResponse);
 
       const getAllPersonsPromise: Promise<void> = personStore.getAllPersons({});
       expect(personStore.loading).toBe(true);
       expect(personStore.allUebersichten).toEqual(new Map());
       await getAllPersonsPromise;
+      expect(mockadapter.history.get[0]?.url).not.toContain('sperrgruende');
       expect(personStore.loading).toBe(false);
       expect(personStore.allUebersichten).toEqual(new Map());
     });
@@ -208,23 +210,85 @@ describe('PersonStore', () => {
     it('should load persons according to filter', async () => {
       const mockPersons: PersonendatensatzResponse[] = [DoFactory.getPersonendatensatzResponse()];
 
-      const mockPersonsResponse: PersonFrontendControllerFindPersons200Response = {
+      const mockPersonsResponse: PersonControllerFindPersons200Response = {
         offset: 0,
         limit: 2,
         total: 2,
         items: mockPersons,
       };
 
-      mockadapter.onGet('/api/personen-frontend').replyOnce(200, mockPersonsResponse);
+      mockadapter.onGet(/^\/api\/personen(?:\?|$)/).replyOnce(200, mockPersonsResponse);
 
       const personIds: string[] = mockPersons.map((person: PersonendatensatzResponse) => person.person.id);
-      mockadapter.onPost('/api/dbiam/personenuebersicht', { personIds }).replyOnce(500, 'Some error occurred');
+      mockadapter.onPost('/api/dbiam/personenuebersicht', { personIds }).replyOnce(200, {
+        total: 1,
+        offset: 0,
+        limit: 1,
+        items: [DoFactory.getDBiamPersonenuebersichtResponse({ personId: mockPersons[0]!.person.id })],
+      });
 
-      const getAllPersonsPromise: Promise<void> = personStore.getAllPersons({});
+      const filter: PersonFilter = {
+        offset: 30,
+        limit: 30,
+        organisationIDs: [DoFactory.getSchule().id],
+        rolleIDs: [DoFactory.getRolleResponse().id],
+        sperrgruende: [PersonLockOccasion.MANUELL_GESPERRT, PersonLockOccasion.KOPERS_GESPERRT],
+        searchFilter: 'search',
+        sortOrder: SortOrder.Desc,
+        sortField: SortField.Vorname,
+      };
+      const getAllPersonsPromise: Promise<void> = personStore.getAllPersons(filter);
       expect(personStore.loading).toBe(true);
       await getAllPersonsPromise;
       expect(personStore.loading).toBe(false);
-      expect(personStore.errorCode).toEqual('UNSPECIFIED_ERROR');
+      expect(personStore.errorCode).toBe('');
+      expect(personStore.allUebersichten.has(mockPersons[0]!.person.id)).toBe(true);
+      const requestUrl: URL = new URL(mockadapter.history.get[0]!.url!, 'http://localhost');
+      expect(requestUrl.pathname).toBe('/api/personen');
+      expect(requestUrl.searchParams.getAll('sperrgruende')).toEqual(filter.sperrgruende);
+      expect(requestUrl.searchParams.getAll('organisationIDs')).toEqual(filter.organisationIDs);
+      expect(requestUrl.searchParams.getAll('rolleIDs')).toEqual(filter.rolleIDs);
+      expect(requestUrl.searchParams.get('suchFilter')).toBe(filter.searchFilter);
+      expect(requestUrl.searchParams.get('offset')).toBe('30');
+      expect(requestUrl.searchParams.get('limit')).toBe('30');
+      expect(requestUrl.searchParams.get('sortOrder')).toBe(filter.sortOrder);
+      expect(requestUrl.searchParams.get('sortField')).toBe(filter.sortField);
+    });
+
+    it('should filter by lock reasons without an organisation', async () => {
+      mockadapter.onGet(/^\/api\/personen(?:\?|$)/).replyOnce(200, {
+        offset: 0,
+        limit: 30,
+        total: 0,
+        items: [],
+      } satisfies PersonControllerFindPersons200Response);
+
+      await personStore.getAllPersons({
+        sperrgruende: [PersonLockOccasion.MANUELL_GESPERRT, PersonLockOccasion.KOPERS_GESPERRT],
+      });
+
+      const requestUrl: URL = new URL(mockadapter.history.get[0]!.url!, 'http://localhost');
+      expect(requestUrl.searchParams.has('organisationIDs')).toBe(false);
+      expect(requestUrl.searchParams.getAll('sperrgruende')).toEqual([
+        PersonLockOccasion.MANUELL_GESPERRT,
+        PersonLockOccasion.KOPERS_GESPERRT,
+      ]);
+      expect(personStore.errorCode).toBe('');
+      expect(personStore.loading).toBe(false);
+    });
+
+    it.each([
+      { response: { i18nKey: 'PERSON_LIST_ERROR' }, expected: 'PERSON_LIST_ERROR' },
+      { response: 'server error', expected: 'UNSPECIFIED_ERROR' },
+    ])('should surface list request errors: $expected', async ({ response, expected }) => {
+      mockadapter.onGet('/api/personen').replyOnce(500, response);
+
+      const request: Promise<void> = personStore.getAllPersons({});
+      expect(personStore.loading).toBe(true);
+      await request;
+
+      expect(personStore.loading).toBe(false);
+      expect(personStore.errorCode).toBe(expected);
     });
 
     it('should handle error code in response', async () => {
@@ -234,13 +298,13 @@ describe('PersonStore', () => {
       ];
 
       // Mock response for persons
-      const mockPersonsResponse: PersonFrontendControllerFindPersons200Response = {
+      const mockPersonsResponse: PersonControllerFindPersons200Response = {
         offset: 0,
         limit: 2,
         total: 2,
         items: mockPersons,
       };
-      mockadapter.onGet('/api/personen-frontend').replyOnce(200, mockPersonsResponse, {});
+      mockadapter.onGet('/api/personen').replyOnce(200, mockPersonsResponse, {});
 
       const personIds: Array<string> = mockPersons.map((person: PersonendatensatzResponse) => person.person.id);
       mockadapter
@@ -260,14 +324,14 @@ describe('PersonStore', () => {
         DoFactory.getPersonendatensatzResponse(),
       ];
 
-      const mockPersonsResponse: PersonFrontendControllerFindPersons200Response = {
+      const mockPersonsResponse: PersonControllerFindPersons200Response = {
         offset: 0,
         limit: 2,
         total: 2,
         items: mockPersons,
       };
 
-      mockadapter.onGet('/api/personen-frontend').replyOnce(200, mockPersonsResponse);
+      mockadapter.onGet('/api/personen').replyOnce(200, mockPersonsResponse);
 
       const personIds: Array<string> = mockPersons.map((person: PersonendatensatzResponse) => person.person.id);
       mockadapter.onPost('/api/dbiam/personenuebersicht', { personIds }).replyOnce(500, 'some mock server error');
