@@ -106,7 +106,10 @@
             />
           </v-col>
         </v-row>
-        <OrganisationsbeziehungenSection :organisation-id="organisationStore.currentOrganisation.id" />
+        <OrganisationsbeziehungenSection
+          :headline="$t('admin.organisation.beziehungen.headlineBehoerde')"
+          :organisation-id="organisationStore.currentOrganisation.id"
+        />
       </v-container>
     </LayoutCard>
   </div>

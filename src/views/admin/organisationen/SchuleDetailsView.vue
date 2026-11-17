@@ -110,6 +110,7 @@
               </v-col>
             </v-row>
             <OrganisationsbeziehungenSection
+              :headline="$t('admin.organisation.beziehungen.headlineSchule')"
               :organisation-id="currentSchuleId"
               :show-dienststellennummer-column="false"
             />

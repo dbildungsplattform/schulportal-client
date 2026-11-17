@@ -370,7 +370,8 @@
       "assignOrganisation": "Organisationsebene zuordnen",
       "beziehungen": {
         "dienststellennummer": "Dienststellennummer",
-        "headline": "Organisationsbeziehungen",
+        "headlineBehoerde": "Zugeordnete Schulen anzeigen",
+        "headlineSchule": "Zugeordnete Beziehungen anzeigen",
         "loadingErrorText": "Die Organisationsbeziehungen konnten nicht geladen werden.",
         "name": "Name",
         "noDataFound": "Keine Organisationsbeziehungen gefunden.",

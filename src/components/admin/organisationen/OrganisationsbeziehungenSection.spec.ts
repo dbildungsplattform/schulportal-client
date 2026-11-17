@@ -17,7 +17,7 @@ beforeEach(() => {
 
   wrapper = mount(OrganisationsbeziehungenSection, {
     attachTo: document.body,
-    props: { organisationId: 'org-1' },
+    props: { headline: 'Zugeordnete Schulen anzeigen', organisationId: 'org-1' },
   });
 });
 
@@ -36,7 +36,9 @@ function getResultTable(): VueWrapper {
 
 describe('OrganisationsbeziehungenSection', () => {
   test('it renders the headline and does not load data while collapsed', () => {
-    expect(wrapper!.get('[data-testid="organisationsbeziehungen-headline"]').text()).toBe('Organisationsbeziehungen');
+    expect(wrapper!.get('[data-testid="organisationsbeziehungen-headline"]').text()).toBe(
+      'Zugeordnete Schulen anzeigen',
+    );
     expect(store.loadBeziehungen).not.toHaveBeenCalled();
   });
 
@@ -123,7 +125,11 @@ describe('OrganisationsbeziehungenSection', () => {
     wrapper!.unmount();
     wrapper = mount(OrganisationsbeziehungenSection, {
       attachTo: document.body,
-      props: { organisationId: 'org-1', showDienststellennummerColumn: false },
+      props: {
+        headline: 'Zugeordnete Beziehungen anzeigen',
+        organisationId: 'org-1',
+        showDienststellennummerColumn: false,
+      },
     });
     await openSection();
 

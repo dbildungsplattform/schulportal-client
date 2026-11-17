@@ -15,6 +15,7 @@
   import { useI18n, type Composer } from 'vue-i18n';
 
   type Props = {
+    headline: string;
     organisationId: string;
     showDienststellennummerColumn?: boolean;
   };
@@ -172,7 +173,7 @@
           class="subtitle-1"
           data-testid="organisationsbeziehungen-headline"
         >
-          {{ t('admin.organisation.beziehungen.headline') }}
+          {{ props.headline }}
         </h3>
       </v-col>
       <v-col cols="auto">
