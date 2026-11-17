@@ -81,10 +81,27 @@
   };
 
   const props: Props = defineProps<Props>();
+  const requestedWithSystemrecht: ComputedRef<RollenSystemRecht | undefined> = computed(
+    (): RollenSystemRecht | undefined => {
+      switch (props.createType) {
+        case CreationType.Limited:
+          return RollenSystemRecht.EingeschraenktNeueBenutzerErstellen;
+        case CreationType.AddPersonToOwnSchule:
+          return props.operationContext === OperationContext.PERSON_BEARBEITEN
+            ? RollenSystemRecht.PersonenVerwalten
+            : RollenSystemRecht.LandesbediensteteSuchenUndHinzufuegen;
+        default:
+          return undefined;
+      }
+    },
+  );
   const {
     autoselectedSchule,
   }: { hasAutoselectedSchule: ComputedRef<boolean>; autoselectedSchule: ComputedRef<Organisation | null> } =
-    useAutoselectedSchule([RollenSystemRecht.PersonenVerwalten]);
+    useAutoselectedSchule(
+      // eslint-disable-next-line @typescript-eslint/typedef
+      [requestedWithSystemrecht.value].filter((recht): recht is RollenSystemRecht => recht !== undefined),
+    );
 
   type Emits = {
     (e: 'update:befristung', value: string | undefined): void;
@@ -160,21 +177,6 @@
 
     return filter;
   });
-
-  const requestedWithSystemrecht: ComputedRef<RollenSystemRecht | undefined> = computed(
-    (): RollenSystemRecht | undefined => {
-      switch (props.createType) {
-        case CreationType.Limited:
-          return RollenSystemRecht.EingeschraenktNeueBenutzerErstellen;
-        case CreationType.AddPersonToOwnSchule:
-          return props.operationContext === OperationContext.PERSON_BEARBEITEN
-            ? RollenSystemRecht.PersonenVerwalten
-            : RollenSystemRecht.LandesbediensteteSuchenUndHinzufuegen;
-        default:
-          return undefined;
-      }
-    },
-  );
 
   function hasSelectedLernRolle(selection: SelectedRollen): boolean {
     if (!selection) {
