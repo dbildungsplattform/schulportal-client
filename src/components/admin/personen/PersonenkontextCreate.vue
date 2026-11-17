@@ -91,7 +91,7 @@
             ? RollenSystemRecht.PersonenVerwalten
             : RollenSystemRecht.LandesbediensteteSuchenUndHinzufuegen;
         default:
-          return undefined;
+          return RollenSystemRecht.PersonenVerwalten;
       }
     },
   );
