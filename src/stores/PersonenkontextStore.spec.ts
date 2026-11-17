@@ -138,186 +138,6 @@ describe('PersonenkontextStore', () => {
     );
   });
 
-  describe('processWorkflowStepLandesbedienstete', () => {
-    const getUrl = (filter: Parameters<PersonenkontextStore['processWorkflowStepLandesbedienstete']>[0]): string => {
-      const {
-        organisationId,
-        rollenIds,
-        rolleName,
-        organisationName,
-        limit,
-      }: Parameters<PersonenkontextStore['processWorkflowStepLandesbedienstete']>[0] = filter;
-      let url: string = '/api/landesbediensteter/step';
-      const params: string[] = [];
-
-      if (organisationId) {
-        params.push(`organisationId=${organisationId}`);
-      }
-      if (rollenIds) {
-        rollenIds.forEach((rolleId: string) => params.push(`rollenIds=${rolleId}`));
-      }
-      if (rolleName) {
-        params.push(`rolleName=${rolleName}`);
-      }
-      if (organisationName) {
-        params.push(`organisationName=${organisationName}`);
-      }
-      if (limit) {
-        params.push(`limit=${limit}`);
-      }
-
-      if (params.length > 0) {
-        url += `?${params.join('&')}`;
-      }
-
-      return url;
-    };
-
-    const mockResponse: PersonenkontextWorkflowResponse = {
-      organisations: [
-        {
-          id: '1',
-          administriertVon: 'string',
-          kennung: 'string',
-          name: 'string',
-          namensergaenzung: 'string',
-          kuerzel: 'string',
-          typ: OrganisationsTyp.Schule,
-        },
-      ],
-      selectedOrganisation: '1',
-      selectedRollen: ['1'],
-      canCommit: true,
-    };
-
-    it('should get step successfully', async () => {
-      const filter: Parameters<PersonenkontextStore['processWorkflowStepLandesbedienstete']>[0] = {
-        organisationId: '1',
-      };
-      mockadapter.onGet(getUrl(filter)).replyOnce(200, mockResponse);
-
-      const processWorkflowStep: Promise<void> = personenkontextStore.processWorkflowStepLandesbedienstete(filter);
-
-      expect(personenkontextStore.loading).toBe(true);
-      await processWorkflowStep;
-      expect(personenkontextStore.workflowStepResponse).toEqual(mockResponse);
-      expect(personenkontextStore.loading).toBe(false);
-    });
-
-    it('should get step with multiple parameters', async () => {
-      const filter: Parameters<PersonenkontextStore['processWorkflowStepLandesbedienstete']>[0] = {
-        organisationId: '1',
-        rollenIds: ['role1', 'role2'],
-        rolleName: 'TestRole',
-        organisationName: 'TestOrg',
-        limit: 10,
-      };
-      mockadapter.onGet(getUrl(filter)).replyOnce(200, mockResponse);
-
-      const processWorkflowStep: Promise<void> = personenkontextStore.processWorkflowStepLandesbedienstete(filter);
-
-      expect(personenkontextStore.loading).toBe(true);
-      await processWorkflowStep;
-      expect(personenkontextStore.workflowStepResponse).toEqual(mockResponse);
-      expect(personenkontextStore.loading).toBe(false);
-    });
-
-    it('should handle string error', async () => {
-      const filter: Parameters<PersonenkontextStore['processWorkflowStepLandesbedienstete']>[0] = {
-        organisationId: '1',
-      };
-      mockadapter.onGet(getUrl(filter)).replyOnce(500, 'some error');
-
-      const processWorkflowStep: Promise<void> = personenkontextStore.processWorkflowStepLandesbedienstete(filter);
-
-      expect(personenkontextStore.loading).toBe(true);
-      await processWorkflowStep;
-      expect(personenkontextStore.errorCode).toEqual('UNSPECIFIED_ERROR');
-      expect(personenkontextStore.loading).toBe(false);
-    });
-
-    it('should handle error code', async () => {
-      const filter: WorkflowFilter = { organisationId: '1' };
-      mockadapter.onGet(getUrl(filter)).replyOnce(500, { code: 'some mock server error' });
-
-      const processWorkflowStep: Promise<void> = personenkontextStore.processWorkflowStepLandesbedienstete(filter);
-
-      expect(personenkontextStore.loading).toBe(true);
-      await processWorkflowStep;
-      expect(personenkontextStore.errorCode).toEqual('some mock server error');
-      expect(personenkontextStore.loading).toBe(false);
-    });
-  });
-
-  describe('commitLandesbediensteteKontext', () => {
-    const personId: string = '123';
-    const personalnummer: string = '12345';
-    const updatedPersonenkontexte: PersonenkontextUpdate[] = [
-      {
-        organisationId: 'org1',
-        rolleId: 'role1',
-      },
-    ];
-
-    const mockUpdateResponse: PersonenkontexteUpdateResponse = {
-      dBiamPersonenkontextResponses: [
-        {
-          personId: '1',
-          organisationId: 'org-123',
-          rolleId: 'rolle-456',
-        } as DBiamPersonenkontextResponse,
-      ],
-    };
-
-    it.each([[new PersonenUebersicht(personId, '', '', '', null, [])], [person], [null]])(
-      'should commit landesbedienstete kontext successfully',
-      async (uebersicht: PersonenUebersicht | null) => {
-        personStore.personenuebersicht = uebersicht;
-        mockadapter.onPut(`/api/landesbediensteter/${personId}`).replyOnce(200, mockUpdateResponse);
-
-        const commitPromise: Promise<void> = personenkontextStore.commitLandesbediensteteKontext(
-          personId,
-          updatedPersonenkontexte,
-          personalnummer,
-        );
-
-        expect(personenkontextStore.loading).toBe(true);
-        await commitPromise;
-        expect(personenkontextStore.landesbediensteteCommitResponse).toEqual(mockUpdateResponse);
-        expect(personenkontextStore.loading).toBe(false);
-      },
-    );
-
-    it('should handle string error', async () => {
-      mockadapter.onPut(`/api/landesbediensteter/${personId}`).replyOnce(500, 'some error');
-
-      const commitPromise: Promise<void> = personenkontextStore.commitLandesbediensteteKontext(
-        personId,
-        updatedPersonenkontexte,
-        personalnummer,
-      );
-
-      expect(personenkontextStore.loading).toBe(true);
-      await commitPromise;
-      expect(personenkontextStore.errorCode).toEqual('UNSPECIFIED_ERROR');
-      expect(personenkontextStore.loading).toBe(false);
-    });
-
-    it('should handle error code', async () => {
-      mockadapter.onPut(`/api/landesbediensteter/${personId}`).replyOnce(500, { code: 'some mock server error' });
-
-      const commitPromise: Promise<void> = personenkontextStore.commitLandesbediensteteKontext(
-        personId,
-        updatedPersonenkontexte,
-        personalnummer,
-      );
-
-      expect(personenkontextStore.loading).toBe(true);
-      await commitPromise;
-      expect(personenkontextStore.errorCode).toEqual('some mock server error');
-      expect(personenkontextStore.loading).toBe(false);
-    });
-  });
 
   describe('updatePersonenkontexte', () => {
     const mockZuordnungUpdates: PersonenkontextUpdate[] = [
@@ -343,6 +163,7 @@ describe('PersonenkontextStore', () => {
       const updatePersonenkontextePromise: Promise<void> = personenkontextStore.updatePersonenkontexte(
         mockZuordnungUpdates,
         '1',
+        OperationContext.PERSON_BEARBEITEN,
       );
       expect(personenkontextStore.loading).toBe(true);
       await updatePersonenkontextePromise;
@@ -355,6 +176,7 @@ describe('PersonenkontextStore', () => {
       const updatePersonenkontextePromise: Promise<void> = personenkontextStore.updatePersonenkontexte(
         mockZuordnungUpdates,
         '1',
+        OperationContext.PERSON_BEARBEITEN,
       );
       expect(personenkontextStore.loading).toBe(true);
       await updatePersonenkontextePromise;
@@ -367,6 +189,7 @@ describe('PersonenkontextStore', () => {
       const updatePersonenkontextePromise: Promise<void> = personenkontextStore.updatePersonenkontexte(
         mockZuordnungUpdates,
         '1',
+        OperationContext.PERSON_BEARBEITEN,
       );
       expect(personenkontextStore.loading).toBe(true);
       await updatePersonenkontextePromise;

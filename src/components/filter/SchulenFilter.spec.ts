@@ -255,65 +255,36 @@ describe('SchulenFilter', () => {
     expect(organisationStore.loadOrganisationForSelection).not.toHaveBeenCalled();
   });
 
-  test.each([false, true])(
-    'it revalidates retained objects in changed workflow contexts (Landesbedienstete=%s)',
-    async (useLandesbediensteteWorkflow: boolean) => {
-      const selected: Organisation = DoFactory.getSchule();
-      const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
-      const process: MockInstance = vi.mocked(
-        useLandesbediensteteWorkflow
-          ? personenkontextStore.processWorkflowStepLandesbedienstete
-          : personenkontextStore.processWorkflowStep,
-      );
-      const wrapper: VueWrapper = mountComponent({
-        selectedSchulen: selected,
-        readonly: true,
-        useWorkflowEndpoints: true,
-        useLandesbediensteteWorkflow,
-        operationContext: OperationContext.PERSON_ANLEGEN,
-      });
-      await flushPromises();
-      expect(process).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ organisationId: selected.id }));
-
-      personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-        organisations: [],
-        canCommit: false,
-      });
-      process.mockClear();
-      await wrapper.setProps({ operationContext: OperationContext.PERSON_BEARBEITEN, personId: 'another-person' });
-      await flushPromises();
-
-      expect(process).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({
-          organisationId: selected.id,
-          operationContext: OperationContext.PERSON_BEARBEITEN,
-          personId: 'another-person',
-        }),
-      );
-      expect(wrapper.findComponent({ name: 'v-autocomplete' }).props()).toHaveProperty('modelValue', selected);
-      expect(personenkontextStore.workflowStepResponse.canCommit).toBe(false);
-      expect(organisationStore.loadOrganisationForSelection).not.toHaveBeenCalled();
-    },
-  );
-
-  test('it validates the selected object again when switching workflow variants', async () => {
+  test('it revalidates retained objects in changed workflow contexts', async () => {
     const selected: Organisation = DoFactory.getSchule();
     const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
+    const process: MockInstance = vi.mocked(personenkontextStore.processWorkflowStep);
     const wrapper: VueWrapper = mountComponent({
       selectedSchulen: selected,
       readonly: true,
       useWorkflowEndpoints: true,
+      operationContext: OperationContext.PERSON_ANLEGEN,
     });
     await flushPromises();
-    expect(personenkontextStore.processWorkflowStep).toHaveBeenCalledOnce();
-    expect(personenkontextStore.processWorkflowStepLandesbedienstete).not.toHaveBeenCalled();
+    expect(process).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ organisationId: selected.id }));
 
-    await wrapper.setProps({ useLandesbediensteteWorkflow: true });
+    personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
+      organisations: [],
+      canCommit: false,
+    });
+    process.mockClear();
+    await wrapper.setProps({ operationContext: OperationContext.PERSON_BEARBEITEN, personId: 'another-person' });
     await flushPromises();
-    expect(personenkontextStore.processWorkflowStepLandesbedienstete).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ organisationId: selected.id }),
+
+    expect(process).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        organisationId: selected.id,
+        operationContext: OperationContext.PERSON_BEARBEITEN,
+        personId: 'another-person',
+      }),
     );
-    expect(organisationStore.getOrganisationById).not.toHaveBeenCalled();
+    expect(wrapper.findComponent({ name: 'v-autocomplete' }).props()).toHaveProperty('modelValue', selected);
+    expect(personenkontextStore.workflowStepResponse.canCommit).toBe(false);
     expect(organisationStore.loadOrganisationForSelection).not.toHaveBeenCalled();
   });
 
