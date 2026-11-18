@@ -442,8 +442,8 @@ describe('useZuordnungCreation', () => {
       expect(personStore.getPersonById).toHaveBeenCalledWith(personId.value);
     });
 
-    it('should not show the success dialog if persisting failed', async () => {
-      const { creation, prepareAddition, mockCommit, personenkontextStore }: CreationSetup = setup();
+    it('should not show the success dialog and keep the form values if persisting failed', async () => {
+      const { creation, prepareAddition, mockCommit, personenkontextStore, lehrRolle }: CreationSetup = setup();
       await prepareAddition();
       mockCommit(500, { i18nKey: 'SOME_MOCK_SERVER_ERROR' });
 
@@ -451,6 +451,8 @@ describe('useZuordnungCreation', () => {
 
       expect(personenkontextStore.errorCode).toBe('SOME_MOCK_SERVER_ERROR');
       expect(creation.createSuccessDialogVisible.value).toBe(false);
+      expect(creation.selectedRolle.value).toEqual(lehrRolle);
+      expect(creation.selectedKopersNr.value).toBe('1234567');
     });
   });
 
@@ -472,7 +474,7 @@ describe('useZuordnungCreation', () => {
   });
 
   describe('navigateToZuordnungForm', () => {
-    it('should restore the cached values, clear the error and roll back the pending Zuordnungen', async () => {
+    it('should keep the form values, clear the error and roll back the pending Zuordnungen', async () => {
       const { creation, state, personenkontextStore, prepareAddition, mockCommit, lehrRolle }: CreationSetup = setup({
         useFakeTimers: true,
       });
@@ -481,7 +483,6 @@ describe('useZuordnungCreation', () => {
       await prepareAddition(otherSchule);
       mockCommit(500, { i18nKey: 'SOME_MOCK_SERVER_ERROR' });
       await creation.confirmAddition();
-      expect(creation.selectedRolle.value).toBeUndefined();
       expect(personenkontextStore.errorCode).toBe('SOME_MOCK_SERVER_ERROR');
 
       creation.navigateToZuordnungForm();
@@ -495,7 +496,25 @@ describe('useZuordnungCreation', () => {
       expect(state.zuordnungenWithPendingChanges.value).toEqual(pendingBeforeAddition);
     });
 
-    it('should work without cached values and only clear the KoPers.-Nr.', () => {
+    it('should keep a selected Befristung that differs from the default of the Rolle', async () => {
+      const { creation, selectRolle, mockCommit, befristungspflichtRolle }: CreationSetup = setup({
+        useFakeTimers: true,
+      });
+      await selectRolle(befristungspflichtRolle);
+      creation.selectedBefristung.value = '31.07.2099';
+      await flushPromises();
+      creation.confirmDialogAddition();
+      mockCommit(400, { i18nKey: 'PERSONALNUMMER_NICHT_EINDEUTIG' });
+      await creation.confirmAddition();
+
+      creation.navigateToZuordnungForm();
+      await flushPromises();
+
+      expect(creation.selectedBefristung.value).toBe('31.07.2099');
+      expect(creation.selectedBefristungOption.value).toBeUndefined();
+    });
+
+    it('should not change the form values without a previous submission', () => {
       const { personenkontextStore, creation }: CreationSetup = setup({ useFakeTimers: true });
       personenkontextStore.errorCode = 'SOME_MOCK_SERVER_ERROR';
 
@@ -505,7 +524,7 @@ describe('useZuordnungCreation', () => {
       expect(creation.isZuordnungFormActive.value).toBe(true);
       expect(creation.selectedRolle.value).toBeUndefined();
       expect(creation.selectedOrganisation.value).toBeUndefined();
-      expect(creation.selectedKopersNr.value).toBe('');
+      expect(creation.selectedKopersNr.value).toBeUndefined();
     });
 
     describe('scrolling to the form', () => {

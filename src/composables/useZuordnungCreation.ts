@@ -89,10 +89,6 @@ export function useZuordnungCreation(params: {
   const canCommit: Ref<boolean> = ref(false);
   const hasNoKopersNr: Ref<boolean | undefined> = ref(false);
 
-  const cachedSelectedOrganisation: Ref<Organisation | undefined> = ref();
-  const cachedSelectedRolle: Ref<TranslatedRolleWithAttrs | undefined> = ref();
-  const cachedSelectedKopersNr: Ref<string> = ref('');
-
   const hasKopersNummer: ComputedRef<boolean> = computed(() => {
     return !!personStore.currentPerson?.person.personalnummer;
   });
@@ -264,11 +260,10 @@ export function useZuordnungCreation(params: {
       selectedKopersNr.value,
     );
     createSuccessDialogVisible.value = !personenkontextStore.errorCode;
-    // Cache the selected values to avoid losing them on form reset (Useful for when Kopers is already assigned and we want to redirect back to form)
-    cachedSelectedOrganisation.value = selectedOrganisation.value;
-    cachedSelectedRolle.value = selectedRolle.value!;
-    cachedSelectedKopersNr.value = selectedKopersNr.value!;
-    formContext.resetForm();
+    // On failure the values are kept, so the user can correct them after navigating back to the form
+    if (!personenkontextStore.errorCode) {
+      formContext.resetForm();
+    }
     personStore.getPersonById(personId.value);
   }
 
@@ -283,14 +278,8 @@ export function useZuordnungCreation(params: {
   // Restores the creation form after the submission failed, e.g. because the KoPers.-Nr. is not unique
   function navigateToZuordnungForm(): void {
     personenkontextStore.errorCode = '';
+    // The form values were retained, reassigning the Rolle would let its watcher overwrite the selected Befristung
     mode.showForm();
-    if (cachedSelectedOrganisation.value) {
-      formContext.setFieldValue('selectedOrganisation', cachedSelectedOrganisation.value);
-    }
-    if (cachedSelectedRolle.value) {
-      formContext.setFieldValue('selectedRolle', cachedSelectedRolle.value);
-    }
-    formContext.setFieldValue('selectedKopersNr', cachedSelectedKopersNr.value);
 
     // Rollback the zuordnungen to be added
     state.zuordnungenWithPendingChanges.value = state.zuordnungenToBePersisted.value.filter(
