@@ -1,9 +1,9 @@
 import {
+  DbiamCreatePersonWithPersonenkontexteBodyParams,
   OrganisationResponseLegacy,
-  type RolleResponse,
   type DBiamPersonResponse,
   type PersonLandesbediensteterSearchResponse,
-  DbiamCreatePersonWithPersonenkontexteBodyParams,
+  type RolleResponse,
 } from '@/api-client/generated';
 import routes from '@/router/routes';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
@@ -19,8 +19,8 @@ import {
   RollenMerkmal,
   useRolleStore,
   type RolleStore,
-  type TranslatedRolleWithAttrs,
   type RolleWithServiceProvidersResponse,
+  type TranslatedRolleWithAttrs,
 } from '@/stores/RolleStore';
 import type { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
 import { enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';

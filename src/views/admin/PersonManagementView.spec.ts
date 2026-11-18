@@ -6,6 +6,7 @@ import {
   RolleResponse,
 } from '@/api-client/generated/api';
 import PersonBulkLock from '@/components/admin/personen/PersonBulkLock.vue';
+import RolleModify from '@/components/admin/rollen/RolleModify.vue';
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
@@ -1062,13 +1063,10 @@ describe('PersonManagementView', () => {
     benutzerEditSelect?.setValue(OperationType.MODIFY_ROLLE);
     await nextTick();
 
-    const rolleSelect: VueWrapper = wrapper?.findComponent(
-      '[data-testid="rolle-modify-layout-card"] [data-testid="rolle-select"]',
-    ) as VueWrapper;
-    const rollenItems: Array<{ value: string }> = (
-      rolleSelect as unknown as { props: (key: string) => Array<{ value: string }> }
-    ).props('items');
-    expect(rollenItems.some((item: { value: string }) => item.value === '99999')).toBe(true);
+    const rolleModify: VueWrapper<InstanceType<typeof RolleModify>> = wrapper!.findComponent(RolleModify);
+    expect(rolleModify.props('rollen')).toEqual(
+      expect.arrayContaining([expect.objectContaining({ value: '99999' })]),
+    );
   });
 
   test.each([
