@@ -236,6 +236,8 @@
   watchEffect(() => {
     if (isChangeKlasseFormActive.value) {
       isFormDirty.value = isChangeKlasseFieldDirty('selectedSchule') || isChangeKlasseFieldDirty('selectedNewKlasse');
+    } else if (isChangeBefristungActive.value) {
+      isFormDirty.value = differentDateSelected.value;
     } else if (isEditActive.value) {
       isFormDirty.value = isZuordnungCreationFormDirty.value;
     } else {

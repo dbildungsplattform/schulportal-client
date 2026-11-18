@@ -328,6 +328,28 @@ describe('ZuordnungenSection', () => {
 
       expect(isFormDirty(sectionWrapper)).toBe(false);
     });
+
+    test('it is dirty as soon as the change Befristung form differs from the current Befristung', async () => {
+      const { configStore, startEditingWithSelection, isFormDirty }: ZuordnungenSectionSetup = await setup();
+      configStore.configData = {
+        befristungBearbeitenEnabled: true,
+        rolleBearbeitenEnabled: true,
+        rolleErweiternEnabled: true,
+        setUemPasswordEnabled: true,
+        schulischeAngeboteErstellen: true,
+      };
+      const sectionWrapper: ZuordnungenSectionWrapper = await startEditingWithSelection();
+      await sectionWrapper.get('[data-testid="befristung-change-button"]').trigger('click');
+      await flushPromises();
+      // The current Befristung is preselected
+      expect(isFormDirty(sectionWrapper)).toBe(false);
+
+      const befristungInput: VueWrapper = sectionWrapper.findComponent({ name: 'BefristungInput' });
+      befristungInput.vm.$emit('update:befristung', '31.07.2099');
+      await flushPromises();
+
+      expect(isFormDirty(sectionWrapper)).toBe(true);
+    });
   });
 
   describe('creation form', () => {
