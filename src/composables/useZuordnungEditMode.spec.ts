@@ -1,19 +1,20 @@
 import { useZuordnungEditMode, type ZuordnungEditMode } from './useZuordnungEditMode';
 
 describe('useZuordnungEditMode', () => {
-  let editMode: ZuordnungEditMode;
-
-  beforeEach(() => {
-    editMode = useZuordnungEditMode();
-  });
+  const setup = (): { editMode: ZuordnungEditMode } => {
+    return { editMode: useZuordnungEditMode() };
+  };
 
   test('it starts without an active operation', () => {
+    const { editMode }: ReturnType<typeof setup> = setup();
+
     expect(editMode.isFormActive.value).toBe(false);
     expect(editMode.hasPendingChange.value).toBe(false);
     expect(editMode.pendingOperation.value).toBeUndefined();
   });
 
   test('it tells the form and the pending change of an operation apart', () => {
+    const { editMode }: ReturnType<typeof setup> = setup();
     const creation: ReturnType<ZuordnungEditMode['forOperation']> = editMode.forOperation('creation');
 
     creation.showForm();
@@ -28,6 +29,7 @@ describe('useZuordnungEditMode', () => {
   });
 
   test('it only has one active operation at a time', () => {
+    const { editMode }: ReturnType<typeof setup> = setup();
     const creation: ReturnType<ZuordnungEditMode['forOperation']> = editMode.forOperation('creation');
     const deletion: ReturnType<ZuordnungEditMode['forOperation']> = editMode.forOperation('deletion');
 
@@ -39,6 +41,7 @@ describe('useZuordnungEditMode', () => {
   });
 
   test('it only ends an operation that is active and can be reset', () => {
+    const { editMode }: ReturnType<typeof setup> = setup();
     const creation: ReturnType<ZuordnungEditMode['forOperation']> = editMode.forOperation('creation');
     const deletion: ReturnType<ZuordnungEditMode['forOperation']> = editMode.forOperation('deletion');
 

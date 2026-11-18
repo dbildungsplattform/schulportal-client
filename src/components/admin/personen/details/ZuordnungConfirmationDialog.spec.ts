@@ -1,16 +1,11 @@
-import { mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils';
+import { enableAutoUnmount, mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils';
 import ZuordnungConfirmationDialog from './ZuordnungConfirmationDialog.vue';
 
 describe('ZuordnungConfirmationDialog', () => {
-  let wrapper: VueWrapper | null = null;
+  enableAutoUnmount(afterEach);
 
-  afterEach(() => {
-    wrapper?.unmount();
-    wrapper = null;
-  });
-
-  function mountDialog(confirmFirst: boolean): VueWrapper<InstanceType<typeof ZuordnungConfirmationDialog>> {
-    return mount(ZuordnungConfirmationDialog, {
+  const setup = (confirmFirst: boolean): { wrapper: VueWrapper<InstanceType<typeof ZuordnungConfirmationDialog>> } => {
+    const wrapper: VueWrapper<InstanceType<typeof ZuordnungConfirmationDialog>> = mount(ZuordnungConfirmationDialog, {
       attachTo: document.body,
       props: {
         modelValue: true,
@@ -27,11 +22,14 @@ describe('ZuordnungConfirmationDialog', () => {
         },
       },
     });
-  }
+    return { wrapper };
+  };
 
-  function getAnswerButtons(dialog: VueWrapper): DOMWrapper<Element>[] {
+  const getAnswerButtons = (
+    dialog: VueWrapper<InstanceType<typeof ZuordnungConfirmationDialog>>,
+  ): DOMWrapper<Element>[] => {
     return dialog.findAll('button').filter((button: DOMWrapper<Element>) => ['Ja', 'Nein'].includes(button.text()));
-  }
+  };
 
   type ConfirmationCase = { confirmFirst: boolean; order: string[] };
 
@@ -39,7 +37,7 @@ describe('ZuordnungConfirmationDialog', () => {
     { confirmFirst: true, order: ['Ja', 'Nein'] },
     { confirmFirst: false, order: ['Nein', 'Ja'] },
   ])('it emits confirm and cancel (confirmFirst=$confirmFirst)', async ({ confirmFirst, order }: ConfirmationCase) => {
-    wrapper = mountDialog(confirmFirst);
+    const { wrapper }: ReturnType<typeof setup> = setup(confirmFirst);
 
     const buttons: DOMWrapper<Element>[] = getAnswerButtons(wrapper);
     expect(buttons.map((button: DOMWrapper<Element>) => button.text())).toEqual(order);
@@ -52,7 +50,7 @@ describe('ZuordnungConfirmationDialog', () => {
   });
 
   test('it emits cancel when the card is closed', async () => {
-    wrapper = mountDialog(false);
+    const { wrapper }: ReturnType<typeof setup> = setup(false);
 
     await wrapper.get('[data-testid="close-layout-card-button"]').trigger('click');
 

@@ -1,6 +1,6 @@
 import type { ZuordnungOperation } from '@/composables/useZuordnungEditMode';
 import type { ZuordnungWithKlasse } from '@/utils/zuordnungen';
-import { mount, type VueWrapper } from '@vue/test-utils';
+import { enableAutoUnmount, mount, type VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import ZuordnungenEditOverview from './ZuordnungenEditOverview.vue';
 
@@ -16,16 +16,30 @@ type EditOverviewProps = {
   selectedZuordnungen: ZuordnungWithKlasse[];
 };
 
+type EditOverviewSetup = {
+  wrapper: VueWrapper<InstanceType<typeof ZuordnungenEditOverview>>;
+  firstZuordnung: ZuordnungWithKlasse;
+  secondZuordnung: ZuordnungWithKlasse;
+  zuordnungen: ZuordnungWithKlasse[];
+  emitFromChild: (componentName: string, eventName: string, ...args: unknown[]) => void;
+  isDisabled: (testId: string) => boolean;
+};
+
 const NO_ZUORDNUNGEN_TEXT: string = 'Keine Schulzuordnungen gefunden.';
 
 describe('ZuordnungenEditOverview', () => {
-  const firstZuordnung: ZuordnungWithKlasse = DoFactory.getZuordnung();
-  const secondZuordnung: ZuordnungWithKlasse = DoFactory.getZuordnung();
-  const zuordnungen: ZuordnungWithKlasse[] = [firstZuordnung, secondZuordnung];
-  let wrapper: VueWrapper | null = null;
+  enableAutoUnmount(afterEach);
 
-  function mountComponent(props: Partial<EditOverviewProps> = {}): VueWrapper {
-    wrapper = mount(ZuordnungenEditOverview, {
+  const setup = (
+    props: Partial<EditOverviewProps> = {},
+    fixtures: { firstZuordnung: ZuordnungWithKlasse; secondZuordnung: ZuordnungWithKlasse } = {
+      firstZuordnung: DoFactory.getZuordnung(),
+      secondZuordnung: DoFactory.getZuordnung(),
+    },
+  ): EditOverviewSetup => {
+    const { firstZuordnung, secondZuordnung }: typeof fixtures = fixtures;
+    const zuordnungen: ZuordnungWithKlasse[] = [firstZuordnung, secondZuordnung];
+    const wrapper: VueWrapper<InstanceType<typeof ZuordnungenEditOverview>> = mount(ZuordnungenEditOverview, {
       props: {
         zuordnungen,
         newZuordnung: undefined,
@@ -42,37 +56,31 @@ describe('ZuordnungenEditOverview', () => {
         stubs: { ZuordnungenEditList: true, ZuordnungenEditActions: true },
       },
     });
-    return wrapper;
-  }
+    const emitFromChild = (componentName: string, eventName: string, ...args: unknown[]): void => {
+      const child: unknown = wrapper.findComponent({ name: componentName }).vm;
+      (child as { $emit: (event: string, ...payload: unknown[]) => void }).$emit(eventName, ...args);
+    };
 
-  function emitFromChild(componentName: string, eventName: string, ...args: unknown[]): void {
-    const child: unknown = wrapper!.findComponent({ name: componentName }).vm;
-    (child as { $emit: (event: string, ...payload: unknown[]) => void }).$emit(eventName, ...args);
-  }
+    const isDisabled = (testId: string): boolean =>
+      wrapper.get(`[data-testid="${testId}"]`).attributes('disabled') !== undefined;
 
-  function isDisabled(testId: string): boolean {
-    return wrapper!.get(`[data-testid="${testId}"]`).attributes('disabled') !== undefined;
-  }
-
-  afterEach(() => {
-    wrapper?.unmount();
-    wrapper = null;
-  });
+    return { wrapper, firstZuordnung, secondZuordnung, zuordnungen, emitFromChild, isDisabled };
+  };
 
   describe('without a pending operation', () => {
     test('it asks to select Zuordnungen and shows the actions', () => {
-      mountComponent();
+      const { wrapper }: ReturnType<typeof setup> = setup();
 
-      expect(wrapper!.text()).toContain('Schulzuordnungen bearbeiten: Bitte auswählen');
-      expect(wrapper!.find('[data-testid="check-and-save-headline"]').exists()).toBe(false);
-      expect(wrapper!.findComponent({ name: 'ZuordnungenEditActions' }).exists()).toBe(true);
+      expect(wrapper.text()).toContain('Schulzuordnungen bearbeiten: Bitte auswählen');
+      expect(wrapper.find('[data-testid="check-and-save-headline"]').exists()).toBe(false);
+      expect(wrapper.findComponent({ name: 'ZuordnungenEditActions' }).exists()).toBe(true);
     });
 
     test('it disables saving and explains that there are no changes', () => {
-      mountComponent();
+      const { wrapper, isDisabled }: ReturnType<typeof setup> = setup();
 
       expect(isDisabled('zuordnung-changes-save-button')).toBe(true);
-      expect(wrapper!.findComponent({ name: 'SpshTooltip' }).props()).toMatchObject({
+      expect(wrapper.findComponent({ name: 'SpshTooltip' }).props()).toMatchObject({
         enabledCondition: false,
         enabledText: 'Änderungen speichern',
         disabledText: 'Es liegen keine zu speichernden Änderungen vor.',
@@ -80,14 +88,18 @@ describe('ZuordnungenEditOverview', () => {
     });
 
     test('it passes the selection and the Zuordnungen to the actions', () => {
-      mountComponent({
-        selectedZuordnungen: [firstZuordnung],
-        isDeleteExternZuordnungDisabled: true,
-        canChangeKlasse: true,
-        hasKlassenZuordnung: true,
-      });
+      const firstZuordnung: ZuordnungWithKlasse = DoFactory.getZuordnung();
+      const { wrapper }: ReturnType<typeof setup> = setup(
+        {
+          selectedZuordnungen: [firstZuordnung],
+          isDeleteExternZuordnungDisabled: true,
+          canChangeKlasse: true,
+          hasKlassenZuordnung: true,
+        },
+        { firstZuordnung, secondZuordnung: DoFactory.getZuordnung() },
+      );
 
-      expect(wrapper!.findComponent({ name: 'ZuordnungenEditActions' }).props()).toMatchObject({
+      expect(wrapper.findComponent({ name: 'ZuordnungenEditActions' }).props()).toMatchObject({
         selectedCount: 1,
         editableZuordnungenCount: 2,
         isDeleteExternZuordnungDisabled: true,
@@ -99,24 +111,29 @@ describe('ZuordnungenEditOverview', () => {
     test.each(['delete', 'add', 'changeBefristung', 'changeKlasse'] as const)(
       'it forwards the %s event of the actions',
       (eventName: 'delete' | 'add' | 'changeBefristung' | 'changeKlasse') => {
-        mountComponent();
+        const { wrapper, emitFromChild }: ReturnType<typeof setup> = setup();
 
         emitFromChild('ZuordnungenEditActions', eventName);
 
-        expect(wrapper!.emitted(eventName)).toHaveLength(1);
+        expect(wrapper.emitted(eventName)).toHaveLength(1);
       },
     );
   });
 
   describe('list', () => {
     test('it receives the Zuordnungen, the new Zuordnung, the pending operation and the selection', () => {
-      mountComponent({
-        newZuordnung: secondZuordnung,
-        pendingOperation: 'creation',
-        selectedZuordnungen: [firstZuordnung],
-      });
+      const firstZuordnung: ZuordnungWithKlasse = DoFactory.getZuordnung();
+      const secondZuordnung: ZuordnungWithKlasse = DoFactory.getZuordnung();
+      const { wrapper, zuordnungen }: ReturnType<typeof setup> = setup(
+        {
+          newZuordnung: secondZuordnung,
+          pendingOperation: 'creation',
+          selectedZuordnungen: [firstZuordnung],
+        },
+        { firstZuordnung, secondZuordnung },
+      );
 
-      expect(wrapper!.findComponent({ name: 'ZuordnungenEditList' }).props()).toMatchObject({
+      expect(wrapper.findComponent({ name: 'ZuordnungenEditList' }).props()).toMatchObject({
         zuordnungen,
         newZuordnung: secondZuordnung,
         pendingOperation: 'creation',
@@ -125,38 +142,40 @@ describe('ZuordnungenEditOverview', () => {
     });
 
     test('it updates the selection when the list selects a Zuordnung', () => {
-      mountComponent();
+      const firstZuordnung: ZuordnungWithKlasse = DoFactory.getZuordnung();
+      const secondZuordnung: ZuordnungWithKlasse = DoFactory.getZuordnung();
+      const { wrapper, emitFromChild }: ReturnType<typeof setup> = setup({}, { firstZuordnung, secondZuordnung });
 
       emitFromChild('ZuordnungenEditList', 'update:selectedZuordnungen', [secondZuordnung]);
 
-      expect(wrapper!.emitted('update:selectedZuordnungen')).toEqual([[[secondZuordnung]]]);
+      expect(wrapper.emitted('update:selectedZuordnungen')).toEqual([[[secondZuordnung]]]);
     });
   });
 
   describe('with a pending operation', () => {
     test('it asks to check and save and hides the actions', () => {
-      mountComponent({ pendingOperation: 'changeBefristung' });
+      const { wrapper }: ReturnType<typeof setup> = setup({ pendingOperation: 'changeBefristung' });
 
-      expect(wrapper!.get('[data-testid="check-and-save-headline"]').text()).toBe(
+      expect(wrapper.get('[data-testid="check-and-save-headline"]').text()).toBe(
         'Bitte prüfen und abschließend speichern, um die Aktion auszuführen:',
       );
-      expect(wrapper!.text()).not.toContain('Bitte auswählen');
-      expect(wrapper!.findComponent({ name: 'ZuordnungenEditActions' }).exists()).toBe(false);
+      expect(wrapper.text()).not.toContain('Bitte auswählen');
+      expect(wrapper.findComponent({ name: 'ZuordnungenEditActions' }).exists()).toBe(false);
     });
 
     test('it enables saving and emits save', async () => {
-      mountComponent({ pendingOperation: 'changeKlasse' });
+      const { wrapper, isDisabled }: ReturnType<typeof setup> = setup({ pendingOperation: 'changeKlasse' });
 
       expect(isDisabled('zuordnung-changes-save-button')).toBe(false);
-      expect(wrapper!.findComponent({ name: 'SpshTooltip' }).props('enabledCondition')).toBe(true);
+      expect(wrapper.findComponent({ name: 'SpshTooltip' }).props('enabledCondition')).toBe(true);
 
-      await wrapper!.get('[data-testid="zuordnung-changes-save-button"]').trigger('click');
+      await wrapper.get('[data-testid="zuordnung-changes-save-button"]').trigger('click');
 
-      expect(wrapper!.emitted('save')).toHaveLength(1);
+      expect(wrapper.emitted('save')).toHaveLength(1);
     });
 
     test('it disables saving while loading', () => {
-      mountComponent({ pendingOperation: 'changeKlasse', isLoading: true });
+      const { isDisabled }: ReturnType<typeof setup> = setup({ pendingOperation: 'changeKlasse', isLoading: true });
 
       expect(isDisabled('zuordnung-changes-save-button')).toBe(true);
     });
@@ -164,41 +183,49 @@ describe('ZuordnungenEditOverview', () => {
 
   describe('hint for missing Zuordnungen', () => {
     test('it is shown when there are no Zuordnungen and no operation is pending', () => {
-      mountComponent({ zuordnungen: [], hasNoZuordnungen: true });
+      const { wrapper }: ReturnType<typeof setup> = setup({ zuordnungen: [], hasNoZuordnungen: true });
 
-      expect(wrapper!.text()).toContain(NO_ZUORDNUNGEN_TEXT);
+      expect(wrapper.text()).toContain(NO_ZUORDNUNGEN_TEXT);
     });
 
     test.each(['changeKlasse', 'changeBefristung'] as const)(
       'it is shown when there are no Zuordnungen and %s is pending',
       (pendingOperation: ZuordnungOperation) => {
-        mountComponent({ zuordnungen: [], hasNoZuordnungen: true, pendingOperation });
+        const { wrapper }: ReturnType<typeof setup> = setup({
+          zuordnungen: [],
+          hasNoZuordnungen: true,
+          pendingOperation,
+        });
 
-        expect(wrapper!.text()).toContain(NO_ZUORDNUNGEN_TEXT);
+        expect(wrapper.text()).toContain(NO_ZUORDNUNGEN_TEXT);
       },
     );
 
     test.each(['creation', 'deletion'] as const)(
       'it is hidden when %s is pending',
       (pendingOperation: ZuordnungOperation) => {
-        mountComponent({ zuordnungen: [], hasNoZuordnungen: true, pendingOperation });
+        const { wrapper }: ReturnType<typeof setup> = setup({
+          zuordnungen: [],
+          hasNoZuordnungen: true,
+          pendingOperation,
+        });
 
-        expect(wrapper!.text()).not.toContain(NO_ZUORDNUNGEN_TEXT);
+        expect(wrapper.text()).not.toContain(NO_ZUORDNUNGEN_TEXT);
       },
     );
 
     test('it is hidden when there are Zuordnungen', () => {
-      mountComponent({ hasNoZuordnungen: false });
+      const { wrapper }: ReturnType<typeof setup> = setup({ hasNoZuordnungen: false });
 
-      expect(wrapper!.text()).not.toContain(NO_ZUORDNUNGEN_TEXT);
+      expect(wrapper.text()).not.toContain(NO_ZUORDNUNGEN_TEXT);
     });
   });
 
   test('it emits cancel', async () => {
-    mountComponent();
+    const { wrapper }: ReturnType<typeof setup> = setup();
 
-    await wrapper!.get('[data-testid="zuordnung-edit-cancel"]').trigger('click');
+    await wrapper.get('[data-testid="zuordnung-edit-cancel"]').trigger('click');
 
-    expect(wrapper!.emitted('cancel')).toHaveLength(1);
+    expect(wrapper.emitted('cancel')).toHaveLength(1);
   });
 });

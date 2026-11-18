@@ -3,28 +3,49 @@ import PersonenkontextItem from '@/components/admin/personen/details/Personenkon
 import type { ZuordnungOperation } from '@/composables/useZuordnungEditMode';
 import { Zuordnung } from '@/stores/types/Zuordnung';
 import { DoFactory } from 'test/DoFactory';
-import { mount, type VueWrapper } from '@vue/test-utils';
+import { enableAutoUnmount, mount, type VueWrapper } from '@vue/test-utils';
 import { VCheckbox } from 'vuetify/components';
 import ZuordnungenEditList from './ZuordnungenEditList.vue';
 
+type ZuordnungenEditListSetup = {
+  wrapper: VueWrapper<InstanceType<typeof ZuordnungenEditList>>;
+  zuordnung: Zuordnung;
+};
+
+type PendingOperationSetup = {
+  wrapper: VueWrapper<InstanceType<typeof ZuordnungenEditList>>;
+  selectedZuordnung: Zuordnung;
+  otherZuordnung: Zuordnung;
+  getPendingStates: () => Array<PendingState | undefined>;
+};
+
 describe('ZuordnungenEditList', () => {
-  let wrapper: VueWrapper | null = null;
+  enableAutoUnmount(afterEach);
 
-  afterEach(() => {
-    wrapper?.unmount();
-    wrapper = null;
-  });
-
-  test('it selects a Zuordnung when there is no pending change', () => {
+  const setup = (
+    props: {
+      zuordnungen?: Zuordnung[];
+      newZuordnung?: Zuordnung | undefined;
+      pendingOperation?: ZuordnungOperation | undefined;
+      selectedZuordnungen?: Zuordnung[];
+    } = {},
+  ): ZuordnungenEditListSetup => {
     const zuordnung: Zuordnung = DoFactory.getZuordnung();
-    wrapper = mount(ZuordnungenEditList, {
+    const wrapper: VueWrapper<InstanceType<typeof ZuordnungenEditList>> = mount(ZuordnungenEditList, {
       props: {
         zuordnungen: [zuordnung],
         newZuordnung: undefined,
         pendingOperation: undefined,
         selectedZuordnungen: [],
+        ...props,
       },
     });
+
+    return { wrapper, zuordnung };
+  };
+
+  test('it selects a Zuordnung when there is no pending change', () => {
+    const { wrapper, zuordnung }: ReturnType<typeof setup> = setup();
 
     wrapper.findComponent(VCheckbox).vm.$emit('update:modelValue', [zuordnung]);
 
@@ -34,31 +55,23 @@ describe('ZuordnungenEditList', () => {
 
   test('it marks the new Zuordnung as created while a creation is pending', () => {
     const zuordnung: Zuordnung = DoFactory.getZuordnung();
-    wrapper = mount(ZuordnungenEditList, {
-      props: {
-        zuordnungen: [zuordnung],
-        newZuordnung: zuordnung,
-        pendingOperation: 'creation',
-        selectedZuordnungen: [],
-      },
+    const { wrapper }: ReturnType<typeof setup> = setup({
+      zuordnungen: [zuordnung],
+      newZuordnung: zuordnung,
+      pendingOperation: 'creation',
     });
 
     expect(wrapper.findComponent(PersonenkontextItem).props('pendingState')).toBe(PendingState.CREATED);
   });
 
   describe('with a selected and an unselected Zuordnung', () => {
-    const selectedZuordnung: Zuordnung = DoFactory.getZuordnung({ sskId: 'selected', rolleId: 'rolle' });
-    const otherZuordnung: Zuordnung = DoFactory.getZuordnung({ sskId: 'other', rolleId: 'rolle' });
-    const zuordnungWithAnotherRolle: Zuordnung = DoFactory.getZuordnung({
-      sskId: 'selected',
-      rolleId: 'another-rolle',
-    });
-
-    function mountWithPendingOperation(
+    const setupPendingOperation = (
       pendingOperation: ZuordnungOperation,
       newZuordnung: Zuordnung | undefined,
-    ): void {
-      wrapper = mount(ZuordnungenEditList, {
+    ): PendingOperationSetup => {
+      const selectedZuordnung: Zuordnung = DoFactory.getZuordnung({ sskId: 'selected', rolleId: 'rolle' });
+      const otherZuordnung: Zuordnung = DoFactory.getZuordnung({ sskId: 'other', rolleId: 'rolle' });
+      const wrapper: VueWrapper<InstanceType<typeof ZuordnungenEditList>> = mount(ZuordnungenEditList, {
         props: {
           zuordnungen: [selectedZuordnung, otherZuordnung],
           newZuordnung,
@@ -66,25 +79,31 @@ describe('ZuordnungenEditList', () => {
           selectedZuordnungen: [selectedZuordnung],
         },
       });
-    }
-
-    function getPendingStates(): Array<PendingState | undefined> {
-      return wrapper!
-        .findAllComponents(PersonenkontextItem)
-        .map(
-          (item: VueWrapper<InstanceType<typeof PersonenkontextItem>>) =>
-            item.props('pendingState') as PendingState | undefined,
-        );
-    }
+      const getPendingStates: () => Array<PendingState | undefined> = () =>
+        wrapper
+          .findAllComponents(PersonenkontextItem)
+          .map(
+            (item: VueWrapper<InstanceType<typeof PersonenkontextItem>>) =>
+              item.props('pendingState') as PendingState | undefined,
+          );
+      return { wrapper, selectedZuordnung, otherZuordnung, getPendingStates };
+    };
 
     test('it marks only the new Zuordnung as created while a creation is pending', () => {
-      mountWithPendingOperation('creation', otherZuordnung);
+      const otherZuordnung: Zuordnung = DoFactory.getZuordnung({ sskId: 'other', rolleId: 'rolle' });
+      const { getPendingStates }: ReturnType<typeof setupPendingOperation> = setupPendingOperation(
+        'creation',
+        otherZuordnung,
+      );
 
       expect(getPendingStates()).toEqual([undefined, PendingState.CREATED]);
     });
 
     test('it marks the selected Zuordnung as deleted while a deletion is pending', () => {
-      mountWithPendingOperation('deletion', undefined);
+      const { getPendingStates }: ReturnType<typeof setupPendingOperation> = setupPendingOperation(
+        'deletion',
+        undefined,
+      );
 
       expect(getPendingStates()).toEqual([PendingState.DELETED, undefined]);
     });
@@ -93,22 +112,31 @@ describe('ZuordnungenEditList', () => {
       'it shows the new Zuordnung next to the replaced one while a %s is pending',
       (pendingOperation: ZuordnungOperation) => {
         const newZuordnung: Zuordnung = DoFactory.getZuordnung({ sskId: 'selected', rolleId: 'rolle' });
-        mountWithPendingOperation(pendingOperation, newZuordnung);
+        const { wrapper, getPendingStates }: ReturnType<typeof setupPendingOperation> = setupPendingOperation(
+          pendingOperation,
+          newZuordnung,
+        );
 
         expect(getPendingStates()).toEqual([PendingState.DELETED, PendingState.CREATED, undefined]);
-        expect(wrapper!.findAllComponents(PersonenkontextItem)[1]!.props('zuordnung')).toEqual(newZuordnung);
+        expect(wrapper.findAllComponents(PersonenkontextItem)[1]!.props('zuordnung')).toEqual(newZuordnung);
       },
     );
 
-    test.each<[ZuordnungOperation, string, Zuordnung | undefined]>([
-      ['changeKlasse', 'no new Zuordnung', undefined],
-      ['changeKlasse', 'a new Zuordnung with another Rolle', zuordnungWithAnotherRolle],
-      ['changeBefristung', 'no new Zuordnung', undefined],
-      ['changeBefristung', 'a new Zuordnung with another Rolle', zuordnungWithAnotherRolle],
+    test.each<[ZuordnungOperation, string, boolean]>([
+      ['changeKlasse', 'no new Zuordnung', false],
+      ['changeKlasse', 'a new Zuordnung with another Rolle', true],
+      ['changeBefristung', 'no new Zuordnung', false],
+      ['changeBefristung', 'a new Zuordnung with another Rolle', true],
     ])(
       'it shows no new Zuordnung while a %s is pending with %s',
-      (pendingOperation: ZuordnungOperation, _case: string, newZuordnung: Zuordnung | undefined) => {
-        mountWithPendingOperation(pendingOperation, newZuordnung);
+      (pendingOperation: ZuordnungOperation, _case: string, hasDifferentRolle: boolean) => {
+        const newZuordnung: Zuordnung | undefined = hasDifferentRolle
+          ? DoFactory.getZuordnung({ sskId: 'selected', rolleId: 'another-rolle' })
+          : undefined;
+        const { getPendingStates }: ReturnType<typeof setupPendingOperation> = setupPendingOperation(
+          pendingOperation,
+          newZuordnung,
+        );
 
         expect(getPendingStates()).toEqual([PendingState.DELETED, undefined]);
       },

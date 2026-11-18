@@ -11,76 +11,99 @@ import { createPinia, setActivePinia } from 'pinia';
 import { DoFactory } from 'test/DoFactory';
 import { effectScope, ref, type EffectScope, type Ref } from 'vue';
 import type { Composer } from 'vue-i18n';
+import { onTestFinished } from 'vitest';
 import { useZuordnungChangeKlasse, type ZuordnungChangeKlasse } from './useZuordnungChangeKlasse';
 import { useZuordnungEditMode, type ZuordnungEditMode, type ZuordnungOperationMode } from './useZuordnungEditMode';
 
-const mockAdapter: MockAdapter = new MockAdapter(axiosApiInstance);
-const t: Composer['t'] = i18n.global.t;
+type ChangeKlasseSetup = {
+  mockAdapter: MockAdapter;
+  t: Composer['t'];
+  personStore: PersonStore;
+  editMode: ZuordnungEditMode;
+  mode: ZuordnungOperationMode;
+  state: ZuordnungenWorkingState;
+  isEditActive: Ref<boolean>;
+  personId: string;
+  schule: Organisation;
+  newKlasse: Organisation;
+  selectedZuordnung: ZuordnungWithKlasse;
+  otherZuordnung: Zuordnung;
+  createComposable: () => ZuordnungChangeKlasse;
+};
 
 describe('useZuordnungChangeKlasse', () => {
-  let scope: EffectScope;
-  let personStore: PersonStore;
-  let editMode: ZuordnungEditMode;
-  let mode: ZuordnungOperationMode;
-  let state: ZuordnungenWorkingState;
-  let isEditActive: Ref<boolean>;
-  let personId: string;
-  let schule: Organisation;
-  let newKlasse: Organisation;
-  let selectedZuordnung: ZuordnungWithKlasse;
-  let otherZuordnung: Zuordnung;
-
-  function createComposable(): ZuordnungChangeKlasse {
-    return scope.run(() => useZuordnungChangeKlasse({ t, personId: ref(personId), isEditActive, mode, state }))!;
-  }
-
-  async function submitNewKlasse(composable: ZuordnungChangeKlasse): Promise<void> {
-    composable.triggerChangeKlasse();
-    composable.selectedNewKlasse.value = newKlasse;
-    await composable.onSubmitChangeKlasse();
-  }
-
-  beforeEach(() => {
+  const setup = (): ChangeKlasseSetup => {
     setActivePinia(createPinia());
-    mockAdapter.reset();
-    scope = effectScope();
-    personStore = usePersonStore();
-    editMode = useZuordnungEditMode();
-    mode = editMode.forOperation('changeKlasse');
-    isEditActive = ref(true);
-    personId = DoFactory.getPerson().id;
+    const t: Composer['t'] = i18n.global.t;
+    const mockAdapter: MockAdapter = new MockAdapter(axiosApiInstance);
+    const scope: EffectScope = effectScope();
+    onTestFinished(() => {
+      scope.stop();
+      mockAdapter.restore();
+      vi.restoreAllMocks();
+    });
+    const personStore: PersonStore = usePersonStore();
+    const editMode: ZuordnungEditMode = useZuordnungEditMode();
+    const mode: ZuordnungOperationMode = editMode.forOperation('changeKlasse');
+    const isEditActive: Ref<boolean> = ref(true);
+    const personId: string = DoFactory.getPerson().id;
 
-    schule = DoFactory.getSchule();
+    const schule: Organisation = DoFactory.getSchule();
     const oldKlasse: Organisation = DoFactory.getKlasse(schule, { name: '5a' });
-    newKlasse = DoFactory.getKlasse(schule, { name: '6b' });
+    const newKlasse: Organisation = DoFactory.getKlasse(schule, { name: '6b' });
     const rolleId: string = DoFactory.getRolle().id;
-    selectedZuordnung = DoFactory.getZuordnung({ rolleId, rollenArt: RollenArt.Lern }, { organisation: schule });
+    const selectedZuordnung: ZuordnungWithKlasse = DoFactory.getZuordnung(
+      { rolleId, rollenArt: RollenArt.Lern },
+      { organisation: schule },
+    );
     selectedZuordnung.klasse = oldKlasse.name;
     const klassenZuordnung: Zuordnung = DoFactory.getZuordnung(
       { rolleId, rollenArt: RollenArt.Lern, typ: OrganisationsTyp.Klasse },
       { organisation: oldKlasse },
     );
-    otherZuordnung = DoFactory.getZuordnung();
+    const otherZuordnung: Zuordnung = DoFactory.getZuordnung();
     personStore.personenuebersicht = DoFactory.getPersonenUebersicht(DoFactory.getPerson({ id: personId }), [
       selectedZuordnung,
       klassenZuordnung,
       otherZuordnung,
     ]);
 
-    state = {
+    const state: ZuordnungenWorkingState = {
       selectedZuordnungen: ref<ZuordnungWithKlasse[]>([selectedZuordnung]),
       zuordnungenWithPendingChanges: ref<ZuordnungWithKlasse[] | undefined>([selectedZuordnung, otherZuordnung]),
       newZuordnung: ref<ZuordnungWithKlasse | undefined>(undefined),
       zuordnungenToBePersisted: ref<Zuordnung[]>([]),
     };
-  });
 
-  afterEach(() => {
-    scope.stop();
-  });
+    const createComposable = (): ZuordnungChangeKlasse =>
+      scope.run(() => useZuordnungChangeKlasse({ t, personId: ref(personId), isEditActive, mode, state }))!;
+
+    return {
+      mockAdapter,
+      t,
+      personStore,
+      editMode,
+      mode,
+      state,
+      isEditActive,
+      personId,
+      schule,
+      newKlasse,
+      selectedZuordnung,
+      otherZuordnung,
+      createComposable,
+    };
+  };
+
+  async function submitNewKlasse(composable: ZuordnungChangeKlasse, newKlasse: Organisation): Promise<void> {
+    composable.triggerChangeKlasse();
+    composable.selectedNewKlasse.value = newKlasse;
+    await composable.onSubmitChangeKlasse();
+  }
 
   describe('triggerChangeKlasse', () => {
     it('should show the form with the Schule and the current Klasse preselected', () => {
+      const { createComposable, selectedZuordnung, schule }: ReturnType<typeof setup> = setup();
       const composable: ZuordnungChangeKlasse = createComposable();
 
       composable.triggerChangeKlasse();
@@ -93,6 +116,7 @@ describe('useZuordnungChangeKlasse', () => {
 
   describe('isSubmitDisabled', () => {
     it('should only be enabled if another Klasse than the current one is selected', () => {
+      const { createComposable, newKlasse }: ReturnType<typeof setup> = setup();
       const composable: ZuordnungChangeKlasse = createComposable();
       composable.triggerChangeKlasse();
       expect(composable.isSubmitDisabled.value).toBe(true);
@@ -105,9 +129,10 @@ describe('useZuordnungChangeKlasse', () => {
 
   describe('onSubmitChangeKlasse', () => {
     it('should show the confirmation dialog with the old and the new Klasse', async () => {
+      const { createComposable, newKlasse, selectedZuordnung, t }: ReturnType<typeof setup> = setup();
       const composable: ZuordnungChangeKlasse = createComposable();
 
-      await submitNewKlasse(composable);
+      await submitNewKlasse(composable, newKlasse);
 
       expect(composable.changeKlasseConfirmationDialogVisible.value).toBe(true);
       expect(composable.changeKlasseConfirmationDialogMessage.value).toBe(
@@ -116,6 +141,7 @@ describe('useZuordnungChangeKlasse', () => {
     });
 
     it('should not show the confirmation dialog if no Klasse is selected for the Schule', async () => {
+      const { createComposable }: ReturnType<typeof setup> = setup();
       const composable: ZuordnungChangeKlasse = createComposable();
       composable.triggerChangeKlasse();
       composable.selectedNewKlasse.value = undefined;
@@ -130,8 +156,16 @@ describe('useZuordnungChangeKlasse', () => {
 
   describe('confirmDialogChangeKlasse', () => {
     it('should store the Zuordnungen with the new Klasse and show the review', async () => {
+      const {
+        createComposable,
+        newKlasse,
+        editMode,
+        state,
+        selectedZuordnung,
+        otherZuordnung,
+      }: ReturnType<typeof setup> = setup();
       const composable: ZuordnungChangeKlasse = createComposable();
-      await submitNewKlasse(composable);
+      await submitNewKlasse(composable, newKlasse);
 
       composable.confirmDialogChangeKlasse();
 
@@ -146,9 +180,10 @@ describe('useZuordnungChangeKlasse', () => {
     });
 
     it('should still store the new Klasse if there are no pending Zuordnungen', async () => {
+      const { state, createComposable, newKlasse }: ReturnType<typeof setup> = setup();
       state.zuordnungenWithPendingChanges.value = undefined;
       const composable: ZuordnungChangeKlasse = createComposable();
-      await submitNewKlasse(composable);
+      await submitNewKlasse(composable, newKlasse);
 
       composable.confirmDialogChangeKlasse();
 
@@ -159,8 +194,9 @@ describe('useZuordnungChangeKlasse', () => {
 
   describe('cancelChangeKlasse', () => {
     it('should only close the confirmation dialog', async () => {
+      const { createComposable, newKlasse, state }: ReturnType<typeof setup> = setup();
       const composable: ZuordnungChangeKlasse = createComposable();
-      await submitNewKlasse(composable);
+      await submitNewKlasse(composable, newKlasse);
 
       composable.cancelChangeKlasse();
 
@@ -171,11 +207,16 @@ describe('useZuordnungChangeKlasse', () => {
   });
 
   describe('confirmChangeKlasse', () => {
-    beforeEach(() => {
-      state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
-    });
-
     it('should send the Zuordnungen to be persisted, show the success dialog and reset the selection and the form', async () => {
+      const {
+        mockAdapter,
+        personId,
+        state,
+        selectedZuordnung,
+        otherZuordnung,
+        createComposable,
+      }: ReturnType<typeof setup> = setup();
+      state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
       mockAdapter
         .onPut(`/api/personenkontext-workflow/${personId}`)
         .replyOnce(200, DoFactory.getPersonenkontextUpdateResponse());
@@ -198,6 +239,15 @@ describe('useZuordnungChangeKlasse', () => {
     });
 
     it('should not show the success dialog if persisting fails', async () => {
+      const {
+        mockAdapter,
+        personId,
+        createComposable,
+        state,
+        selectedZuordnung,
+        otherZuordnung,
+      }: ReturnType<typeof setup> = setup();
+      state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
       mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(500, { i18nKey: 'SOME_ERROR' });
       const composable: ZuordnungChangeKlasse = createComposable();
 
@@ -209,6 +259,7 @@ describe('useZuordnungChangeKlasse', () => {
 
   describe('closeChangeKlasseSuccessDialog', () => {
     it('should reload the Zuordnungen, hide the dialog and end the edit mode', async () => {
+      const { mockAdapter, personId, createComposable, isEditActive, personStore }: ReturnType<typeof setup> = setup();
       mockAdapter
         .onGet(`/api/dbiam/personenuebersicht/${personId}`)
         .replyOnce(200, DoFactory.getDBiamPersonenuebersichtResponse({ personId }));

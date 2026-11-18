@@ -12,103 +12,135 @@ import { createPinia, setActivePinia } from 'pinia';
 import { DoFactory } from 'test/DoFactory';
 import { computed, ref, type Ref } from 'vue';
 import { useRouter, type Router } from 'vue-router';
+import { onTestFinished } from 'vitest';
 import type { ZuordnungOperationMode } from './useZuordnungEditMode';
 import { useZuordnungDeletion, type ZuordnungDeletion } from './useZuordnungDeletion';
+
+type DeletionSetup = {
+  mockAdapter: MockAdapter;
+  personStore: PersonStore;
+  authStore: AuthStore;
+  serviceProviderStore: ServiceProviderStore;
+  mode: ZuordnungOperationMode;
+  state: ZuordnungenWorkingState;
+  isEditActive: Ref<boolean>;
+  personId: Ref<string>;
+  push: ReturnType<typeof vi.fn>;
+  deletion: ZuordnungDeletion;
+  zuordnungA: ZuordnungWithKlasse;
+  zuordnungB: ZuordnungWithKlasse;
+  putUrl: () => string;
+  setSelection: (...selected: ZuordnungWithKlasse[]) => void;
+  getPersistedOrganisationIds: () => string[];
+};
 
 vi.mock('vue-router', () => ({
   useRouter: vi.fn(),
 }));
 
-const mockAdapter: MockAdapter = new MockAdapter(axiosApiInstance);
-
 describe('useZuordnungDeletion', () => {
-  let personStore: PersonStore;
-  let authStore: AuthStore;
-  let serviceProviderStore: ServiceProviderStore;
-  let mode: ZuordnungOperationMode;
-  let state: ZuordnungenWorkingState;
-  let isEditActive: Ref<boolean>;
-  let personId: Ref<string>;
-  let push: ReturnType<typeof vi.fn>;
-  let deletion: ZuordnungDeletion;
-  let zuordnungA: ZuordnungWithKlasse;
-  let zuordnungB: ZuordnungWithKlasse;
-
-  function putUrl(): string {
-    return `/api/personenkontext-workflow/${personId.value}`;
-  }
-
-  function setSelection(...selected: ZuordnungWithKlasse[]): void {
-    state.selectedZuordnungen.value = selected;
-  }
-
-  function getPersistedOrganisationIds(): string[] {
-    const body: DbiamUpdatePersonenkontexteBodyParams = JSON.parse(
-      String(mockAdapter.history['put']?.[0]?.data),
-    ) as DbiamUpdatePersonenkontexteBodyParams;
-    return body.personenkontexte.map((kontext: { organisationId: string }) => kontext.organisationId);
-  }
-
-  beforeEach(() => {
+  const setup = (): DeletionSetup => {
     setActivePinia(createPinia());
-    mockAdapter.reset();
+    const mockAdapter: MockAdapter = new MockAdapter(axiosApiInstance);
+    onTestFinished(() => {
+      mockAdapter.restore();
+      vi.restoreAllMocks();
+    });
     vi.restoreAllMocks();
 
-    personStore = usePersonStore();
-    authStore = useAuthStore();
-    serviceProviderStore = useServiceProviderStore();
+    const personStore: PersonStore = usePersonStore();
+    const authStore: AuthStore = useAuthStore();
+    const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
     vi.spyOn(personStore, 'getPersonenuebersichtById').mockResolvedValue();
     vi.spyOn(serviceProviderStore, 'getServiceProvidersByPersonId').mockResolvedValue();
 
-    push = vi.fn();
+    const push: ReturnType<typeof vi.fn> = vi.fn();
     vi.mocked(useRouter).mockReturnValue({ push } as unknown as Router);
 
-    zuordnungA = DoFactory.getZuordnung({ rollenArt: RollenArt.Lern });
-    zuordnungB = DoFactory.getZuordnung({ rollenArt: RollenArt.Lehr });
-    personId = ref(DoFactory.getPerson().id);
-    isEditActive = ref(true);
-    mode = {
+    const zuordnungA: ZuordnungWithKlasse = DoFactory.getZuordnung({ rollenArt: RollenArt.Lern });
+    const zuordnungB: ZuordnungWithKlasse = DoFactory.getZuordnung({ rollenArt: RollenArt.Lehr });
+    const personId: Ref<string> = ref(DoFactory.getPerson().id);
+    const isEditActive: Ref<boolean> = ref(true);
+    const mode: ZuordnungOperationMode = {
       isFormActive: computed(() => false),
       showForm: vi.fn(),
       showReview: vi.fn(),
       end: vi.fn(),
     };
-    state = {
+    const state: ZuordnungenWorkingState = {
       selectedZuordnungen: ref<ZuordnungWithKlasse[]>([]),
       zuordnungenWithPendingChanges: ref<ZuordnungWithKlasse[] | undefined>([zuordnungA, zuordnungB]),
       newZuordnung: ref<ZuordnungWithKlasse | undefined>(undefined),
       zuordnungenToBePersisted: ref<Zuordnung[]>([]),
     };
     authStore.currentUser = DoFactory.getUserinfoResponse({ personId: DoFactory.getPerson().id });
-    deletion = useZuordnungDeletion({ personId, isEditActive, mode, state });
-  });
+    const deletion: ZuordnungDeletion = useZuordnungDeletion({ personId, isEditActive, mode, state });
+
+    const putUrl = (): string => `/api/personenkontext-workflow/${personId.value}`;
+    const setSelection = (...selected: ZuordnungWithKlasse[]): void => {
+      state.selectedZuordnungen.value = selected;
+    };
+    const getPersistedOrganisationIds = (): string[] => {
+      const body: DbiamUpdatePersonenkontexteBodyParams = JSON.parse(
+        String(mockAdapter.history['put']?.[0]?.data),
+      ) as DbiamUpdatePersonenkontexteBodyParams;
+      return body.personenkontexte.map((kontext: { organisationId: string }) => kontext.organisationId);
+    };
+
+    return {
+      mockAdapter,
+      personStore,
+      authStore,
+      serviceProviderStore,
+      mode,
+      state,
+      isEditActive,
+      personId,
+      push,
+      deletion,
+      zuordnungA,
+      zuordnungB,
+      putUrl,
+      setSelection,
+      getPersistedOrganisationIds,
+    };
+  };
 
   it('should show the review of the deletion when preparing it', () => {
+    const { deletion, mode }: ReturnType<typeof setup> = setup();
     deletion.prepareDeletion();
 
     expect(mode.showReview).toHaveBeenCalledOnce();
   });
 
   describe('isDeleteExternZuordnungDisabled', () => {
-    const landesadmin: UserInfo = DoFactory.getUserinfoResponse({
-      personenkontexte: [
-        DoFactory.getPersonenkontextRolleFieldsResponse({
-          organisation: DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Root }),
-        }),
-      ],
-    });
-    const schuladmin: UserInfo = DoFactory.getUserinfoResponse();
-    const withoutPersonenkontexte: UserInfo = DoFactory.getUserinfoResponse({ personenkontexte: undefined });
-
-    test.each<[string, UserInfo | null, RollenArt, boolean]>([
-      ['a Landesadmin', landesadmin, RollenArt.Extern, false],
-      ['a Schuladmin', schuladmin, RollenArt.Extern, true],
-      ['a user without Personenkontexte', withoutPersonenkontexte, RollenArt.Extern, true],
-      ['no current user', null, RollenArt.Extern, true],
-      ['a Schuladmin deleting a non-extern Zuordnung', schuladmin, RollenArt.Lehr, false],
+    test.each<[string, 'landesadmin' | 'schuladmin' | 'no-context' | 'none', RollenArt, boolean]>([
+      ['a Landesadmin', 'landesadmin', RollenArt.Extern, false],
+      ['a Schuladmin', 'schuladmin', RollenArt.Extern, true],
+      ['a user without Personenkontexte', 'no-context', RollenArt.Extern, true],
+      ['no current user', 'none', RollenArt.Extern, true],
+      ['a Schuladmin deleting a non-extern Zuordnung', 'schuladmin', RollenArt.Lehr, false],
     ])(
       'should be computed for %s',
-      (_description: string, user: UserInfo | null, rollenArt: RollenArt, expected: boolean) => {
+      (
+        _description: string,
+        userType: 'landesadmin' | 'schuladmin' | 'no-context' | 'none',
+        rollenArt: RollenArt,
+        expected: boolean,
+      ) => {
+        const { authStore, deletion, setSelection }: ReturnType<typeof setup> = setup();
+        const user: UserInfo | null = {
+          landesadmin: DoFactory.getUserinfoResponse({
+            personenkontexte: [
+              DoFactory.getPersonenkontextRolleFieldsResponse({
+                organisation: DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Root }),
+              }),
+            ],
+          }),
+          schuladmin: DoFactory.getUserinfoResponse(),
+          'no-context': DoFactory.getUserinfoResponse({ personenkontexte: undefined }),
+          none: null,
+        }[userType];
         authStore.currentUser = user;
         setSelection(DoFactory.getZuordnung({ rollenArt }));
 
@@ -119,6 +151,8 @@ describe('useZuordnungDeletion', () => {
 
   describe('confirmDeletion', () => {
     it('should not delete anything if the current user deletes their own Zuordnungen', async () => {
+      const { authStore, deletion, personId, setSelection, mockAdapter, zuordnungA }: ReturnType<typeof setup> =
+        setup();
       authStore.currentUser = DoFactory.getUserinfoResponse({ personId: personId.value });
       setSelection(zuordnungA);
 
@@ -133,6 +167,16 @@ describe('useZuordnungDeletion', () => {
     });
 
     it('should persist the remaining Zuordnungen and show the success dialog', async () => {
+      const {
+        mockAdapter,
+        deletion,
+        putUrl,
+        setSelection,
+        zuordnungA,
+        zuordnungB,
+        state,
+        getPersistedOrganisationIds,
+      }: ReturnType<typeof setup> = setup();
       mockAdapter.onPut(putUrl()).replyOnce(200, DoFactory.getPersonenkontextUpdateResponse());
       setSelection(zuordnungB);
 
@@ -145,6 +189,7 @@ describe('useZuordnungDeletion', () => {
     });
 
     it('should not show the success dialog if persisting fails', async () => {
+      const { mockAdapter, deletion, putUrl, setSelection, zuordnungB }: ReturnType<typeof setup> = setup();
       mockAdapter.onPut(putUrl()).replyOnce(500, { i18nKey: 'PERSONENKONTEXTE_UPDATE_ERROR' });
       setSelection(zuordnungB);
 
@@ -156,11 +201,21 @@ describe('useZuordnungDeletion', () => {
   });
 
   describe('closeDeleteSuccessDialog', () => {
-    beforeEach(() => {
-      mockAdapter.onPut(putUrl()).replyOnce(200, DoFactory.getPersonenkontextUpdateResponse());
-    });
-
     it('should end the edit mode and reload the person if editable Zuordnungen are left', async () => {
+      const {
+        mockAdapter,
+        deletion,
+        putUrl,
+        setSelection,
+        zuordnungB,
+        isEditActive,
+        mode,
+        personStore,
+        personId,
+        serviceProviderStore,
+        push,
+      }: ReturnType<typeof setup> = setup();
+      mockAdapter.onPut(putUrl()).replyOnce(200, DoFactory.getPersonenkontextUpdateResponse());
       setSelection(zuordnungB);
       await deletion.confirmDeletion();
 
@@ -175,6 +230,20 @@ describe('useZuordnungDeletion', () => {
     });
 
     it('should navigate to the person table if no editable Zuordnungen are left', async () => {
+      const {
+        mockAdapter,
+        deletion,
+        putUrl,
+        setSelection,
+        zuordnungA,
+        zuordnungB,
+        isEditActive,
+        mode,
+        personStore,
+        serviceProviderStore,
+        push,
+      }: ReturnType<typeof setup> = setup();
+      mockAdapter.onPut(putUrl()).replyOnce(200, DoFactory.getPersonenkontextUpdateResponse());
       setSelection(zuordnungA, zuordnungB);
       await deletion.confirmDeletion();
 

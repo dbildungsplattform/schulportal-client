@@ -9,33 +9,33 @@ import { adjustDateForTimezoneAndFormat, formatDateToISO, getNextSchuljahresende
 import type { ZuordnungenWorkingState, ZuordnungWithKlasse } from '@/utils/zuordnungen';
 import { flushPromises } from '@vue/test-utils';
 import MockAdapter from 'axios-mock-adapter';
-import { createPinia, setActivePinia } from 'pinia';
+import { createPinia, getActivePinia, setActivePinia, type Pinia } from 'pinia';
 import { DoFactory } from 'test/DoFactory';
-import { effectScope, ref, type EffectScope, type Ref } from 'vue';
+import { createApp, defineComponent, ref, type App, type Ref } from 'vue';
 import type { Composer } from 'vue-i18n';
+import { onTestFinished } from 'vitest';
 import { useZuordnungChangeBefristung, type ZuordnungChangeBefristung } from './useZuordnungChangeBefristung';
 import { useZuordnungEditMode, type ZuordnungEditMode, type ZuordnungOperationMode } from './useZuordnungEditMode';
 
-// The Befristung utils use a module-level RolleStore that is created on import, so it is read the same way here
-const rolleStore: RolleStore = useRolleStore();
-const mockAdapter: MockAdapter = new MockAdapter(axiosApiInstance);
-const t: Composer['t'] = i18n.global.t;
+type ChangeBefristungSetup = {
+  mockAdapter: MockAdapter;
+  t: Composer['t'];
+  rolleStore: RolleStore;
+  personStore: PersonStore;
+  editMode: ZuordnungEditMode;
+  mode: ZuordnungOperationMode;
+  state: ZuordnungenWorkingState;
+  isEditActive: Ref<boolean>;
+  personId: string;
+  selectedZuordnung: ZuordnungWithKlasse;
+  otherZuordnung: Zuordnung;
+  futureDate: string;
+  otherFutureDate: string;
+  createState: () => ZuordnungenWorkingState;
+  createComposable: (workingState?: ZuordnungenWorkingState) => ZuordnungChangeBefristung;
+};
 
 describe('useZuordnungChangeBefristung', () => {
-  const futureYear: number = new Date().getFullYear() + 2;
-  const futureDate: string = `15.03.${futureYear}`;
-  const otherFutureDate: string = `20.04.${futureYear}`;
-
-  let scope: EffectScope;
-  let personStore: PersonStore;
-  let editMode: ZuordnungEditMode;
-  let mode: ZuordnungOperationMode;
-  let state: ZuordnungenWorkingState;
-  let isEditActive: Ref<boolean>;
-  let personId: string;
-  let selectedZuordnung: ZuordnungWithKlasse;
-  let otherZuordnung: Zuordnung;
-
   function createState(): ZuordnungenWorkingState {
     return {
       selectedZuordnungen: ref<ZuordnungWithKlasse[]>([]),
@@ -45,27 +45,40 @@ describe('useZuordnungChangeBefristung', () => {
     };
   }
 
-  function createComposable(workingState: ZuordnungenWorkingState = state): ZuordnungChangeBefristung {
-    return scope.run(() =>
-      useZuordnungChangeBefristung({ t, personId: ref(personId), isEditActive, mode, state: workingState }),
-    )!;
-  }
-
-  beforeEach(() => {
-    setActivePinia(createPinia());
-    mockAdapter.reset();
+  const setup = (options: { useRealPinia?: boolean } = {}): ChangeBefristungSetup => {
+    const previousPinia: Pinia | undefined = getActivePinia();
+    if (options.useRealPinia) {
+      setActivePinia(createPinia());
+    }
+    const mockAdapter: MockAdapter = new MockAdapter(axiosApiInstance);
+    const t: Composer['t'] = i18n.global.t;
+    const personStore: PersonStore = usePersonStore();
+    const rolleStore: RolleStore = useRolleStore();
+    const apps: App[] = [];
+    onTestFinished(() => {
+      apps.forEach((app: App) => app.unmount());
+      mockAdapter.restore();
+      vi.restoreAllMocks();
+      if (previousPinia) {
+        setActivePinia(previousPinia);
+      }
+    });
+    vi.restoreAllMocks();
+    personStore.$reset();
     rolleStore.$reset();
-    scope = effectScope();
-    personStore = usePersonStore();
-    editMode = useZuordnungEditMode();
-    mode = editMode.forOperation('changeBefristung');
-    state = createState();
-    isEditActive = ref(true);
-    personId = DoFactory.getPerson().id;
+
+    const editMode: ZuordnungEditMode = useZuordnungEditMode();
+    const mode: ZuordnungOperationMode = editMode.forOperation('changeBefristung');
+    const state: ZuordnungenWorkingState = createState();
+    const isEditActive: Ref<boolean> = ref(true);
+    const personId: string = DoFactory.getPerson().id;
+    const futureYear: number = new Date().getFullYear() + 2;
+    const futureDate: string = `15.03.${futureYear}`;
+    const otherFutureDate: string = `20.04.${futureYear}`;
 
     const schule: Organisation = DoFactory.getSchule();
     const rolleId: string = DoFactory.getRolle().id;
-    selectedZuordnung = DoFactory.getZuordnung(
+    const selectedZuordnung: ZuordnungWithKlasse = DoFactory.getZuordnung(
       { rolleId, befristung: formatDateToISO(futureDate)! },
       { organisation: schule },
     );
@@ -78,18 +91,52 @@ describe('useZuordnungChangeBefristung', () => {
       },
       { organisation: DoFactory.getKlasse(schule) },
     );
-    otherZuordnung = DoFactory.getZuordnung();
+    const otherZuordnung: Zuordnung = DoFactory.getZuordnung();
     personStore.personenuebersicht = DoFactory.getPersonenUebersicht(DoFactory.getPerson({ id: personId }), [
       selectedZuordnung,
       klassenZuordnung,
       otherZuordnung,
     ]);
     state.selectedZuordnungen.value = [selectedZuordnung];
-  });
+    const createComposable = (workingState: ZuordnungenWorkingState = state): ZuordnungChangeBefristung => {
+      let composable!: ZuordnungChangeBefristung;
+      const app: App = createApp(
+        defineComponent({
+          setup() {
+            composable = useZuordnungChangeBefristung({
+              t,
+              personId: ref(personId),
+              isEditActive,
+              mode,
+              state: workingState,
+            });
+            return () => null;
+          },
+        }),
+      );
+      app.mount(document.createElement('div'));
+      apps.push(app);
+      return composable;
+    };
 
-  afterEach(() => {
-    scope.stop();
-  });
+    return {
+      mockAdapter,
+      t,
+      rolleStore,
+      personStore,
+      editMode,
+      mode,
+      state,
+      isEditActive,
+      personId,
+      selectedZuordnung,
+      otherZuordnung,
+      futureDate,
+      otherFutureDate,
+      createState,
+      createComposable,
+    };
+  };
 
   // Selects the unbefristet option the way the radio button does, after the form has settled
   async function selectUnbefristet(composable: ZuordnungChangeBefristung): Promise<void> {
@@ -107,6 +154,7 @@ describe('useZuordnungChangeBefristung', () => {
 
   describe('triggerChangeBefristung', () => {
     it('should show the form with the Rolle and the current Befristung of the selected Zuordnung', () => {
+      const { createComposable, selectedZuordnung }: ReturnType<typeof setup> = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
 
       composable.triggerChangeBefristung();
@@ -119,6 +167,7 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should preselect the Schuljahresende if it is the current Befristung', () => {
+      const { selectedZuordnung, createComposable }: ReturnType<typeof setup> = setup();
       selectedZuordnung.befristung = formatDateToISO(getNextSchuljahresende())!;
       const composable: ZuordnungChangeBefristung = createComposable();
 
@@ -128,6 +177,7 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should preselect unbefristet if the selected Zuordnung has no Befristung', () => {
+      const { selectedZuordnung, createComposable }: ReturnType<typeof setup> = setup();
       selectedZuordnung.befristung = null;
       const composable: ZuordnungChangeBefristung = createComposable();
 
@@ -139,6 +189,7 @@ describe('useZuordnungChangeBefristung', () => {
 
   describe('differentDateSelected', () => {
     it('should be true only if the selected Befristung differs from the current one', () => {
+      const { createComposable, otherFutureDate }: ReturnType<typeof setup> = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
       composable.triggerChangeBefristung();
       expect(composable.differentDateSelected.value).toBe(false);
@@ -149,6 +200,7 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should compare against no Befristung if the selected Zuordnung is unbefristet', () => {
+      const { selectedZuordnung, createComposable }: ReturnType<typeof setup> = setup();
       selectedZuordnung.befristung = null;
       const composable: ZuordnungChangeBefristung = createComposable();
       composable.triggerChangeBefristung();
@@ -162,6 +214,7 @@ describe('useZuordnungChangeBefristung', () => {
 
   describe('onSubmitChangeBefristung', () => {
     it('should show the confirmation dialog with the old and the new Befristung', async () => {
+      const { createComposable, otherFutureDate, selectedZuordnung, t }: ReturnType<typeof setup> = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
 
       await submitNewBefristung(composable, otherFutureDate);
@@ -176,6 +229,7 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should name an unlimited Befristung "unbefristet" in the confirmation message', async () => {
+      const { createComposable, selectedZuordnung, t }: ReturnType<typeof setup> = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
       composable.triggerChangeBefristung();
       await selectUnbefristet(composable);
@@ -191,6 +245,7 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should name the old Befristung "unbefristet" if the selected Zuordnung has none', async () => {
+      const { selectedZuordnung, createComposable, otherFutureDate, t }: ReturnType<typeof setup> = setup();
       selectedZuordnung.befristung = null;
       const composable: ZuordnungChangeBefristung = createComposable();
 
@@ -205,6 +260,7 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should not show the confirmation dialog if the form is invalid', async () => {
+      const { createComposable }: ReturnType<typeof setup> = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
 
       await submitNewBefristung(composable, '01.01.2000');
@@ -217,6 +273,7 @@ describe('useZuordnungChangeBefristung', () => {
 
   describe('confirmDialogChangeBefristung', () => {
     it('should store the Zuordnungen with the new Befristung and show the review', async () => {
+      const { createComposable, otherFutureDate, editMode, state, otherZuordnung }: ReturnType<typeof setup> = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
       await submitNewBefristung(composable, otherFutureDate);
 
@@ -235,6 +292,7 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should store no Befristung if unbefristet is selected', async () => {
+      const { createComposable, state }: ReturnType<typeof setup> = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
       composable.triggerChangeBefristung();
       await selectUnbefristet(composable);
@@ -248,6 +306,7 @@ describe('useZuordnungChangeBefristung', () => {
 
   describe('cancelChangeBefristung', () => {
     it('should only close the confirmation dialog', async () => {
+      const { createComposable, otherFutureDate, state }: ReturnType<typeof setup> = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
       await submitNewBefristung(composable, otherFutureDate);
 
@@ -260,11 +319,18 @@ describe('useZuordnungChangeBefristung', () => {
   });
 
   describe('confirmChangeBefristung', () => {
-    beforeEach(() => {
-      state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
-    });
-
     it('should send the Zuordnungen to be persisted, show the success dialog and reset the selection and the form', async () => {
+      const {
+        mockAdapter,
+        personId,
+        state,
+        selectedZuordnung,
+        otherZuordnung,
+        createComposable,
+      }: ReturnType<typeof setup> = setup({
+        useRealPinia: true,
+      });
+      state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
       mockAdapter
         .onPut(`/api/personenkontext-workflow/${personId}`)
         .replyOnce(200, DoFactory.getPersonenkontextUpdateResponse());
@@ -286,6 +352,17 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should not show the success dialog if persisting fails', async () => {
+      const {
+        mockAdapter,
+        personId,
+        state,
+        selectedZuordnung,
+        otherZuordnung,
+        createComposable,
+      }: ReturnType<typeof setup> = setup({
+        useRealPinia: true,
+      });
+      state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
       mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(500, { i18nKey: 'SOME_ERROR' });
       const composable: ZuordnungChangeBefristung = createComposable();
 
@@ -297,6 +374,9 @@ describe('useZuordnungChangeBefristung', () => {
 
   describe('closeChangeBefristungSuccessDialog', () => {
     it('should reload the Zuordnungen, hide the dialog and end the edit mode', async () => {
+      const { mockAdapter, personId, createComposable, isEditActive }: ReturnType<typeof setup> = setup({
+        useRealPinia: true,
+      });
       mockAdapter
         .onGet(`/api/dbiam/personenuebersicht/${personId}`)
         .replyOnce(200, DoFactory.getDBiamPersonenuebersichtResponse({ personId }));
@@ -316,6 +396,7 @@ describe('useZuordnungChangeBefristung', () => {
 
   describe('Befristungspflicht', () => {
     it('should keep the flags per composable instance', async () => {
+      const { rolleStore, selectedZuordnung, createComposable, createState }: ReturnType<typeof setup> = setup();
       rolleStore.rollenForPersonenkontextCreation = [
         {
           value: selectedZuordnung.rolleId,
