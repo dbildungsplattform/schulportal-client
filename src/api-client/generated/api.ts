@@ -36,7 +36,7 @@ export interface ApplyRollenerweiterungBodyParams {
      */
     'addErweiterungenForRolleIds': Array<string>;
     /**
-     * List of rolleIds to apply.
+     * List of rolleIds to remove.
      * @type {Array<string>}
      * @memberof ApplyRollenerweiterungBodyParams
      */
@@ -744,7 +744,8 @@ export interface DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInner {
 
 export const DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerErrorIdTypeEnum = {
     Rolle: 'ROLLE',
-    Angebot: 'ANGEBOT'
+    Angebot: 'ANGEBOT',
+    RollenartBeschraenkung: 'ROLLENART_BESCHRAENKUNG'
 } as const;
 
 export type DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerErrorIdTypeEnum = typeof DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerErrorIdTypeEnum[keyof typeof DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerErrorIdTypeEnum];
@@ -1094,7 +1095,8 @@ export const DbiamRolleErrorI18nKeyEnum = {
     ServiceProviderNichtNachtraeglichZuweisbar: 'SERVICE_PROVIDER_NICHT_NACHTRAEGLICH_ZUWEISBAR',
     ServiceProviderNichtVerfuegbarFuerRollenerweiterung: 'SERVICE_PROVIDER_NICHT_VERFUEGBAR_FUER_ROLLENERWEITERUNG',
     NoRedundantRollenerweiterung: 'NO_REDUNDANT_ROLLENERWEITERUNG',
-    ServiceProviderProvidedOutOfTree: 'SERVICE_PROVIDER_PROVIDED_OUT_OF_TREE'
+    ServiceProviderProvidedOutOfTree: 'SERVICE_PROVIDER_PROVIDED_OUT_OF_TREE',
+    RollenartNotAllowedForServiceProvider: 'ROLLENART_NOT_ALLOWED_FOR_SERVICE_PROVIDER'
 } as const;
 
 export type DbiamRolleErrorI18nKeyEnum = typeof DbiamRolleErrorI18nKeyEnum[keyof typeof DbiamRolleErrorI18nKeyEnum];
@@ -14654,8 +14656,8 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * Apply changes to rollen-erweiterung for a given angebot and organisation.
          * @summary 
-         * @param {string} angebotId The spshPersonId of the person.
-         * @param {string} organisationId The spshPersonId of the person.
+         * @param {string} angebotId The angebotId for the rollenerweiterung.
+         * @param {string} organisationId The organisationId for the rollenerweiterung.
          * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -14903,8 +14905,8 @@ export const RolleApiFp = function(configuration?: Configuration) {
         /**
          * Apply changes to rollen-erweiterung for a given angebot and organisation.
          * @summary 
-         * @param {string} angebotId The spshPersonId of the person.
-         * @param {string} organisationId The spshPersonId of the person.
+         * @param {string} angebotId The angebotId for the rollenerweiterung.
+         * @param {string} organisationId The organisationId for the rollenerweiterung.
          * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -15099,8 +15101,8 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
         /**
          * Apply changes to rollen-erweiterung for a given angebot and organisation.
          * @summary 
-         * @param {string} angebotId The spshPersonId of the person.
-         * @param {string} organisationId The spshPersonId of the person.
+         * @param {string} angebotId The angebotId for the rollenerweiterung.
+         * @param {string} organisationId The organisationId for the rollenerweiterung.
          * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -15293,8 +15295,8 @@ export interface RolleApiInterface {
     /**
      * Apply changes to rollen-erweiterung for a given angebot and organisation.
      * @summary 
-     * @param {string} angebotId The spshPersonId of the person.
-     * @param {string} organisationId The spshPersonId of the person.
+     * @param {string} angebotId The angebotId for the rollenerweiterung.
+     * @param {string} organisationId The organisationId for the rollenerweiterung.
      * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -15515,8 +15517,8 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
     /**
      * Apply changes to rollen-erweiterung for a given angebot and organisation.
      * @summary 
-     * @param {string} angebotId The spshPersonId of the person.
-     * @param {string} organisationId The spshPersonId of the person.
+     * @param {string} angebotId The angebotId for the rollenerweiterung.
+     * @param {string} organisationId The organisationId for the rollenerweiterung.
      * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
