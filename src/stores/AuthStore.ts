@@ -72,6 +72,7 @@ type AuthState = {
   hasEingeschränktAngeboteVerwaltenPermission: boolean;
   hasVidisPermission: boolean;
   isAuthenticated: boolean;
+  isLoggingOut: boolean;
   acr: StepUpLevel;
   timeLimitInfos: PersonTimeLimitInfoResponse[];
   csrfToken: string | null;
@@ -114,6 +115,7 @@ export const useAuthStore: StoreDefinition<'authStore', AuthState, AuthGetters, 
       grantedGatedRollenSystemrechte: [],
       hasEingeschränktAngeboteVerwaltenPermission: false,
       isAuthenticated: false,
+      isLoggingOut: false,
       acr: StepUpLevel.NONE,
       timeLimitInfos: [],
       csrfToken: null,

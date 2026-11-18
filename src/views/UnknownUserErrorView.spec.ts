@@ -4,14 +4,21 @@ import { expect, test } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import UnknownUserErrorView from './UnknownUserErrorView.vue';
+import { useAuthStore } from '@/stores/AuthStore';
 
 let wrapper: VueWrapper | null = null;
 let router: Router;
 
 beforeEach(async () => {
+  useAuthStore().$reset();
   router = createRouter({
     history: createWebHistory(),
     routes,
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    wrapper?.unmount();
   });
 
   router.push('/');
@@ -55,7 +62,12 @@ describe('UnknownUserErrorView', () => {
     expect(logoutButton?.isVisible()).toBe(true);
     expect(logoutButton?.text()).toEqual('Abmelden');
 
-    await logoutButton?.trigger('click');
+    const origin: string = window.origin;
+    const clickEvent: MouseEvent = new MouseEvent('click', { bubbles: true });
+    vi.stubGlobal('window', { origin, location: { href: '' } });
+    logoutButton!.element.dispatchEvent(clickEvent);
     await nextTick();
+    expect(useAuthStore().isLoggingOut).toBe(true);
+    expect(window.location.href).toBe(`${origin}/api/auth/logout`);
   });
 });

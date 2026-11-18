@@ -1,7 +1,11 @@
 <script setup lang="ts">
   import SpshAlert from '@/components/alert/SpshAlert.vue';
+  import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
+
+  const auth: AuthStore = useAuthStore();
 
   function logout(): void {
+    auth.isLoggingOut = true;
     const url: URL = new URL(window.origin + '/api/auth/logout');
     window.location.href = url.toString();
   }
