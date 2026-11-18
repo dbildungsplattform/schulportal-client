@@ -553,11 +553,18 @@ describe('rolleStore', () => {
     });
 
     it('should set an error when the requested MPT role is not returned', async () => {
-      mockadapter.onGet().replyOnce(200, []);
+      const rolleId: string = 'missing-rolle-id';
 
-      await rolleStore.getMptRolleById('rolle-1', 'organisation-1');
+      mockadapter.onGet().replyOnce(200, {
+        total: 0,
+        offset: 0,
+        limit: 0,
+        items: [],
+      });
 
-      expect(rolleStore.currentMptRolle).toBe(null);
+      await rolleStore.getMptRolleById(rolleId, 'organisation-1');
+
+      expect(rolleStore.currentMptRolle).toBeNull();
       expect(rolleStore.errorCode).toBe('UNSPECIFIED_ERROR');
       expect(rolleStore.loading).toBe(false);
     });
