@@ -36,14 +36,14 @@ type ChangeBefristungSetup = {
 };
 
 describe('useZuordnungChangeBefristung', () => {
-  function createState(): ZuordnungenWorkingState {
+  const createState = (): ZuordnungenWorkingState => {
     return {
       selectedZuordnungen: ref<ZuordnungWithKlasse[]>([]),
       zuordnungenWithPendingChanges: ref<ZuordnungWithKlasse[] | undefined>(undefined),
       newZuordnung: ref<ZuordnungWithKlasse | undefined>(undefined),
       zuordnungenToBePersisted: ref<Zuordnung[]>([]),
     };
-  }
+  };
 
   const setup = (options: { useRealPinia?: boolean } = {}): ChangeBefristungSetup => {
     const previousPinia: Pinia | undefined = getActivePinia();
@@ -139,18 +139,18 @@ describe('useZuordnungChangeBefristung', () => {
   };
 
   // Selects the unbefristet option the way the radio button does, after the form has settled
-  async function selectUnbefristet(composable: ZuordnungChangeBefristung): Promise<void> {
+  const selectUnbefristet = async (composable: ZuordnungChangeBefristung): Promise<void> => {
     await flushPromises();
     composable.handleChangeBefristungOptionUpdate(undefined);
     await flushPromises();
-  }
+  };
 
-  async function submitNewBefristung(composable: ZuordnungChangeBefristung, befristung: string): Promise<void> {
+  const submitNewBefristung = async (composable: ZuordnungChangeBefristung, befristung: string): Promise<void> => {
     composable.triggerChangeBefristung();
     await flushPromises();
     composable.handleChangeBefristungUpdate(befristung);
     await composable.onSubmitChangeBefristung();
-  }
+  };
 
   describe('triggerChangeBefristung', () => {
     it('should show the form with the Rolle and the current Befristung of the selected Zuordnung', () => {

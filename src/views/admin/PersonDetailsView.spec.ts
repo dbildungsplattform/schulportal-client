@@ -572,11 +572,11 @@ describe('PersonDetailsView', () => {
   });
 
   describe('unsaved Zuordnung changes', () => {
-    async function selectFirstZuordnung(wrapper: PersonDetailsWrapper): Promise<void> {
+    const selectFirstZuordnung = async (wrapper: PersonDetailsWrapper): Promise<void> => {
       await wrapper.get('[data-testid="zuordnung-edit-button"]').trigger('click');
       await wrapper.get('[data-testid="person-zuordnung-1"] input[type="checkbox"]').setValue(true);
       await flushPromises();
-    }
+    };
 
     test('it blocks leaving the page while a Zuordnung change is pending', async () => {
       const { wrapper, router }: PersonDetailsSetup = await setup({ routerView: true });

@@ -22,7 +22,7 @@ type SchuleWithKlasse = {
   klassenZuordnung: Zuordnung;
 };
 
-function getSchuleWithKlasse(rolleId: string = 'lern-rolle'): SchuleWithKlasse {
+const getSchuleWithKlasse = (rolleId: string = 'lern-rolle'): SchuleWithKlasse => {
   const schule: Organisation = DoFactory.getSchule();
   const klasse: Organisation = DoFactory.getKlasse(schule);
   const rolleProps: Partial<Zuordnung> = { rolleId, rolle: 'SuS', rollenArt: RollenArt.Lern };
@@ -32,7 +32,7 @@ function getSchuleWithKlasse(rolleId: string = 'lern-rolle'): SchuleWithKlasse {
     schulZuordnung: DoFactory.getZuordnung(rolleProps, { organisation: schule }),
     klassenZuordnung: DoFactory.getZuordnung(rolleProps, { organisation: klasse }),
   };
-}
+};
 
 type BuildZuordnungenForCreationSetup = { rolle: TranslatedRolleWithAttrs };
 

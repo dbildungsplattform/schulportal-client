@@ -513,18 +513,18 @@ describe('useZuordnungCreation', () => {
         return setup({ useFakeTimers: true });
       };
 
-      function addFormElement(): HTMLElement {
+      const addFormElement = (): HTMLElement => {
         const formElement: HTMLElement = document.createElement('div');
         formElement.id = 'personenkontext-create';
         document.body.appendChild(formElement);
         return formElement;
-      }
+      };
 
-      async function navigateAndWait(creation: ZuordnungCreation): Promise<void> {
+      const navigateAndWait = async (creation: ZuordnungCreation): Promise<void> => {
         creation.navigateToZuordnungForm();
         await nextTick();
         vi.advanceTimersByTime(100);
-      }
+      };
 
       it('should scroll smoothly to the form after the DOM was updated', async () => {
         const { creation }: CreationSetup = setupScrollTest();

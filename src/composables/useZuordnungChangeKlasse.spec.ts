@@ -95,11 +95,11 @@ describe('useZuordnungChangeKlasse', () => {
     };
   };
 
-  async function submitNewKlasse(composable: ZuordnungChangeKlasse, newKlasse: Organisation): Promise<void> {
+  const submitNewKlasse = async (composable: ZuordnungChangeKlasse, newKlasse: Organisation): Promise<void> => {
     composable.triggerChangeKlasse();
     composable.selectedNewKlasse.value = newKlasse;
     await composable.onSubmitChangeKlasse();
-  }
+  };
 
   describe('triggerChangeKlasse', () => {
     it('should show the form with the Schule and the current Klasse preselected', () => {
