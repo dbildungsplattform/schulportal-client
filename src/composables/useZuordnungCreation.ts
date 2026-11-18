@@ -37,6 +37,7 @@ type ZuordnungCreationForm = {
 };
 
 export type ZuordnungCreation = Omit<PersonenkontextFieldDefinitions, 'selectedKlasse'> & {
+  selectedKlasse: Ref<Organisation | undefined>;
   isZuordnungFormActive: ComputedRef<boolean>;
   isUnbefristetDisabled: Ref<boolean>;
   isBefristungRequired: Ref<boolean>;
@@ -317,6 +318,7 @@ export function useZuordnungCreation(params: {
     selectedRolleProps,
     selectedOrganisation,
     selectedOrganisationProps,
+    selectedKlasse,
     selectedKlasseProps,
     selectedBefristung,
     selectedBefristungProps,

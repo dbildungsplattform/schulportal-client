@@ -394,6 +394,45 @@ describe('ZuordnungenSection', () => {
       await nextTick();
     });
 
+    test('it shows the retained Klasse again when navigating back to the form after a failed save', async () => {
+      const {
+        openZuordnungCreationForm,
+        getInternals,
+        getVm,
+        personenkontextStore,
+        rollen,
+        schule,
+      }: ZuordnungenSectionSetup = await setup();
+      const newKlasse: Organisation = DoFactory.getKlasse(schule, { name: '9b' });
+      const { sectionWrapper, creationWrapper: personenkontextCreate }: ZuordnungCreationFormSetup =
+        await openZuordnungCreationForm();
+      personenkontextCreate.vm.$emit('update:selectedOrganisation', schule);
+      await flushPromises();
+      personenkontextCreate.vm.$emit('update:selectedRolle', rollen[1]);
+      await flushPromises();
+      personenkontextCreate.vm.$emit('update:selectedKlasse', newKlasse);
+      await flushPromises();
+      getInternals(sectionWrapper).editMode.forOperation('creation').showReview();
+      await flushPromises();
+      expect(sectionWrapper.findComponent({ name: 'PersonenkontextCreate' }).exists()).toBe(false);
+      vi.mocked(personenkontextStore.updatePersonenkontexte).mockImplementationOnce(() => {
+        personenkontextStore.errorCode = 'PERSONALNUMMER_NICHT_EINDEUTIG';
+        return Promise.resolve();
+      });
+      await sectionWrapper.get('[data-testid="zuordnung-changes-save-button"]').trigger('click');
+      await flushPromises();
+
+      getVm(sectionWrapper).navigateToZuordnungForm();
+      await flushPromises();
+
+      const reopenedCreate: VueWrapper = sectionWrapper.findComponent({ name: 'PersonenkontextCreate' });
+      expect(reopenedCreate.props()).toHaveProperty('selectedKlasse', newKlasse);
+      expect(reopenedCreate.findComponent({ name: 'KlassenFilter' }).props()).toHaveProperty(
+        'selectedKlassen',
+        newKlasse,
+      );
+    });
+
     test('it forwards the events of the KoPers.-Nr. input to the creation form', async () => {
       const { personStore, person, openZuordnungCreationForm, rollen, schule }: ZuordnungenSectionSetup = await setup();
       personStore.currentPerson = { person: { ...person, personalnummer: null } };

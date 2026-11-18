@@ -97,6 +97,7 @@
     selectedRolleProps,
     selectedOrganisation,
     selectedOrganisationProps,
+    selectedKlasse,
     selectedKlasseProps,
     selectedBefristung,
     selectedBefristungProps,
@@ -320,6 +321,7 @@
               :selected-organisation-props="selectedOrganisationProps"
               :selected-rolle-props="selectedRolleProps"
               :selected-klasse-props="selectedKlasseProps"
+              :selected-klasse="selectedKlasse"
               :befristung-input-props="{
                 befristungProps: selectedBefristungProps,
                 befristungOptionProps: selectedBefristungOptionProps,
