@@ -4,6 +4,13 @@
 
   const route: RouteLocationNormalizedLoaded = useRoute();
   const auth: AuthStore = useAuthStore();
+
+  function handleLogout(event: MouseEvent): void {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    auth.isLoggingOut = true;
+  }
 </script>
 
 <template>
@@ -117,6 +124,7 @@
           class="primary d-flex"
           data-testid="nav-logout-button"
           href="/api/auth/logout"
+          @click="handleLogout"
         >
           <v-icon
             class="mr-2"
