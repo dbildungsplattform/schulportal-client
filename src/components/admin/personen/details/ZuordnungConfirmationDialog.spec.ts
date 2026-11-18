@@ -1,10 +1,12 @@
 import { enableAutoUnmount, mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils';
 import ZuordnungConfirmationDialog from './ZuordnungConfirmationDialog.vue';
 
+type ConfirmationDialogSetup = { wrapper: VueWrapper<InstanceType<typeof ZuordnungConfirmationDialog>> };
+
 describe('ZuordnungConfirmationDialog', () => {
   enableAutoUnmount(afterEach);
 
-  const setup = (confirmFirst: boolean): { wrapper: VueWrapper<InstanceType<typeof ZuordnungConfirmationDialog>> } => {
+  const setup = (confirmFirst: boolean): ConfirmationDialogSetup => {
     const wrapper: VueWrapper<InstanceType<typeof ZuordnungConfirmationDialog>> = mount(ZuordnungConfirmationDialog, {
       attachTo: document.body,
       props: {
@@ -32,7 +34,7 @@ describe('ZuordnungConfirmationDialog', () => {
   };
 
   const expectConfirmAndCancel = async (confirmFirst: boolean, order: string[]): Promise<void> => {
-    const { wrapper }: ReturnType<typeof setup> = setup(confirmFirst);
+    const { wrapper }: ConfirmationDialogSetup = setup(confirmFirst);
 
     const buttons: DOMWrapper<Element>[] = getAnswerButtons(wrapper);
     expect(buttons.map((button: DOMWrapper<Element>) => button.text())).toEqual(order);
@@ -57,7 +59,7 @@ describe('ZuordnungConfirmationDialog', () => {
   });
 
   test('it emits cancel when the card is closed', async () => {
-    const { wrapper }: ReturnType<typeof setup> = setup(false);
+    const { wrapper }: ConfirmationDialogSetup = setup(false);
 
     await wrapper.get('[data-testid="close-layout-card-button"]').trigger('click');
 

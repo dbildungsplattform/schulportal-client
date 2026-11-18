@@ -103,7 +103,7 @@ describe('useZuordnungChangeKlasse', () => {
 
   describe('triggerChangeKlasse', () => {
     it('should show the form with the Schule and the current Klasse preselected', () => {
-      const { createComposable, selectedZuordnung, schule }: ReturnType<typeof setup> = setup();
+      const { createComposable, selectedZuordnung, schule }: ChangeKlasseSetup = setup();
       const composable: ZuordnungChangeKlasse = createComposable();
 
       composable.triggerChangeKlasse();
@@ -116,7 +116,7 @@ describe('useZuordnungChangeKlasse', () => {
 
   describe('isSubmitDisabled', () => {
     it('should only be enabled if another Klasse than the current one is selected', () => {
-      const { createComposable, newKlasse }: ReturnType<typeof setup> = setup();
+      const { createComposable, newKlasse }: ChangeKlasseSetup = setup();
       const composable: ZuordnungChangeKlasse = createComposable();
       composable.triggerChangeKlasse();
       expect(composable.isSubmitDisabled.value).toBe(true);
@@ -129,7 +129,7 @@ describe('useZuordnungChangeKlasse', () => {
 
   describe('onSubmitChangeKlasse', () => {
     it('should show the confirmation dialog with the old and the new Klasse', async () => {
-      const { createComposable, newKlasse, selectedZuordnung, t }: ReturnType<typeof setup> = setup();
+      const { createComposable, newKlasse, selectedZuordnung, t }: ChangeKlasseSetup = setup();
       const composable: ZuordnungChangeKlasse = createComposable();
 
       await submitNewKlasse(composable, newKlasse);
@@ -141,7 +141,7 @@ describe('useZuordnungChangeKlasse', () => {
     });
 
     it('should not show the confirmation dialog if no Klasse is selected for the Schule', async () => {
-      const { createComposable }: ReturnType<typeof setup> = setup();
+      const { createComposable }: ChangeKlasseSetup = setup();
       const composable: ZuordnungChangeKlasse = createComposable();
       composable.triggerChangeKlasse();
       composable.selectedNewKlasse.value = undefined;
@@ -156,14 +156,8 @@ describe('useZuordnungChangeKlasse', () => {
 
   describe('confirmDialogChangeKlasse', () => {
     it('should store the Zuordnungen with the new Klasse and show the review', async () => {
-      const {
-        createComposable,
-        newKlasse,
-        editMode,
-        state,
-        selectedZuordnung,
-        otherZuordnung,
-      }: ReturnType<typeof setup> = setup();
+      const { createComposable, newKlasse, editMode, state, selectedZuordnung, otherZuordnung }: ChangeKlasseSetup =
+        setup();
       const composable: ZuordnungChangeKlasse = createComposable();
       await submitNewKlasse(composable, newKlasse);
 
@@ -180,7 +174,7 @@ describe('useZuordnungChangeKlasse', () => {
     });
 
     it('should still store the new Klasse if there are no pending Zuordnungen', async () => {
-      const { state, createComposable, newKlasse }: ReturnType<typeof setup> = setup();
+      const { state, createComposable, newKlasse }: ChangeKlasseSetup = setup();
       state.zuordnungenWithPendingChanges.value = undefined;
       const composable: ZuordnungChangeKlasse = createComposable();
       await submitNewKlasse(composable, newKlasse);
@@ -194,7 +188,7 @@ describe('useZuordnungChangeKlasse', () => {
 
   describe('cancelChangeKlasse', () => {
     it('should only close the confirmation dialog', async () => {
-      const { createComposable, newKlasse, state }: ReturnType<typeof setup> = setup();
+      const { createComposable, newKlasse, state }: ChangeKlasseSetup = setup();
       const composable: ZuordnungChangeKlasse = createComposable();
       await submitNewKlasse(composable, newKlasse);
 
@@ -208,14 +202,8 @@ describe('useZuordnungChangeKlasse', () => {
 
   describe('confirmChangeKlasse', () => {
     it('should send the Zuordnungen to be persisted, show the success dialog and reset the selection and the form', async () => {
-      const {
-        mockAdapter,
-        personId,
-        state,
-        selectedZuordnung,
-        otherZuordnung,
-        createComposable,
-      }: ReturnType<typeof setup> = setup();
+      const { mockAdapter, personId, state, selectedZuordnung, otherZuordnung, createComposable }: ChangeKlasseSetup =
+        setup();
       state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
       mockAdapter
         .onPut(`/api/personenkontext-workflow/${personId}`)
@@ -239,14 +227,8 @@ describe('useZuordnungChangeKlasse', () => {
     });
 
     it('should not show the success dialog if persisting fails', async () => {
-      const {
-        mockAdapter,
-        personId,
-        createComposable,
-        state,
-        selectedZuordnung,
-        otherZuordnung,
-      }: ReturnType<typeof setup> = setup();
+      const { mockAdapter, personId, createComposable, state, selectedZuordnung, otherZuordnung }: ChangeKlasseSetup =
+        setup();
       state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
       mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(500, { i18nKey: 'SOME_ERROR' });
       const composable: ZuordnungChangeKlasse = createComposable();
@@ -259,7 +241,7 @@ describe('useZuordnungChangeKlasse', () => {
 
   describe('closeChangeKlasseSuccessDialog', () => {
     it('should reload the Zuordnungen, hide the dialog and end the edit mode', async () => {
-      const { mockAdapter, personId, createComposable, isEditActive, personStore }: ReturnType<typeof setup> = setup();
+      const { mockAdapter, personId, createComposable, isEditActive, personStore }: ChangeKlasseSetup = setup();
       mockAdapter
         .onGet(`/api/dbiam/personenuebersicht/${personId}`)
         .replyOnce(200, DoFactory.getDBiamPersonenuebersichtResponse({ personId }));

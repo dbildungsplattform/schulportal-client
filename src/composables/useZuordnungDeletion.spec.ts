@@ -107,7 +107,7 @@ describe('useZuordnungDeletion', () => {
   };
 
   it('should show the review of the deletion when preparing it', () => {
-    const { deletion, mode }: ReturnType<typeof setup> = setup();
+    const { deletion, mode }: DeletionSetup = setup();
     deletion.prepareDeletion();
 
     expect(mode.showReview).toHaveBeenCalledOnce();
@@ -118,7 +118,7 @@ describe('useZuordnungDeletion', () => {
       userType: 'landesadmin' | 'schuladmin' | 'no-context' | 'none',
       rollenArt: RollenArt,
     ): boolean => {
-      const { authStore, deletion, setSelection }: ReturnType<typeof setup> = setup();
+      const { authStore, deletion, setSelection }: DeletionSetup = setup();
       const user: UserInfo | null = {
         landesadmin: DoFactory.getUserinfoResponse({
           personenkontexte: [
@@ -170,8 +170,7 @@ describe('useZuordnungDeletion', () => {
 
   describe('confirmDeletion', () => {
     it('should not delete anything if the current user deletes their own Zuordnungen', async () => {
-      const { authStore, deletion, personId, setSelection, mockAdapter, zuordnungA }: ReturnType<typeof setup> =
-        setup();
+      const { authStore, deletion, personId, setSelection, mockAdapter, zuordnungA }: DeletionSetup = setup();
       authStore.currentUser = DoFactory.getUserinfoResponse({ personId: personId.value });
       setSelection(zuordnungA);
 
@@ -195,7 +194,7 @@ describe('useZuordnungDeletion', () => {
         zuordnungB,
         state,
         getPersistedOrganisationIds,
-      }: ReturnType<typeof setup> = setup();
+      }: DeletionSetup = setup();
       mockAdapter.onPut(putUrl()).replyOnce(200, DoFactory.getPersonenkontextUpdateResponse());
       setSelection(zuordnungB);
 
@@ -208,7 +207,7 @@ describe('useZuordnungDeletion', () => {
     });
 
     it('should not show the success dialog if persisting fails', async () => {
-      const { mockAdapter, deletion, putUrl, setSelection, zuordnungB }: ReturnType<typeof setup> = setup();
+      const { mockAdapter, deletion, putUrl, setSelection, zuordnungB }: DeletionSetup = setup();
       mockAdapter.onPut(putUrl()).replyOnce(500, { i18nKey: 'PERSONENKONTEXTE_UPDATE_ERROR' });
       setSelection(zuordnungB);
 
@@ -233,7 +232,7 @@ describe('useZuordnungDeletion', () => {
         personId,
         serviceProviderStore,
         push,
-      }: ReturnType<typeof setup> = setup();
+      }: DeletionSetup = setup();
       mockAdapter.onPut(putUrl()).replyOnce(200, DoFactory.getPersonenkontextUpdateResponse());
       setSelection(zuordnungB);
       await deletion.confirmDeletion();
@@ -261,7 +260,7 @@ describe('useZuordnungDeletion', () => {
         personStore,
         serviceProviderStore,
         push,
-      }: ReturnType<typeof setup> = setup();
+      }: DeletionSetup = setup();
       mockAdapter.onPut(putUrl()).replyOnce(200, DoFactory.getPersonenkontextUpdateResponse());
       setSelection(zuordnungA, zuordnungB);
       await deletion.confirmDeletion();

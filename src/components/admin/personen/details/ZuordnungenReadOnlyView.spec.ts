@@ -39,7 +39,7 @@ describe('ZuordnungenReadOnlyView', () => {
   };
 
   test('it only shows a progress indicator while loading', () => {
-    const { wrapper }: ReturnType<typeof setup> = setup({ loading: true });
+    const { wrapper }: ReadOnlyViewSetup = setup({ loading: true });
 
     expect(wrapper.findComponent({ name: 'VProgressCircular' }).exists()).toBe(true);
     expect(wrapper.find('[data-testid="zuordnungen-section-headline"]').exists()).toBe(false);
@@ -47,7 +47,7 @@ describe('ZuordnungenReadOnlyView', () => {
   });
 
   test('it lists every Zuordnung with its Schule as title', () => {
-    const { wrapper, zuordnungen }: ReturnType<typeof setup> = setup();
+    const { wrapper, zuordnungen }: ReadOnlyViewSetup = setup();
 
     expect(wrapper.findComponent({ name: 'VProgressCircular' }).exists()).toBe(false);
     expect(wrapper.get('[data-testid="zuordnungen-section-headline"]').text()).toBe('Schulzuordnung(en)');
@@ -66,14 +66,14 @@ describe('ZuordnungenReadOnlyView', () => {
   });
 
   test('it shows a hint when there are no Zuordnungen', () => {
-    const { wrapper }: ReturnType<typeof setup> = setup({ zuordnungen: [], hasZuordnungen: false });
+    const { wrapper }: ReadOnlyViewSetup = setup({ zuordnungen: [], hasZuordnungen: false });
 
     expect(wrapper.text()).toContain('Keine Schulzuordnungen gefunden.');
     expect(wrapper.findComponent({ name: 'PersonenkontextItem' }).exists()).toBe(false);
   });
 
   test('it emits edit when the edit button is clicked', async () => {
-    const { wrapper }: ReturnType<typeof setup> = setup();
+    const { wrapper }: ReadOnlyViewSetup = setup();
 
     const editButton: Omit<DOMWrapper<Element>, 'exists'> = wrapper.get('[data-testid="zuordnung-edit-button"]');
     expect(editButton.attributes('disabled')).toBeUndefined();
@@ -85,7 +85,7 @@ describe('ZuordnungenReadOnlyView', () => {
   });
 
   test('it disables the edit button while the person metadata is edited', () => {
-    const { wrapper }: ReturnType<typeof setup> = setup({ isEditPersonMetadataActive: true });
+    const { wrapper }: ReadOnlyViewSetup = setup({ isEditPersonMetadataActive: true });
 
     expect(wrapper.get('[data-testid="zuordnung-edit-button"]').attributes('disabled')).toBeDefined();
   });
@@ -95,7 +95,7 @@ describe('ZuordnungenReadOnlyView', () => {
       props: Pick<ReadOnlyViewProps, 'hasSelection' | 'isEditPersonMetadataActive'>,
       expectedCondition: boolean,
     ): void => {
-      const { wrapper }: ReturnType<typeof setup> = setup(props);
+      const { wrapper }: ReadOnlyViewSetup = setup(props);
 
       expect(wrapper.findComponent({ name: 'SpshTooltip' }).props()).toMatchObject({
         enabledCondition: expectedCondition,

@@ -1,13 +1,12 @@
 import { enableAutoUnmount, mount, type VueWrapper } from '@vue/test-utils';
 import ZuordnungInfoDialog from './ZuordnungInfoDialog.vue';
 
+type InfoDialogSetup = { wrapper: VueWrapper<InstanceType<typeof ZuordnungInfoDialog>> };
+
 describe('ZuordnungInfoDialog', () => {
   enableAutoUnmount(afterEach);
 
-  const setup = (
-    props: { header: string; closeButtonTestId?: string },
-    message: string,
-  ): { wrapper: VueWrapper<InstanceType<typeof ZuordnungInfoDialog>> } => {
+  const setup = (props: { header: string; closeButtonTestId?: string }, message: string): InfoDialogSetup => {
     const wrapper: VueWrapper<InstanceType<typeof ZuordnungInfoDialog>> = mount(ZuordnungInfoDialog, {
       attachTo: document.body,
       props: {
@@ -28,7 +27,7 @@ describe('ZuordnungInfoDialog', () => {
   };
 
   test('it renders the message and emits close', async () => {
-    const { wrapper }: ReturnType<typeof setup> = setup(
+    const { wrapper }: InfoDialogSetup = setup(
       { header: 'Success', closeButtonTestId: 'success-close-button' },
       'Success message',
     );
@@ -40,7 +39,7 @@ describe('ZuordnungInfoDialog', () => {
   });
 
   test('it emits close when the card is closed', async () => {
-    const { wrapper }: ReturnType<typeof setup> = setup({ header: 'Info' }, 'Info message');
+    const { wrapper }: InfoDialogSetup = setup({ header: 'Info' }, 'Info message');
 
     await wrapper.get('[data-testid="close-layout-card-button"]').trigger('click');
 

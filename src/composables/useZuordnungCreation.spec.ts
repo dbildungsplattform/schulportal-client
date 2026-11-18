@@ -144,7 +144,7 @@ describe('useZuordnungCreation', () => {
 
   describe('triggerAddZuordnung', () => {
     it('should show the creation form', () => {
-      const { creation, editMode }: ReturnType<typeof setup> = setup();
+      const { creation, editMode }: CreationSetup = setup();
       expect(creation.isZuordnungFormActive.value).toBe(false);
 
       creation.triggerAddZuordnung();
@@ -156,12 +156,12 @@ describe('useZuordnungCreation', () => {
 
   describe('filteredRollen', () => {
     it('should offer all Rollen as long as no Organisation is selected', () => {
-      const { creation, rolleStore }: ReturnType<typeof setup> = setup();
+      const { creation, rolleStore }: CreationSetup = setup();
       expect(creation.filteredRollen.value).toEqual(rolleStore.rollenForPersonenkontextCreation);
     });
 
     it('should offer all Rollen if the person has no Zuordnungen', () => {
-      const { personStore, creation, schule, rolleStore }: ReturnType<typeof setup> = setup();
+      const { personStore, creation, schule, rolleStore }: CreationSetup = setup();
       personStore.personenuebersicht = DoFactory.getPersonenUebersicht(DoFactory.getPerson(), []);
       creation.selectedOrganisation.value = schule;
 
@@ -169,7 +169,7 @@ describe('useZuordnungCreation', () => {
     });
 
     it('should omit the Rollen the person already has at the selected Organisation', () => {
-      const { creation, schule, lernRolle, befristungspflichtRolle, rolleStore }: ReturnType<typeof setup> = setup();
+      const { creation, schule, lernRolle, befristungspflichtRolle, rolleStore }: CreationSetup = setup();
       creation.selectedOrganisation.value = schule;
       expect(creation.filteredRollen.value).toEqual([lernRolle, befristungspflichtRolle]);
 
@@ -180,7 +180,7 @@ describe('useZuordnungCreation', () => {
 
   describe('existingRollenArt', () => {
     it('should be the Rollenart of the first Zuordnung or undefined without Personenuebersicht', () => {
-      const { creation, existingZuordnung, personStore }: ReturnType<typeof setup> = setup();
+      const { creation, existingZuordnung, personStore }: CreationSetup = setup();
       expect(creation.existingRollenArt.value).toBe(existingZuordnung.rollenArt);
 
       personStore.personenuebersicht = null;
@@ -190,7 +190,7 @@ describe('useZuordnungCreation', () => {
 
   describe('Befristung', () => {
     it('should own the flags and set them once a Rolle with Befristungspflicht is selected', async () => {
-      const { creation, selectRolle, befristungspflichtRolle, lehrRolle }: ReturnType<typeof setup> = setup();
+      const { creation, selectRolle, befristungspflichtRolle, lehrRolle }: CreationSetup = setup();
       expect(creation.isUnbefristetDisabled.value).toBe(false);
       expect(creation.isBefristungRequired.value).toBe(false);
 
@@ -206,7 +206,7 @@ describe('useZuordnungCreation', () => {
 
   describe('hasKopersNummer', () => {
     it('should follow the personalnummer of the current person', () => {
-      const { creation, personStore }: ReturnType<typeof setup> = setup();
+      const { creation, personStore }: CreationSetup = setup();
       expect(creation.hasKopersNummer.value).toBe(true);
 
       personStore.currentPerson = DoFactory.getPersonendatensatz({
@@ -221,7 +221,7 @@ describe('useZuordnungCreation', () => {
 
   describe('isZuordnungCreationFormDirty', () => {
     it('should be true once a field of the form was changed', async () => {
-      const { creation, selectRolle, lehrRolle }: ReturnType<typeof setup> = setup();
+      const { creation, selectRolle, lehrRolle }: CreationSetup = setup();
       expect(creation.isZuordnungCreationFormDirty.value).toBe(false);
 
       await selectRolle(lehrRolle);
@@ -232,7 +232,7 @@ describe('useZuordnungCreation', () => {
 
   describe('hasNoKopersNr', () => {
     it('should show the confirmation dialog only when the person has no KoPers.-Nr.', async () => {
-      const { creation }: ReturnType<typeof setup> = setup();
+      const { creation }: CreationSetup = setup();
       expect(creation.showNoKopersNrConfirmationDialog.value).toBe(false);
 
       creation.hasNoKopersNr.value = true;
@@ -248,14 +248,14 @@ describe('useZuordnungCreation', () => {
 
   describe('onSubmitCreateZuordnung', () => {
     it('should not open the confirmation dialog while the form is invalid', async () => {
-      const { creation }: ReturnType<typeof setup> = setup();
+      const { creation }: CreationSetup = setup();
       await creation.onSubmitCreateZuordnung();
 
       expect(creation.createZuordnungConfirmationDialogVisible.value).toBe(false);
     });
 
     it('should open the confirmation dialog for a Rolle that is not a Lern-Rolle', async () => {
-      const { creation, selectRolle, lehrRolle, tMock }: ReturnType<typeof setup> = setup();
+      const { creation, selectRolle, lehrRolle, tMock }: CreationSetup = setup();
       await selectRolle(lehrRolle, DoFactory.getSchule());
 
       await creation.onSubmitCreateZuordnung();
@@ -265,7 +265,7 @@ describe('useZuordnungCreation', () => {
     });
 
     it('should mention the Klasse of a Lern-Rolle in the confirmation', async () => {
-      const { creation, schule, selectRolle, lernRolle, tMock }: ReturnType<typeof setup> = setup();
+      const { creation, schule, selectRolle, lernRolle, tMock }: CreationSetup = setup();
       const klasse: Organisation = DoFactory.getKlasse(schule);
       await selectRolle(lernRolle, DoFactory.getSchule());
       creation.handleKlasseUpdate(klasse);
@@ -282,7 +282,7 @@ describe('useZuordnungCreation', () => {
 
   describe('handleFieldReset', () => {
     it('should clear the selected Rolle', async () => {
-      const { creation, selectRolle, lehrRolle }: ReturnType<typeof setup> = setup();
+      const { creation, selectRolle, lehrRolle }: CreationSetup = setup();
       await selectRolle(lehrRolle);
 
       creation.handleFieldReset('selectedRolle');
@@ -291,7 +291,7 @@ describe('useZuordnungCreation', () => {
     });
 
     it('should clear the selected Klasse', async () => {
-      const { creation, schule, selectRolle, lernRolle, state }: ReturnType<typeof setup> = setup();
+      const { creation, schule, selectRolle, lernRolle, state }: CreationSetup = setup();
       await selectRolle(lernRolle, DoFactory.getSchule());
       creation.handleKlasseUpdate(DoFactory.getKlasse(schule));
       await flushPromises();
@@ -304,7 +304,7 @@ describe('useZuordnungCreation', () => {
     });
 
     it('should ignore other fields', async () => {
-      const { creation, selectRolle, lehrRolle, schule }: ReturnType<typeof setup> = setup();
+      const { creation, selectRolle, lehrRolle, schule }: CreationSetup = setup();
       await selectRolle(lehrRolle);
 
       creation.handleFieldReset('selectedOrganisation');
@@ -316,7 +316,7 @@ describe('useZuordnungCreation', () => {
 
   describe('confirmDialogAddition', () => {
     it('should build the new Zuordnung and the Zuordnungen to be persisted and show the review', async () => {
-      const { creation, selectRolle, lehrRolle, state, editMode }: ReturnType<typeof setup> = setup();
+      const { creation, selectRolle, lehrRolle, state, editMode }: CreationSetup = setup();
       const otherSchule: Organisation = DoFactory.getSchule();
       await selectRolle(lehrRolle, otherSchule);
       const previousPending: ZuordnungWithKlasse[] = [...(state.zuordnungenWithPendingChanges.value ?? [])];
@@ -342,7 +342,7 @@ describe('useZuordnungCreation', () => {
     });
 
     it('should add the Klasse of a Lern-Rolle as an additional Zuordnung', async () => {
-      const { creation, schule, selectRolle, lernRolle, state }: ReturnType<typeof setup> = setup();
+      const { creation, schule, selectRolle, lernRolle, state }: CreationSetup = setup();
       const klasse: Organisation = DoFactory.getKlasse(schule);
       await selectRolle(lernRolle, DoFactory.getSchule());
       creation.handleKlasseUpdate(klasse);
@@ -354,7 +354,7 @@ describe('useZuordnungCreation', () => {
     });
 
     it('should ignore a previously selected Klasse for a Rolle that is not a Lern-Rolle', async () => {
-      const { creation, schule, selectRolle, lernRolle, lehrRolle, state }: ReturnType<typeof setup> = setup();
+      const { creation, schule, selectRolle, lernRolle, lehrRolle, state }: CreationSetup = setup();
       const klasse: Organisation = DoFactory.getKlasse(schule);
       await selectRolle(lernRolle, DoFactory.getSchule());
       creation.handleKlasseUpdate(klasse);
@@ -369,7 +369,7 @@ describe('useZuordnungCreation', () => {
     });
 
     it('should use the Schuljahresende as Befristung for a Rolle with Befristungspflicht unless a date is selected', async () => {
-      const { creation, selectRolle, befristungspflichtRolle, state }: ReturnType<typeof setup> = setup();
+      const { creation, selectRolle, befristungspflichtRolle, state }: CreationSetup = setup();
       const selectedDate: string = '31.12.2099';
       await selectRolle(befristungspflichtRolle, DoFactory.getSchule());
 
@@ -382,7 +382,7 @@ describe('useZuordnungCreation', () => {
     });
 
     it('should fall back to empty values if no Zuordnungen are loaded and no Rolle is selected', () => {
-      const { state, creation, schule }: ReturnType<typeof setup> = setup();
+      const { state, creation, schule }: CreationSetup = setup();
       state.zuordnungenWithPendingChanges.value = undefined;
       creation.selectedOrganisation.value = schule;
 
@@ -396,7 +396,7 @@ describe('useZuordnungCreation', () => {
 
   describe('cancelAddition', () => {
     it('should close the confirmation dialog without changing the Zuordnungen', () => {
-      const { state, creation }: ReturnType<typeof setup> = setup();
+      const { state, creation }: CreationSetup = setup();
       const pending: ZuordnungWithKlasse[] | undefined = state.zuordnungenWithPendingChanges.value;
       creation.createZuordnungConfirmationDialogVisible.value = true;
 
@@ -420,7 +420,7 @@ describe('useZuordnungCreation', () => {
         lehrRolle,
         personenkontextStore,
         personStore,
-      }: ReturnType<typeof setup> = setup();
+      }: CreationSetup = setup();
       await prepareAddition();
       const newOrganisation: Organisation = creation.selectedOrganisation.value!;
       mockCommit(200, DoFactory.getPersonenkontextUpdateResponse());
@@ -443,7 +443,7 @@ describe('useZuordnungCreation', () => {
     });
 
     it('should not show the success dialog if persisting failed', async () => {
-      const { creation, prepareAddition, mockCommit, personenkontextStore }: ReturnType<typeof setup> = setup();
+      const { creation, prepareAddition, mockCommit, personenkontextStore }: CreationSetup = setup();
       await prepareAddition();
       mockCommit(500, { i18nKey: 'SOME_MOCK_SERVER_ERROR' });
 
@@ -456,15 +456,8 @@ describe('useZuordnungCreation', () => {
 
   describe('closeCreateSuccessDialog', () => {
     it('should reload the person, close the dialog and leave the edit mode', () => {
-      const {
-        mode,
-        creation,
-        personStore,
-        personId,
-        serviceProviderStore,
-        isEditActive,
-        editMode,
-      }: ReturnType<typeof setup> = setup();
+      const { mode, creation, personStore, personId, serviceProviderStore, isEditActive, editMode }: CreationSetup =
+        setup();
       mode.showReview();
       creation.createSuccessDialogVisible.value = true;
 
@@ -480,14 +473,7 @@ describe('useZuordnungCreation', () => {
 
   describe('navigateToZuordnungForm', () => {
     it('should restore the cached values, clear the error and roll back the pending Zuordnungen', async () => {
-      const {
-        creation,
-        state,
-        personenkontextStore,
-        prepareAddition,
-        mockCommit,
-        lehrRolle,
-      }: ReturnType<typeof setup> = setup({
+      const { creation, state, personenkontextStore, prepareAddition, mockCommit, lehrRolle }: CreationSetup = setup({
         useFakeTimers: true,
       });
       const otherSchule: Organisation = DoFactory.getSchule();
@@ -510,7 +496,7 @@ describe('useZuordnungCreation', () => {
     });
 
     it('should work without cached values and only clear the KoPers.-Nr.', () => {
-      const { personenkontextStore, creation }: ReturnType<typeof setup> = setup({ useFakeTimers: true });
+      const { personenkontextStore, creation }: CreationSetup = setup({ useFakeTimers: true });
       personenkontextStore.errorCode = 'SOME_MOCK_SERVER_ERROR';
 
       creation.navigateToZuordnungForm();
@@ -523,7 +509,7 @@ describe('useZuordnungCreation', () => {
     });
 
     describe('scrolling to the form', () => {
-      const setupScrollTest = (): ReturnType<typeof setup> => {
+      const setupScrollTest = (): CreationSetup => {
         return setup({ useFakeTimers: true });
       };
 
@@ -541,7 +527,7 @@ describe('useZuordnungCreation', () => {
       }
 
       it('should scroll smoothly to the form after the DOM was updated', async () => {
-        const { creation }: ReturnType<typeof setupScrollTest> = setupScrollTest();
+        const { creation }: CreationSetup = setupScrollTest();
         const scrollIntoView: ReturnType<typeof vi.fn<HTMLElement['scrollIntoView']>> = vi.fn();
         addFormElement().scrollIntoView = scrollIntoView;
 
@@ -554,7 +540,7 @@ describe('useZuordnungCreation', () => {
       });
 
       it('should not fail if the form element is missing or cannot scroll', async () => {
-        const { creation }: ReturnType<typeof setupScrollTest> = setupScrollTest();
+        const { creation }: CreationSetup = setupScrollTest();
         await expect(navigateAndWait(creation)).resolves.toBeUndefined();
 
         // jsdom does not implement scrollIntoView

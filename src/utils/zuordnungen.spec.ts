@@ -34,6 +34,8 @@ function getSchuleWithKlasse(rolleId: string = 'lern-rolle'): SchuleWithKlasse {
   };
 }
 
+type BuildZuordnungenForCreationSetup = { rolle: TranslatedRolleWithAttrs };
+
 describe('zuordnungen', () => {
   describe('withoutKlassen', () => {
     test('it removes Zuordnungen of type Klasse', () => {
@@ -226,12 +228,12 @@ describe('zuordnungen', () => {
   });
 
   describe('buildZuordnungenForCreation', () => {
-    const setup = (): { rolle: TranslatedRolleWithAttrs } => {
+    const setup = (): BuildZuordnungenForCreationSetup => {
       return { rolle: { value: 'new-rolle', title: 'SuS', rollenart: RollenArt.Lern } };
     };
 
     test('it adds the new Zuordnung, its Klasse and keeps the existing Klassen', () => {
-      const { rolle }: ReturnType<typeof setup> = setup();
+      const { rolle }: BuildZuordnungenForCreationSetup = setup();
       const existing: SchuleWithKlasse = getSchuleWithKlasse();
       const current: ZuordnungWithKlasse[] = computeZuordnungenWithKlasse(
         DoFactory.getPersonenUebersicht(undefined, [existing.schulZuordnung, existing.klassenZuordnung]),
@@ -270,7 +272,7 @@ describe('zuordnungen', () => {
     });
 
     test('it falls back to empty values for a Klasse without kennung and administriertVon', () => {
-      const { rolle }: ReturnType<typeof setup> = setup();
+      const { rolle }: BuildZuordnungenForCreationSetup = setup();
       const schule: Organisation = DoFactory.getSchule();
       const klasse: Organisation = DoFactory.getKlasse(schule, { kennung: undefined, administriertVon: undefined });
 
@@ -288,7 +290,7 @@ describe('zuordnungen', () => {
     });
 
     test('it handles a missing Klasse and Rolle', () => {
-      const { rolle }: ReturnType<typeof setup> = setup();
+      const { rolle }: BuildZuordnungenForCreationSetup = setup();
       const schule: Organisation = DoFactory.getSchule({ kennung: undefined, administriertVon: undefined });
 
       const result: ZuordnungChange = buildZuordnungenForCreation({

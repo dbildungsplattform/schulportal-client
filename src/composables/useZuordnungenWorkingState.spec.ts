@@ -9,17 +9,19 @@ import { effectScope, nextTick, ref, type EffectScope, type Ref } from 'vue';
 import { onTestFinished } from 'vitest';
 import { useZuordnungenWorkingState, type ZuordnungenWorkingStateResult } from './useZuordnungenWorkingState';
 
+type WorkingStateSetup = {
+  personStore: PersonStore;
+  personenkontextStore: PersonenkontextStore;
+  personId: Ref<string>;
+  lernZuordnung: Zuordnung;
+  lehrZuordnung: Zuordnung;
+  readonlyZuordnung: Zuordnung;
+  createWorkingState: () => ZuordnungenWorkingStateResult;
+  setUebersicht: (zuordnungen: Zuordnung[]) => void;
+};
+
 describe('useZuordnungenWorkingState', () => {
-  const setup = (): {
-    personStore: PersonStore;
-    personenkontextStore: PersonenkontextStore;
-    personId: Ref<string>;
-    lernZuordnung: Zuordnung;
-    lehrZuordnung: Zuordnung;
-    readonlyZuordnung: Zuordnung;
-    createWorkingState: () => ZuordnungenWorkingStateResult;
-    setUebersicht: (zuordnungen: Zuordnung[]) => void;
-  } => {
+  const setup = (): WorkingStateSetup => {
     setActivePinia(createPinia());
     vi.restoreAllMocks();
     const scope: EffectScope = effectScope();
@@ -58,7 +60,7 @@ describe('useZuordnungenWorkingState', () => {
 
   describe('zuordnungenWithPendingChanges', () => {
     it('should be empty if there is no Personenuebersicht', () => {
-      const { createWorkingState }: ReturnType<typeof setup> = setup();
+      const { createWorkingState }: WorkingStateSetup = setup();
       const workingState: ZuordnungenWorkingStateResult = createWorkingState();
 
       expect(workingState.zuordnungenWithPendingChanges.value).toBeUndefined();
@@ -66,7 +68,7 @@ describe('useZuordnungenWorkingState', () => {
     });
 
     it('should be computed from the Personenuebersicht immediately and follow later updates', async () => {
-      const { createWorkingState, setUebersicht, lernZuordnung, lehrZuordnung }: ReturnType<typeof setup> = setup();
+      const { createWorkingState, setUebersicht, lernZuordnung, lehrZuordnung }: WorkingStateSetup = setup();
       setUebersicht([lernZuordnung]);
       const workingState: ZuordnungenWorkingStateResult = createWorkingState();
 
@@ -79,7 +81,7 @@ describe('useZuordnungenWorkingState', () => {
     });
 
     it('should only offer editable Zuordnungen', () => {
-      const { createWorkingState, setUebersicht, lehrZuordnung, readonlyZuordnung }: ReturnType<typeof setup> = setup();
+      const { createWorkingState, setUebersicht, lehrZuordnung, readonlyZuordnung }: WorkingStateSetup = setup();
       setUebersicht([lehrZuordnung, readonlyZuordnung]);
       const workingState: ZuordnungenWorkingStateResult = createWorkingState();
 
@@ -96,7 +98,7 @@ describe('useZuordnungenWorkingState', () => {
         lernZuordnung,
         lehrZuordnung,
         personenkontextStore,
-      }: ReturnType<typeof setup> = setup();
+      }: WorkingStateSetup = setup();
       setUebersicht([lernZuordnung, lehrZuordnung]);
       const workingState: ZuordnungenWorkingStateResult = createWorkingState();
       await nextTick();
@@ -113,7 +115,7 @@ describe('useZuordnungenWorkingState', () => {
         lehrZuordnung,
         personId,
         personenkontextStore,
-      }: ReturnType<typeof setup> = setup();
+      }: WorkingStateSetup = setup();
       setUebersicht([lernZuordnung, lehrZuordnung]);
       const workingState: ZuordnungenWorkingStateResult = createWorkingState();
       const select = (...selected: Zuordnung[]): void => {
@@ -135,7 +137,7 @@ describe('useZuordnungenWorkingState', () => {
     });
 
     it('should allow changing the Klasse only if exactly one Lern Zuordnung is selected', async () => {
-      const { createWorkingState, setUebersicht, lernZuordnung, lehrZuordnung }: ReturnType<typeof setup> = setup();
+      const { createWorkingState, setUebersicht, lernZuordnung, lehrZuordnung }: WorkingStateSetup = setup();
       setUebersicht([lernZuordnung, lehrZuordnung]);
       const workingState: ZuordnungenWorkingStateResult = createWorkingState();
       const select = (...selected: Zuordnung[]): void => {
@@ -165,7 +167,7 @@ describe('useZuordnungenWorkingState', () => {
 
   describe('startEditing and discardChanges', () => {
     it('should restore a copy of the Zuordnungen from before the changes and drop the selection', () => {
-      const { createWorkingState, setUebersicht, lernZuordnung, lehrZuordnung }: ReturnType<typeof setup> = setup();
+      const { createWorkingState, setUebersicht, lernZuordnung, lehrZuordnung }: WorkingStateSetup = setup();
       setUebersicht([lernZuordnung, lehrZuordnung]);
       const workingState: ZuordnungenWorkingStateResult = createWorkingState();
       const originalFirst: ZuordnungWithKlasse | undefined = workingState.zuordnungenWithPendingChanges.value?.[0];

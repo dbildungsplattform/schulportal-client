@@ -311,7 +311,7 @@ describe('PersonDetailsView', () => {
   };
 
   test('it renders the person details page and shows person data', async () => {
-    const { wrapper, mockPerson, befristung }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { wrapper, mockPerson, befristung }: PersonDetailsSetup = await setup();
     expect(wrapper).toBeTruthy();
     expect(wrapper?.find('[data-testid="person-details-headline"]').isVisible()).toBe(true);
     expect(wrapper?.find('[data-testid="person-vorname"]').text()).toBe(mockPerson.person.name.vorname);
@@ -325,7 +325,7 @@ describe('PersonDetailsView', () => {
   });
 
   test('it renders details for a locked person', async () => {
-    const { wrapper, personStore }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { wrapper, personStore }: PersonDetailsSetup = await setup();
     const date: string = '01.01.2024';
     const datetime: string = `${date} 12:34:00`;
     const userLock: UserLock[] = [
@@ -370,7 +370,7 @@ describe('PersonDetailsView', () => {
   });
 
   test('it navigates back to user table', async () => {
-    const { router, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { router, wrapper }: PersonDetailsSetup = await setup();
     const push: MockInstance = vi.spyOn(router, 'push');
     await wrapper?.find('[data-testid="close-layout-card-button"]').trigger('click');
     await flushPromises();
@@ -379,7 +379,7 @@ describe('PersonDetailsView', () => {
 
   describe('error handling', () => {
     test('it shows an error if error code exists', async () => {
-      const { personStore, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { personStore, wrapper }: PersonDetailsSetup = await setup();
       personStore.errorCode = 'ERROR_LOADING_USER';
       await nextTick();
 
@@ -390,7 +390,7 @@ describe('PersonDetailsView', () => {
     });
 
     test('it shows correct alert depending on error code', async () => {
-      const { personStore, personenkontextStore, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { personStore, personenkontextStore, wrapper }: PersonDetailsSetup = await setup();
       personStore.errorCode = '';
       personenkontextStore.errorCode = 'PERSON_NOT_FOUND';
       await nextTick();
@@ -419,7 +419,7 @@ describe('PersonDetailsView', () => {
   });
 
   test('it displays lockInfo if there is any', async () => {
-    const { personStore, wrapper, organisationStore }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { personStore, wrapper, organisationStore }: PersonDetailsSetup = await setup();
     expect(personStore.currentPerson).toBeDefined();
     expect(wrapper).toBeDefined();
     personStore.currentPerson!.person.userLock = [];
@@ -476,7 +476,7 @@ describe('PersonDetailsView', () => {
   });
 
   it('displays correct email status for Enabled', async () => {
-    const { setCurrentPerson, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { setCurrentPerson, wrapper }: PersonDetailsSetup = await setup();
     setCurrentPerson(EmailAddressStatus.Enabled);
 
     await nextTick();
@@ -486,7 +486,7 @@ describe('PersonDetailsView', () => {
   });
 
   it('displays correct email status for requested', async () => {
-    const { setCurrentPerson, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { setCurrentPerson, wrapper }: PersonDetailsSetup = await setup();
     setCurrentPerson(EmailAddressStatus.Requested);
 
     await nextTick();
@@ -496,7 +496,7 @@ describe('PersonDetailsView', () => {
   });
 
   it('displays correct email status for failed', async () => {
-    const { setCurrentPerson, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { setCurrentPerson, wrapper }: PersonDetailsSetup = await setup();
     setCurrentPerson(EmailAddressStatus.Failed);
 
     await nextTick();
@@ -506,7 +506,7 @@ describe('PersonDetailsView', () => {
   });
 
   it('displays correct email status for disabled', async () => {
-    const { setCurrentPerson, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { setCurrentPerson, wrapper }: PersonDetailsSetup = await setup();
     setCurrentPerson(EmailAddressStatus.Disabled);
 
     await nextTick();
@@ -516,7 +516,7 @@ describe('PersonDetailsView', () => {
   });
 
   it('displays correct email status for unknown', async () => {
-    const { setCurrentPerson, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { setCurrentPerson, wrapper }: PersonDetailsSetup = await setup();
     setCurrentPerson('UnknownStatus' as EmailAddressStatus);
 
     await nextTick();
@@ -526,7 +526,7 @@ describe('PersonDetailsView', () => {
   });
 
   test('it sets errorCode to PERSONALNUMMER_NICHT_EINDEUTIG and goes back to Form', async () => {
-    const { personStore, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { personStore, wrapper }: PersonDetailsSetup = await setup();
     personStore.errorCode = 'PERSONALNUMMER_NICHT_EINDEUTIG';
     await nextTick();
 
@@ -537,7 +537,7 @@ describe('PersonDetailsView', () => {
   });
 
   test('it checks for dirtiness when metadata Form is active', async () => {
-    const { wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { wrapper }: PersonDetailsSetup = await setup();
     await wrapper?.find('[data-testid="metadata-edit-button"]').trigger('click');
     await nextTick();
 
@@ -559,7 +559,7 @@ describe('PersonDetailsView', () => {
   });
 
   test('it cancels metadata form', async () => {
-    const { wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { wrapper }: PersonDetailsSetup = await setup();
     await wrapper?.find('[data-testid="metadata-edit-button"]').trigger('click');
     await nextTick();
 
@@ -579,7 +579,7 @@ describe('PersonDetailsView', () => {
     }
 
     test('it blocks leaving the page while a Zuordnung change is pending', async () => {
-      const { wrapper, router }: Awaited<ReturnType<typeof setup>> = await setup({ routerView: true });
+      const { wrapper, router }: PersonDetailsSetup = await setup({ routerView: true });
       await selectFirstZuordnung(wrapper);
       const personenkontextDelete: VueWrapper = wrapper.findComponent({ name: 'PersonenkontextDelete' });
       personenkontextDelete.vm.$emit('onDeletePersonenkontext');
@@ -593,7 +593,7 @@ describe('PersonDetailsView', () => {
     });
 
     test('it prevents unloading the page while a Zuordnung form is dirty', async () => {
-      const { wrapper }: Awaited<ReturnType<typeof setup>> = await setup({ routerView: true });
+      const { wrapper }: PersonDetailsSetup = await setup({ routerView: true });
       await selectFirstZuordnung(wrapper);
       await wrapper.get('[data-testid="klasse-change-button"]').trigger('click');
       await flushPromises();
@@ -607,7 +607,7 @@ describe('PersonDetailsView', () => {
 
   describe('without Zuordnungen data', () => {
     test('it does not require a KoPers.-Nr. when no personenuebersicht is loaded', async () => {
-      const { personStore, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { personStore, wrapper }: PersonDetailsSetup = await setup();
       personStore.personenuebersicht = null;
       await flushPromises();
 
@@ -616,7 +616,7 @@ describe('PersonDetailsView', () => {
   });
 
   test('it updates the visibility of the dialogs', async () => {
-    const { wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { wrapper }: PersonDetailsSetup = await setup();
     for (const dialog of wrapper.findAllComponents(VDialog)) {
       dialog.vm.$emit('update:modelValue', true);
       dialog.vm.$emit('update:modelValue', false);
@@ -628,7 +628,7 @@ describe('PersonDetailsView', () => {
 
   describe('leaving the page', () => {
     test('it navigates away without a warning when nothing was changed', async () => {
-      const { router }: Awaited<ReturnType<typeof setup>> = await setup({ routerView: true });
+      const { router }: PersonDetailsSetup = await setup({ routerView: true });
 
       await router.push({ name: 'person-management' });
       await flushPromises();
@@ -639,7 +639,7 @@ describe('PersonDetailsView', () => {
 
   describe('error messages', () => {
     test('check 2fa connection error', async () => {
-      const { twoFactorAuthenticationStore, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { twoFactorAuthenticationStore, wrapper }: PersonDetailsSetup = await setup();
       twoFactorAuthenticationStore.loading = false;
       twoFactorAuthenticationStore.required = true;
       twoFactorAuthenticationStore.errorCode = 'PI_UNAVAILABLE_ERROR';
@@ -648,7 +648,7 @@ describe('PersonDetailsView', () => {
       expect(wrapper?.find('[data-testid="connection-error-text"]').isVisible()).toBe(true);
     });
     test('check 2fa state error', async () => {
-      const { twoFactorAuthenticationStore, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { twoFactorAuthenticationStore, wrapper }: PersonDetailsSetup = await setup();
       twoFactorAuthenticationStore.loading = false;
       twoFactorAuthenticationStore.required = true;
       twoFactorAuthenticationStore.errorCode = 'TOKEN_STATE_ERROR';
@@ -660,7 +660,7 @@ describe('PersonDetailsView', () => {
 
   describe('two factor authentication info', () => {
     const expectTwoFactorInfo = async (hasToken: boolean, required: boolean, text: string): Promise<void> => {
-      const { twoFactorAuthenticationStore, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { twoFactorAuthenticationStore, wrapper }: PersonDetailsSetup = await setup();
       twoFactorAuthenticationStore.loading = false;
       twoFactorAuthenticationStore.hasToken = hasToken;
       twoFactorAuthenticationStore.required = required;
@@ -697,7 +697,7 @@ describe('PersonDetailsView', () => {
   });
 
   test('it marks a missing KoPers.-Nr. of a person with a KoPers.-Rolle', async () => {
-    const { personStore, mockPerson, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { personStore, mockPerson, wrapper }: PersonDetailsSetup = await setup();
     personStore.personenuebersicht = DoFactory.getPersonenUebersicht(undefined, [
       DoFactory.getZuordnung({ merkmale: [RollenMerkmal.KopersPflicht] }),
     ]);
@@ -708,7 +708,7 @@ describe('PersonDetailsView', () => {
   });
 
   test('it shows a spinner in the device password section while the person is loading', async () => {
-    const { serviceProviderStore, personStore, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { serviceProviderStore, personStore, wrapper }: PersonDetailsSetup = await setup();
     serviceProviderStore.assignedServiceProviders = [
       DoFactory.getServiceProviderResponse({ externalSystem: ServiceProviderSystem.Uem }),
     ];
@@ -719,7 +719,7 @@ describe('PersonDetailsView', () => {
   });
 
   test('it closes the success dialog after the person metadata were changed', async () => {
-    const { wrapper, personStore }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { wrapper, personStore }: PersonDetailsSetup = await setup();
     const vm: unknown = wrapper.vm;
     const internals: PersonDetailsViewInternals = vm as PersonDetailsViewInternals;
     internals.changePersonMetadataSuccessVisible = true;
@@ -739,7 +739,7 @@ describe('PersonDetailsView', () => {
   });
 
   test('it shows loading spinner', async () => {
-    const { personStore, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { personStore, wrapper }: PersonDetailsSetup = await setup();
     personStore.loading = true;
     personStore.currentPerson = null;
     await flushPromises();
@@ -748,7 +748,7 @@ describe('PersonDetailsView', () => {
   });
 
   test('it shows befristung', async () => {
-    const { wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { wrapper }: PersonDetailsSetup = await setup();
     expect(wrapper?.find('[data-testid="zuordnung-befristung-text"]').isVisible()).toBe(true);
   });
 
@@ -760,7 +760,7 @@ describe('PersonDetailsView', () => {
       setCurrentPerson,
       wrapper,
       mockPersonenuebersicht,
-    }: Awaited<ReturnType<typeof setup>> = await setup();
+    }: PersonDetailsSetup = await setup();
     personStore.personenuebersicht = mockPersonenuebersichtLehr;
     serviceProviderStore.assignedServiceProviders = [
       DoFactory.getServiceProviderResponse({ externalSystem: ServiceProviderSystem.Uem }),
@@ -800,7 +800,7 @@ describe('PersonDetailsView', () => {
       setCurrentPerson,
       wrapper,
       mockPersonenuebersicht,
-    }: Awaited<ReturnType<typeof setup>> = await setup();
+    }: PersonDetailsSetup = await setup();
     personStore.personenuebersicht = mockPersonenuebersichtLehr;
     setCurrentPerson(EmailAddressStatus.Enabled);
     await nextTick();
@@ -828,7 +828,7 @@ describe('PersonDetailsView', () => {
   });
 
   test('it navigates to the Zuordnung creation form and resets the error code when the Personalnummer is not unique', async () => {
-    const { wrapper, personenkontextStore }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { wrapper, personenkontextStore }: PersonDetailsSetup = await setup();
     await wrapper?.find('[data-testid="zuordnung-edit-button"]').trigger('click');
     await flushPromises();
     expect(wrapper?.find('[data-testid="zuordnung-creation-form"]').exists()).toBe(false);
@@ -847,7 +847,7 @@ describe('PersonDetailsView', () => {
   });
 
   test('it submits the form to lock the user', async () => {
-    const { personStore, wrapper, mockPersonenuebersicht }: Awaited<ReturnType<typeof setup>> = await setup();
+    const { personStore, wrapper, mockPersonenuebersicht }: PersonDetailsSetup = await setup();
     if (personStore.currentPerson) {
       personStore.currentPerson.person.isLocked = false;
       personStore.currentPerson.person.userLock = [];

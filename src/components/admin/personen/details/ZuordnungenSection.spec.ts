@@ -174,7 +174,7 @@ describe('ZuordnungenSection', () => {
 
   describe('view and edit mode', () => {
     test('it renders the Zuordnungen with their Klasse and loads the workflow step', async () => {
-      const { mountComponent, personenkontextStore, person, schule, oldKlasse }: Awaited<ReturnType<typeof setup>> =
+      const { mountComponent, personenkontextStore, person, schule, oldKlasse }: ZuordnungenSectionSetup =
         await setup();
       const wrapper: ZuordnungenSectionWrapper = mountComponent();
       await flushPromises();
@@ -186,7 +186,7 @@ describe('ZuordnungenSection', () => {
     });
 
     test('it starts editing when the edit button is clicked', async () => {
-      const { mountComponent }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { mountComponent }: ZuordnungenSectionSetup = await setup();
       const wrapper: ZuordnungenSectionWrapper = mountComponent();
       await flushPromises();
 
@@ -197,7 +197,7 @@ describe('ZuordnungenSection', () => {
     });
 
     test('it disables editing while the person metadata are edited', async () => {
-      const { mountComponent }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { mountComponent }: ZuordnungenSectionSetup = await setup();
       const wrapper: ZuordnungenSectionWrapper = mountComponent({
         isEditPersonMetadataActive: true,
       });
@@ -207,7 +207,7 @@ describe('ZuordnungenSection', () => {
     });
 
     test('it can start and cancel editing a person without Zuordnungen', async () => {
-      const { personStore, mountComponent }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { personStore, mountComponent }: ZuordnungenSectionSetup = await setup();
       personStore.personenuebersicht = null;
       const wrapper: ZuordnungenSectionWrapper = mountComponent();
       await flushPromises();
@@ -220,7 +220,7 @@ describe('ZuordnungenSection', () => {
     });
 
     test('it cancels editing and discards the pending change', async () => {
-      const { startEditingWithSelection, hasPendingChange }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { startEditingWithSelection, hasPendingChange }: ZuordnungenSectionSetup = await setup();
       const sectionWrapper: ZuordnungenSectionWrapper = await startEditingWithSelection();
       const personenkontextDelete: VueWrapper = sectionWrapper.findComponent({ name: 'PersonenkontextDelete' });
       personenkontextDelete.vm.$emit('onDeletePersonenkontext');
@@ -235,7 +235,7 @@ describe('ZuordnungenSection', () => {
     });
 
     test('it shows the creation form again via the exposed navigateToZuordnungForm', async () => {
-      const { mountComponent, getVm }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { mountComponent, getVm }: ZuordnungenSectionSetup = await setup();
       const wrapper: ZuordnungenSectionWrapper = mountComponent({ isEditActive: true });
       await flushPromises();
 
@@ -248,7 +248,7 @@ describe('ZuordnungenSection', () => {
 
   describe('saving the pending change', () => {
     const expectPendingChangeSaved = async (operation: ZuordnungOperation, text: string): Promise<void> => {
-      const { mountComponent, getInternals, personenkontextStore }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { mountComponent, getInternals, personenkontextStore }: ZuordnungenSectionSetup = await setup();
       const wrapper: ZuordnungenSectionWrapper = mountComponent({ isEditActive: true });
       await flushPromises();
       getInternals(wrapper).editMode.forOperation(operation).showReview();
@@ -286,7 +286,7 @@ describe('ZuordnungenSection', () => {
     });
 
     test('it does nothing when saving without a pending change', async () => {
-      const { mountComponent, getInternals, personenkontextStore }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { mountComponent, getInternals, personenkontextStore }: ZuordnungenSectionSetup = await setup();
       const wrapper: ZuordnungenSectionWrapper = mountComponent();
       await flushPromises();
 
@@ -298,7 +298,7 @@ describe('ZuordnungenSection', () => {
 
   describe('dirty state', () => {
     test('it is not dirty while editing is inactive', async () => {
-      const { mountComponent, isFormDirty }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { mountComponent, isFormDirty }: ZuordnungenSectionSetup = await setup();
       const wrapper: ZuordnungenSectionWrapper = mountComponent();
       await flushPromises();
 
@@ -306,7 +306,7 @@ describe('ZuordnungenSection', () => {
     });
 
     test('it is not dirty while the creation form is untouched', async () => {
-      const { mountComponent, isFormDirty }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { mountComponent, isFormDirty }: ZuordnungenSectionSetup = await setup();
       const wrapper: ZuordnungenSectionWrapper = mountComponent({ isEditActive: true });
       await flushPromises();
 
@@ -314,7 +314,7 @@ describe('ZuordnungenSection', () => {
     });
 
     test('it is dirty as soon as a field of the change Klasse form differs', async () => {
-      const { startEditingWithSelection, isFormDirty }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { startEditingWithSelection, isFormDirty }: ZuordnungenSectionSetup = await setup();
       const sectionWrapper: ZuordnungenSectionWrapper = await startEditingWithSelection();
       await sectionWrapper.get('[data-testid="klasse-change-button"]').trigger('click');
       await flushPromises();
@@ -332,7 +332,7 @@ describe('ZuordnungenSection', () => {
 
   describe('creation form', () => {
     test('it resets the Rolle when PersonenkontextCreate requests it', async () => {
-      const { openZuordnungCreationForm, rollen }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { openZuordnungCreationForm, rollen }: ZuordnungenSectionSetup = await setup();
       const { creationWrapper: personenkontextCreate }: ZuordnungCreationFormSetup = await openZuordnungCreationForm();
 
       personenkontextCreate.vm.$emit('update:selectedRolle', rollen[1]);
@@ -345,7 +345,7 @@ describe('ZuordnungenSection', () => {
     });
 
     test('it forwards the events of PersonenkontextCreate to the creation form', async () => {
-      const { openZuordnungCreationForm, isFormDirty, oldKlasse }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { openZuordnungCreationForm, isFormDirty, oldKlasse }: ZuordnungenSectionSetup = await setup();
       const { sectionWrapper, creationWrapper: personenkontextCreate }: ZuordnungCreationFormSetup =
         await openZuordnungCreationForm();
       const submitButton: DOMWrapper<Element> = sectionWrapper.find('[data-testid="zuordnung-creation-submit-button"]');
@@ -373,8 +373,7 @@ describe('ZuordnungenSection', () => {
     });
 
     test('it forwards the events of the KoPers.-Nr. input to the creation form', async () => {
-      const { personStore, person, openZuordnungCreationForm, rollen, schule }: Awaited<ReturnType<typeof setup>> =
-        await setup();
+      const { personStore, person, openZuordnungCreationForm, rollen, schule }: ZuordnungenSectionSetup = await setup();
       personStore.currentPerson = { person: { ...person, personalnummer: null } };
       const { sectionWrapper, creationWrapper: personenkontextCreate }: ZuordnungCreationFormSetup =
         await openZuordnungCreationForm();
@@ -392,8 +391,7 @@ describe('ZuordnungenSection', () => {
 
   describe('KoPers.-Nr. confirmation dialog', () => {
     const expectDialogClosedBy = async (buttonTestId: string): Promise<void> => {
-      const { personStore, person, rollen, schule, openZuordnungCreationForm }: Awaited<ReturnType<typeof setup>> =
-        await setup();
+      const { personStore, person, rollen, schule, openZuordnungCreationForm }: ZuordnungenSectionSetup = await setup();
       personStore.currentPerson = { person: { ...person, personalnummer: null } };
       const { sectionWrapper, creationWrapper: personenkontextCreate }: ZuordnungCreationFormSetup =
         await openZuordnungCreationForm();
@@ -427,7 +425,7 @@ describe('ZuordnungenSection', () => {
 
   describe('change Befristung form', () => {
     test('it forwards the events of the Befristung input to the change Befristung form', async () => {
-      const { configStore, startEditingWithSelection, getInternals }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { configStore, startEditingWithSelection, getInternals }: ZuordnungenSectionSetup = await setup();
       configStore.configData = {
         befristungBearbeitenEnabled: true,
         rolleBearbeitenEnabled: true,
@@ -452,7 +450,7 @@ describe('ZuordnungenSection', () => {
 
   describe('dialogs', () => {
     test('it updates the visibility of all dialogs', async () => {
-      const { mountComponent }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { mountComponent }: ZuordnungenSectionSetup = await setup();
       const wrapper: ZuordnungenSectionWrapper = mountComponent();
       await flushPromises();
 
@@ -470,7 +468,7 @@ describe('ZuordnungenSection', () => {
       messageKey: string | undefined,
       text: string,
     ): Promise<void> => {
-      const { mountComponent }: Awaited<ReturnType<typeof setup>> = await setup();
+      const { mountComponent }: ZuordnungenSectionSetup = await setup();
       const wrapper: ZuordnungenSectionWrapper = mountComponent({ isEditActive: true });
       await flushPromises();
 

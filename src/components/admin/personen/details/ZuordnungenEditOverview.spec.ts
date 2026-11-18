@@ -69,7 +69,7 @@ describe('ZuordnungenEditOverview', () => {
 
   describe('without a pending operation', () => {
     test('it asks to select Zuordnungen and shows the actions', () => {
-      const { wrapper }: ReturnType<typeof setup> = setup();
+      const { wrapper }: EditOverviewSetup = setup();
 
       expect(wrapper.text()).toContain('Schulzuordnungen bearbeiten: Bitte auswählen');
       expect(wrapper.find('[data-testid="check-and-save-headline"]').exists()).toBe(false);
@@ -77,7 +77,7 @@ describe('ZuordnungenEditOverview', () => {
     });
 
     test('it disables saving and explains that there are no changes', () => {
-      const { wrapper, isDisabled }: ReturnType<typeof setup> = setup();
+      const { wrapper, isDisabled }: EditOverviewSetup = setup();
 
       expect(isDisabled('zuordnung-changes-save-button')).toBe(true);
       expect(wrapper.findComponent({ name: 'SpshTooltip' }).props()).toMatchObject({
@@ -89,7 +89,7 @@ describe('ZuordnungenEditOverview', () => {
 
     test('it passes the selection and the Zuordnungen to the actions', () => {
       const firstZuordnung: ZuordnungWithKlasse = DoFactory.getZuordnung();
-      const { wrapper }: ReturnType<typeof setup> = setup(
+      const { wrapper }: EditOverviewSetup = setup(
         {
           selectedZuordnungen: [firstZuordnung],
           isDeleteExternZuordnungDisabled: true,
@@ -109,7 +109,7 @@ describe('ZuordnungenEditOverview', () => {
     });
 
     const expectEventForwarded = (eventName: 'delete' | 'add' | 'changeBefristung' | 'changeKlasse'): void => {
-      const { wrapper, emitFromChild }: ReturnType<typeof setup> = setup();
+      const { wrapper, emitFromChild }: EditOverviewSetup = setup();
 
       emitFromChild('ZuordnungenEditActions', eventName);
 
@@ -145,7 +145,7 @@ describe('ZuordnungenEditOverview', () => {
     test('it receives the Zuordnungen, the new Zuordnung, the pending operation and the selection', () => {
       const firstZuordnung: ZuordnungWithKlasse = DoFactory.getZuordnung();
       const secondZuordnung: ZuordnungWithKlasse = DoFactory.getZuordnung();
-      const { wrapper, zuordnungen }: ReturnType<typeof setup> = setup(
+      const { wrapper, zuordnungen }: EditOverviewSetup = setup(
         {
           newZuordnung: secondZuordnung,
           pendingOperation: 'creation',
@@ -165,7 +165,7 @@ describe('ZuordnungenEditOverview', () => {
     test('it updates the selection when the list selects a Zuordnung', () => {
       const firstZuordnung: ZuordnungWithKlasse = DoFactory.getZuordnung();
       const secondZuordnung: ZuordnungWithKlasse = DoFactory.getZuordnung();
-      const { wrapper, emitFromChild }: ReturnType<typeof setup> = setup({}, { firstZuordnung, secondZuordnung });
+      const { wrapper, emitFromChild }: EditOverviewSetup = setup({}, { firstZuordnung, secondZuordnung });
 
       emitFromChild('ZuordnungenEditList', 'update:selectedZuordnungen', [secondZuordnung]);
 
@@ -175,7 +175,7 @@ describe('ZuordnungenEditOverview', () => {
 
   describe('with a pending operation', () => {
     test('it asks to check and save and hides the actions', () => {
-      const { wrapper }: ReturnType<typeof setup> = setup({ pendingOperation: 'changeBefristung' });
+      const { wrapper }: EditOverviewSetup = setup({ pendingOperation: 'changeBefristung' });
 
       expect(wrapper.get('[data-testid="check-and-save-headline"]').text()).toBe(
         'Bitte prüfen und abschließend speichern, um die Aktion auszuführen:',
@@ -185,7 +185,7 @@ describe('ZuordnungenEditOverview', () => {
     });
 
     test('it enables saving and emits save', async () => {
-      const { wrapper, isDisabled }: ReturnType<typeof setup> = setup({ pendingOperation: 'changeKlasse' });
+      const { wrapper, isDisabled }: EditOverviewSetup = setup({ pendingOperation: 'changeKlasse' });
 
       expect(isDisabled('zuordnung-changes-save-button')).toBe(false);
       expect(wrapper.findComponent({ name: 'SpshTooltip' }).props('enabledCondition')).toBe(true);
@@ -196,7 +196,7 @@ describe('ZuordnungenEditOverview', () => {
     });
 
     test('it disables saving while loading', () => {
-      const { isDisabled }: ReturnType<typeof setup> = setup({ pendingOperation: 'changeKlasse', isLoading: true });
+      const { isDisabled }: EditOverviewSetup = setup({ pendingOperation: 'changeKlasse', isLoading: true });
 
       expect(isDisabled('zuordnung-changes-save-button')).toBe(true);
     });
@@ -204,13 +204,13 @@ describe('ZuordnungenEditOverview', () => {
 
   describe('hint for missing Zuordnungen', () => {
     test('it is shown when there are no Zuordnungen and no operation is pending', () => {
-      const { wrapper }: ReturnType<typeof setup> = setup({ zuordnungen: [], hasNoZuordnungen: true });
+      const { wrapper }: EditOverviewSetup = setup({ zuordnungen: [], hasNoZuordnungen: true });
 
       expect(wrapper.text()).toContain(NO_ZUORDNUNGEN_TEXT);
     });
 
     const isHintShownWhilePending = (pendingOperation: ZuordnungOperation): boolean => {
-      const { wrapper }: ReturnType<typeof setup> = setup({
+      const { wrapper }: EditOverviewSetup = setup({
         zuordnungen: [],
         hasNoZuordnungen: true,
         pendingOperation,
@@ -244,14 +244,14 @@ describe('ZuordnungenEditOverview', () => {
     });
 
     test('it is hidden when there are Zuordnungen', () => {
-      const { wrapper }: ReturnType<typeof setup> = setup({ hasNoZuordnungen: false });
+      const { wrapper }: EditOverviewSetup = setup({ hasNoZuordnungen: false });
 
       expect(wrapper.text()).not.toContain(NO_ZUORDNUNGEN_TEXT);
     });
   });
 
   test('it emits cancel', async () => {
-    const { wrapper }: ReturnType<typeof setup> = setup();
+    const { wrapper }: EditOverviewSetup = setup();
 
     await wrapper.get('[data-testid="zuordnung-edit-cancel"]').trigger('click');
 

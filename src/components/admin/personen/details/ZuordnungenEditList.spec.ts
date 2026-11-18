@@ -45,7 +45,7 @@ describe('ZuordnungenEditList', () => {
   };
 
   test('it selects a Zuordnung when there is no pending change', () => {
-    const { wrapper, zuordnung }: ReturnType<typeof setup> = setup();
+    const { wrapper, zuordnung }: ZuordnungenEditListSetup = setup();
 
     wrapper.findComponent(VCheckbox).vm.$emit('update:modelValue', [zuordnung]);
 
@@ -55,7 +55,7 @@ describe('ZuordnungenEditList', () => {
 
   test('it marks the new Zuordnung as created while a creation is pending', () => {
     const zuordnung: Zuordnung = DoFactory.getZuordnung();
-    const { wrapper }: ReturnType<typeof setup> = setup({
+    const { wrapper }: ZuordnungenEditListSetup = setup({
       zuordnungen: [zuordnung],
       newZuordnung: zuordnung,
       pendingOperation: 'creation',
@@ -91,26 +91,20 @@ describe('ZuordnungenEditList', () => {
 
     test('it marks only the new Zuordnung as created while a creation is pending', () => {
       const otherZuordnung: Zuordnung = DoFactory.getZuordnung({ sskId: 'other', rolleId: 'rolle' });
-      const { getPendingStates }: ReturnType<typeof setupPendingOperation> = setupPendingOperation(
-        'creation',
-        otherZuordnung,
-      );
+      const { getPendingStates }: PendingOperationSetup = setupPendingOperation('creation', otherZuordnung);
 
       expect(getPendingStates()).toEqual([undefined, PendingState.CREATED]);
     });
 
     test('it marks the selected Zuordnung as deleted while a deletion is pending', () => {
-      const { getPendingStates }: ReturnType<typeof setupPendingOperation> = setupPendingOperation(
-        'deletion',
-        undefined,
-      );
+      const { getPendingStates }: PendingOperationSetup = setupPendingOperation('deletion', undefined);
 
       expect(getPendingStates()).toEqual([PendingState.DELETED, undefined]);
     });
 
     const expectNewZuordnungNextToReplacedOne = (pendingOperation: ZuordnungOperation): void => {
       const newZuordnung: Zuordnung = DoFactory.getZuordnung({ sskId: 'selected', rolleId: 'rolle' });
-      const { wrapper, getPendingStates }: ReturnType<typeof setupPendingOperation> = setupPendingOperation(
+      const { wrapper, getPendingStates }: PendingOperationSetup = setupPendingOperation(
         pendingOperation,
         newZuordnung,
       );
@@ -120,10 +114,7 @@ describe('ZuordnungenEditList', () => {
     };
 
     const expectNoNewZuordnung = (pendingOperation: ZuordnungOperation, newZuordnung: Zuordnung | undefined): void => {
-      const { getPendingStates }: ReturnType<typeof setupPendingOperation> = setupPendingOperation(
-        pendingOperation,
-        newZuordnung,
-      );
+      const { getPendingStates }: PendingOperationSetup = setupPendingOperation(pendingOperation, newZuordnung);
 
       expect(getPendingStates()).toEqual([PendingState.DELETED, undefined]);
     };

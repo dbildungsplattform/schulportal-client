@@ -70,7 +70,7 @@ describe('ZuordnungenEditActions', () => {
 
   describe('add button', () => {
     test('it emits add while no Zuordnung is selected', async () => {
-      const { wrapper, isDisabled, getTooltipProps }: ReturnType<typeof setup> = setup({ selectedCount: 0 });
+      const { wrapper, isDisabled, getTooltipProps }: EditActionsSetup = setup({ selectedCount: 0 });
 
       expect(isDisabled('zuordnung-create-button')).toBe(false);
       expect(getTooltipProps('zuordnung-create-button')).toMatchObject({
@@ -85,7 +85,7 @@ describe('ZuordnungenEditActions', () => {
     });
 
     test('it is disabled as soon as a Zuordnung is selected', async () => {
-      const { wrapper, isDisabled, getTooltipProps }: ReturnType<typeof setup> = setup({ selectedCount: 1 });
+      const { wrapper, isDisabled, getTooltipProps }: EditActionsSetup = setup({ selectedCount: 1 });
 
       expect(isDisabled('zuordnung-create-button')).toBe(true);
       expect(getTooltipProps('zuordnung-create-button')).toMatchObject({ enabledCondition: false });
@@ -101,7 +101,7 @@ describe('ZuordnungenEditActions', () => {
       props: Pick<EditActionsProps, 'selectedCount' | 'isDeleteExternZuordnungDisabled'>,
       expected: { disabled: boolean; disabledTooltipText: string | undefined },
     ): void => {
-      const { wrapper }: ReturnType<typeof setup> = setup({ ...props, editableZuordnungenCount: 3 });
+      const { wrapper }: EditActionsSetup = setup({ ...props, editableZuordnungenCount: 3 });
 
       expect(wrapper.findComponent({ name: 'PersonenkontextDelete' }).props()).toMatchObject({
         ...expected,
@@ -137,7 +137,7 @@ describe('ZuordnungenEditActions', () => {
     });
 
     test('it emits delete when the deletion is confirmed', () => {
-      const { wrapper, emitFromChild }: ReturnType<typeof setup> = setup({ selectedCount: 1 });
+      const { wrapper, emitFromChild }: EditActionsSetup = setup({ selectedCount: 1 });
 
       emitFromChild('PersonenkontextDelete', 'onDeletePersonenkontext');
 
@@ -147,14 +147,14 @@ describe('ZuordnungenEditActions', () => {
 
   describe('feature flags', () => {
     test('it hides the Rolle and Befristung buttons when the features are not enabled', () => {
-      const { wrapper }: ReturnType<typeof setup> = setup({ selectedCount: 1 });
+      const { wrapper }: EditActionsSetup = setup({ selectedCount: 1 });
 
       expect(wrapper.find('[data-testid="rolle-change-button"]').exists()).toBe(false);
       expect(wrapper.find('[data-testid="befristung-change-button"]').exists()).toBe(false);
     });
 
     test('it hides the Befristung button when only the Rolle feature is enabled', async () => {
-      const { wrapper, configStore }: ReturnType<typeof setup> = setup({ selectedCount: 1 });
+      const { wrapper, configStore }: EditActionsSetup = setup({ selectedCount: 1 });
       configStore.configData = {
         rolleBearbeitenEnabled: true,
         befristungBearbeitenEnabled: false,
@@ -168,7 +168,7 @@ describe('ZuordnungenEditActions', () => {
     });
 
     test('it disables the Rolle button without a selection', async () => {
-      const { enableFeatureFlags, isDisabled, getTooltipProps }: ReturnType<typeof setup> = setup({ selectedCount: 0 });
+      const { enableFeatureFlags, isDisabled, getTooltipProps }: EditActionsSetup = setup({ selectedCount: 0 });
       await enableFeatureFlags();
 
       expect(isDisabled('rolle-change-button')).toBe(true);
@@ -180,7 +180,7 @@ describe('ZuordnungenEditActions', () => {
     });
 
     test('it enables the Rolle button with a selection', async () => {
-      const { enableFeatureFlags, isDisabled, getTooltipProps }: ReturnType<typeof setup> = setup({ selectedCount: 2 });
+      const { enableFeatureFlags, isDisabled, getTooltipProps }: EditActionsSetup = setup({ selectedCount: 2 });
       await enableFeatureFlags();
 
       expect(isDisabled('rolle-change-button')).toBe(false);
@@ -190,7 +190,7 @@ describe('ZuordnungenEditActions', () => {
 
   describe('Befristung button', () => {
     const expectBefristungButtonDisabled = async (selectedCount: number): Promise<void> => {
-      const { wrapper, enableFeatureFlags, isDisabled }: ReturnType<typeof setup> = setup({ selectedCount });
+      const { wrapper, enableFeatureFlags, isDisabled }: EditActionsSetup = setup({ selectedCount });
       await enableFeatureFlags();
 
       expect(isDisabled('befristung-change-button')).toBe(true);
@@ -213,7 +213,7 @@ describe('ZuordnungenEditActions', () => {
     });
 
     test('it emits changeBefristung when exactly one Zuordnung is selected', async () => {
-      const { wrapper, enableFeatureFlags, isDisabled, getTooltipProps }: ReturnType<typeof setup> = setup({
+      const { wrapper, enableFeatureFlags, isDisabled, getTooltipProps }: EditActionsSetup = setup({
         selectedCount: 1,
       });
       await enableFeatureFlags();
@@ -232,13 +232,13 @@ describe('ZuordnungenEditActions', () => {
 
   describe('Klasse button', () => {
     test('it is not rendered without a Klassen-Zuordnung', () => {
-      const { wrapper }: ReturnType<typeof setup> = setup({ hasKlassenZuordnung: false, canChangeKlasse: true });
+      const { wrapper }: EditActionsSetup = setup({ hasKlassenZuordnung: false, canChangeKlasse: true });
 
       expect(wrapper.find('[data-testid="klasse-change-button"]').exists()).toBe(false);
     });
 
     test('it is disabled when the Klasse cannot be changed', async () => {
-      const { wrapper, isDisabled, getTooltipProps }: ReturnType<typeof setup> = setup({
+      const { wrapper, isDisabled, getTooltipProps }: EditActionsSetup = setup({
         hasKlassenZuordnung: true,
         canChangeKlasse: false,
       });
@@ -255,7 +255,7 @@ describe('ZuordnungenEditActions', () => {
     });
 
     test('it emits changeKlasse when the Klasse can be changed', async () => {
-      const { wrapper, isDisabled }: ReturnType<typeof setup> = setup({
+      const { wrapper, isDisabled }: EditActionsSetup = setup({
         hasKlassenZuordnung: true,
         canChangeKlasse: true,
       });

@@ -154,7 +154,7 @@ describe('useZuordnungChangeBefristung', () => {
 
   describe('triggerChangeBefristung', () => {
     it('should show the form with the Rolle and the current Befristung of the selected Zuordnung', () => {
-      const { createComposable, selectedZuordnung }: ReturnType<typeof setup> = setup();
+      const { createComposable, selectedZuordnung }: ChangeBefristungSetup = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
 
       composable.triggerChangeBefristung();
@@ -167,7 +167,7 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should preselect the Schuljahresende if it is the current Befristung', () => {
-      const { selectedZuordnung, createComposable }: ReturnType<typeof setup> = setup();
+      const { selectedZuordnung, createComposable }: ChangeBefristungSetup = setup();
       selectedZuordnung.befristung = formatDateToISO(getNextSchuljahresende())!;
       const composable: ZuordnungChangeBefristung = createComposable();
 
@@ -177,7 +177,7 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should preselect unbefristet if the selected Zuordnung has no Befristung', () => {
-      const { selectedZuordnung, createComposable }: ReturnType<typeof setup> = setup();
+      const { selectedZuordnung, createComposable }: ChangeBefristungSetup = setup();
       selectedZuordnung.befristung = null;
       const composable: ZuordnungChangeBefristung = createComposable();
 
@@ -189,7 +189,7 @@ describe('useZuordnungChangeBefristung', () => {
 
   describe('differentDateSelected', () => {
     it('should be true only if the selected Befristung differs from the current one', () => {
-      const { createComposable, otherFutureDate }: ReturnType<typeof setup> = setup();
+      const { createComposable, otherFutureDate }: ChangeBefristungSetup = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
       composable.triggerChangeBefristung();
       expect(composable.differentDateSelected.value).toBe(false);
@@ -200,7 +200,7 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should compare against no Befristung if the selected Zuordnung is unbefristet', () => {
-      const { selectedZuordnung, createComposable }: ReturnType<typeof setup> = setup();
+      const { selectedZuordnung, createComposable }: ChangeBefristungSetup = setup();
       selectedZuordnung.befristung = null;
       const composable: ZuordnungChangeBefristung = createComposable();
       composable.triggerChangeBefristung();
@@ -214,7 +214,7 @@ describe('useZuordnungChangeBefristung', () => {
 
   describe('onSubmitChangeBefristung', () => {
     it('should show the confirmation dialog with the old and the new Befristung', async () => {
-      const { createComposable, otherFutureDate, selectedZuordnung, t }: ReturnType<typeof setup> = setup();
+      const { createComposable, otherFutureDate, selectedZuordnung, t }: ChangeBefristungSetup = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
 
       await submitNewBefristung(composable, otherFutureDate);
@@ -229,7 +229,7 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should name an unlimited Befristung "unbefristet" in the confirmation message', async () => {
-      const { createComposable, selectedZuordnung, t }: ReturnType<typeof setup> = setup();
+      const { createComposable, selectedZuordnung, t }: ChangeBefristungSetup = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
       composable.triggerChangeBefristung();
       await selectUnbefristet(composable);
@@ -245,7 +245,7 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should name the old Befristung "unbefristet" if the selected Zuordnung has none', async () => {
-      const { selectedZuordnung, createComposable, otherFutureDate, t }: ReturnType<typeof setup> = setup();
+      const { selectedZuordnung, createComposable, otherFutureDate, t }: ChangeBefristungSetup = setup();
       selectedZuordnung.befristung = null;
       const composable: ZuordnungChangeBefristung = createComposable();
 
@@ -260,7 +260,7 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should not show the confirmation dialog if the form is invalid', async () => {
-      const { createComposable }: ReturnType<typeof setup> = setup();
+      const { createComposable }: ChangeBefristungSetup = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
 
       await submitNewBefristung(composable, '01.01.2000');
@@ -273,7 +273,7 @@ describe('useZuordnungChangeBefristung', () => {
 
   describe('confirmDialogChangeBefristung', () => {
     it('should store the Zuordnungen with the new Befristung and show the review', async () => {
-      const { createComposable, otherFutureDate, editMode, state, otherZuordnung }: ReturnType<typeof setup> = setup();
+      const { createComposable, otherFutureDate, editMode, state, otherZuordnung }: ChangeBefristungSetup = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
       await submitNewBefristung(composable, otherFutureDate);
 
@@ -292,7 +292,7 @@ describe('useZuordnungChangeBefristung', () => {
     });
 
     it('should store no Befristung if unbefristet is selected', async () => {
-      const { createComposable, state }: ReturnType<typeof setup> = setup();
+      const { createComposable, state }: ChangeBefristungSetup = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
       composable.triggerChangeBefristung();
       await selectUnbefristet(composable);
@@ -306,7 +306,7 @@ describe('useZuordnungChangeBefristung', () => {
 
   describe('cancelChangeBefristung', () => {
     it('should only close the confirmation dialog', async () => {
-      const { createComposable, otherFutureDate, state }: ReturnType<typeof setup> = setup();
+      const { createComposable, otherFutureDate, state }: ChangeBefristungSetup = setup();
       const composable: ZuordnungChangeBefristung = createComposable();
       await submitNewBefristung(composable, otherFutureDate);
 
@@ -327,7 +327,7 @@ describe('useZuordnungChangeBefristung', () => {
         selectedZuordnung,
         otherZuordnung,
         createComposable,
-      }: ReturnType<typeof setup> = setup({
+      }: ChangeBefristungSetup = setup({
         useRealPinia: true,
       });
       state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
@@ -359,7 +359,7 @@ describe('useZuordnungChangeBefristung', () => {
         selectedZuordnung,
         otherZuordnung,
         createComposable,
-      }: ReturnType<typeof setup> = setup({
+      }: ChangeBefristungSetup = setup({
         useRealPinia: true,
       });
       state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
@@ -374,7 +374,7 @@ describe('useZuordnungChangeBefristung', () => {
 
   describe('closeChangeBefristungSuccessDialog', () => {
     it('should reload the Zuordnungen, hide the dialog and end the edit mode', async () => {
-      const { mockAdapter, personId, createComposable, isEditActive }: ReturnType<typeof setup> = setup({
+      const { mockAdapter, personId, createComposable, isEditActive }: ChangeBefristungSetup = setup({
         useRealPinia: true,
       });
       mockAdapter
@@ -396,7 +396,7 @@ describe('useZuordnungChangeBefristung', () => {
 
   describe('Befristungspflicht', () => {
     it('should keep the flags per composable instance', async () => {
-      const { rolleStore, selectedZuordnung, createComposable, createState }: ReturnType<typeof setup> = setup();
+      const { rolleStore, selectedZuordnung, createComposable, createState }: ChangeBefristungSetup = setup();
       rolleStore.rollenForPersonenkontextCreation = [
         {
           value: selectedZuordnung.rolleId,
