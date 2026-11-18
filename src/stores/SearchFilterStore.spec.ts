@@ -4,6 +4,7 @@ import type { Organisation } from './OrganisationStore';
 import { RollenArt, RollenMerkmal, type RolleResponse } from './RolleStore';
 import {
   DEFAULT_SERVICE_PROVIDER_KATEGORIEN,
+  PersonStatusFilter,
   rollenPerPageDefault,
   useSearchFilterStore,
   type SearchFilterStore,
@@ -21,6 +22,7 @@ describe('SearchFilterStore', () => {
   it('should initalize state correctly', () => {
     expect(searchFilterStore.selectedKlassen).toEqual([]);
     expect(searchFilterStore.selectedRollen).toEqual([]);
+    expect(searchFilterStore.selectedStatusForPersonen).toEqual([]);
     expect(searchFilterStore.selectedOrganisationen).toEqual([]);
     expect(searchFilterStore.searchStringForRollen).toEqual('');
     expect(searchFilterStore.searchStringForPersonen).toEqual('');
@@ -107,6 +109,18 @@ describe('SearchFilterStore', () => {
     // it resets the selectedKategorienForServiceProvider back to the default selection
     searchFilterStore.resetKategorienForServiceProvider();
     expect(searchFilterStore.selectedKategorienForServiceProvider).toEqual(DEFAULT_SERVICE_PROVIDER_KATEGORIEN);
+  });
+
+  it('should persist, clear and reset the person status selection', () => {
+    searchFilterStore.setStatusFilterForPersonen([PersonStatusFilter.Locked]);
+    expect(searchFilterStore.selectedStatusForPersonen).toEqual([PersonStatusFilter.Locked]);
+
+    searchFilterStore.setStatusFilterForPersonen([]);
+    expect(searchFilterStore.selectedStatusForPersonen).toEqual([]);
+
+    searchFilterStore.setStatusFilterForPersonen([PersonStatusFilter.Locked]);
+    searchFilterStore.$reset();
+    expect(searchFilterStore.selectedStatusForPersonen).toEqual([]);
   });
 
   it('should set merkmale filter for rollen', () => {
