@@ -514,6 +514,51 @@ describe('useZuordnungCreation', () => {
       expect(creation.selectedBefristungOption.value).toBeUndefined();
     });
 
+    it('should not restore the Klassen into the working list, so a retry persists each Klasse once', async () => {
+      const { creation, state, schule, personStore, selectRolle, mockCommit, mockAdapter, lernRolle }: CreationSetup =
+        setup({ useFakeTimers: true });
+      const existingKlasse: Organisation = DoFactory.getKlasse(schule);
+      const existingSchulZuordnung: Zuordnung = DoFactory.getZuordnung(
+        { rolleId: lernRolle.value, rollenArt: RollenArt.Lern, editable: true },
+        { organisation: schule },
+      );
+      const existingKlassenZuordnung: Zuordnung = DoFactory.getZuordnung(
+        { rolleId: lernRolle.value, rollenArt: RollenArt.Lern, editable: true },
+        { organisation: existingKlasse },
+      );
+      personStore.personenuebersicht = DoFactory.getPersonenUebersicht(DoFactory.getPerson(), [
+        existingSchulZuordnung,
+        existingKlassenZuordnung,
+      ]);
+      await flushPromises();
+      const pendingBeforeAddition: ZuordnungWithKlasse[] = [...(state.zuordnungenWithPendingChanges.value ?? [])];
+      const otherSchule: Organisation = DoFactory.getSchule();
+      const failedKlasse: Organisation = DoFactory.getKlasse(otherSchule);
+      const retriedKlasse: Organisation = DoFactory.getKlasse(otherSchule);
+      await selectRolle(lernRolle, otherSchule);
+      creation.handleKlasseUpdate(failedKlasse);
+      creation.confirmDialogAddition();
+      mockCommit(400, { i18nKey: 'PERSONALNUMMER_NICHT_EINDEUTIG' });
+      await creation.confirmAddition();
+
+      creation.navigateToZuordnungForm();
+      await flushPromises();
+      expect(state.zuordnungenWithPendingChanges.value).toEqual(pendingBeforeAddition);
+
+      creation.handleKlasseUpdate(retriedKlasse);
+      creation.confirmDialogAddition();
+      mockCommit(200, DoFactory.getPersonenkontextUpdateResponse());
+      await creation.confirmAddition();
+
+      const persistedOrganisationIds: string[] = (
+        JSON.parse(mockAdapter.history['put'][1]!.data as string) as { personenkontexte: { organisationId: string }[] }
+      ).personenkontexte.map((kontext: { organisationId: string }) => kontext.organisationId);
+      expect(persistedOrganisationIds).toHaveLength(4);
+      expect(persistedOrganisationIds).toEqual(
+        expect.arrayContaining([schule.id, existingKlasse.id, otherSchule.id, retriedKlasse.id]),
+      );
+    });
+
     it('should not change the form values without a previous submission', () => {
       const { personenkontextStore, creation }: CreationSetup = setup({ useFakeTimers: true });
       personenkontextStore.errorCode = 'SOME_MOCK_SERVER_ERROR';

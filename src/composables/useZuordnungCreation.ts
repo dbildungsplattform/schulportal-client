@@ -281,8 +281,8 @@ export function useZuordnungCreation(params: {
     // The form values were retained, reassigning the Rolle would let its watcher overwrite the selected Befristung
     mode.showForm();
 
-    // Rollback the zuordnungen to be added
-    state.zuordnungenWithPendingChanges.value = state.zuordnungenToBePersisted.value.filter(
+    // Rollback the zuordnungen to be added. The working list holds the Klassen merged into their Schulen, so the raw Klassen are removed.
+    state.zuordnungenWithPendingChanges.value = withoutKlassen(state.zuordnungenToBePersisted.value).filter(
       (zuordnung: Zuordnung) => zuordnung !== state.newZuordnung.value,
     );
 
