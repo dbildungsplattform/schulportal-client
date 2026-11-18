@@ -84,9 +84,6 @@ describe('PersonStore', () => {
 
       // Mock data for person overviews
       const mockUebersichten: DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response = {
-        total: mockPersons.length,
-        offset: 0,
-        limit: mockPersons.length,
         items: mockPersons.map((person: PersonendatensatzResponse) => {
           return DoFactory.getDBiamPersonenuebersichtResponse(
             {
@@ -150,9 +147,6 @@ describe('PersonStore', () => {
 
       // Mock data for person overviews
       const mockUebersichten: DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response = {
-        total: mockPersons.length,
-        offset: 0,
-        limit: mockPersons.length,
         items: [
           DoFactory.getDBiamPersonenuebersichtResponse(
             {
