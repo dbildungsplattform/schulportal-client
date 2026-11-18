@@ -36,7 +36,7 @@ export interface ApplyRollenerweiterungBodyParams {
      */
     'addErweiterungenForRolleIds': Array<string>;
     /**
-     * List of rolleIds to apply.
+     * List of rolleIds to remove.
      * @type {Array<string>}
      * @memberof ApplyRollenerweiterungBodyParams
      */
@@ -568,39 +568,8 @@ export interface DBiamPersonenkontextResponse {
 export interface DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response {
     /**
      * 
-     * @type {number}
-     * @memberof DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response
-     */
-    'total': number;
-    /**
-     * 
-     * @type {number}
-     * @memberof DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response
-     */
-    'offset': number;
-    /**
-     * 
-     * @type {number}
-     * @memberof DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response
-     */
-    'limit': number;
-    /**
-     * 
      * @type {Array<DBiamPersonenuebersichtResponse>}
      * @memberof DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response
-     */
-    'items': Array<DBiamPersonenuebersichtResponse>;
-}
-/**
- * 
- * @export
- * @interface DBiamPersonenuebersichtControllerFindPersonenuebersichten200ResponseAllOf
- */
-export interface DBiamPersonenuebersichtControllerFindPersonenuebersichten200ResponseAllOf {
-    /**
-     * 
-     * @type {Array<DBiamPersonenuebersichtResponse>}
-     * @memberof DBiamPersonenuebersichtControllerFindPersonenuebersichten200ResponseAllOf
      */
     'items': Array<DBiamPersonenuebersichtResponse>;
 }
@@ -775,7 +744,8 @@ export interface DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInner {
 
 export const DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerErrorIdTypeEnum = {
     Rolle: 'ROLLE',
-    Angebot: 'ANGEBOT'
+    Angebot: 'ANGEBOT',
+    RollenartBeschraenkung: 'ROLLENART_BESCHRAENKUNG'
 } as const;
 
 export type DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerErrorIdTypeEnum = typeof DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerErrorIdTypeEnum[keyof typeof DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerErrorIdTypeEnum];
@@ -927,7 +897,12 @@ export const DbiamOrganisationErrorI18nKeyEnum = {
     OrganisationHatRollenerweiterungen: 'ORGANISATION_HAT_ROLLENERWEITERUNGEN',
     OrganisationHatOrganisationsbeziehungen: 'ORGANISATION_HAT_ORGANISATIONSBEZIEHUNGEN',
     BehoerdeNameEindeutig: 'BEHOERDE_NAME_EINDEUTIG',
-    BehoerdeAdministriertVon: 'BEHOERDE_ADMINISTRIERT_VON'
+    BehoerdeAdministriertVon: 'BEHOERDE_ADMINISTRIERT_VON',
+    SchulaufsichtQuelleSchuleZielBehoerde: 'SCHULAUFSICHT_QUELLE_SCHULE_ZIEL_BEHOERDE',
+    SchulaufsichtSchuleUndAufsichtSelberBaum: 'SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM',
+    SchultraegerQuelleSchuleZielTraeger: 'SCHULTRAEGER_QUELLE_SCHULE_ZIEL_TRAEGER',
+    SchultraegerSchuleHatExaktEinenTraeger: 'SCHULTRAEGER_SCHULE_HAT_EXAKT_EINEN_TRAEGER',
+    SchultraegerSchuleUndTraegerSelberBaum: 'SCHULTRAEGER_SCHULE_UND_TRAEGER_SELBER_BAUM'
 } as const;
 
 export type DbiamOrganisationErrorI18nKeyEnum = typeof DbiamOrganisationErrorI18nKeyEnum[keyof typeof DbiamOrganisationErrorI18nKeyEnum];
@@ -1120,7 +1095,8 @@ export const DbiamRolleErrorI18nKeyEnum = {
     ServiceProviderNichtNachtraeglichZuweisbar: 'SERVICE_PROVIDER_NICHT_NACHTRAEGLICH_ZUWEISBAR',
     ServiceProviderNichtVerfuegbarFuerRollenerweiterung: 'SERVICE_PROVIDER_NICHT_VERFUEGBAR_FUER_ROLLENERWEITERUNG',
     NoRedundantRollenerweiterung: 'NO_REDUNDANT_ROLLENERWEITERUNG',
-    ServiceProviderProvidedOutOfTree: 'SERVICE_PROVIDER_PROVIDED_OUT_OF_TREE'
+    ServiceProviderProvidedOutOfTree: 'SERVICE_PROVIDER_PROVIDED_OUT_OF_TREE',
+    RollenartNotAllowedForServiceProvider: 'ROLLENART_NOT_ALLOWED_FOR_SERVICE_PROVIDER'
 } as const;
 
 export type DbiamRolleErrorI18nKeyEnum = typeof DbiamRolleErrorI18nKeyEnum[keyof typeof DbiamRolleErrorI18nKeyEnum];
@@ -1242,6 +1218,56 @@ export interface FeatureFlagResponse {
      * @memberof FeatureFlagResponse
      */
     'schulischeAngeboteErstellen': boolean;
+}
+/**
+ * 
+ * @export
+ * @interface ImportControllerFindImportTransactions200Response
+ */
+export interface ImportControllerFindImportTransactions200Response {
+    /**
+     * 
+     * @type {number}
+     * @memberof ImportControllerFindImportTransactions200Response
+     */
+    'total': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof ImportControllerFindImportTransactions200Response
+     */
+    'offset': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof ImportControllerFindImportTransactions200Response
+     */
+    'limit': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof ImportControllerFindImportTransactions200Response
+     */
+    'pageTotal'?: number;
+    /**
+     * 
+     * @type {Array<ImportVorgangResponse>}
+     * @memberof ImportControllerFindImportTransactions200Response
+     */
+    'items': Array<ImportVorgangResponse>;
+}
+/**
+ * 
+ * @export
+ * @interface ImportControllerFindImportTransactions200ResponseAllOf
+ */
+export interface ImportControllerFindImportTransactions200ResponseAllOf {
+    /**
+     * 
+     * @type {Array<ImportVorgangResponse>}
+     * @memberof ImportControllerFindImportTransactions200ResponseAllOf
+     */
+    'items': Array<ImportVorgangResponse>;
 }
 /**
  * 
@@ -2005,6 +2031,56 @@ export interface OrganisationByNameBodyParams {
 /**
  * 
  * @export
+ * @interface OrganisationControllerFindOrganizations200Response
+ */
+export interface OrganisationControllerFindOrganizations200Response {
+    /**
+     * 
+     * @type {number}
+     * @memberof OrganisationControllerFindOrganizations200Response
+     */
+    'total': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof OrganisationControllerFindOrganizations200Response
+     */
+    'offset': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof OrganisationControllerFindOrganizations200Response
+     */
+    'limit': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof OrganisationControllerFindOrganizations200Response
+     */
+    'pageTotal'?: number;
+    /**
+     * 
+     * @type {Array<OrganisationResponse>}
+     * @memberof OrganisationControllerFindOrganizations200Response
+     */
+    'items': Array<OrganisationResponse>;
+}
+/**
+ * 
+ * @export
+ * @interface OrganisationControllerFindOrganizations200ResponseAllOf
+ */
+export interface OrganisationControllerFindOrganizations200ResponseAllOf {
+    /**
+     * 
+     * @type {Array<OrganisationResponse>}
+     * @memberof OrganisationControllerFindOrganizations200ResponseAllOf
+     */
+    'items': Array<OrganisationResponse>;
+}
+/**
+ * 
+ * @export
  * @interface OrganisationRefResponse
  */
 export interface OrganisationRefResponse {
@@ -2261,6 +2337,43 @@ export type OrganisationsbeziehungsTyp = typeof OrganisationsbeziehungsTyp[keyof
 /**
  * 
  * @export
+ * @interface PagedResponse
+ */
+export interface PagedResponse {
+    /**
+     * 
+     * @type {number}
+     * @memberof PagedResponse
+     */
+    'total': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof PagedResponse
+     */
+    'offset': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof PagedResponse
+     */
+    'limit': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof PagedResponse
+     */
+    'pageTotal'?: number;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof PagedResponse
+     */
+    'items': Array<string>;
+}
+/**
+ * 
+ * @export
  * @interface ParentOrganisationenResponse
  */
 export interface ParentOrganisationenResponse {
@@ -2310,6 +2423,12 @@ export interface PersonControllerFindPersonenkontexte200Response {
     'limit': number;
     /**
      * 
+     * @type {number}
+     * @memberof PersonControllerFindPersonenkontexte200Response
+     */
+    'pageTotal'?: number;
+    /**
+     * 
      * @type {Array<PersonenkontextResponse>}
      * @memberof PersonControllerFindPersonenkontexte200Response
      */
@@ -2352,6 +2471,12 @@ export interface PersonControllerFindPersons200Response {
      * @memberof PersonControllerFindPersons200Response
      */
     'limit': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof PersonControllerFindPersons200Response
+     */
+    'pageTotal'?: number;
     /**
      * 
      * @type {Array<PersonendatensatzResponse>}
@@ -3687,6 +3812,12 @@ export interface ProviderControllerFindRollenerweiterungenByServiceProviderId200
     'limit': number;
     /**
      * 
+     * @type {number}
+     * @memberof ProviderControllerFindRollenerweiterungenByServiceProviderId200Response
+     */
+    'pageTotal'?: number;
+    /**
+     * 
      * @type {Array<RollenerweiterungWithExtendedDataResponse>}
      * @memberof ProviderControllerFindRollenerweiterungenByServiceProviderId200Response
      */
@@ -3729,6 +3860,12 @@ export interface ProviderControllerGetAvailableServiceProviders200Response {
      * @memberof ProviderControllerGetAvailableServiceProviders200Response
      */
     'limit': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof ProviderControllerGetAvailableServiceProviders200Response
+     */
+    'pageTotal'?: number;
     /**
      * 
      * @type {Array<ServiceProviderResponse>}
@@ -3775,6 +3912,12 @@ export interface ProviderControllerGetManageableServiceProviders200Response {
     'limit': number;
     /**
      * 
+     * @type {number}
+     * @memberof ProviderControllerGetManageableServiceProviders200Response
+     */
+    'pageTotal'?: number;
+    /**
+     * 
      * @type {Array<ManageableServiceProviderSimpleListEntryResponse>}
      * @memberof ProviderControllerGetManageableServiceProviders200Response
      */
@@ -3819,6 +3962,12 @@ export interface ProviderControllerGetManageableServiceProvidersForOrganisationI
     'limit': number;
     /**
      * 
+     * @type {number}
+     * @memberof ProviderControllerGetManageableServiceProvidersForOrganisationId200Response
+     */
+    'pageTotal'?: number;
+    /**
+     * 
      * @type {Array<ManageableServiceProviderListEntryResponse>}
      * @memberof ProviderControllerGetManageableServiceProvidersForOrganisationId200Response
      */
@@ -3840,33 +3989,52 @@ export interface ProviderControllerGetManageableServiceProvidersForOrganisationI
 /**
  * 
  * @export
- * @interface RawPagedResponse
+ * @interface RolleControllerFindRollen200Response
  */
-export interface RawPagedResponse {
+export interface RolleControllerFindRollen200Response {
     /**
      * 
      * @type {number}
-     * @memberof RawPagedResponse
+     * @memberof RolleControllerFindRollen200Response
      */
     'total': number;
     /**
      * 
      * @type {number}
-     * @memberof RawPagedResponse
+     * @memberof RolleControllerFindRollen200Response
      */
     'offset': number;
     /**
      * 
      * @type {number}
-     * @memberof RawPagedResponse
+     * @memberof RolleControllerFindRollen200Response
      */
     'limit': number;
     /**
      * 
-     * @type {Array<string>}
-     * @memberof RawPagedResponse
+     * @type {number}
+     * @memberof RolleControllerFindRollen200Response
      */
-    'items': Array<string>;
+    'pageTotal'?: number;
+    /**
+     * 
+     * @type {Array<RolleWithServiceProvidersResponse>}
+     * @memberof RolleControllerFindRollen200Response
+     */
+    'items': Array<RolleWithServiceProvidersResponse>;
+}
+/**
+ * 
+ * @export
+ * @interface RolleControllerFindRollen200ResponseAllOf
+ */
+export interface RolleControllerFindRollen200ResponseAllOf {
+    /**
+     * 
+     * @type {Array<RolleWithServiceProvidersResponse>}
+     * @memberof RolleControllerFindRollen200ResponseAllOf
+     */
+    'items': Array<RolleWithServiceProvidersResponse>;
 }
 /**
  * 
@@ -3892,6 +4060,12 @@ export interface RolleControllerFindRollenAvailableForPersonAdministration200Res
      * @memberof RolleControllerFindRollenAvailableForPersonAdministration200Response
      */
     'limit': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof RolleControllerFindRollenAvailableForPersonAdministration200Response
+     */
+    'pageTotal'?: number;
     /**
      * 
      * @type {Array<RolleResponse>}
@@ -7671,7 +7845,7 @@ export const ImportApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async importControllerFindImportTransactions(offset?: number, limit?: number, status?: ImportStatus, rolleIds?: Array<string>, organisationIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<ImportVorgangResponse>>> {
+        async importControllerFindImportTransactions(offset?: number, limit?: number, status?: ImportStatus, rolleIds?: Array<string>, organisationIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ImportControllerFindImportTransactions200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.importControllerFindImportTransactions(offset, limit, status, rolleIds, organisationIds, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -7762,7 +7936,7 @@ export const ImportApiFactory = function (configuration?: Configuration, basePat
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        importControllerFindImportTransactions(offset?: number, limit?: number, status?: ImportStatus, rolleIds?: Array<string>, organisationIds?: Array<string>, options?: any): AxiosPromise<Array<ImportVorgangResponse>> {
+        importControllerFindImportTransactions(offset?: number, limit?: number, status?: ImportStatus, rolleIds?: Array<string>, organisationIds?: Array<string>, options?: any): AxiosPromise<ImportControllerFindImportTransactions200Response> {
             return localVarFp.importControllerFindImportTransactions(offset, limit, status, rolleIds, organisationIds, options).then((request) => request(axios, basePath));
         },
         /**
@@ -7849,7 +8023,7 @@ export interface ImportApiInterface {
      * @throws {RequiredError}
      * @memberof ImportApiInterface
      */
-    importControllerFindImportTransactions(offset?: number, limit?: number, status?: ImportStatus, rolleIds?: Array<string>, organisationIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<Array<ImportVorgangResponse>>;
+    importControllerFindImportTransactions(offset?: number, limit?: number, status?: ImportStatus, rolleIds?: Array<string>, organisationIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<ImportControllerFindImportTransactions200Response>;
 
     /**
      * Get status for the import transaction by id.
@@ -9686,7 +9860,7 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, organisationIds?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<OrganisationResponse>>> {
+        async organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, organisationIds?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<OrganisationControllerFindOrganizations200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerFindOrganizations(offset, limit, kennung, name, searchString, typ, systemrechte, excludeTyp, administriertVon, zugehoerigZu, organisationIds, sortOrder, sortField, getChildrenRecursively, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -9699,7 +9873,7 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async organisationControllerGetAdministrierteOrganisationen(organisationId: string, offset?: number, limit?: number, searchFilter?: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<OrganisationResponse>>> {
+        async organisationControllerGetAdministrierteOrganisationen(organisationId: string, offset?: number, limit?: number, searchFilter?: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<OrganisationControllerFindOrganizations200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerGetAdministrierteOrganisationen(organisationId, offset, limit, searchFilter, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -9737,7 +9911,7 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async organisationControllerGetZugehoerigeOrganisationen(organisationId: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<OrganisationResponse>>> {
+        async organisationControllerGetZugehoerigeOrganisationen(organisationId: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<OrganisationControllerFindOrganizations200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerGetZugehoerigeOrganisationen(organisationId, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -9859,7 +10033,7 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, organisationIds?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: any): AxiosPromise<Array<OrganisationResponse>> {
+        organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, organisationIds?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: any): AxiosPromise<OrganisationControllerFindOrganizations200Response> {
             return localVarFp.organisationControllerFindOrganizations(offset, limit, kennung, name, searchString, typ, systemrechte, excludeTyp, administriertVon, zugehoerigZu, organisationIds, sortOrder, sortField, getChildrenRecursively, options).then((request) => request(axios, basePath));
         },
         /**
@@ -9871,7 +10045,7 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        organisationControllerGetAdministrierteOrganisationen(organisationId: string, offset?: number, limit?: number, searchFilter?: string, options?: any): AxiosPromise<Array<OrganisationResponse>> {
+        organisationControllerGetAdministrierteOrganisationen(organisationId: string, offset?: number, limit?: number, searchFilter?: string, options?: any): AxiosPromise<OrganisationControllerFindOrganizations200Response> {
             return localVarFp.organisationControllerGetAdministrierteOrganisationen(organisationId, offset, limit, searchFilter, options).then((request) => request(axios, basePath));
         },
         /**
@@ -9905,7 +10079,7 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        organisationControllerGetZugehoerigeOrganisationen(organisationId: string, options?: any): AxiosPromise<Array<OrganisationResponse>> {
+        organisationControllerGetZugehoerigeOrganisationen(organisationId: string, options?: any): AxiosPromise<OrganisationControllerFindOrganizations200Response> {
             return localVarFp.organisationControllerGetZugehoerigeOrganisationen(organisationId, options).then((request) => request(axios, basePath));
         },
         /**
@@ -10024,7 +10198,7 @@ export interface OrganisationenApiInterface {
      * @throws {RequiredError}
      * @memberof OrganisationenApiInterface
      */
-    organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, organisationIds?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig): AxiosPromise<Array<OrganisationResponse>>;
+    organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, organisationIds?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig): AxiosPromise<OrganisationControllerFindOrganizations200Response>;
 
     /**
      * 
@@ -10036,7 +10210,7 @@ export interface OrganisationenApiInterface {
      * @throws {RequiredError}
      * @memberof OrganisationenApiInterface
      */
-    organisationControllerGetAdministrierteOrganisationen(organisationId: string, offset?: number, limit?: number, searchFilter?: string, options?: AxiosRequestConfig): AxiosPromise<Array<OrganisationResponse>>;
+    organisationControllerGetAdministrierteOrganisationen(organisationId: string, offset?: number, limit?: number, searchFilter?: string, options?: AxiosRequestConfig): AxiosPromise<OrganisationControllerFindOrganizations200Response>;
 
     /**
      * 
@@ -10070,7 +10244,7 @@ export interface OrganisationenApiInterface {
      * @throws {RequiredError}
      * @memberof OrganisationenApiInterface
      */
-    organisationControllerGetZugehoerigeOrganisationen(organisationId: string, options?: AxiosRequestConfig): AxiosPromise<Array<OrganisationResponse>>;
+    organisationControllerGetZugehoerigeOrganisationen(organisationId: string, options?: AxiosRequestConfig): AxiosPromise<OrganisationControllerFindOrganizations200Response>;
 
     /**
      * 
@@ -14482,8 +14656,8 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * Apply changes to rollen-erweiterung for a given angebot and organisation.
          * @summary 
-         * @param {string} angebotId The spshPersonId of the person.
-         * @param {string} organisationId The spshPersonId of the person.
+         * @param {string} angebotId The angebotId for the rollenerweiterung.
+         * @param {string} organisationId The organisationId for the rollenerweiterung.
          * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -14618,7 +14792,7 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<RolleWithServiceProvidersResponse>>> {
+        async rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RolleControllerFindRollen200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollen(offset, limit, searchStr, organisationIds, rolleIds, rollenarten, merkmale, serviceProviderIds, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -14634,7 +14808,7 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<RolleWithServiceProvidersResponse>>> {
+        async rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RolleControllerFindRollen200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollenAvailableForErweiterung(organisationId, offset, limit, searchStr, rollenarten, systemrechte, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -14649,7 +14823,7 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async rolleControllerFindRollenAvailableForImport(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<RolleWithServiceProvidersResponse>>> {
+        async rolleControllerFindRollenAvailableForImport(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RolleControllerFindRollen200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollenAvailableForImport(organisationId, offset, limit, searchStr, rollenarten, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -14679,7 +14853,7 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<RolleWithServiceProvidersResponse>>> {
+        async rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RolleControllerFindRollen200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollenForMptZuordnung(offset, limit, searchStr, organisationIds, rolleIds, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -14731,8 +14905,8 @@ export const RolleApiFp = function(configuration?: Configuration) {
         /**
          * Apply changes to rollen-erweiterung for a given angebot and organisation.
          * @summary 
-         * @param {string} angebotId The spshPersonId of the person.
-         * @param {string} organisationId The spshPersonId of the person.
+         * @param {string} angebotId The angebotId for the rollenerweiterung.
+         * @param {string} organisationId The organisationId for the rollenerweiterung.
          * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -14823,7 +14997,7 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: any): AxiosPromise<Array<RolleWithServiceProvidersResponse>> {
+        rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: any): AxiosPromise<RolleControllerFindRollen200Response> {
             return localVarFp.rolleControllerFindRollen(offset, limit, searchStr, organisationIds, rolleIds, rollenarten, merkmale, serviceProviderIds, options).then((request) => request(axios, basePath));
         },
         /**
@@ -14838,7 +15012,7 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: any): AxiosPromise<Array<RolleWithServiceProvidersResponse>> {
+        rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: any): AxiosPromise<RolleControllerFindRollen200Response> {
             return localVarFp.rolleControllerFindRollenAvailableForErweiterung(organisationId, offset, limit, searchStr, rollenarten, systemrechte, options).then((request) => request(axios, basePath));
         },
         /**
@@ -14852,7 +15026,7 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollenAvailableForImport(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, options?: any): AxiosPromise<Array<RolleWithServiceProvidersResponse>> {
+        rolleControllerFindRollenAvailableForImport(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, options?: any): AxiosPromise<RolleControllerFindRollen200Response> {
             return localVarFp.rolleControllerFindRollenAvailableForImport(organisationId, offset, limit, searchStr, rollenarten, options).then((request) => request(axios, basePath));
         },
         /**
@@ -14880,7 +15054,7 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: any): AxiosPromise<Array<RolleWithServiceProvidersResponse>> {
+        rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: any): AxiosPromise<RolleControllerFindRollen200Response> {
             return localVarFp.rolleControllerFindRollenForMptZuordnung(offset, limit, searchStr, organisationIds, rolleIds, options).then((request) => request(axios, basePath));
         },
         /**
@@ -14927,8 +15101,8 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
         /**
          * Apply changes to rollen-erweiterung for a given angebot and organisation.
          * @summary 
-         * @param {string} angebotId The spshPersonId of the person.
-         * @param {string} organisationId The spshPersonId of the person.
+         * @param {string} angebotId The angebotId for the rollenerweiterung.
+         * @param {string} organisationId The organisationId for the rollenerweiterung.
          * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -15018,7 +15192,7 @@ export interface RolleApiInterface {
      * @throws {RequiredError}
      * @memberof RolleApiInterface
      */
-    rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<Array<RolleWithServiceProvidersResponse>>;
+    rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<RolleControllerFindRollen200Response>;
 
     /**
      * List all rollen that are available for the Rollenerweiterung workflow.
@@ -15033,7 +15207,7 @@ export interface RolleApiInterface {
      * @throws {RequiredError}
      * @memberof RolleApiInterface
      */
-    rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): AxiosPromise<Array<RolleWithServiceProvidersResponse>>;
+    rolleControllerFindRollenAvailableForErweiterung(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, systemrechte?: Array<RollenSystemRechtEnum>, options?: AxiosRequestConfig): AxiosPromise<RolleControllerFindRollen200Response>;
 
     /**
      * List all rollen that are available for the Personen-Import workflow.
@@ -15047,7 +15221,7 @@ export interface RolleApiInterface {
      * @throws {RequiredError}
      * @memberof RolleApiInterface
      */
-    rolleControllerFindRollenAvailableForImport(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, options?: AxiosRequestConfig): AxiosPromise<Array<RolleWithServiceProvidersResponse>>;
+    rolleControllerFindRollenAvailableForImport(organisationId: string, offset?: number, limit?: number, searchStr?: string, rollenarten?: Array<RollenArt>, options?: AxiosRequestConfig): AxiosPromise<RolleControllerFindRollen200Response>;
 
     /**
      * List rollen available for person administration.
@@ -15075,7 +15249,7 @@ export interface RolleApiInterface {
      * @throws {RequiredError}
      * @memberof RolleApiInterface
      */
-    rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<Array<RolleWithServiceProvidersResponse>>;
+    rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<RolleControllerFindRollen200Response>;
 
     /**
      * Get Erweiterte Angebote for a rolle.
@@ -15121,8 +15295,8 @@ export interface RolleApiInterface {
     /**
      * Apply changes to rollen-erweiterung for a given angebot and organisation.
      * @summary 
-     * @param {string} angebotId The spshPersonId of the person.
-     * @param {string} organisationId The spshPersonId of the person.
+     * @param {string} angebotId The angebotId for the rollenerweiterung.
+     * @param {string} organisationId The organisationId for the rollenerweiterung.
      * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -15343,8 +15517,8 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
     /**
      * Apply changes to rollen-erweiterung for a given angebot and organisation.
      * @summary 
-     * @param {string} angebotId The spshPersonId of the person.
-     * @param {string} organisationId The spshPersonId of the person.
+     * @param {string} angebotId The angebotId for the rollenerweiterung.
+     * @param {string} organisationId The organisationId for the rollenerweiterung.
      * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
