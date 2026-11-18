@@ -568,45 +568,8 @@ export interface DBiamPersonenkontextResponse {
 export interface DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response {
     /**
      * 
-     * @type {number}
-     * @memberof DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response
-     */
-    'total': number;
-    /**
-     * 
-     * @type {number}
-     * @memberof DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response
-     */
-    'offset': number;
-    /**
-     * 
-     * @type {number}
-     * @memberof DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response
-     */
-    'limit': number;
-    /**
-     * 
-     * @type {number}
-     * @memberof DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response
-     */
-    'pageTotal'?: number;
-    /**
-     * 
      * @type {Array<DBiamPersonenuebersichtResponse>}
      * @memberof DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response
-     */
-    'items': Array<DBiamPersonenuebersichtResponse>;
-}
-/**
- * 
- * @export
- * @interface DBiamPersonenuebersichtControllerFindPersonenuebersichten200ResponseAllOf
- */
-export interface DBiamPersonenuebersichtControllerFindPersonenuebersichten200ResponseAllOf {
-    /**
-     * 
-     * @type {Array<DBiamPersonenuebersichtResponse>}
-     * @memberof DBiamPersonenuebersichtControllerFindPersonenuebersichten200ResponseAllOf
      */
     'items': Array<DBiamPersonenuebersichtResponse>;
 }
