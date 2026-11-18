@@ -85,27 +85,36 @@ describe('zuordnungen', () => {
       expect(result).toEqual([first, second, withoutDstNr]);
     });
 
-    test.each([[true], [false]])(
-      'it puts the Zuordnung without Dienststellennummer last (without Dienststellennummer first: %s)',
-      (withoutFirst: boolean) => {
-        const withoutDstNr: Zuordnung = DoFactory.getZuordnung({ rolle: 'rolle', typ: OrganisationsTyp.Schule });
-        withoutDstNr.sskDstNr = null;
-        const withDstNr: Zuordnung = DoFactory.getZuordnung({
-          rolle: 'rolle',
-          sskDstNr: '1',
-          typ: OrganisationsTyp.Schule,
-        });
+    const expectWithoutDstNrLast = (withoutFirst: boolean): void => {
+      const withoutDstNr: Zuordnung = DoFactory.getZuordnung({ rolle: 'rolle', typ: OrganisationsTyp.Schule });
+      withoutDstNr.sskDstNr = null;
+      const withDstNr: Zuordnung = DoFactory.getZuordnung({
+        rolle: 'rolle',
+        sskDstNr: '1',
+        typ: OrganisationsTyp.Schule,
+      });
 
-        const result: ZuordnungWithKlasse[] | undefined = computeZuordnungenWithKlasse(
-          DoFactory.getPersonenUebersicht(
-            undefined,
-            withoutFirst ? [withoutDstNr, withDstNr] : [withDstNr, withoutDstNr],
-          ),
-        );
+      const result: ZuordnungWithKlasse[] | undefined = computeZuordnungenWithKlasse(
+        DoFactory.getPersonenUebersicht(
+          undefined,
+          withoutFirst ? [withoutDstNr, withDstNr] : [withDstNr, withoutDstNr],
+        ),
+      );
 
-        expect(result).toEqual([withDstNr, withoutDstNr]);
-      },
-    );
+      expect(result).toEqual([withDstNr, withoutDstNr]);
+    };
+
+    describe('when the Zuordnung without Dienststellennummer comes first', () => {
+      test('it puts the Zuordnung without Dienststellennummer last', () => {
+        expectWithoutDstNrLast(true);
+      });
+    });
+
+    describe('when the Zuordnung without Dienststellennummer comes last', () => {
+      test('it puts the Zuordnung without Dienststellennummer last', () => {
+        expectWithoutDstNrLast(false);
+      });
+    });
   });
 
   describe('cloneZuordnungen', () => {
@@ -130,24 +139,33 @@ describe('zuordnungen', () => {
   });
 
   describe('getKlassenZuordnungenToKeep', () => {
-    test.each([['rolle' as const], ['rolleId' as const]])(
-      'it returns only the Klassen of the remaining Zuordnungen when matching by %s',
-      (rolleKey: 'rolle' | 'rolleId') => {
-        const kept: SchuleWithKlasse = getSchuleWithKlasse('kept-rolle');
-        const removed: SchuleWithKlasse = getSchuleWithKlasse('removed-rolle');
-        const remaining: ZuordnungWithKlasse[] = computeZuordnungenWithKlasse(
-          DoFactory.getPersonenUebersicht(undefined, [kept.schulZuordnung, kept.klassenZuordnung]),
-        )!;
+    const expectOnlyRemainingKlassen = (rolleKey: 'rolle' | 'rolleId'): void => {
+      const kept: SchuleWithKlasse = getSchuleWithKlasse('kept-rolle');
+      const removed: SchuleWithKlasse = getSchuleWithKlasse('removed-rolle');
+      const remaining: ZuordnungWithKlasse[] = computeZuordnungenWithKlasse(
+        DoFactory.getPersonenUebersicht(undefined, [kept.schulZuordnung, kept.klassenZuordnung]),
+      )!;
 
-        const result: Zuordnung[] = getKlassenZuordnungenToKeep(
-          remaining,
-          [kept.schulZuordnung, kept.klassenZuordnung, removed.schulZuordnung, removed.klassenZuordnung],
-          rolleKey,
-        );
+      const result: Zuordnung[] = getKlassenZuordnungenToKeep(
+        remaining,
+        [kept.schulZuordnung, kept.klassenZuordnung, removed.schulZuordnung, removed.klassenZuordnung],
+        rolleKey,
+      );
 
-        expect(result).toEqual([kept.klassenZuordnung]);
-      },
-    );
+      expect(result).toEqual([kept.klassenZuordnung]);
+    };
+
+    describe('when matching by rolle', () => {
+      test('it returns only the Klassen of the remaining Zuordnungen', () => {
+        expectOnlyRemainingKlassen('rolle');
+      });
+    });
+
+    describe('when matching by rolleId', () => {
+      test('it returns only the Klassen of the remaining Zuordnungen', () => {
+        expectOnlyRemainingKlassen('rolleId');
+      });
+    });
   });
 
   describe('getKlassenZuordnungenToKeep (edge cases)', () => {

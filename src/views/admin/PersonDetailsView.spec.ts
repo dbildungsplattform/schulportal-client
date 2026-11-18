@@ -659,30 +659,41 @@ describe('PersonDetailsView', () => {
   });
 
   describe('two factor authentication info', () => {
-    test.each([
-      [
-        true,
-        true,
-        'Um einen neuen Token einzurichten, muss der aktuelle Token durch die schulischen Administratorinnen und Administratoren zurückgesetzt werden.',
-      ],
-      [
-        true,
-        false,
-        'Dieser Benutzer hat keinen Zugriff mehr auf sicherheitskritische Bereiche und benötigt aktuell den eingerichteten Token nicht.',
-      ],
-      [false, true, 'Für diesen Benutzer ist aktuell keine 2FA eingerichtet.'],
-    ])(
-      'it shows the matching info when a token is set up: %s and 2FA is required: %s',
-      async (hasToken: boolean, required: boolean, text: string) => {
-        const { twoFactorAuthenticationStore, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
-        twoFactorAuthenticationStore.loading = false;
-        twoFactorAuthenticationStore.hasToken = hasToken;
-        twoFactorAuthenticationStore.required = required;
-        await nextTick();
+    const expectTwoFactorInfo = async (hasToken: boolean, required: boolean, text: string): Promise<void> => {
+      const { twoFactorAuthenticationStore, wrapper }: Awaited<ReturnType<typeof setup>> = await setup();
+      twoFactorAuthenticationStore.loading = false;
+      twoFactorAuthenticationStore.hasToken = hasToken;
+      twoFactorAuthenticationStore.required = required;
+      await nextTick();
 
-        expect(wrapper?.text()).toContain(text);
-      },
-    );
+      expect(wrapper?.text()).toContain(text);
+    };
+
+    describe('when a token is set up and 2FA is required', () => {
+      test('it shows the matching info', async () => {
+        await expectTwoFactorInfo(
+          true,
+          true,
+          'Um einen neuen Token einzurichten, muss der aktuelle Token durch die schulischen Administratorinnen und Administratoren zurückgesetzt werden.',
+        );
+      });
+    });
+
+    describe('when a token is set up and 2FA is not required', () => {
+      test('it shows the matching info', async () => {
+        await expectTwoFactorInfo(
+          true,
+          false,
+          'Dieser Benutzer hat keinen Zugriff mehr auf sicherheitskritische Bereiche und benötigt aktuell den eingerichteten Token nicht.',
+        );
+      });
+    });
+
+    describe('when no token is set up and 2FA is required', () => {
+      test('it shows the matching info', async () => {
+        await expectTwoFactorInfo(false, true, 'Für diesen Benutzer ist aktuell keine 2FA eingerichtet.');
+      });
+    });
   });
 
   test('it marks a missing KoPers.-Nr. of a person with a KoPers.-Rolle', async () => {

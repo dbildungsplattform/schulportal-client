@@ -108,38 +108,55 @@ describe('ZuordnungenEditList', () => {
       expect(getPendingStates()).toEqual([PendingState.DELETED, undefined]);
     });
 
-    test.each<ZuordnungOperation>(['changeKlasse', 'changeBefristung'])(
-      'it shows the new Zuordnung next to the replaced one while a %s is pending',
-      (pendingOperation: ZuordnungOperation) => {
-        const newZuordnung: Zuordnung = DoFactory.getZuordnung({ sskId: 'selected', rolleId: 'rolle' });
-        const { wrapper, getPendingStates }: ReturnType<typeof setupPendingOperation> = setupPendingOperation(
-          pendingOperation,
-          newZuordnung,
+    const expectNewZuordnungNextToReplacedOne = (pendingOperation: ZuordnungOperation): void => {
+      const newZuordnung: Zuordnung = DoFactory.getZuordnung({ sskId: 'selected', rolleId: 'rolle' });
+      const { wrapper, getPendingStates }: ReturnType<typeof setupPendingOperation> = setupPendingOperation(
+        pendingOperation,
+        newZuordnung,
+      );
+
+      expect(getPendingStates()).toEqual([PendingState.DELETED, PendingState.CREATED, undefined]);
+      expect(wrapper.findAllComponents(PersonenkontextItem)[1]!.props('zuordnung')).toEqual(newZuordnung);
+    };
+
+    const expectNoNewZuordnung = (pendingOperation: ZuordnungOperation, newZuordnung: Zuordnung | undefined): void => {
+      const { getPendingStates }: ReturnType<typeof setupPendingOperation> = setupPendingOperation(
+        pendingOperation,
+        newZuordnung,
+      );
+
+      expect(getPendingStates()).toEqual([PendingState.DELETED, undefined]);
+    };
+
+    describe('while a changeKlasse is pending', () => {
+      test('it shows the new Zuordnung next to the replaced one', () => {
+        expectNewZuordnungNextToReplacedOne('changeKlasse');
+      });
+
+      test('it shows no new Zuordnung without a new Zuordnung', () => {
+        expectNoNewZuordnung('changeKlasse', undefined);
+      });
+
+      test('it shows no new Zuordnung with a new Zuordnung with another Rolle', () => {
+        expectNoNewZuordnung('changeKlasse', DoFactory.getZuordnung({ sskId: 'selected', rolleId: 'another-rolle' }));
+      });
+    });
+
+    describe('while a changeBefristung is pending', () => {
+      test('it shows the new Zuordnung next to the replaced one', () => {
+        expectNewZuordnungNextToReplacedOne('changeBefristung');
+      });
+
+      test('it shows no new Zuordnung without a new Zuordnung', () => {
+        expectNoNewZuordnung('changeBefristung', undefined);
+      });
+
+      test('it shows no new Zuordnung with a new Zuordnung with another Rolle', () => {
+        expectNoNewZuordnung(
+          'changeBefristung',
+          DoFactory.getZuordnung({ sskId: 'selected', rolleId: 'another-rolle' }),
         );
-
-        expect(getPendingStates()).toEqual([PendingState.DELETED, PendingState.CREATED, undefined]);
-        expect(wrapper.findAllComponents(PersonenkontextItem)[1]!.props('zuordnung')).toEqual(newZuordnung);
-      },
-    );
-
-    test.each<[ZuordnungOperation, string, boolean]>([
-      ['changeKlasse', 'no new Zuordnung', false],
-      ['changeKlasse', 'a new Zuordnung with another Rolle', true],
-      ['changeBefristung', 'no new Zuordnung', false],
-      ['changeBefristung', 'a new Zuordnung with another Rolle', true],
-    ])(
-      'it shows no new Zuordnung while a %s is pending with %s',
-      (pendingOperation: ZuordnungOperation, _case: string, hasDifferentRolle: boolean) => {
-        const newZuordnung: Zuordnung | undefined = hasDifferentRolle
-          ? DoFactory.getZuordnung({ sskId: 'selected', rolleId: 'another-rolle' })
-          : undefined;
-        const { getPendingStates }: ReturnType<typeof setupPendingOperation> = setupPendingOperation(
-          pendingOperation,
-          newZuordnung,
-        );
-
-        expect(getPendingStates()).toEqual([PendingState.DELETED, undefined]);
-      },
-    );
+      });
+    });
   });
 });

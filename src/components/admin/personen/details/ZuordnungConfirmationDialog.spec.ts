@@ -31,12 +31,7 @@ describe('ZuordnungConfirmationDialog', () => {
     return dialog.findAll('button').filter((button: DOMWrapper<Element>) => ['Ja', 'Nein'].includes(button.text()));
   };
 
-  type ConfirmationCase = { confirmFirst: boolean; order: string[] };
-
-  test.each<ConfirmationCase>([
-    { confirmFirst: true, order: ['Ja', 'Nein'] },
-    { confirmFirst: false, order: ['Nein', 'Ja'] },
-  ])('it emits confirm and cancel (confirmFirst=$confirmFirst)', async ({ confirmFirst, order }: ConfirmationCase) => {
+  const expectConfirmAndCancel = async (confirmFirst: boolean, order: string[]): Promise<void> => {
     const { wrapper }: ReturnType<typeof setup> = setup(confirmFirst);
 
     const buttons: DOMWrapper<Element>[] = getAnswerButtons(wrapper);
@@ -47,6 +42,18 @@ describe('ZuordnungConfirmationDialog', () => {
 
     expect(wrapper.emitted('confirm')).toHaveLength(1);
     expect(wrapper.emitted('cancel')).toHaveLength(1);
+  };
+
+  describe('when the confirm button comes first', () => {
+    test('it emits confirm and cancel', async () => {
+      await expectConfirmAndCancel(true, ['Ja', 'Nein']);
+    });
+  });
+
+  describe('when the cancel button comes first', () => {
+    test('it emits confirm and cancel', async () => {
+      await expectConfirmAndCancel(false, ['Nein', 'Ja']);
+    });
   });
 
   test('it emits cancel when the card is closed', async () => {

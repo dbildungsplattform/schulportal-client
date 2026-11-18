@@ -97,34 +97,44 @@ describe('ZuordnungenEditActions', () => {
   });
 
   describe('delete button', () => {
-    test.each([
-      { selectedCount: 0, isDeleteExternZuordnungDisabled: false, disabled: true, disabledTooltipText: undefined },
-      { selectedCount: 1, isDeleteExternZuordnungDisabled: false, disabled: false, disabledTooltipText: undefined },
-      { selectedCount: 1, isDeleteExternZuordnungDisabled: true, disabled: true, disabledTooltipText: '' },
-    ])(
-      'it passes disabled=$disabled and tooltip text "$disabledTooltipText" for selection=$selectedCount and extern deletion disabled=$isDeleteExternZuordnungDisabled',
-      ({
-        selectedCount,
-        isDeleteExternZuordnungDisabled,
-        disabled,
-        disabledTooltipText,
-      }: Pick<EditActionsProps, 'selectedCount' | 'isDeleteExternZuordnungDisabled'> & {
-        disabled: boolean;
-        disabledTooltipText: string | undefined;
-      }) => {
-        const { wrapper }: ReturnType<typeof setup> = setup({
-          selectedCount,
-          isDeleteExternZuordnungDisabled,
-          editableZuordnungenCount: 3,
-        });
+    const expectDeleteProps = (
+      props: Pick<EditActionsProps, 'selectedCount' | 'isDeleteExternZuordnungDisabled'>,
+      expected: { disabled: boolean; disabledTooltipText: string | undefined },
+    ): void => {
+      const { wrapper }: ReturnType<typeof setup> = setup({ ...props, editableZuordnungenCount: 3 });
 
-        expect(wrapper.findComponent({ name: 'PersonenkontextDelete' }).props()).toMatchObject({
-          disabled,
-          disabledTooltipText,
-          zuordnungCount: 3,
-        });
-      },
-    );
+      expect(wrapper.findComponent({ name: 'PersonenkontextDelete' }).props()).toMatchObject({
+        ...expected,
+        zuordnungCount: 3,
+      });
+    };
+
+    describe('without a selection', () => {
+      test('it passes disabled=true and no tooltip text', () => {
+        expectDeleteProps(
+          { selectedCount: 0, isDeleteExternZuordnungDisabled: false },
+          { disabled: true, disabledTooltipText: undefined },
+        );
+      });
+    });
+
+    describe('with a selection', () => {
+      test('it passes disabled=false and no tooltip text', () => {
+        expectDeleteProps(
+          { selectedCount: 1, isDeleteExternZuordnungDisabled: false },
+          { disabled: false, disabledTooltipText: undefined },
+        );
+      });
+    });
+
+    describe('with a selection when deleting extern Zuordnungen is disabled', () => {
+      test('it passes disabled=true and an empty tooltip text', () => {
+        expectDeleteProps(
+          { selectedCount: 1, isDeleteExternZuordnungDisabled: true },
+          { disabled: true, disabledTooltipText: '' },
+        );
+      });
+    });
 
     test('it emits delete when the deletion is confirmed', () => {
       const { wrapper, emitFromChild }: ReturnType<typeof setup> = setup({ selectedCount: 1 });
@@ -179,7 +189,7 @@ describe('ZuordnungenEditActions', () => {
   });
 
   describe('Befristung button', () => {
-    test.each([0, 2])('it is disabled when %i Zuordnungen are selected', async (selectedCount: number) => {
+    const expectBefristungButtonDisabled = async (selectedCount: number): Promise<void> => {
       const { wrapper, enableFeatureFlags, isDisabled }: ReturnType<typeof setup> = setup({ selectedCount });
       await enableFeatureFlags();
 
@@ -188,6 +198,18 @@ describe('ZuordnungenEditActions', () => {
       await wrapper.get('[data-testid="befristung-change-button"]').trigger('click');
 
       expect(wrapper.emitted('changeBefristung')).toBeUndefined();
+    };
+
+    describe('when no Zuordnung is selected', () => {
+      test('it is disabled', async () => {
+        await expectBefristungButtonDisabled(0);
+      });
+    });
+
+    describe('when 2 Zuordnungen are selected', () => {
+      test('it is disabled', async () => {
+        await expectBefristungButtonDisabled(2);
+      });
     });
 
     test('it emits changeBefristung when exactly one Zuordnung is selected', async () => {

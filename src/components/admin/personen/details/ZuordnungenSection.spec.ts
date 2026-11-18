@@ -247,12 +247,7 @@ describe('ZuordnungenSection', () => {
   });
 
   describe('saving the pending change', () => {
-    test.each<[ZuordnungOperation, string]>([
-      ['creation', 'Die Zuordnung wurde erfolgreich hinzugefügt.'],
-      ['deletion', 'Die Schulzuordnung wurde erfolgreich entfernt.'],
-      ['changeKlasse', 'Der Schüler wurde erfolgreich versetzt.'],
-      ['changeBefristung', 'Die Befristung wurde erfolgreich geändert.'],
-    ])('it saves a pending %s and shows its success dialog', async (operation: ZuordnungOperation, text: string) => {
+    const expectPendingChangeSaved = async (operation: ZuordnungOperation, text: string): Promise<void> => {
       const { mountComponent, getInternals, personenkontextStore }: Awaited<ReturnType<typeof setup>> = await setup();
       const wrapper: ZuordnungenSectionWrapper = mountComponent({ isEditActive: true });
       await flushPromises();
@@ -264,6 +259,30 @@ describe('ZuordnungenSection', () => {
 
       expect(personenkontextStore.updatePersonenkontexte).toHaveBeenCalledTimes(1);
       expect(document.body.textContent).toContain(text);
+    };
+
+    describe('with a pending creation', () => {
+      test('it saves the change and shows its success dialog', async () => {
+        await expectPendingChangeSaved('creation', 'Die Zuordnung wurde erfolgreich hinzugefügt.');
+      });
+    });
+
+    describe('with a pending deletion', () => {
+      test('it saves the change and shows its success dialog', async () => {
+        await expectPendingChangeSaved('deletion', 'Die Schulzuordnung wurde erfolgreich entfernt.');
+      });
+    });
+
+    describe('with a pending changeKlasse', () => {
+      test('it saves the change and shows its success dialog', async () => {
+        await expectPendingChangeSaved('changeKlasse', 'Der Schüler wurde erfolgreich versetzt.');
+      });
+    });
+
+    describe('with a pending changeBefristung', () => {
+      test('it saves the change and shows its success dialog', async () => {
+        await expectPendingChangeSaved('changeBefristung', 'Die Befristung wurde erfolgreich geändert.');
+      });
     });
 
     test('it does nothing when saving without a pending change', async () => {
@@ -372,10 +391,7 @@ describe('ZuordnungenSection', () => {
   });
 
   describe('KoPers.-Nr. confirmation dialog', () => {
-    test.each([
-      ['cancel', 'cancel-no-kopersnr-button'],
-      ['proceed', 'confirm-no-kopersnr-button'],
-    ])('it closes the dialog when the user chooses to %s', async (_choice: string, buttonTestId: string) => {
+    const expectDialogClosedBy = async (buttonTestId: string): Promise<void> => {
       const { personStore, person, rollen, schule, openZuordnungCreationForm }: Awaited<ReturnType<typeof setup>> =
         await setup();
       personStore.currentPerson = { person: { ...person, personalnummer: null } };
@@ -394,6 +410,18 @@ describe('ZuordnungenSection', () => {
       await flushPromises();
 
       expect(document.body.querySelector('[data-testid="no-kopersnr-confirmation-text"]')).toBeNull();
+    };
+
+    describe('when the user cancels', () => {
+      test('it closes the dialog', async () => {
+        await expectDialogClosedBy('cancel-no-kopersnr-button');
+      });
+    });
+
+    describe('when the user proceeds', () => {
+      test('it closes the dialog', async () => {
+        await expectDialogClosedBy('confirm-no-kopersnr-button');
+      });
     });
   });
 
@@ -437,27 +465,59 @@ describe('ZuordnungenSection', () => {
       expect(wrapper.findAllComponents(VDialog).length).toBeGreaterThan(0);
     });
 
-    test.each([
-      ['cannotDeleteDialogVisible', undefined, 'Sie dürfen sich selbst keine Zuordnungen entziehen.'],
-      ['createZuordnungConfirmationDialogVisible', 'createZuordnungConfirmationDialogMessage', 'Create message'],
-      ['changeKlasseConfirmationDialogVisible', 'changeKlasseConfirmationDialogMessage', 'Change Klasse message'],
-      [
-        'changeBefristungConfirmationDialogVisible',
-        'changeBefristungConfirmationDialogMessage',
-        'Change Befristung message',
-      ],
-    ])(
-      'it shows the dialog of %s with its message',
-      async (visibleKey: string, messageKey: string | undefined, text: string) => {
-        const { mountComponent }: Awaited<ReturnType<typeof setup>> = await setup();
-        const wrapper: ZuordnungenSectionWrapper = mountComponent({ isEditActive: true });
-        await flushPromises();
+    const expectDialogShown = async (
+      visibleKey: string,
+      messageKey: string | undefined,
+      text: string,
+    ): Promise<void> => {
+      const { mountComponent }: Awaited<ReturnType<typeof setup>> = await setup();
+      const wrapper: ZuordnungenSectionWrapper = mountComponent({ isEditActive: true });
+      await flushPromises();
 
-        Object.assign(wrapper.vm, { [visibleKey]: true, ...(messageKey && { [messageKey]: text }) });
-        await flushPromises();
+      Object.assign(wrapper.vm, { [visibleKey]: true, ...(messageKey && { [messageKey]: text }) });
+      await flushPromises();
 
-        expect(document.body.textContent).toContain(text);
-      },
-    );
+      expect(document.body.textContent).toContain(text);
+    };
+
+    describe('cannot delete dialog', () => {
+      test('it is shown with its message', async () => {
+        await expectDialogShown(
+          'cannotDeleteDialogVisible',
+          undefined,
+          'Sie dürfen sich selbst keine Zuordnungen entziehen.',
+        );
+      });
+    });
+
+    describe('create Zuordnung confirmation dialog', () => {
+      test('it is shown with its message', async () => {
+        await expectDialogShown(
+          'createZuordnungConfirmationDialogVisible',
+          'createZuordnungConfirmationDialogMessage',
+          'Create message',
+        );
+      });
+    });
+
+    describe('change Klasse confirmation dialog', () => {
+      test('it is shown with its message', async () => {
+        await expectDialogShown(
+          'changeKlasseConfirmationDialogVisible',
+          'changeKlasseConfirmationDialogMessage',
+          'Change Klasse message',
+        );
+      });
+    });
+
+    describe('change Befristung confirmation dialog', () => {
+      test('it is shown with its message', async () => {
+        await expectDialogShown(
+          'changeBefristungConfirmationDialogVisible',
+          'changeBefristungConfirmationDialogMessage',
+          'Change Befristung message',
+        );
+      });
+    });
   });
 });

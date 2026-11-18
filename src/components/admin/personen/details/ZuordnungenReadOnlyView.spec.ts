@@ -90,24 +90,36 @@ describe('ZuordnungenReadOnlyView', () => {
     expect(wrapper.get('[data-testid="zuordnung-edit-button"]').attributes('disabled')).toBeDefined();
   });
 
-  test.each([
-    { hasSelection: false, isEditPersonMetadataActive: false, expectedCondition: true },
-    { hasSelection: true, isEditPersonMetadataActive: false, expectedCondition: false },
-    { hasSelection: false, isEditPersonMetadataActive: true, expectedCondition: false },
-  ])(
-    'it computes the tooltip condition for selection=$hasSelection and metadata editing=$isEditPersonMetadataActive',
-    ({
-      hasSelection,
-      isEditPersonMetadataActive,
-      expectedCondition,
-    }: Pick<ReadOnlyViewProps, 'hasSelection' | 'isEditPersonMetadataActive'> & { expectedCondition: boolean }) => {
-      const { wrapper }: ReturnType<typeof setup> = setup({ hasSelection, isEditPersonMetadataActive });
+  describe('tooltip of the edit button', () => {
+    const expectTooltipCondition = (
+      props: Pick<ReadOnlyViewProps, 'hasSelection' | 'isEditPersonMetadataActive'>,
+      expectedCondition: boolean,
+    ): void => {
+      const { wrapper }: ReturnType<typeof setup> = setup(props);
 
       expect(wrapper.findComponent({ name: 'SpshTooltip' }).props()).toMatchObject({
         enabledCondition: expectedCondition,
         enabledText: 'Schulzuordnungen bearbeiten',
         disabledText: 'Bitte beenden Sie zunächst Ihre aktuelle Bearbeitung.',
       });
-    },
-  );
+    };
+
+    describe('without a selection and without editing the person metadata', () => {
+      test('it is enabled', () => {
+        expectTooltipCondition({ hasSelection: false, isEditPersonMetadataActive: false }, true);
+      });
+    });
+
+    describe('with a selection', () => {
+      test('it is disabled', () => {
+        expectTooltipCondition({ hasSelection: true, isEditPersonMetadataActive: false }, false);
+      });
+    });
+
+    describe('while the person metadata is edited', () => {
+      test('it is disabled', () => {
+        expectTooltipCondition({ hasSelection: false, isEditPersonMetadataActive: true }, false);
+      });
+    });
+  });
 });

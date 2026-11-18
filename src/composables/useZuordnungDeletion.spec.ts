@@ -114,39 +114,58 @@ describe('useZuordnungDeletion', () => {
   });
 
   describe('isDeleteExternZuordnungDisabled', () => {
-    test.each<[string, 'landesadmin' | 'schuladmin' | 'no-context' | 'none', RollenArt, boolean]>([
-      ['a Landesadmin', 'landesadmin', RollenArt.Extern, false],
-      ['a Schuladmin', 'schuladmin', RollenArt.Extern, true],
-      ['a user without Personenkontexte', 'no-context', RollenArt.Extern, true],
-      ['no current user', 'none', RollenArt.Extern, true],
-      ['a Schuladmin deleting a non-extern Zuordnung', 'schuladmin', RollenArt.Lehr, false],
-    ])(
-      'should be computed for %s',
-      (
-        _description: string,
-        userType: 'landesadmin' | 'schuladmin' | 'no-context' | 'none',
-        rollenArt: RollenArt,
-        expected: boolean,
-      ) => {
-        const { authStore, deletion, setSelection }: ReturnType<typeof setup> = setup();
-        const user: UserInfo | null = {
-          landesadmin: DoFactory.getUserinfoResponse({
-            personenkontexte: [
-              DoFactory.getPersonenkontextRolleFieldsResponse({
-                organisation: DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Root }),
-              }),
-            ],
-          }),
-          schuladmin: DoFactory.getUserinfoResponse(),
-          'no-context': DoFactory.getUserinfoResponse({ personenkontexte: undefined }),
-          none: null,
-        }[userType];
-        authStore.currentUser = user;
-        setSelection(DoFactory.getZuordnung({ rollenArt }));
+    const isDisabledFor = (
+      userType: 'landesadmin' | 'schuladmin' | 'no-context' | 'none',
+      rollenArt: RollenArt,
+    ): boolean => {
+      const { authStore, deletion, setSelection }: ReturnType<typeof setup> = setup();
+      const user: UserInfo | null = {
+        landesadmin: DoFactory.getUserinfoResponse({
+          personenkontexte: [
+            DoFactory.getPersonenkontextRolleFieldsResponse({
+              organisation: DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Root }),
+            }),
+          ],
+        }),
+        schuladmin: DoFactory.getUserinfoResponse(),
+        'no-context': DoFactory.getUserinfoResponse({ personenkontexte: undefined }),
+        none: null,
+      }[userType];
+      authStore.currentUser = user;
+      setSelection(DoFactory.getZuordnung({ rollenArt }));
 
-        expect(deletion.isDeleteExternZuordnungDisabled.value).toBe(expected);
-      },
-    );
+      return deletion.isDeleteExternZuordnungDisabled.value;
+    };
+
+    describe('for a Landesadmin', () => {
+      it('should be false', () => {
+        expect(isDisabledFor('landesadmin', RollenArt.Extern)).toBe(false);
+      });
+    });
+
+    describe('for a Schuladmin', () => {
+      it('should be true', () => {
+        expect(isDisabledFor('schuladmin', RollenArt.Extern)).toBe(true);
+      });
+    });
+
+    describe('for a user without Personenkontexte', () => {
+      it('should be true', () => {
+        expect(isDisabledFor('no-context', RollenArt.Extern)).toBe(true);
+      });
+    });
+
+    describe('without a current user', () => {
+      it('should be true', () => {
+        expect(isDisabledFor('none', RollenArt.Extern)).toBe(true);
+      });
+    });
+
+    describe('for a Schuladmin deleting a non-extern Zuordnung', () => {
+      it('should be false', () => {
+        expect(isDisabledFor('schuladmin', RollenArt.Lehr)).toBe(false);
+      });
+    });
   });
 
   describe('confirmDeletion', () => {

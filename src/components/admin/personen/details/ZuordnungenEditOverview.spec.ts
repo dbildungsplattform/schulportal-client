@@ -108,16 +108,37 @@ describe('ZuordnungenEditOverview', () => {
       });
     });
 
-    test.each(['delete', 'add', 'changeBefristung', 'changeKlasse'] as const)(
-      'it forwards the %s event of the actions',
-      (eventName: 'delete' | 'add' | 'changeBefristung' | 'changeKlasse') => {
-        const { wrapper, emitFromChild }: ReturnType<typeof setup> = setup();
+    const expectEventForwarded = (eventName: 'delete' | 'add' | 'changeBefristung' | 'changeKlasse'): void => {
+      const { wrapper, emitFromChild }: ReturnType<typeof setup> = setup();
 
-        emitFromChild('ZuordnungenEditActions', eventName);
+      emitFromChild('ZuordnungenEditActions', eventName);
 
-        expect(wrapper.emitted(eventName)).toHaveLength(1);
-      },
-    );
+      expect(wrapper.emitted(eventName)).toHaveLength(1);
+    };
+
+    describe('delete event of the actions', () => {
+      test('it is forwarded', () => {
+        expectEventForwarded('delete');
+      });
+    });
+
+    describe('add event of the actions', () => {
+      test('it is forwarded', () => {
+        expectEventForwarded('add');
+      });
+    });
+
+    describe('changeBefristung event of the actions', () => {
+      test('it is forwarded', () => {
+        expectEventForwarded('changeBefristung');
+      });
+    });
+
+    describe('changeKlasse event of the actions', () => {
+      test('it is forwarded', () => {
+        expectEventForwarded('changeKlasse');
+      });
+    });
   });
 
   describe('list', () => {
@@ -188,31 +209,39 @@ describe('ZuordnungenEditOverview', () => {
       expect(wrapper.text()).toContain(NO_ZUORDNUNGEN_TEXT);
     });
 
-    test.each(['changeKlasse', 'changeBefristung'] as const)(
-      'it is shown when there are no Zuordnungen and %s is pending',
-      (pendingOperation: ZuordnungOperation) => {
-        const { wrapper }: ReturnType<typeof setup> = setup({
-          zuordnungen: [],
-          hasNoZuordnungen: true,
-          pendingOperation,
-        });
+    const isHintShownWhilePending = (pendingOperation: ZuordnungOperation): boolean => {
+      const { wrapper }: ReturnType<typeof setup> = setup({
+        zuordnungen: [],
+        hasNoZuordnungen: true,
+        pendingOperation,
+      });
 
-        expect(wrapper.text()).toContain(NO_ZUORDNUNGEN_TEXT);
-      },
-    );
+      return wrapper.text().includes(NO_ZUORDNUNGEN_TEXT);
+    };
 
-    test.each(['creation', 'deletion'] as const)(
-      'it is hidden when %s is pending',
-      (pendingOperation: ZuordnungOperation) => {
-        const { wrapper }: ReturnType<typeof setup> = setup({
-          zuordnungen: [],
-          hasNoZuordnungen: true,
-          pendingOperation,
-        });
+    describe('when there are no Zuordnungen and changeKlasse is pending', () => {
+      test('it is shown', () => {
+        expect(isHintShownWhilePending('changeKlasse')).toBe(true);
+      });
+    });
 
-        expect(wrapper.text()).not.toContain(NO_ZUORDNUNGEN_TEXT);
-      },
-    );
+    describe('when there are no Zuordnungen and changeBefristung is pending', () => {
+      test('it is shown', () => {
+        expect(isHintShownWhilePending('changeBefristung')).toBe(true);
+      });
+    });
+
+    describe('when creation is pending', () => {
+      test('it is hidden', () => {
+        expect(isHintShownWhilePending('creation')).toBe(false);
+      });
+    });
+
+    describe('when deletion is pending', () => {
+      test('it is hidden', () => {
+        expect(isHintShownWhilePending('deletion')).toBe(false);
+      });
+    });
 
     test('it is hidden when there are Zuordnungen', () => {
       const { wrapper }: ReturnType<typeof setup> = setup({ hasNoZuordnungen: false });
