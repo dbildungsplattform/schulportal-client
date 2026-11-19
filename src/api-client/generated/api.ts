@@ -36,7 +36,7 @@ export interface ApplyRollenerweiterungBodyParams {
      */
     'addErweiterungenForRolleIds': Array<string>;
     /**
-     * List of rolleIds to apply.
+     * List of rolleIds to remove.
      * @type {Array<string>}
      * @memberof ApplyRollenerweiterungBodyParams
      */
@@ -775,7 +775,8 @@ export interface DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInner {
 
 export const DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerErrorIdTypeEnum = {
     Rolle: 'ROLLE',
-    Angebot: 'ANGEBOT'
+    Angebot: 'ANGEBOT',
+    RollenartBeschraenkung: 'ROLLENART_BESCHRAENKUNG'
 } as const;
 
 export type DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerErrorIdTypeEnum = typeof DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerErrorIdTypeEnum[keyof typeof DbiamApplyRollenerweiterungMultiErrorIdsWithI18nKeysInnerErrorIdTypeEnum];
@@ -927,7 +928,12 @@ export const DbiamOrganisationErrorI18nKeyEnum = {
     OrganisationHatRollenerweiterungen: 'ORGANISATION_HAT_ROLLENERWEITERUNGEN',
     OrganisationHatOrganisationsbeziehungen: 'ORGANISATION_HAT_ORGANISATIONSBEZIEHUNGEN',
     BehoerdeNameEindeutig: 'BEHOERDE_NAME_EINDEUTIG',
-    BehoerdeAdministriertVon: 'BEHOERDE_ADMINISTRIERT_VON'
+    BehoerdeAdministriertVon: 'BEHOERDE_ADMINISTRIERT_VON',
+    SchulaufsichtQuelleSchuleZielBehoerde: 'SCHULAUFSICHT_QUELLE_SCHULE_ZIEL_BEHOERDE',
+    SchulaufsichtSchuleUndAufsichtSelberBaum: 'SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM',
+    SchultraegerQuelleSchuleZielTraeger: 'SCHULTRAEGER_QUELLE_SCHULE_ZIEL_TRAEGER',
+    SchultraegerSchuleHatExaktEinenTraeger: 'SCHULTRAEGER_SCHULE_HAT_EXAKT_EINEN_TRAEGER',
+    SchultraegerSchuleUndTraegerSelberBaum: 'SCHULTRAEGER_SCHULE_UND_TRAEGER_SELBER_BAUM'
 } as const;
 
 export type DbiamOrganisationErrorI18nKeyEnum = typeof DbiamOrganisationErrorI18nKeyEnum[keyof typeof DbiamOrganisationErrorI18nKeyEnum];
@@ -1120,7 +1126,8 @@ export const DbiamRolleErrorI18nKeyEnum = {
     ServiceProviderNichtNachtraeglichZuweisbar: 'SERVICE_PROVIDER_NICHT_NACHTRAEGLICH_ZUWEISBAR',
     ServiceProviderNichtVerfuegbarFuerRollenerweiterung: 'SERVICE_PROVIDER_NICHT_VERFUEGBAR_FUER_ROLLENERWEITERUNG',
     NoRedundantRollenerweiterung: 'NO_REDUNDANT_ROLLENERWEITERUNG',
-    ServiceProviderProvidedOutOfTree: 'SERVICE_PROVIDER_PROVIDED_OUT_OF_TREE'
+    ServiceProviderProvidedOutOfTree: 'SERVICE_PROVIDER_PROVIDED_OUT_OF_TREE',
+    RollenartNotAllowedForServiceProvider: 'ROLLENART_NOT_ALLOWED_FOR_SERVICE_PROVIDER'
 } as const;
 
 export type DbiamRolleErrorI18nKeyEnum = typeof DbiamRolleErrorI18nKeyEnum[keyof typeof DbiamRolleErrorI18nKeyEnum];
@@ -4800,296 +4807,6 @@ export type UpdateServiceProviderBodyParamsRollenartenWhitelistEnum = typeof Upd
 /**
  * 
  * @export
- * @interface UserExeternalDataResponseItslearning
- */
-export interface UserExeternalDataResponseItslearning {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseItslearning
-     */
-    'personId': string;
-}
-/**
- * 
- * @export
- * @interface UserExeternalDataResponseOnlineDateiablage
- */
-export interface UserExeternalDataResponseOnlineDateiablage {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseOnlineDateiablage
-     */
-    'personId': string;
-}
-/**
- * 
- * @export
- * @interface UserExeternalDataResponseOpsh
- */
-export interface UserExeternalDataResponseOpsh {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseOpsh
-     */
-    'vorname': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseOpsh
-     */
-    'nachname': string;
-    /**
-     * 
-     * @type {Array<UserExeternalDataResponseOpshPk>}
-     * @memberof UserExeternalDataResponseOpsh
-     */
-    'personenkontexte': Array<UserExeternalDataResponseOpshPk>;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseOpsh
-     */
-    'emailAdresse': string;
-}
-/**
- * 
- * @export
- * @interface UserExeternalDataResponseOpshPk
- */
-export interface UserExeternalDataResponseOpshPk {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseOpshPk
-     */
-    'rollenArt': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseOpshPk
-     */
-    'dstNr': string;
-}
-/**
- * 
- * @export
- * @interface UserExeternalDataResponseVidis
- */
-export interface UserExeternalDataResponseVidis {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseVidis
-     */
-    'personId': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseVidis
-     */
-    'vorname': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseVidis
-     */
-    'nachname': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseVidis
-     */
-    'rollenart': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseVidis
-     */
-    'emailAdresse': string;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof UserExeternalDataResponseVidis
-     */
-    'dienststellenNummern': Array<string>;
-}
-/**
- * 
- * @export
- * @interface UserExternalDataBodyParams
- */
-export interface UserExternalDataBodyParams {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataBodyParams
-     */
-    'sub': string;
-}
-/**
- * 
- * @export
- * @interface UserExternalDataResponse
- */
-export interface UserExternalDataResponse {
-    /**
-     * 
-     * @type {UserExternalDataResponseOx}
-     * @memberof UserExternalDataResponse
-     */
-    'ox'?: UserExternalDataResponseOx;
-    /**
-     * 
-     * @type {UserExeternalDataResponseItslearning}
-     * @memberof UserExternalDataResponse
-     */
-    'itslearning': UserExeternalDataResponseItslearning;
-    /**
-     * 
-     * @type {UserExeternalDataResponseVidis}
-     * @memberof UserExternalDataResponse
-     */
-    'vidis': UserExeternalDataResponseVidis;
-    /**
-     * 
-     * @type {UserExeternalDataResponseOpsh}
-     * @memberof UserExternalDataResponse
-     */
-    'opsh': UserExeternalDataResponseOpsh;
-    /**
-     * 
-     * @type {UserExeternalDataResponseOnlineDateiablage}
-     * @memberof UserExternalDataResponse
-     */
-    'onlineDateiablage': UserExeternalDataResponseOnlineDateiablage;
-    /**
-     * 
-     * @type {UserExternalDataResponseIqshHelpdesk}
-     * @memberof UserExternalDataResponse
-     */
-    'iqshHelpdesk': UserExternalDataResponseIqshHelpdesk;
-    /**
-     * 
-     * @type {UserExternalDataResponsePolyteia}
-     * @memberof UserExternalDataResponse
-     */
-    'polyteia': UserExternalDataResponsePolyteia;
-}
-/**
- * 
- * @export
- * @interface UserExternalDataResponseIqshHelpdesk
- */
-export interface UserExternalDataResponseIqshHelpdesk {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponseIqshHelpdesk
-     */
-    'vorname': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponseIqshHelpdesk
-     */
-    'nachname': string;
-    /**
-     * 
-     * @type {Array<UserExternalDataResponseIqshHelpdeskPk>}
-     * @memberof UserExternalDataResponseIqshHelpdesk
-     */
-    'personenkontexte': Array<UserExternalDataResponseIqshHelpdeskPk>;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponseIqshHelpdesk
-     */
-    'emailAdresse': string;
-}
-/**
- * 
- * @export
- * @interface UserExternalDataResponseIqshHelpdeskPk
- */
-export interface UserExternalDataResponseIqshHelpdeskPk {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponseIqshHelpdeskPk
-     */
-    'rolleId': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponseIqshHelpdeskPk
-     */
-    'dstNr': string;
-}
-/**
- * 
- * @export
- * @interface UserExternalDataResponseOx
- */
-export interface UserExternalDataResponseOx {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponseOx
-     */
-    'id': string;
-}
-/**
- * 
- * @export
- * @interface UserExternalDataResponsePolyteia
- */
-export interface UserExternalDataResponsePolyteia {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponsePolyteia
-     */
-    'vorname': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponsePolyteia
-     */
-    'familienname': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponsePolyteia
-     */
-    'rollenart'?: UserExternalDataResponsePolyteiaRollenartEnum;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof UserExternalDataResponsePolyteia
-     */
-    'dienststellenNummern': Array<string>;
-}
-
-export const UserExternalDataResponsePolyteiaRollenartEnum = {
-    Lern: 'LERN',
-    Lehr: 'LEHR',
-    Extern: 'EXTERN',
-    Orgadmin: 'ORGADMIN',
-    Leit: 'LEIT',
-    Sysadmin: 'SYSADMIN',
-    Sorgber: 'SORGBER',
-    Schb: 'SCHB',
-    Nlehr: 'NLEHR'
-} as const;
-
-export type UserExternalDataResponsePolyteiaRollenartEnum = typeof UserExternalDataResponsePolyteiaRollenartEnum[keyof typeof UserExternalDataResponsePolyteiaRollenartEnum];
-
-/**
- * 
- * @export
  * @interface UserExternalDataV2BodyParams
  */
 export interface UserExternalDataV2BodyParams {
@@ -7994,49 +7711,6 @@ export const KeycloakinternalApiAxiosParamCreator = function (configuration?: Co
     return {
         /**
          * 
-         * @summary External Data about requested in user.
-         * @param {string} apiKey Internal API key for server-to-server communication
-         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        keycloakInternalControllerGetExternalData: async (apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'apiKey' is not null or undefined
-            assertParamExists('keycloakInternalControllerGetExternalData', 'apiKey', apiKey)
-            // verify required parameter 'userExternalDataBodyParams' is not null or undefined
-            assertParamExists('keycloakInternalControllerGetExternalData', 'userExternalDataBodyParams', userExternalDataBodyParams)
-            const localVarPath = `/keycloakinternal/externaldata`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            if (apiKey != null) {
-                localVarHeaderParameter['api-key'] = String(apiKey);
-            }
-
-
-    
-            localVarHeaderParameter['Content-Type'] = 'application/json';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(userExternalDataBodyParams, localVarRequestOptions, configuration)
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * 
          * @summary External Data about the requested user, scoped to a single Angebot.
          * @param {string} apiKey Internal API key for server-to-server communication
          * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
@@ -8090,18 +7764,6 @@ export const KeycloakinternalApiFp = function(configuration?: Configuration) {
     return {
         /**
          * 
-         * @summary External Data about requested in user.
-         * @param {string} apiKey Internal API key for server-to-server communication
-         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserExternalDataResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.keycloakInternalControllerGetExternalData(apiKey, userExternalDataBodyParams, options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-        /**
-         * 
          * @summary External Data about the requested user, scoped to a single Angebot.
          * @param {string} apiKey Internal API key for server-to-server communication
          * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
@@ -8124,17 +7786,6 @@ export const KeycloakinternalApiFactory = function (configuration?: Configuratio
     return {
         /**
          * 
-         * @summary External Data about requested in user.
-         * @param {string} apiKey Internal API key for server-to-server communication
-         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: any): AxiosPromise<UserExternalDataResponse> {
-            return localVarFp.keycloakInternalControllerGetExternalData(apiKey, userExternalDataBodyParams, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * 
          * @summary External Data about the requested user, scoped to a single Angebot.
          * @param {string} apiKey Internal API key for server-to-server communication
          * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
@@ -8155,17 +7806,6 @@ export const KeycloakinternalApiFactory = function (configuration?: Configuratio
 export interface KeycloakinternalApiInterface {
     /**
      * 
-     * @summary External Data about requested in user.
-     * @param {string} apiKey Internal API key for server-to-server communication
-     * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof KeycloakinternalApiInterface
-     */
-    keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): AxiosPromise<UserExternalDataResponse>;
-
-    /**
-     * 
      * @summary External Data about the requested user, scoped to a single Angebot.
      * @param {string} apiKey Internal API key for server-to-server communication
      * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
@@ -8184,19 +7824,6 @@ export interface KeycloakinternalApiInterface {
  * @extends {BaseAPI}
  */
 export class KeycloakinternalApi extends BaseAPI implements KeycloakinternalApiInterface {
-    /**
-     * 
-     * @summary External Data about requested in user.
-     * @param {string} apiKey Internal API key for server-to-server communication
-     * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof KeycloakinternalApi
-     */
-    public keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig) {
-        return KeycloakinternalApiFp(this.configuration).keycloakInternalControllerGetExternalData(apiKey, userExternalDataBodyParams, options).then((request) => request(this.axios, this.basePath));
-    }
-
     /**
      * 
      * @summary External Data about the requested user, scoped to a single Angebot.
@@ -14482,8 +14109,8 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * Apply changes to rollen-erweiterung for a given angebot and organisation.
          * @summary 
-         * @param {string} angebotId The spshPersonId of the person.
-         * @param {string} organisationId The spshPersonId of the person.
+         * @param {string} angebotId The angebotId for the rollenerweiterung.
+         * @param {string} organisationId The organisationId for the rollenerweiterung.
          * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -14731,8 +14358,8 @@ export const RolleApiFp = function(configuration?: Configuration) {
         /**
          * Apply changes to rollen-erweiterung for a given angebot and organisation.
          * @summary 
-         * @param {string} angebotId The spshPersonId of the person.
-         * @param {string} organisationId The spshPersonId of the person.
+         * @param {string} angebotId The angebotId for the rollenerweiterung.
+         * @param {string} organisationId The organisationId for the rollenerweiterung.
          * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -14927,8 +14554,8 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
         /**
          * Apply changes to rollen-erweiterung for a given angebot and organisation.
          * @summary 
-         * @param {string} angebotId The spshPersonId of the person.
-         * @param {string} organisationId The spshPersonId of the person.
+         * @param {string} angebotId The angebotId for the rollenerweiterung.
+         * @param {string} organisationId The organisationId for the rollenerweiterung.
          * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -15121,8 +14748,8 @@ export interface RolleApiInterface {
     /**
      * Apply changes to rollen-erweiterung for a given angebot and organisation.
      * @summary 
-     * @param {string} angebotId The spshPersonId of the person.
-     * @param {string} organisationId The spshPersonId of the person.
+     * @param {string} angebotId The angebotId for the rollenerweiterung.
+     * @param {string} organisationId The organisationId for the rollenerweiterung.
      * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -15343,8 +14970,8 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
     /**
      * Apply changes to rollen-erweiterung for a given angebot and organisation.
      * @summary 
-     * @param {string} angebotId The spshPersonId of the person.
-     * @param {string} organisationId The spshPersonId of the person.
+     * @param {string} angebotId The angebotId for the rollenerweiterung.
+     * @param {string} organisationId The organisationId for the rollenerweiterung.
      * @param {ApplyRollenerweiterungBodyParams} applyRollenerweiterungBodyParams 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
