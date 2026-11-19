@@ -17,9 +17,11 @@
     object({
       selectedSchulform: string(),
       selectedDienststellennummer: string()
+        .max(255, t('admin.schule.rules.dienststellennummer.max'))
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.schule.rules.dienststellennummer.noLeadingTrailingSpaces'))
         .required(t('admin.schule.rules.dienststellennummer.required')),
       selectedSchulname: string()
+        .max(255, t('admin.schule.rules.schulname.max'))
         .matches(DIN_91379A_EXT, t('admin.schule.rules.schulname.matches'))
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.schule.rules.schulname.noLeadingTrailingSpaces'))
         .required(t('admin.schule.rules.schulname.required')),

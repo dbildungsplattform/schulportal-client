@@ -4,6 +4,7 @@
   import KlassenFilter from '@/components/filter/KlassenFilter.vue';
   import { type BulkErrorList, useBulkErrors } from '@/composables/useBulkErrors';
   import { type BulkOperationStore, useBulkOperationStore } from '@/stores/BulkOperationStore';
+  import { Organisation } from '@/stores/OrganisationStore';
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
   import { computed, type ComputedRef, type Ref, ref } from 'vue';
   import { type Composer, useI18n } from 'vue-i18n';
@@ -27,10 +28,10 @@
   const { t }: Composer = useI18n({ useScope: 'global' });
   const bulkOperationStore: BulkOperationStore = useBulkOperationStore();
 
-  const selectedKlasse: Ref<string | null> = ref(null);
+  const selectedKlasse: Ref<Organisation | undefined> = ref(undefined);
   const showErrorDialog: Ref<boolean, boolean> = ref(false);
 
-  const updateKlassenSelection = (selected: string | null): void => {
+  const updateKlassenSelection = (selected: Organisation | undefined): void => {
     selectedKlasse.value = selected;
   };
 
@@ -68,7 +69,7 @@
     await bulkOperationStore.bulkChangeKlasse(
       Array.from(props.selectedPersonen.keys()),
       props.selectedSchuleId ?? '',
-      selectedKlasse.value,
+      selectedKlasse.value.id,
     );
 
     if (bulkOperationStore.currentOperation?.errors && bulkOperationStore.currentOperation.errors.size > 0) {
