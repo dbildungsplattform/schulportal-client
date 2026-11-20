@@ -13,7 +13,6 @@
   } from '@/stores/PersonenkontextStore';
   import {
     RollenArt,
-    RollenSystemRecht,
     type RolleResponse,
     RolleStore,
     type TranslatedRolleWithAttrs,
@@ -156,7 +155,6 @@
             v-if="bulkOperationStore.currentOperation?.progress === 0"
             ref="personenkontext-create"
             :operation-context="OperationContext.PERSON_BEARBEITEN"
-            :school-search-systemrecht="RollenSystemRecht.PersonenVerwalten"
             :rolleDialogMode="RolleDialogMode.UNASSIGN"
             :show-headline="false"
             :selected-organisation="selectedOrganisationFromFilter"

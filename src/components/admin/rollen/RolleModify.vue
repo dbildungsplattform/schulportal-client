@@ -6,13 +6,14 @@
   import { type BulkOperationStore, useBulkOperationStore } from '@/stores/BulkOperationStore';
   import { Organisation } from '@/stores/OrganisationStore';
   import {
+    CreationType,
     KlassenOption,
     OperationContext,
     type PersonenkontextStore,
     RolleDialogMode,
     usePersonenkontextStore,
   } from '@/stores/PersonenkontextStore';
-  import { RollenArt, RollenMerkmal, RollenSystemRecht, TranslatedRolleWithAttrs } from '@/stores/RolleStore';
+  import { RollenArt, RollenMerkmal, TranslatedRolleWithAttrs } from '@/stores/RolleStore';
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
   import { type BefristungUtilsType, isBefristungspflichtRolle, useBefristungUtils } from '@/utils/befristung';
   import { formatDateToISO, getNextSchuljahresende } from '@/utils/date';
@@ -245,7 +246,7 @@
               v-model:selected-rolle="selectedRolle"
               v-model:selected-klassen-option="selectedKlassenOption"
               :operation-context="OperationContext.PERSON_BEARBEITEN"
-              :school-search-systemrecht="RollenSystemRecht.PersonenVerwalten"
+              :create-type="CreationType.AddPersonToOwnSchule"
               :show-headline="false"
               :rollen="rollen"
               :selected-organisation-props="selectedOrganisationProps"

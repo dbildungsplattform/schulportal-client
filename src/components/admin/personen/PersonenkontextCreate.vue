@@ -1,5 +1,4 @@
 <script setup lang="ts">
-  import { RollenSystemRechtEnum } from '@/api-client/generated';
   import BefristungInput, { type BefristungProps } from '@/components/admin/personen/BefristungInput.vue';
   import KlassenFilter from '@/components/filter/KlassenFilter.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
@@ -8,6 +7,7 @@
   import { useDebouncedSearch } from '@/composables/useDebouncedSearch';
   import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
   import {
+    CreationType,
     KlassenOption,
     OperationContext,
     RolleDialogMode,
@@ -55,11 +55,10 @@
 
   type Props = {
     rollen: TranslatedRolleWithAttrs[];
+    createType?: CreationType;
     showHeadline: boolean;
     personId?: string;
     operationContext: OperationContext;
-    schoolSearchSystemrecht: RollenSystemRechtEnum;
-    roleSearchSystemrecht?: RollenSystemRechtEnum;
     selectedKlassenOption?: string | null;
     selectedKlasse?: Organisation;
     selectedKlasseForRadio?: Organisation;
@@ -81,7 +80,7 @@
   };
 
   const props: Props = defineProps<Props>();
-  /*const requestedWithSystemrecht: ComputedRef<RollenSystemRecht> = computed((): RollenSystemRecht => {
+  const requestedWithSystemrecht: ComputedRef<RollenSystemRecht> = computed((): RollenSystemRecht => {
     switch (props.createType) {
       case CreationType.Limited:
         return RollenSystemRecht.EingeschraenktNeueBenutzerErstellen;
@@ -92,14 +91,11 @@
       default:
         return RollenSystemRecht.PersonenVerwalten;
     }
-
-        schoolSearchSystemrecht: RollenSystemRecht;
-    roleSearchSystemrecht: RollenSystemRecht;
-  });*/
+  });
   const {
     autoselectedSchule,
   }: { hasAutoselectedSchule: ComputedRef<boolean>; autoselectedSchule: ComputedRef<Organisation | null> } =
-    useAutoselectedSchule([props.schoolSearchSystemrecht]);
+    useAutoselectedSchule([requestedWithSystemrecht.value]);
 
   type Emits = {
     (e: 'update:befristung', value: string | undefined): void;
@@ -155,7 +151,9 @@
       rollenartForPerson: props.rollenartForPerson ?? selectedRollenart.value,
     };
 
-    filter.systemrecht = props.roleSearchSystemrecht;
+    if (props.createType === CreationType.Limited) {
+      filter.systemrecht = RollenSystemRecht.EingeschraenktNeueBenutzerErstellen;
+    }
 
     if (props.allowMultipleRollen) {
       const matchesSelection: boolean =
