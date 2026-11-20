@@ -302,12 +302,13 @@ export const useOrganisationStore: StoreDefinition<
       this.loading = true;
       this.searchedOrganisations = [];
       try {
-        const response: AxiosResponse<Organisation[]> = await axiosApiInstance.get(
-          `/api/organisationen/${organisationId}/search-for-relationships`,
-          {
-            params: { offset: 0, limit: 200, searchString: searchString || undefined },
-          },
-        );
+        const response: AxiosResponse<OrganisationResponse[]> =
+          await organisationApi.organisationControllerSearchOrganisationsForRelationships(
+            organisationId,
+            0,
+            200,
+            searchString || undefined,
+          );
         this.searchedOrganisations = response.data;
       } catch (error: unknown) {
         this.relationshipErrorCode = getResponseErrorCode(error, 'SEARCH_ORGANISATIONS_ERROR');

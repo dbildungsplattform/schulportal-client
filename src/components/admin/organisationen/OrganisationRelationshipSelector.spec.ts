@@ -112,13 +112,23 @@ describe('OrganisationRelationshipSelector', (): void => {
     },
   );
 
+  it('should select only the organisation whose checkbox was clicked', async (): Promise<void> => {
+    const { behoerden, mountSelector }: TestState = setup();
+    const wrapper: VueWrapper = await mountSelector();
+
+    await wrapper.get(`[data-testid="org-selector-checkbox-${behoerden[0]!.id}"] input`).trigger('click');
+
+    expect(wrapper.getComponent(VTreeview).props('modelValue')).toEqual([behoerden[0]!.id]);
+    expect(wrapper.findAll('[data-testid^="org-selector-checkbox-"] input:checked')).toHaveLength(1);
+  });
+
   it('should keep newest selections first and retain them across searches', async (): Promise<void> => {
     const { store, behoerden, mountSelector }: TestState = setup();
     const first: Organisation = behoerden[0]!;
     const second: Organisation = behoerden[1]!;
     const wrapper: VueWrapper = await mountSelector();
-    await wrapper.get(`[data-testid="org-selector-checkbox-${first.id}"]`).trigger('click');
-    await wrapper.get(`[data-testid="org-selector-checkbox-${second.id}"]`).trigger('click');
+    await wrapper.get(`[data-testid="org-selector-checkbox-${first.id}"] input`).trigger('click');
+    await wrapper.get(`[data-testid="org-selector-checkbox-${second.id}"] input`).trigger('click');
     store.searchedOrganisations = [behoerden[2]!];
     await nextTick();
     expect(wrapper.getComponent(VTreeview).props('modelValue')).toEqual([second.id, first.id]);
@@ -132,22 +142,22 @@ describe('OrganisationRelationshipSelector', (): void => {
         })),
       },
     ]);
-    await wrapper.get(`[data-testid="org-selector-checkbox-${first.id}"]`).trigger('click');
+    await wrapper.get(`[data-testid="org-selector-checkbox-${first.id}"] input`).trigger('click');
     expect(wrapper.getComponent(VTreeview).props('modelValue')).toEqual([second.id]);
   });
 
   it('should handle select all, partial selection, deselection and invalid tree values', async (): Promise<void> => {
     const { behoerden, mountSelector }: TestState = setup();
     const wrapper: VueWrapper = await mountSelector();
-    await wrapper.get('[data-testid="org-selector-select-all"]').trigger('click');
+    await wrapper.get('[data-testid="org-selector-select-all"] input').trigger('click');
     expect(wrapper.getComponent(VTreeview).props('modelValue')).toHaveLength(3);
-    await wrapper.get(`[data-testid="org-selector-checkbox-${behoerden[0]!.id}"]`).trigger('click');
+    await wrapper.get(`[data-testid="org-selector-checkbox-${behoerden[0]!.id}"] input`).trigger('click');
     expect(wrapper.get('[data-testid="org-selector-select-all"] input').attributes('aria-checked')).toBe('mixed');
     wrapper.getComponent(VTreeview).vm.$emit('update:modelValue', null);
     await nextTick();
     expect(wrapper.getComponent(VTreeview).props('modelValue')).toHaveLength(2);
-    await wrapper.get('[data-testid="org-selector-select-all"]').trigger('click');
-    await wrapper.get('[data-testid="org-selector-select-all"]').trigger('click');
+    await wrapper.get('[data-testid="org-selector-select-all"] input').trigger('click');
+    await wrapper.get('[data-testid="org-selector-select-all"] input').trigger('click');
     expect(wrapper.getComponent(VTreeview).props('modelValue')).toEqual([]);
     await select(wrapper, []);
     expect(wrapper.get('[data-testid="org-selector-create-button"]').attributes('disabled')).toBeDefined();
@@ -159,9 +169,9 @@ describe('OrganisationRelationshipSelector', (): void => {
     store.searchedOrganisations = [behoerden[0]!, traeger];
     const wrapper: VueWrapper = await mountSelector();
     expect(wrapper.find(`[data-testid="org-selector-checkbox-${traeger.id}"]`).exists()).toBe(false);
-    await wrapper.get('[data-testid="org-selector-select-all"]').trigger('click');
+    await wrapper.get('[data-testid="org-selector-select-all"] input').trigger('click');
     expect(wrapper.getComponent(VTreeview).props('modelValue')).toEqual([behoerden[0]!.id]);
-    await wrapper.get('[data-testid="org-selector-select-all"]').trigger('click');
+    await wrapper.get('[data-testid="org-selector-select-all"] input').trigger('click');
     store.searchedOrganisations = [traeger];
     await nextTick();
     expect(wrapper.find('[data-testid="org-selector-treeview"]').exists()).toBe(false);

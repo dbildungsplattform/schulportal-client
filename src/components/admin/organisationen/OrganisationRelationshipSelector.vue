@@ -115,18 +115,26 @@
     ];
   }
 
-  function toggleOrganisation(id: string): void {
+  function setOrganisationSelected(id: string, isSelected: boolean | null): void {
+    const shouldBeSelected: boolean = isSelected === true;
+    if (selectedIds.value.includes(id) === shouldBeSelected) {
+      return;
+    }
     updateSelection(
-      selectedIds.value.includes(id)
-        ? selected.value.filter((org: Organisation): boolean => org.id !== id)
-        : availableOrganisations.value.filter(
+      shouldBeSelected
+        ? availableOrganisations.value.filter(
             (org: Organisation): boolean => org.id === id || selectedIds.value.includes(org.id),
-          ),
+          )
+        : selected.value.filter((org: Organisation): boolean => org.id !== id),
     );
   }
 
-  function toggleAllOrganisations(): void {
-    updateSelection(allSelected.value ? [] : availableOrganisations.value);
+  function setAllOrganisationsSelected(isSelected: boolean | null): void {
+    const shouldBeSelected: boolean = isSelected === true;
+    if ((shouldBeSelected && allSelected.value) || (!shouldBeSelected && selected.value.length === 0)) {
+      return;
+    }
+    updateSelection(shouldBeSelected ? availableOrganisations.value : []);
   }
 
   function onTreeSelectionUpdate(value: unknown): void {
@@ -301,14 +309,16 @@
               :disabled="availableOrganisations.length === 0 || organisationStore.loading"
               :aria-label="item.title"
               data-testid="org-selector-select-all"
-              @click.stop="toggleAllOrganisations"
+              @click.stop
+              @update:model-value="setAllOrganisationsSelected"
             />
             <v-checkbox
               v-else
               :model-value="selectedIds.includes(item.id)"
               :aria-label="item.title"
               :data-testid="`org-selector-checkbox-${item.id}`"
-              @click.stop="toggleOrganisation(item.id)"
+              @click.stop
+              @update:model-value="setOrganisationSelected(item.id, $event)"
             />
           </template>
         </v-treeview>
