@@ -5,7 +5,6 @@ import { type AxiosResponse } from 'axios';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import {
   OrganisationenApiFactory,
-  OrganisationsbeziehungsTyp,
   OrganisationsTyp,
   TraegerschaftTyp,
   type CreateOrganisationsbeziehungBodyParams,
@@ -211,7 +210,7 @@ type OrganisationActions = {
   }) => Promise<void>;
 };
 
-export { OrganisationsbeziehungsTyp, OrganisationsTyp };
+export { OrganisationsbeziehungsTyp, OrganisationsTyp } from '../api-client/generated/api';
 export type OrganisationStore = Store<'organisationStore', OrganisationState, OrganisationGetters, OrganisationActions>;
 
 export const useOrganisationStore: StoreDefinition<
