@@ -2,6 +2,7 @@ import { DOMWrapper, enableAutoUnmount, flushPromises, mount, type VueWrapper } 
 import { nextTick } from 'vue';
 import { VTreeview } from 'vuetify/components';
 import { DoFactory } from 'test/DoFactory';
+import SearchField from '@/components/admin/SearchField.vue';
 import {
   OrganisationsbeziehungsTyp,
   OrganisationsTyp,
@@ -64,6 +65,24 @@ describe('OrganisationRelationshipSelector', (): void => {
     expect(store.searchOrganisationsForRelationships).toHaveBeenCalledExactlyOnceWith(schule.id, undefined);
     expect(wrapper.find('[data-testid="org-selector-treeview"]').exists()).toBe(true);
     expect(wrapper.get('[data-testid="org-selector-create-button"]').attributes('disabled')).toBeDefined();
+  });
+
+  it('should show the Behörde placeholder and name-only hint when searching from a school', async (): Promise<void> => {
+    const { mountSelector }: TestState = setup();
+    const wrapper: VueWrapper = await mountSelector();
+    expect(wrapper.get('[data-testid="search-filter-input"]').find('input').attributes('placeholder')).toBe('Behörde');
+    expect(wrapper.getComponent(SearchField).props('hoverText')).toBe('Name');
+  });
+
+  it('should show the Schule placeholder and name/Kennung hint when searching from a Behörde', async (): Promise<void> => {
+    const { store, schule, mountSelector }: TestState = setup();
+    const behoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
+    store.currentSchule = null;
+    store.currentOrganisation = behoerde;
+    store.searchedOrganisations = [schule];
+    const wrapper: VueWrapper = await mountSelector(behoerde.id);
+    expect(wrapper.get('[data-testid="search-filter-input"]').find('input').attributes('placeholder')).toBe('Schule');
+    expect(wrapper.getComponent(SearchField).props('hoverText')).toBe('Name oder Kennung');
   });
 
   it('should not search or render when hidden', async (): Promise<void> => {
@@ -148,6 +167,17 @@ describe('OrganisationRelationshipSelector', (): void => {
     expect(wrapper.find('[data-testid="org-selector-treeview"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="org-selector-select-all"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="org-selector-empty"]').isVisible()).toBe(true);
+    expect(wrapper.get('[data-testid="org-selector-empty"]').text()).toBe('Keine passenden Behörden gefunden.');
+  });
+
+  it('should show a school-specific empty state when a Behörde has no matching schools', async (): Promise<void> => {
+    const { store, mountSelector }: TestState = setup();
+    const behoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
+    store.currentSchule = null;
+    store.currentOrganisation = behoerde;
+    store.searchedOrganisations = [];
+    const wrapper: VueWrapper = await mountSelector(behoerde.id);
+    expect(wrapper.get('[data-testid="org-selector-empty"]').text()).toBe('Keine passenden Schulen gefunden.');
   });
 
   it('should show a centered circular spinner and disable saving during search', async (): Promise<void> => {

@@ -204,10 +204,13 @@
           @relationships-updated="handleRelationshipsUpdated"
         />
         <template v-else>
-          <v-row class="justify-end">
-            <v-col cols="auto">
+          <v-row class="ma-3 justify-end">
+            <v-col
+              cols="12"
+              md="auto"
+            >
               <v-btn
-                class="primary"
+                class="primary organisationsbeziehungen-add-button"
                 data-testid="organisationsbeziehungen-add-button"
                 @click="showSelector = true"
               >
@@ -272,5 +275,11 @@
   }
   .chevron.rotate {
     transform: rotate(180deg);
+  }
+
+  @media (max-width: 959px) {
+    .organisationsbeziehungen-add-button.v-btn.primary {
+      width: 100%;
+    }
   }
 </style>

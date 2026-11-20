@@ -54,6 +54,21 @@
         organisation?.id === props.organisationId,
     ),
   );
+  const searchPlaceholder: ComputedRef<string> = computed(() =>
+    sourceOrganisation.value?.typ === OrganisationsTyp.Schule
+      ? t('admin.organisation.searchPlaceholderBehoerde')
+      : t('admin.organisation.searchPlaceholderSchule'),
+  );
+  const searchHoverText: ComputedRef<string> = computed(() =>
+    sourceOrganisation.value?.typ === OrganisationsTyp.Schule
+      ? t('admin.organisation.searchByName')
+      : t('admin.organisation.searchByNameOrKennung'),
+  );
+  const emptyStateText: ComputedRef<string> = computed(() =>
+    sourceOrganisation.value?.typ === OrganisationsTyp.Schule
+      ? t('admin.organisation.noBehoerdenFound')
+      : t('admin.organisation.noSchulenFound'),
+  );
   const availableOrganisations: ComputedRef<Organisation[]> = computed(() =>
     dedup(
       [...selected.value, ...organisationStore.searchedOrganisations],
@@ -234,10 +249,11 @@
           <SearchField
             initial-value=""
             :input-cols="9"
-            :input-cols-md="9"
+            :input-cols-md="6"
             :button-cols="3"
-            :button-cols-md="3"
-            :hover-text="t('admin.organisation.searchByNameOrKennung')"
+            :button-cols-md="2"
+            :hover-text="searchHoverText"
+            :placeholder="searchPlaceholder"
             @on-apply-search-filter="searchOrganisations"
           />
         </v-row>
@@ -258,7 +274,7 @@
           class="text-body text-medium-emphasis pa-6"
           data-testid="org-selector-empty"
         >
-          {{ t('admin.organisation.noOrganisationsAvailable') }}
+          {{ emptyStateText }}
         </p>
         <v-treeview
           v-if="treeItems.length > 0"
@@ -297,8 +313,12 @@
           </template>
         </v-treeview>
         <v-row class="justify-end my-4">
-          <v-col cols="auto">
+          <v-col
+            cols="12"
+            sm="auto"
+          >
             <v-btn
+              block
               class="secondary"
               data-testid="org-selector-cancel-button"
               @click="closeComponent"
@@ -306,8 +326,12 @@
               {{ t('cancel') }}
             </v-btn>
           </v-col>
-          <v-col cols="auto">
+          <v-col
+            cols="12"
+            sm="auto"
+          >
             <v-btn
+              block
               class="primary"
               :disabled="selected.length === 0 || organisationStore.loading"
               data-testid="org-selector-create-button"
