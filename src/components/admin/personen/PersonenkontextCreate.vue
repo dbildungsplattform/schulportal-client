@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { RollenSystemRechtEnum } from '@/api-client/generated';
   import BefristungInput, { type BefristungProps } from '@/components/admin/personen/BefristungInput.vue';
   import KlassenFilter from '@/components/filter/KlassenFilter.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
@@ -7,9 +8,7 @@
   import { useDebouncedSearch } from '@/composables/useDebouncedSearch';
   import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
   import {
-    CreationType,
     KlassenOption,
-    LandesbediensteterWorkflowFilter,
     OperationContext,
     RolleDialogMode,
     usePersonenkontextStore,
@@ -56,10 +55,11 @@
 
   type Props = {
     rollen: TranslatedRolleWithAttrs[];
-    createType?: CreationType;
     showHeadline: boolean;
     personId?: string;
     operationContext: OperationContext;
+    schoolSearchSystemrecht: RollenSystemRechtEnum;
+    roleSearchSystemrecht?: RollenSystemRechtEnum;
     selectedKlassenOption?: string | null;
     selectedKlasse?: Organisation;
     selectedKlasseForRadio?: Organisation;
@@ -81,7 +81,7 @@
   };
 
   const props: Props = defineProps<Props>();
-  const requestedWithSystemrecht: ComputedRef<RollenSystemRecht> = computed((): RollenSystemRecht => {
+  /*const requestedWithSystemrecht: ComputedRef<RollenSystemRecht> = computed((): RollenSystemRecht => {
     switch (props.createType) {
       case CreationType.Limited:
         return RollenSystemRecht.EingeschraenktNeueBenutzerErstellen;
@@ -92,11 +92,14 @@
       default:
         return RollenSystemRecht.PersonenVerwalten;
     }
-  });
+
+        schoolSearchSystemrecht: RollenSystemRecht;
+    roleSearchSystemrecht: RollenSystemRecht;
+  });*/
   const {
     autoselectedSchule,
   }: { hasAutoselectedSchule: ComputedRef<boolean>; autoselectedSchule: ComputedRef<Organisation | null> } =
-    useAutoselectedSchule([requestedWithSystemrecht.value]);
+    useAutoselectedSchule([props.schoolSearchSystemrecht]);
 
   type Emits = {
     (e: 'update:befristung', value: string | undefined): void;
@@ -152,9 +155,7 @@
       rollenartForPerson: props.rollenartForPerson ?? selectedRollenart.value,
     };
 
-    if (props.createType === CreationType.Limited) {
-      filter.systemrecht = RollenSystemRecht.EingeschraenktNeueBenutzerErstellen;
-    }
+    filter.systemrecht = props.roleSearchSystemrecht;
 
     if (props.allowMultipleRollen) {
       const matchesSelection: boolean =
@@ -185,11 +186,8 @@
     }
   }
 
-  async function handleWorkflowStep(filter: WorkflowFilter | LandesbediensteterWorkflowFilter): Promise<void> {
-    await personenkontextStore.processWorkflowStep({
-      operationContext: props.operationContext,
-      ...filter,
-    });
+  async function handleWorkflowStep(filter: WorkflowFilter): Promise<void> {
+    await personenkontextStore.processWorkflowStep(filter);
 
     canCommit.value = personenkontextStore.workflowStepResponse?.canCommit ?? false;
   }
@@ -297,6 +295,7 @@
     () => (props.allowMultipleRollen ? selectedRollen.value : selectedRolle.value),
     async (newValue: SelectedRollen, oldValue: SelectedRollen) => {
       const filter: WorkflowFilter = {
+        operationContext: props.operationContext,
         personId: props.personId,
         organisationId: selectedOrganisation.value?.id,
         limit: 25,
@@ -392,12 +391,12 @@
     >
       <SchulenFilter
         ref="schulenFilter"
-        parentId="personenkontext-create"
+        storeKey="personenkontext-create"
         :selectedSchulen="selectedOrganisation ?? undefined"
         :multiple="false"
         :systemrechteForSearch="[requestedWithSystemrecht].filter((v): v is RollenSystemRecht => v !== undefined)"
         :selectedSchuleProps="selectedOrganisationProps"
-        :isRolleUnassignForm="rolleDialogMode === RolleDialogMode.UNASSIGN"
+        :readonly="rolleDialogMode === RolleDialogMode.UNASSIGN"
         :includeAll="true"
         :placeholderText="$t('admin.organisation.selectOrganisation')"
         :personId="props.personId"

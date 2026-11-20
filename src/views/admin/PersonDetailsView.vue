@@ -28,14 +28,20 @@
   } from '@/stores/OrganisationStore';
   import { EmailStatus, usePersonStore, type PersonStore } from '@/stores/PersonStore';
   import {
-    CreationType,
     mapZuordnungToPersonenkontextUpdate,
     OperationContext,
     usePersonenkontextStore,
     type PersonenkontextStore,
     type PersonenkontextUpdate,
   } from '@/stores/PersonenkontextStore';
-  import { RollenArt, RollenMerkmal, RolleStore, TranslatedRolleWithAttrs, useRolleStore } from '@/stores/RolleStore';
+  import {
+    RollenArt,
+    RollenMerkmal,
+    RollenSystemRecht,
+    RolleStore,
+    TranslatedRolleWithAttrs,
+    useRolleStore,
+  } from '@/stores/RolleStore';
   import {
     StartPageServiceProvider,
     useServiceProviderStore,
@@ -436,11 +442,7 @@
     );
 
     // Update the personenkontexte with the filtered list
-    await personenkontextStore.updatePersonenkontexte(
-      zuordnungenUpdate,
-      currentPersonId,
-      OperationContext.PERSON_BEARBEITEN,
-    );
+    await personenkontextStore.updatePersonenkontexte(zuordnungenUpdate, currentPersonId);
     zuordnungenWithPendingChanges.value = remainingZuordnungen;
     selectedZuordnungen.value = [];
 
@@ -926,7 +928,6 @@
     await personenkontextStore.updatePersonenkontexte(
       finalZuordnungenUpdate.value,
       currentPersonId,
-      OperationContext.PERSON_BEARBEITEN,
       selectedKopersNr.value,
     );
     createSuccessDialogVisible.value = !personenkontextStore.errorCode;
@@ -940,22 +941,14 @@
 
   // This will send the updated list of Zuordnungen to the Backend with the selected Zuordnung but with the new Klasse.
   async function confirmChangeKlasse(): Promise<void> {
-    await personenkontextStore.updatePersonenkontexte(
-      finalZuordnungenUpdate.value,
-      currentPersonId,
-      OperationContext.PERSON_BEARBEITEN,
-    );
+    await personenkontextStore.updatePersonenkontexte(finalZuordnungenUpdate.value, currentPersonId);
     changeKlasseSuccessDialogVisible.value = !personenkontextStore.errorCode;
     selectedZuordnungen.value = [];
     resetChangeKlasseForm();
   }
 
   async function confirmChangeBefristung(): Promise<void> {
-    await personenkontextStore.updatePersonenkontexte(
-      finalZuordnungenUpdate.value,
-      currentPersonId,
-      OperationContext.PERSON_BEARBEITEN,
-    );
+    await personenkontextStore.updatePersonenkontexte(finalZuordnungenUpdate.value, currentPersonId);
     changeBefristungSuccessDialogVisible.value = !personenkontextStore.errorCode;
     selectedZuordnungen.value = [];
     changeBefristungFormContext.resetForm();
@@ -2324,8 +2317,8 @@
                   v-model:selected-rolle="selectedRolle"
                   :person-id="currentPersonId"
                   :rollenart-for-person="existingRollenArt"
-                  :create-type="CreationType.AddPersonToOwnSchule"
                   :operation-context="OperationContext.PERSON_BEARBEITEN"
+                  :school-search-systemrecht="RollenSystemRecht.PersonenVerwalten"
                   :allow-multiple-rollen="false"
                   :show-headline="false"
                   :rollen="filteredRollen"

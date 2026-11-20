@@ -3,9 +3,12 @@
   import SearchField from '@/components/admin/SearchField.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
-  import type { SelectedSchulen } from '@/types';
-  import type { Organisation } from '@/stores/OrganisationStore';
+  import {
+    useServiceProvidersForRollenVerwaltungAutocomplete,
+    type UseServiceProvidersForRollenVerwaltungAutocompleteReturn,
+  } from '@/composables/useServiceProvidersForRollenVerwaltungAutocomplete';
   import { AuthStore, useAuthStore } from '@/stores/AuthStore';
+  import type { Organisation } from '@/stores/OrganisationStore';
   import {
     RollenArt,
     RollenMerkmal,
@@ -21,10 +24,7 @@
     useServiceProviderStore,
     type ServiceProviderIdNameResponse,
   } from '@/stores/ServiceProviderStore';
-  import {
-    useServiceProvidersForRollenVerwaltungAutocomplete,
-    type UseServiceProvidersForRollenVerwaltungAutocompleteReturn,
-  } from '@/composables/useServiceProvidersForRollenVerwaltungAutocomplete';
+  import type { SelectedSchulen } from '@/types';
   import { computed, ComputedRef, onMounted, ref, Ref } from 'vue';
 
   import { useI18n, type Composer } from 'vue-i18n';
@@ -334,7 +334,7 @@
             :multiple="true"
             includeAll
             highlightSelection
-            parentId="rolle-management"
+            storeKey="rolle-management"
             :selectedSchulen="searchFilterStore.selectedOrganisationenForRollen"
             :placeholderText="$t('admin.administrationsebene.administrationsebene')"
             :systemrechteForSearch="[RollenSystemRecht.RollenVerwalten]"

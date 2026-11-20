@@ -51,14 +51,13 @@ async function updatePersonenkontexte(
   updatedPersonenkontexte: PersonenkontextUpdate[] | undefined,
   personId: string,
   cachedUebersicht: DBiamPersonenuebersichtResponse,
-  operationContext: OperationContext,
 ): Promise<PersonenkontexteUpdateResponse> {
   const uebersicht: DBiamPersonenuebersichtResponse = cachedUebersicht;
 
   const updateParams: DbiamUpdatePersonenkontexteBodyParams = {
     lastModified: uebersicht.lastModifiedZuordnungen ?? undefined,
     count: uebersicht.zuordnungen.length ?? 0,
-    operationContext,
+    operationContext: OperationContext.PERSON_BEARBEITEN,
     personenkontexte:
       updatedPersonenkontexte?.map((personenkontextUpdate: PersonenkontextUpdate) => ({
         personId: personId,
@@ -240,12 +239,7 @@ export const useBulkOperationStore: StoreDefinition<
             const newZuordnungen: InternalZuordnung[] = [orgaZuordnung, ...klassenZuordnungen];
             const combinedZuordnungen: PersonenkontextUpdate[] = combineZuordnungen(currentZuordnungen, newZuordnungen);
 
-            await updatePersonenkontexte(
-              combinedZuordnungen,
-              personId,
-              uebersichtResponse,
-              OperationContext.PERSON_BEARBEITEN,
-            );
+            await updatePersonenkontexte(combinedZuordnungen, personId, uebersichtResponse);
           } catch (error: unknown) {
             this.currentOperation?.errors.set(personId, getResponseErrorCode(error, 'UNSPECIFIED_ERROR'));
           }
@@ -273,7 +267,6 @@ export const useBulkOperationStore: StoreDefinition<
             updatedZuordnungen.map(mapZuordnungToPersonenkontextUpdate),
             personId,
             uebersichtResponse,
-            OperationContext.PERSON_BEARBEITEN,
           );
         } catch (error: unknown) {
           this.currentOperation?.errors.set(personId, getResponseErrorCode(error, 'UNSPECIFIED_ERROR'));
@@ -369,7 +362,6 @@ export const useBulkOperationStore: StoreDefinition<
               updatedZuordnungen.map(mapZuordnungToPersonenkontextUpdate),
               personId,
               uebersichtResponse,
-              OperationContext.PERSON_BEARBEITEN,
             );
           } catch (error: unknown) {
             this.currentOperation?.errors.set(personId, getResponseErrorCode(error, 'UNSPECIFIED_ERROR'));
@@ -416,7 +408,6 @@ export const useBulkOperationStore: StoreDefinition<
               combinedZuordnungen.map(mapZuordnungToPersonenkontextUpdate),
               personId,
               uebersichtResponse,
-              OperationContext.PERSON_BEARBEITEN,
             );
           } catch (error: unknown) {
             this.currentOperation?.errors.set(personId, getResponseErrorCode(error, 'UNSPECIFIED_ERROR'));

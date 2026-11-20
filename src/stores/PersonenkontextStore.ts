@@ -55,7 +55,7 @@ export enum RolleDialogMode {
 export type PersonenkontextUpdate = Pick<DbiamPersonenkontextBodyParams, 'organisationId' | 'rolleId' | 'befristung'>;
 
 export type WorkflowFilter = {
-  operationContext?: OperationContext;
+  operationContext: OperationContext;
   personId?: string;
   organisationId?: string;
   rollenIds?: string[];
@@ -82,6 +82,30 @@ export function mapZuordnungToPersonenkontextUpdate(
   };
 }
 
+const commitPersonenkontext = async (
+  updatedPersonenkontexte: PersonenkontextUpdate[] | undefined,
+  personId: string,
+  operationContext: OperationContext,
+  personalnummer?: string,
+): Promise<PersonenkontexteUpdateResponse> => {
+  const personStore: PersonStore = usePersonStore();
+
+  const updateParams: DbiamUpdatePersonenkontexteBodyParams = {
+    lastModified: personStore.personenuebersicht?.lastModifiedZuordnungen ?? undefined,
+    count: personStore.personenuebersicht?.zuordnungen.length ?? 0,
+    operationContext,
+    personenkontexte:
+      updatedPersonenkontexte?.map((personenkontextUpdate: PersonenkontextUpdate) => ({
+        personId: personId,
+        ...personenkontextUpdate,
+      })) ?? [],
+  };
+  const { data }: { data: PersonenkontexteUpdateResponse } =
+    await personenKontextApi.dbiamPersonenkontextWorkflowControllerCommit(personId, updateParams, personalnummer);
+
+  return data;
+};
+
 type PersonenkontextState = {
   updatedPersonenkontexte: PersonenkontexteUpdateResponse | null;
   workflowStepResponse: PersonenkontextWorkflowResponse | null;
@@ -98,10 +122,14 @@ type PersonenkontextActions = {
   updatePersonenkontexte: (
     updatedPersonenkontexte: PersonenkontextUpdate[] | undefined,
     personId: string,
-    operationContext: OperationContext,
     personalnummer?: string,
   ) => Promise<void>;
   createPersonWithKontexte: (params: DbiamCreatePersonWithPersonenkontexteBodyParams) => Promise<void>;
+  zuordnenLandesbedienstete: (
+    updatedPersonenkontexte: PersonenkontextUpdate[] | undefined,
+    personId: string,
+    personalnummer?: string,
+  ) => Promise<void>;
 };
 
 export type {
@@ -153,7 +181,7 @@ export const usePersonenkontextStore: StoreDefinition<
       try {
         const { data }: { data: PersonenkontextWorkflowResponse } =
           await personenKontextApi.dbiamPersonenkontextWorkflowControllerProcessStep(
-            filter.operationContext!,
+            filter.operationContext,
             filter.personId,
             filter.organisationId,
             filter.rollenIds,
@@ -168,30 +196,41 @@ export const usePersonenkontextStore: StoreDefinition<
       }
     },
 
-    async updatePersonenkontexte(
+    async zuordnenLandesbedienstete(
       updatedPersonenkontexte: PersonenkontextUpdate[] | undefined,
       personId: string,
-      operationContext: OperationContext,
       personalnummer?: string,
     ): Promise<void> {
-      const personStore: PersonStore = usePersonStore();
       this.loading = true;
       this.errorCode = '';
       try {
-        const updateParams: DbiamUpdatePersonenkontexteBodyParams = {
-          lastModified: personStore.personenuebersicht?.lastModifiedZuordnungen ?? undefined,
-          count: personStore.personenuebersicht?.zuordnungen.length ?? 0,
-          operationContext,
-          personenkontexte:
-            updatedPersonenkontexte?.map((personenkontextUpdate: PersonenkontextUpdate) => ({
-              personId: personId,
-              ...personenkontextUpdate,
-            })) ?? [],
-        };
-        const { data }: { data: PersonenkontexteUpdateResponse } =
-          await personenKontextApi.dbiamPersonenkontextWorkflowControllerCommit(personId, updateParams, personalnummer);
+        this.updatedPersonenkontexte = await commitPersonenkontext(
+          updatedPersonenkontexte,
+          personId,
+          OperationContext.LANDESBEDIENSTETEN_KONTEXT_ERWEITERN,
+          personalnummer,
+        );
+      } catch (error: unknown) {
+        this.errorCode = getResponseErrorCode(error, 'PERSONENKONTEXTE_UPDATE_ERROR');
+      } finally {
+        this.loading = false;
+      }
+    },
 
-        this.updatedPersonenkontexte = data;
+    async updatePersonenkontexte(
+      updatedPersonenkontexte: PersonenkontextUpdate[] | undefined,
+      personId: string,
+      personalnummer?: string,
+    ): Promise<void> {
+      this.loading = true;
+      this.errorCode = '';
+      try {
+        this.updatedPersonenkontexte = await commitPersonenkontext(
+          updatedPersonenkontexte,
+          personId,
+          OperationContext.PERSON_BEARBEITEN,
+          personalnummer,
+        );
       } catch (error: unknown) {
         this.errorCode = getResponseErrorCode(error, 'PERSONENKONTEXTE_UPDATE_ERROR');
       } finally {

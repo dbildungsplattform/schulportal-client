@@ -8,7 +8,7 @@
   import { useOrganisationSelection } from '@/composables/useOrganisationSelection';
   import { RollenArt, RollenSystemRecht } from '@/stores/RolleStore';
   import { ServiceProviderKategorie, ServiceProviderMerkmal } from '@/stores/ServiceProviderStore';
-  import { type SelectedSchulen, TranslatedObject } from '@/types';
+  import { TranslatedObject, type SelectedSchulen } from '@/types';
   import { getLogoPath } from '@/utils/logosConfig';
   import { DIN_91379A_EXT, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
   import { toTypedSchema } from '@vee-validate/yup';
@@ -316,7 +316,7 @@
             :readonly="isEditMode"
             :highlight-selection="isEditMode"
             :multiple="false"
-            :parent-id="isEditMode ? 'service-provider-edit' : 'service-provider-create'"
+            :storeKey="isEditMode ? 'service-provider-edit' : 'service-provider-create'"
             :placeholderText="$t('admin.organisation.selectOrganisation')"
             :includeAll="true"
             :selected-schule-props="selectedOrganisationIdProps"

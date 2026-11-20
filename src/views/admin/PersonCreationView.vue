@@ -548,16 +548,8 @@
 
     selectedOrgaCache.value = selectedOrganisation.value;
     selectedRolleCache.value = selectedRollen.value?.map((rolle: TranslatedRolleWithAttrs) => rolle.value);
-    const operationContext: OperationContext =
-      createType.value === CreationType.AddPersonToOwnSchule
-        ? OperationContext.LANDESBEDIENSTETEN_KONTEXT_ERWEITERN
-        : OperationContext.PERSON_ANLEGEN;
-    await personenkontextStore.updatePersonenkontexte(
-      newKontexte,
-      personId,
-      operationContext,
-      existingPerson.personalnummer,
-    );
+
+    await personenkontextStore.zuordnenLandesbedienstete(newKontexte, personId, existingPerson.personalnummer);
     formContext.resetForm();
   }
 

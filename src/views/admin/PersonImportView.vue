@@ -649,7 +649,7 @@
             <SchulenFilter
               :systemrechte-for-search="[RollenSystemRecht.ImportDurchfuehren]"
               :multiple="false"
-              parent-id="person-import"
+              storeKey="person-import"
               :placeholder-text="t('admin.schule.selectSchule')"
               :selected-schule-props="selectedSchuleProps"
               :selected-schulen="selectedOrganisation ?? undefined"
