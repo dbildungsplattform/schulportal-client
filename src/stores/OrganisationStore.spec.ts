@@ -50,7 +50,9 @@ describe('OrganisationStore', () => {
       const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
       store.searchedOrganisations = [DoFactory.getOrganisation()];
       store.relationshipErrorCode = 'SEARCH_ORGANISATIONS_ERROR';
-      mockadapter.onGet(`/api/organisationen/${schule.id}/search-for-relationships`).replyOnce(200, [behoerde]);
+      mockadapter
+        .onGet(new RegExp(`^/api/organisationen/${schule.id}/search-for-relationships(?:\\?|$)`))
+        .replyOnce(200, [behoerde]);
 
       const request: Promise<void> = store.searchOrganisationsForRelationships(schule.id, 'Gymnasium');
       expect(store.loading).toBe(true);
@@ -58,11 +60,11 @@ describe('OrganisationStore', () => {
       expect(store.searchedOrganisations).toEqual([]);
       await request;
 
-      expect(mockadapter.history.get[0]?.params).toEqual({
-        offset: 0,
-        limit: 200,
-        searchString: 'Gymnasium',
-      });
+      const requestUrl: URL = new URL(mockadapter.history.get[0]!.url!, 'http://localhost');
+      expect(requestUrl.pathname).toBe(`/api/organisationen/${schule.id}/search-for-relationships`);
+      expect(requestUrl.searchParams.get('offset')).toBe('0');
+      expect(requestUrl.searchParams.get('limit')).toBe('200');
+      expect(requestUrl.searchParams.get('searchString')).toBe('Gymnasium');
       expect(store.searchedOrganisations).toEqual([behoerde]);
       expect(store.loading).toBe(false);
     });
@@ -71,7 +73,7 @@ describe('OrganisationStore', () => {
       const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
       store.searchedOrganisations = [behoerde];
       mockadapter
-        .onGet(`/api/organisationen/${schule.id}/search-for-relationships`)
+        .onGet(new RegExp(`^/api/organisationen/${schule.id}/search-for-relationships(?:\\?|$)`))
         .replyOnce(500, { code: 'MISSING_PERMISSIONS' });
 
       await store.searchOrganisationsForRelationships(schule.id);
