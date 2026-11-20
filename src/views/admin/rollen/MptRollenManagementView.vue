@@ -3,7 +3,6 @@
   import ResultTable, { type Headers } from '@/components/admin/ResultTable.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
-  import type { SelectedSchulen } from '@/types';
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
   import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
   import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
@@ -14,9 +13,10 @@
     type RolleWithServiceProvidersResponse,
   } from '@/stores/RolleStore';
   import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
+  import type { SelectedSchulen } from '@/types';
   import { computed, onMounted, ref, watch, type ComputedRef, type Ref } from 'vue';
-  import { onBeforeRouteLeave, useRouter, type Router } from 'vue-router';
   import { useI18n, type Composer } from 'vue-i18n';
+  import { onBeforeRouteLeave, useRouter, type Router } from 'vue-router';
 
   type MptRolleTableItem = {
     id: string;
@@ -188,7 +188,7 @@
           :multiple="false"
           includeAll
           highlightSelection
-          parentId="mpt-rolle-management"
+          storeKey="mpt-rolle-management"
           :systemrechteForSearch="[RollenSystemRechtEnum.MptRollenZuordnen]"
           :selectedSchulen="selectedOrganisation ?? undefined"
           @update:selected-schulen="setSelectedOrganisation"

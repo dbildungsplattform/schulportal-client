@@ -340,7 +340,7 @@
   // Extract the created Kontext responses based on the createType
   const createdKontextResponses: ComputedRef<DBiamPersonenkontextResponse[]> = computed(() => {
     if (createType.value === CreationType.AddPersonToOwnSchule) {
-      return personenkontextStore.landesbediensteteCommitResponse?.dBiamPersonenkontextResponses ?? [];
+      return personenkontextStore.updatedPersonenkontexte?.dBiamPersonenkontextResponses ?? [];
     }
     return personenkontextStore.createdPersonWithKontext?.dBiamPersonenkontextResponses ?? [];
   });
@@ -448,7 +448,7 @@
   async function navigateToPersonDetails(): Promise<void> {
     const personId: string | undefined =
       createType.value === CreationType.AddPersonToOwnSchule
-        ? personenkontextStore.landesbediensteteCommitResponse?.dBiamPersonenkontextResponses[0]?.personId
+        ? personenkontextStore.updatedPersonenkontexte?.dBiamPersonenkontextResponses[0]?.personId
         : personenkontextStore.createdPersonWithKontext?.person.id;
 
     if (personId) {
@@ -548,7 +548,8 @@
 
     selectedOrgaCache.value = selectedOrganisation.value;
     selectedRolleCache.value = selectedRollen.value?.map((rolle: TranslatedRolleWithAttrs) => rolle.value);
-    await personenkontextStore.commitLandesbediensteteKontext(personId, newKontexte, existingPerson.personalnummer);
+
+    await personenkontextStore.zuordnenLandesbedienstete(newKontexte, personId, existingPerson.personalnummer);
     formContext.resetForm();
   }
 
@@ -607,7 +608,7 @@
 
   const handleCreateAnotherPerson = (): void => {
     personenkontextStore.createdPersonWithKontext = null;
-    personenkontextStore.landesbediensteteCommitResponse = null;
+    personenkontextStore.updatedPersonenkontexte = null;
     formContext.resetForm();
     hasNoKopersNr.value = false;
     // Re-trigger the watchers after resetting the form to auto-select the Befristung since the component isn't remounted
@@ -727,14 +728,14 @@
   onMounted(() => {
     personStore.errorCode = '';
     personenkontextStore.createdPersonWithKontext = null;
-    personenkontextStore.landesbediensteteCommitResponse = null;
+    personenkontextStore.updatedPersonenkontexte = null;
     /* listen for browser changes and prevent them when form is dirty */
     window.addEventListener('beforeunload', preventNavigation);
   });
 
   onUnmounted(() => {
     personenkontextStore.createdPersonWithKontext = null;
-    personenkontextStore.landesbediensteteCommitResponse = null;
+    personenkontextStore.updatedPersonenkontexte = null;
     window.removeEventListener('beforeunload', preventNavigation);
   });
 </script>
@@ -757,7 +758,7 @@
     >
       <!-- The form to create a new Person  -->
       <template
-        v-if="!personenkontextStore.createdPersonWithKontext && !personenkontextStore.landesbediensteteCommitResponse"
+        v-if="!personenkontextStore.createdPersonWithKontext && personenkontextStore.updatedPersonenkontexte === null"
       >
         <FormWrapper
           id="person-creation-form"
@@ -852,7 +853,7 @@
                 v-model:selected-organisation="selectedOrganisation"
                 :initial-organisation="selectedOrganisationObject"
                 v-model:selected-rollen="selectedRollen"
-                :operation-context="OperationContext.PERSON_ANLEGEN"
+                :operation-context="OperationContext.LANDESBEDIENSTETEN_KONTEXT_ERWEITERN"
                 :allow-multiple-rollen="true"
                 :create-type="createType"
                 :rollenart-for-person="rollenartForPerson"
@@ -1218,7 +1219,7 @@
         </v-container>
       </template>
       <!-- Result template on success after assigning the Landesbediensteter to a Schule   -->
-      <template v-if="personenkontextStore.landesbediensteteCommitResponse !== null && !hasError">
+      <template v-if="personenkontextStore.updatedPersonenkontexte !== null && !hasError">
         <v-container>
           <v-row class="justify-center">
             <v-col

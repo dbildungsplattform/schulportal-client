@@ -9,15 +9,8 @@
     type OrganisationenFilterForAutocomplete,
     type OrganisationStore,
   } from '@/stores/OrganisationStore';
-  import {
-    LandesbediensteterWorkflowFilter,
-    usePersonenkontextStore,
-    type OperationContext,
-    type PersonenkontextStore,
-    type WorkflowFilter,
-  } from '@/stores/PersonenkontextStore';
-  import { dedup, sameContent } from '@/utils/arrays';
   import type { SelectedSchulen } from '@/types';
+  import { dedup, sameContent } from '@/utils/arrays';
   import { blurActiveElement } from '@/utils/focus';
   import { getDisplayNameForOrg } from '@/utils/formatting';
   import type { BaseFieldProps } from 'vee-validate';
@@ -35,7 +28,7 @@
 
   type Props = {
     hideDetails?: boolean;
-    systemrechteForSearch?: Array<RollenSystemRechtEnum>;
+    systemrechteForSearch: Array<RollenSystemRechtEnum>;
     multiple?: M;
     selectionCountKey?: string;
     readonly?: boolean;
@@ -43,11 +36,7 @@
     highlightSelection?: boolean;
     placeholderText?: string;
     includeAll?: boolean;
-    parentId?: string;
-    useWorkflowEndpoints?: boolean;
-    useLandesbediensteteWorkflow?: boolean;
-    operationContext?: OperationContext;
-    isRolleUnassignForm?: boolean;
+    storeKey?: string;
     personId?: string;
   };
   type ResolvedProps = Omit<Props, 'selectionCountKey'> & { selectionCountKey: string };
@@ -85,17 +74,14 @@
   });
   const { t }: Composer = useI18n({ useScope: 'global' });
   const organisationStore: OrganisationStore = useOrganisationStore();
-  const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
 
   const testId: ComputedRef<string> = computed(() => {
     const typ: string = props.includeAll ? 'organisation' : 'schule';
-    return props.parentId ? `${props.parentId}-${typ}-select` : `${typ}-select`;
+    return props.storeKey ? `${props.storeKey}-${typ}-select` : `${typ}-select`;
   });
 
-  const currentResults: ComputedRef<Organisation[]> = computed(() =>
-    props.useWorkflowEndpoints
-      ? (personenkontextStore.workflowStepResponse?.organisations ?? [])
-      : (organisationStore.organisationenFilters.get(props.parentId ?? '')?.filterResult ?? []),
+  const currentResults: ComputedRef<Organisation[]> = computed(
+    () => organisationStore.organisationenFilters.get(props.storeKey ?? '')?.filterResult ?? [],
   );
   const typFilter: ComputedRef<Pick<OrganisationenFilterForAutocomplete, 'includeTyp' | 'excludeTyp'>> = computed(
     () => {
@@ -115,22 +101,12 @@
     searchString: undefined,
   });
 
-  // Specific filter to load the organisationen in the forms that are tied to the workflow endpoints (Normal and landesbedienstete)
-  const organisationenFilter: WorkflowFilter = reactive({
-    operationContext: props.operationContext,
-    personId: props.personId,
-    organisationId: undefined,
-    rollenIds: [],
-    organisationName: undefined,
-    limit: 25,
-  });
-
   const { hasAutoselectedSchule, autoselectedSchule }: ReturnType<typeof useAutoselectedSchule> = useAutoselectedSchule(
     props.systemrechteForSearch ?? [],
   );
 
   const isInputDisabled: ComputedRef<boolean | undefined> = computed(() => {
-    return props.readonly || hasAutoselectedSchule.value || props.isRolleUnassignForm;
+    return props.readonly || hasAutoselectedSchule.value;
   });
 
   // Normalize single and multiple selections for shared selection handling.
@@ -176,7 +152,7 @@
   };
 
   const shouldHighlightSelection: ComputedRef<boolean> = computed(() => {
-    if (hasAutoselectedSchule.value || props.isRolleUnassignForm) {
+    if (hasAutoselectedSchule.value || props.readonly) {
       return true;
     }
     if (props.highlightSelection && !isEmptySelection(selectedSchulen.value)) {
@@ -193,13 +169,9 @@
     if (searchString && !isDisplayName(searchString)) {
       // Update organisation filter
       schulenFilter.searchString = searchString;
-
-      // Update workflow filter with the corresponding property
-      organisationenFilter.organisationName = searchString;
     } else {
       // Clear search from both filters
       delete schulenFilter.searchString;
-      delete organisationenFilter.organisationName;
     }
   };
 
@@ -208,20 +180,12 @@
     searchInputSchulen.value = '';
   };
 
-  const updateOrganisationenIds = (selection: AnySelection): void => {
-    organisationenFilter.organisationId =
-      (hasAutoselectedSchule.value ? autoselectedSchule.value?.id : undefined) ??
-      wrapSelectedSchulen(selection).at(0)?.id;
-  };
-
   const handleSelectionUpdate = (selection: AnySelection): void => {
     if (isEmptySelection(selection)) {
-      updateOrganisationenIds([]);
       updateSearchString(undefined);
       clearInput();
-    } else {
-      updateOrganisationenIds(selection);
     }
+
     if (!props.multiple) {
       blurActiveElement();
     }
@@ -239,17 +203,6 @@
       searchInputSchulen.value = '';
     }
   };
-
-  async function handleWorkflowStep(filter: WorkflowFilter | LandesbediensteterWorkflowFilter): Promise<void> {
-    if (props.useLandesbediensteteWorkflow) {
-      await personenkontextStore.processWorkflowStepLandesbedienstete(filter);
-    } else {
-      await personenkontextStore.processWorkflowStep({
-        operationContext: props.operationContext,
-        ...filter,
-      });
-    }
-  }
 
   watch(
     [selectedSchulen, hasAutoselectedSchule],
@@ -274,55 +227,32 @@
     { immediate: true },
   );
 
-  // Load organisations when the active endpoint's filter changes.
   watch(
-    [(): OperationContext | undefined => props.operationContext, (): string | undefined => props.personId],
-    ([operationContext, personId]: [OperationContext | undefined, string | undefined]): void => {
-      organisationenFilter.operationContext = operationContext;
-      organisationenFilter.personId = personId;
-    },
-  );
-
-  watch(
-    [
-      (): OrganisationenFilterForAutocomplete | WorkflowFilter =>
-        props.useWorkflowEndpoints ? organisationenFilter : schulenFilter,
-      (): boolean | undefined => props.useLandesbediensteteWorkflow,
-    ],
-    (
-      _values: [OrganisationenFilterForAutocomplete | WorkflowFilter, boolean | undefined],
-      [oldFilter]: [OrganisationenFilterForAutocomplete | WorkflowFilter | undefined, (boolean | undefined)?],
-    ) => {
-      if (!props.useWorkflowEndpoints && !isEmptySelection(selectedSchulen.value) && isInputDisabled.value) {
+    [schulenFilter],
+    (_values: unknown[]) => {
+      if (!isEmptySelection(selectedSchulen.value) && isInputDisabled.value) {
         return;
       }
 
-      if (!props.useWorkflowEndpoints && !oldFilter) {
-        return;
-      }
-
-      if (props.useWorkflowEndpoints) {
-        void handleWorkflowStep(organisationenFilter);
-      } else {
-        void organisationStore.loadOrganisationenForFilter(schulenFilter, props.parentId);
-      }
+      void organisationStore.loadOrganisationenForFilter(schulenFilter, props.storeKey);
     },
-    { deep: true, immediate: true },
+    { deep: true },
   );
 
   onMounted(() => {
-    if (organisationStore.organisationenFilters.has(props.parentId ?? '')) {
+    if (organisationStore.organisationenFilters.has(props.storeKey ?? '')) {
       // eslint-disable-next-line no-console
-      console.warn(`SchulenFilter initialized twice with id ${props.parentId}`);
+      console.warn(`SchulenFilter initialized twice with id ${props.storeKey}`);
     }
-    organisationStore.resetOrganisationenFilter(props.parentId);
-    if (!props.useWorkflowEndpoints && !(isInputDisabled.value && !isEmptySelection(selectedSchulen.value))) {
-      void organisationStore.loadOrganisationenForFilter(schulenFilter, props.parentId);
+    organisationStore.resetOrganisationenFilter(props.storeKey);
+    const isEnabledOrEmpty: boolean = !isInputDisabled.value || isEmptySelection(selectedSchulen.value);
+    if (isEnabledOrEmpty) {
+      void organisationStore.loadOrganisationenForFilter(schulenFilter, props.storeKey);
     }
   });
 
   onUnmounted(() => {
-    organisationStore.clearOrganisationenFilter(props.parentId);
+    organisationStore.clearOrganisationenFilter(props.storeKey);
   });
 </script>
 
@@ -345,11 +275,7 @@
     :placeholder="props.placeholderText ?? t('admin.schule.assignSchule')"
     required="true"
     variant="outlined"
-    @click:clear="
-      useWorkflowEndpoints
-        ? (personenkontextStore.workflowStepResponse = null)
-        : organisationStore.resetOrganisationenFilter(props.parentId)
-    "
+    @click:clear="organisationStore.resetOrganisationenFilter(props.storeKey)"
     @update:focused="handleFocusChange"
     v-bind="selectedSchuleProps"
     v-model="autocompleteSelection"

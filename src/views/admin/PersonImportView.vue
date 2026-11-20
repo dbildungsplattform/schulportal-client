@@ -1,5 +1,10 @@
 <script setup lang="ts">
-  import { ImportDataItemStatus } from '@/api-client/generated';
+  import {
+    ImportDataItemStatus,
+    ImportedUserResponse,
+    ImportResultResponse,
+    RolleResponse,
+  } from '@/api-client/generated';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
@@ -7,13 +12,8 @@
   import FormWrapper from '@/components/form/FormWrapper.vue';
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
   import { useOrganisationSelection } from '@/composables/useOrganisationSelection';
-  import {
-    useImportStore,
-    type ImportedUserResponse,
-    type ImportResultResponse,
-    type ImportStore,
-  } from '@/stores/ImportStore';
-  import { RollenArt, useRolleStore, type RolleResponse, type RolleStore } from '@/stores/RolleStore';
+  import { ImportStore, useImportStore } from '@/stores/ImportStore';
+  import { RollenArt, RollenSystemRecht, RolleStore, useRolleStore } from '@/stores/RolleStore';
   import type { SelectedSchulen, TranslatedObject } from '@/types';
   import { toTypedSchema } from '@vee-validate/yup';
   import { useForm, type BaseFieldProps, type FormContext, type TypedSchema } from 'vee-validate';
@@ -63,7 +63,9 @@
     selectedFiles: Array<File>;
   };
 
-  const { autoselectedSchule }: ReturnType<typeof useAutoselectedSchule> = useAutoselectedSchule([]);
+  const { autoselectedSchule }: ReturnType<typeof useAutoselectedSchule> = useAutoselectedSchule([
+    RollenSystemRecht.ImportDurchfuehren,
+  ]);
   const formContext: FormContext<PersonImportForm, PersonImportForm> = useForm<PersonImportForm>({
     validationSchema,
     initialValues: { selectedSchule: autoselectedSchule.value?.id },
@@ -645,8 +647,9 @@
             :label="$t('admin.schule.schule')"
           >
             <SchulenFilter
+              :systemrechte-for-search="[RollenSystemRecht.ImportDurchfuehren]"
               :multiple="false"
-              parent-id="person-import"
+              storeKey="person-import"
               :placeholder-text="t('admin.schule.selectSchule')"
               :selected-schule-props="selectedSchuleProps"
               :selected-schulen="selectedOrganisation ?? undefined"
