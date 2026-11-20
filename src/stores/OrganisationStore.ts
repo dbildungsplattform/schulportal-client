@@ -7,6 +7,7 @@ import {
   OrganisationenApiFactory,
   OrganisationsTyp,
   TraegerschaftTyp,
+  type CreateOrganisationsbeziehungBodyParams,
   type CreateOrganisationBodyParams,
   type OrganisationByIdBodyParams,
   type OrganisationByNameBodyParams,
@@ -94,6 +95,8 @@ type OrganisationState = {
   currentOrganisation: Organisation | null;
   organisationForSelection: Organisation | null;
   currentSchule?: CurrentSchulDetails | null;
+  searchedOrganisations: Array<Organisation>;
+  relationshipErrorCode: string;
   currentKlasse: Organisation | null;
   updatedOrganisation: Organisation | null;
   createdKlasse: Organisation | null;
@@ -197,6 +200,8 @@ type OrganisationActions = {
   resetKlasseFilter(storeKey?: string): void;
   clearKlasseFilter(storeKey?: string): void;
   fetchSchulDetails: (organisationId: string) => Promise<void>;
+  searchOrganisationsForRelationships: (organisationId: string, searchString?: string) => Promise<void>;
+  createOrganisationRelationship: (params: CreateOrganisationsbeziehungBodyParams) => Promise<void>;
   updateSchuleById: (params: {
     organisationId: string;
     schultraegerform: string;
@@ -205,7 +210,7 @@ type OrganisationActions = {
   }) => Promise<void>;
 };
 
-export { OrganisationsTyp };
+export { OrganisationsbeziehungsTyp, OrganisationsTyp } from '../api-client/generated/api';
 export type OrganisationStore = Store<'organisationStore', OrganisationState, OrganisationGetters, OrganisationActions>;
 
 export const useOrganisationStore: StoreDefinition<
@@ -226,6 +231,8 @@ export const useOrganisationStore: StoreDefinition<
       organisationForSelection: null,
       currentKlasse: null,
       currentSchule: null,
+      searchedOrganisations: [],
+      relationshipErrorCode: '',
       updatedOrganisation: null,
       createdKlasse: null,
       createdSchule: null,
@@ -287,6 +294,35 @@ export const useOrganisationStore: StoreDefinition<
         this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
       } finally {
         this.loading = false;
+      }
+    },
+
+    async searchOrganisationsForRelationships(organisationId: string, searchString?: string): Promise<void> {
+      this.relationshipErrorCode = '';
+      this.loading = true;
+      this.searchedOrganisations = [];
+      try {
+        const response: AxiosResponse<OrganisationResponse[]> =
+          await organisationApi.organisationControllerSearchOrganisationsForRelationships(
+            organisationId,
+            0,
+            200,
+            searchString || undefined,
+          );
+        this.searchedOrganisations = response.data;
+      } catch (error: unknown) {
+        this.relationshipErrorCode = getResponseErrorCode(error, 'SEARCH_ORGANISATIONS_ERROR');
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async createOrganisationRelationship(params: CreateOrganisationsbeziehungBodyParams): Promise<void> {
+      this.relationshipErrorCode = '';
+      try {
+        await organisationApi.organisationControllerCreateOrganisationsbeziehung(params);
+      } catch (error: unknown) {
+        this.relationshipErrorCode = getResponseErrorCode(error, 'CREATE_RELATIONSHIP_ERROR');
       }
     },
 

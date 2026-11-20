@@ -6,6 +6,7 @@
   } from '@/api-client/generated/api';
   import ResultTable, { type Headers } from '@/components/admin/ResultTable.vue';
   import OrganisationsbeziehungenFilter from '@/components/filter/OrganisationsbeziehungenFilter.vue';
+  import OrganisationRelationshipSelector from '@/components/admin/organisationen/OrganisationRelationshipSelector.vue';
   import {
     useOrganisationsbeziehungStore,
     type OrganisationsbeziehungStore,
@@ -32,6 +33,7 @@
   const organisationsbeziehungStore: OrganisationsbeziehungStore = useOrganisationsbeziehungStore();
 
   const isOpen: Ref<boolean> = ref(false);
+  const showSelector: Ref<boolean> = ref(false);
   const page: Ref<number> = ref(1);
   const perPage: Ref<number> = ref(30);
   const searchString: Ref<string> = ref('');
@@ -132,6 +134,12 @@
     await fetchBeziehungen();
   }
 
+  async function handleRelationshipsUpdated(): Promise<void> {
+    showSelector.value = false;
+    page.value = 1;
+    await fetchBeziehungen();
+  }
+
   watch(isOpen, async (open: boolean): Promise<void> => {
     if (open) {
       await fetchBeziehungen();
@@ -188,50 +196,73 @@
         v-show="isOpen"
         data-testid="organisationsbeziehungen-content"
       >
-        <v-alert
-          v-if="organisationsbeziehungStore.errorCode"
-          class="my-3"
-          data-testid="organisationsbeziehungen-error-alert"
-          type="error"
-          variant="outlined"
-        >
-          {{ t('admin.organisation.beziehungen.loadingErrorText') }}
-        </v-alert>
+        <OrganisationRelationshipSelector
+          v-if="showSelector"
+          :organisation-id="props.organisationId"
+          :show-component="showSelector"
+          @update:show-component="showSelector = $event"
+          @relationships-updated="handleRelationshipsUpdated"
+        />
         <template v-else>
-          <OrganisationsbeziehungenFilter
-            :initial-value="searchString"
-            @on-apply-search-filter="handleSearchFilter"
-          />
-          <v-row class="ma-3">
-            <v-col cols="12">
-              <ResultTable
-                :current-page="page"
-                :current-sort="currentSort"
-                data-testid="organisationsbeziehungen-table"
-                :disable-row-click="true"
-                :headers="headers"
-                :hide-select="true"
-                :items="tableItems"
-                :items-per-page="perPage"
-                item-value-path="id"
-                :loading="organisationsbeziehungStore.loading"
-                :no-data-text="t('admin.organisation.beziehungen.noDataFound')"
-                :total-items="organisationsbeziehungStore.total"
-                @on-items-per-page-update="handleItemsPerPageUpdate"
-                @on-page-update="handlePageUpdate"
-                @on-table-update="handleTableSorting"
+          <v-row class="ma-3 justify-end">
+            <v-col
+              cols="12"
+              md="auto"
+            >
+              <v-btn
+                class="primary organisationsbeziehungen-add-button"
+                data-testid="organisationsbeziehungen-add-button"
+                @click="showSelector = true"
               >
-                <template #[`item.andereOrganisationName`]="{ item }">
-                  <div
-                    class="ellipsis-wrapper"
-                    :title="item.andereOrganisationName"
-                  >
-                    {{ item.andereOrganisationName }}
-                  </div>
-                </template>
-              </ResultTable>
+                {{ t('admin.organisation.addRelationship') }}
+              </v-btn>
             </v-col>
           </v-row>
+          <v-alert
+            v-if="organisationsbeziehungStore.errorCode"
+            class="my-3"
+            data-testid="organisationsbeziehungen-error-alert"
+            type="error"
+            variant="outlined"
+          >
+            {{ t('admin.organisation.beziehungen.loadingErrorText') }}
+          </v-alert>
+          <template v-else>
+            <OrganisationsbeziehungenFilter
+              :initial-value="searchString"
+              @on-apply-search-filter="handleSearchFilter"
+            />
+            <v-row class="ma-3">
+              <v-col cols="12">
+                <ResultTable
+                  :current-page="page"
+                  :current-sort="currentSort"
+                  data-testid="organisationsbeziehungen-table"
+                  :disable-row-click="true"
+                  :headers="headers"
+                  :hide-select="true"
+                  :items="tableItems"
+                  :items-per-page="perPage"
+                  item-value-path="id"
+                  :loading="organisationsbeziehungStore.loading"
+                  :no-data-text="t('admin.organisation.beziehungen.noDataFound')"
+                  :total-items="organisationsbeziehungStore.total"
+                  @on-items-per-page-update="handleItemsPerPageUpdate"
+                  @on-page-update="handlePageUpdate"
+                  @on-table-update="handleTableSorting"
+                >
+                  <template #[`item.andereOrganisationName`]="{ item }">
+                    <div
+                      class="ellipsis-wrapper"
+                      :title="item.andereOrganisationName"
+                    >
+                      {{ item.andereOrganisationName }}
+                    </div>
+                  </template>
+                </ResultTable>
+              </v-col>
+            </v-row>
+          </template>
         </template>
       </div>
     </v-expand-transition>
@@ -244,5 +275,11 @@
   }
   .chevron.rotate {
     transform: rotate(180deg);
+  }
+
+  @media (max-width: 959px) {
+    .organisationsbeziehungen-add-button.v-btn.primary {
+      width: 100%;
+    }
   }
 </style>
