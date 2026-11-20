@@ -243,7 +243,7 @@ describe('OrganisationsbeziehungenSection', (): void => {
     await flushPromises();
     organisationStore.searchedOrganisations = [selectedOrganisation];
     await flushPromises();
-    await wrapper.get(`[data-testid="org-selector-checkbox-${selectedOrganisation.id}"]`).trigger('click');
+    await wrapper.get(`[data-testid="org-selector-checkbox-${selectedOrganisation.id}"] input`).trigger('click');
     await wrapper.get('[data-testid="org-selector-create-button"]').trigger('click');
     await flushPromises();
     await wrapper.get('[data-testid="org-selector-finish-button"]').trigger('click');
