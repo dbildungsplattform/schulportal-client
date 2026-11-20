@@ -317,6 +317,7 @@ describe('OrganisationRelationshipSelector', (): void => {
     expect(document.body.textContent).toContain(
       'Schule und Schulaufsichtsbehörde müssen demselben Zuständigkeitsbereich zugeordnet sein.',
     );
+    expect(wrapper.getComponent({ name: 'BulkErrorDialog' }).props('dialogTitle')).toBe('Zuordnung hinzufügen');
     const body: DOMWrapper<Element> = new DOMWrapper(document.body);
     expect(body.get('[data-testid="org-selector-partial-success"]').text()).toBe(
       '2 Beziehungen wurden erfolgreich gespeichert.',

@@ -416,7 +416,7 @@
       :errors="errors"
       :error-to-display-text="errorToDisplayText"
       :error-to-alert-text="errorToAlertText"
-      :dialog-title="t('admin.organisation.creationPartiallyFailed')"
+      :dialog-title="t('admin.organisation.addRelationship')"
       :close-confirmation-text="t('admin.person.bulk.closeBulkErrorDialogConfirmationMessage')"
       test-id-base="org-selector-bulk-error"
       :download-button-text="t('admin.person.bulk.saveList')"
