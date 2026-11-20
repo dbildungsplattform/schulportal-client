@@ -6,6 +6,7 @@ import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
 import { DoFactory } from 'test/DoFactory';
 import {
+  OrganisationsbeziehungsTyp,
   SchuleType,
   useOrganisationStore,
   type AutoCompleteStore,
@@ -27,9 +28,103 @@ describe('OrganisationStore', () => {
 
   it('should initialize state correctly', () => {
     expect(organisationStore.allOrganisationen).toEqual([]);
+    expect(organisationStore.searchedOrganisations).toEqual([]);
     expect(organisationStore.createdBehoerde).toBeNull();
     expect(organisationStore.errorCode).toEqual('');
+    expect(organisationStore.relationshipErrorCode).toEqual('');
     expect(organisationStore.loading).toBe(false);
+  });
+
+  describe('relationship actions', (): void => {
+    function setup(): { store: OrganisationStore; schule: Organisation; behoerde: Organisation } {
+      setActivePinia(createPinia());
+      const store: OrganisationStore = useOrganisationStore();
+      store.$reset();
+      mockadapter.reset();
+      const schule: Organisation = DoFactory.getSchule();
+      const behoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
+      return { store, schule, behoerde };
+    }
+
+    it('should search eligible organisations and replace stale results', async (): Promise<void> => {
+      const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
+      store.searchedOrganisations = [DoFactory.getOrganisation()];
+      store.relationshipErrorCode = 'SEARCH_ORGANISATIONS_ERROR';
+      mockadapter.onGet(`/api/organisationen/${schule.id}/search-for-relationships`).replyOnce(200, [behoerde]);
+
+      const request: Promise<void> = store.searchOrganisationsForRelationships(schule.id, 'Gymnasium');
+      expect(store.loading).toBe(true);
+      expect(store.relationshipErrorCode).toBe('');
+      expect(store.searchedOrganisations).toEqual([]);
+      await request;
+
+      expect(mockadapter.history.get[0]?.params).toEqual({
+        offset: 0,
+        limit: 200,
+        searchString: 'Gymnasium',
+      });
+      expect(store.searchedOrganisations).toEqual([behoerde]);
+      expect(store.loading).toBe(false);
+    });
+
+    it('should surface candidate search errors and stop loading', async (): Promise<void> => {
+      const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
+      store.searchedOrganisations = [behoerde];
+      mockadapter
+        .onGet(`/api/organisationen/${schule.id}/search-for-relationships`)
+        .replyOnce(500, { code: 'MISSING_PERMISSIONS' });
+
+      await store.searchOrganisationsForRelationships(schule.id);
+
+      expect(store.relationshipErrorCode).toBe('MISSING_PERMISSIONS');
+      expect(store.searchedOrganisations).toEqual([]);
+      expect(store.loading).toBe(false);
+    });
+
+    it('should save a relationship using the requested type', async (): Promise<void> => {
+      const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
+      store.relationshipErrorCode = 'CREATE_RELATIONSHIP_ERROR';
+      mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(201);
+
+      await store.createOrganisationRelationship({
+        quellOrganisationId: schule.id,
+        zielOrganisationId: behoerde.id,
+        typ: OrganisationsbeziehungsTyp.Schulaufsicht,
+      });
+
+      const requestData: unknown = mockadapter.history.post[0]?.data;
+      if (typeof requestData !== 'string') {
+        throw new Error('The relationship request payload is missing.');
+      }
+      expect(JSON.parse(requestData)).toEqual({
+        quellOrganisationId: schule.id,
+        zielOrganisationId: behoerde.id,
+        typ: OrganisationsbeziehungsTyp.Schulaufsicht,
+      });
+      expect(store.relationshipErrorCode).toBe('');
+    });
+
+    it('should surface save errors and clear them on the next save', async (): Promise<void> => {
+      const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
+      mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(400, {
+        i18nKey: 'SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM',
+      });
+
+      await store.createOrganisationRelationship({
+        quellOrganisationId: schule.id,
+        zielOrganisationId: behoerde.id,
+        typ: OrganisationsbeziehungsTyp.Schulaufsicht,
+      });
+
+      expect(store.relationshipErrorCode).toBe('SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM');
+      mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(201);
+      await store.createOrganisationRelationship({
+        quellOrganisationId: schule.id,
+        zielOrganisationId: behoerde.id,
+        typ: OrganisationsbeziehungsTyp.Schulaufsicht,
+      });
+      expect(store.relationshipErrorCode).toBe('');
+    });
   });
 
   describe('getAllOrganisations', () => {

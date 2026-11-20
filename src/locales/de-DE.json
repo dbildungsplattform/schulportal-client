@@ -367,6 +367,16 @@
     },
     "mandatoryFieldsNotice": "Mit * markierte Felder sind Pflichtangaben.",
     "organisation": {
+      "addRelationship": "Zuordnung hinzufügen",
+      "selectAll": "Alle auswählen",
+      "noOrganisationsAvailable": "Keine passenden Organisationen gefunden.",
+      "searchErrorTitle": "Die Organisationen konnten nicht gesucht werden.",
+      "searchByNameOrKennung": "Name oder Kennung",
+      "executeChanges": "Zuordnungen speichern",
+      "relationshipsCreatedSuccessfully": "{count} Beziehung wurde erfolgreich gespeichert. | {count} Beziehungen wurden erfolgreich gespeichert.",
+      "organisation": "Organisation",
+      "errorMessage": "Fehlermeldung",
+      "creationPartiallyFailed": "Einige Organisationsbeziehungen konnten nicht gespeichert werden.",
       "assignOrganisation": "Organisationsebene zuordnen",
       "beziehungen": {
         "dienststellennummer": "Dienststellennummer",
@@ -384,6 +394,14 @@
         }
       },
       "errors": {
+        "SEARCH_ORGANISATIONS_ERROR": "Die Organisationen konnten nicht gesucht werden.",
+        "CREATE_RELATIONSHIP_ERROR": "Die Organisationsbeziehung konnte nicht gespeichert werden.",
+        "MISSING_PERMISSIONS": "Sie verfügen nicht über die nötigen Berechtigungen, um diese Organisationsbeziehung zu speichern.",
+        "SCHULAUFSICHT_QUELLE_SCHULE_ZIEL_BEHOERDE": "Eine Schulaufsichtsbeziehung muss zwischen einer Schule und einer Behörde bestehen.",
+        "SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM": "Schule und Schulaufsichtsbehörde müssen demselben Zuständigkeitsbereich zugeordnet sein.",
+        "SCHULTRAEGER_QUELLE_SCHULE_ZIEL_TRAEGER": "Eine Schulträgerbeziehung muss zwischen einer Schule und einem Schulträger bestehen.",
+        "SCHULTRAEGER_SCHULE_HAT_EXAKT_EINEN_TRAEGER": "Eine Schule kann nur einem Schulträger zugeordnet werden.",
+        "SCHULTRAEGER_SCHULE_UND_TRAEGER_SELBER_BAUM": "Schule und Schulträger müssen demselben Zuständigkeitsbereich zugeordnet sein.",
         "ORGANISATION_SPECIFICATION_ERROR": "Die Organisation konnte nicht angelegt werden.",
         "ROOT_ORGANISATION_IMMUTABLE": "Diese Organisation darf nicht verändert werden.",
         "ZYKLUS_IN_ORGANISATION": "Es darf keine Zirkelbeziehung zwischen Organisationen entstehen."
