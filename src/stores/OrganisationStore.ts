@@ -308,7 +308,7 @@ export const useOrganisationStore: StoreDefinition<
           {
             params: { offset: 0, limit: 200, searchString: searchString || undefined },
           },
-          );
+        );
         this.searchedOrganisations = response.data;
       } catch (error: unknown) {
         this.relationshipErrorCode = getResponseErrorCode(error, 'SEARCH_ORGANISATIONS_ERROR');
