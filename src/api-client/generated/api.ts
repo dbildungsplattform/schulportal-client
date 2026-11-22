@@ -2188,6 +2188,19 @@ export interface OrganisationRootChildrenResponse {
 /**
  * 
  * @export
+ * @interface OrganisationsByIdsBodyParams
+ */
+export interface OrganisationsByIdsBodyParams {
+    /**
+     * The ids of the organizations
+     * @type {Array<string>}
+     * @memberof OrganisationsByIdsBodyParams
+     */
+    'organisationIds': Array<string>;
+}
+/**
+ * 
+ * @export
  * @enum {string}
  */
 
@@ -8870,6 +8883,49 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
         },
         /**
          * 
+         * @param {OrganisationsByIdsBodyParams} organisationsByIdsBodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        organisationControllerFindOrganisationsByIds: async (organisationsByIdsBodyParams: OrganisationsByIdsBodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'organisationsByIdsBodyParams' is not null or undefined
+            assertParamExists('organisationControllerFindOrganisationsByIds', 'organisationsByIdsBodyParams', organisationsByIdsBodyParams)
+            const localVarPath = `/api/organisationen/by-ids`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            // authentication oauth2 required
+            // oauth required
+            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(organisationsByIdsBodyParams, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [kennung] 
@@ -8880,14 +8936,13 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
          * @param {Array<OrganisationsTyp>} [excludeTyp] 
          * @param {Array<string>} [administriertVon] 
          * @param {Array<string>} [zugehoerigZu] Liefert die Kind-Organisationen, die den angegebenen IDs zugehörig sind.
-         * @param {Array<string>} [organisationIds] Liefert Organisationen mit den angegebenen IDs, selbst wenn andere Filterkriterien nicht zutreffen (ODER-verknüpft mit anderen Kriterien).
          * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
          * @param {'name' | 'kennung'} [sortField] Field to sort by.
          * @param {boolean} [getChildrenRecursively] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        organisationControllerFindOrganizations: async (offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, organisationIds?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        organisationControllerFindOrganizations: async (offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/api/organisationen`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -8946,10 +9001,6 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
 
             if (zugehoerigZu) {
                 localVarQueryParameter['zugehoerigZu'] = zugehoerigZu;
-            }
-
-            if (organisationIds) {
-                localVarQueryParameter['organisationIds'] = organisationIds;
             }
 
             if (sortOrder !== undefined) {
@@ -9493,6 +9544,16 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
+         * @param {OrganisationsByIdsBodyParams} organisationsByIdsBodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async organisationControllerFindOrganisationsByIds(organisationsByIdsBodyParams: OrganisationsByIdsBodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<OrganisationResponse>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerFindOrganisationsByIds(organisationsByIdsBodyParams, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [kennung] 
@@ -9503,15 +9564,14 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
          * @param {Array<OrganisationsTyp>} [excludeTyp] 
          * @param {Array<string>} [administriertVon] 
          * @param {Array<string>} [zugehoerigZu] Liefert die Kind-Organisationen, die den angegebenen IDs zugehörig sind.
-         * @param {Array<string>} [organisationIds] Liefert Organisationen mit den angegebenen IDs, selbst wenn andere Filterkriterien nicht zutreffen (ODER-verknüpft mit anderen Kriterien).
          * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
          * @param {'name' | 'kennung'} [sortField] Field to sort by.
          * @param {boolean} [getChildrenRecursively] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, organisationIds?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<OrganisationResponse>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerFindOrganizations(offset, limit, kennung, name, searchString, typ, systemrechte, excludeTyp, administriertVon, zugehoerigZu, organisationIds, sortOrder, sortField, getChildrenRecursively, options);
+        async organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<OrganisationResponse>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerFindOrganizations(offset, limit, kennung, name, searchString, typ, systemrechte, excludeTyp, administriertVon, zugehoerigZu, sortOrder, sortField, getChildrenRecursively, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -9696,6 +9756,15 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
         },
         /**
          * 
+         * @param {OrganisationsByIdsBodyParams} organisationsByIdsBodyParams 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        organisationControllerFindOrganisationsByIds(organisationsByIdsBodyParams: OrganisationsByIdsBodyParams, options?: any): AxiosPromise<Array<OrganisationResponse>> {
+            return localVarFp.organisationControllerFindOrganisationsByIds(organisationsByIdsBodyParams, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [kennung] 
@@ -9706,15 +9775,14 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
          * @param {Array<OrganisationsTyp>} [excludeTyp] 
          * @param {Array<string>} [administriertVon] 
          * @param {Array<string>} [zugehoerigZu] Liefert die Kind-Organisationen, die den angegebenen IDs zugehörig sind.
-         * @param {Array<string>} [organisationIds] Liefert Organisationen mit den angegebenen IDs, selbst wenn andere Filterkriterien nicht zutreffen (ODER-verknüpft mit anderen Kriterien).
          * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
          * @param {'name' | 'kennung'} [sortField] Field to sort by.
          * @param {boolean} [getChildrenRecursively] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, organisationIds?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: any): AxiosPromise<Array<OrganisationResponse>> {
-            return localVarFp.organisationControllerFindOrganizations(offset, limit, kennung, name, searchString, typ, systemrechte, excludeTyp, administriertVon, zugehoerigZu, organisationIds, sortOrder, sortField, getChildrenRecursively, options).then((request) => request(axios, basePath));
+        organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: any): AxiosPromise<Array<OrganisationResponse>> {
+            return localVarFp.organisationControllerFindOrganizations(offset, limit, kennung, name, searchString, typ, systemrechte, excludeTyp, administriertVon, zugehoerigZu, sortOrder, sortField, getChildrenRecursively, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -9888,6 +9956,15 @@ export interface OrganisationenApiInterface {
 
     /**
      * 
+     * @param {OrganisationsByIdsBodyParams} organisationsByIdsBodyParams 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganisationenApiInterface
+     */
+    organisationControllerFindOrganisationsByIds(organisationsByIdsBodyParams: OrganisationsByIdsBodyParams, options?: AxiosRequestConfig): AxiosPromise<Array<OrganisationResponse>>;
+
+    /**
+     * 
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
      * @param {string} [kennung] 
@@ -9898,7 +9975,6 @@ export interface OrganisationenApiInterface {
      * @param {Array<OrganisationsTyp>} [excludeTyp] 
      * @param {Array<string>} [administriertVon] 
      * @param {Array<string>} [zugehoerigZu] Liefert die Kind-Organisationen, die den angegebenen IDs zugehörig sind.
-     * @param {Array<string>} [organisationIds] Liefert Organisationen mit den angegebenen IDs, selbst wenn andere Filterkriterien nicht zutreffen (ODER-verknüpft mit anderen Kriterien).
      * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
      * @param {'name' | 'kennung'} [sortField] Field to sort by.
      * @param {boolean} [getChildrenRecursively] 
@@ -9906,7 +9982,7 @@ export interface OrganisationenApiInterface {
      * @throws {RequiredError}
      * @memberof OrganisationenApiInterface
      */
-    organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, organisationIds?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig): AxiosPromise<Array<OrganisationResponse>>;
+    organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig): AxiosPromise<Array<OrganisationResponse>>;
 
     /**
      * 
@@ -10094,6 +10170,17 @@ export class OrganisationenApi extends BaseAPI implements OrganisationenApiInter
 
     /**
      * 
+     * @param {OrganisationsByIdsBodyParams} organisationsByIdsBodyParams 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganisationenApi
+     */
+    public organisationControllerFindOrganisationsByIds(organisationsByIdsBodyParams: OrganisationsByIdsBodyParams, options?: AxiosRequestConfig) {
+        return OrganisationenApiFp(this.configuration).organisationControllerFindOrganisationsByIds(organisationsByIdsBodyParams, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
      * @param {string} [kennung] 
@@ -10104,7 +10191,6 @@ export class OrganisationenApi extends BaseAPI implements OrganisationenApiInter
      * @param {Array<OrganisationsTyp>} [excludeTyp] 
      * @param {Array<string>} [administriertVon] 
      * @param {Array<string>} [zugehoerigZu] Liefert die Kind-Organisationen, die den angegebenen IDs zugehörig sind.
-     * @param {Array<string>} [organisationIds] Liefert Organisationen mit den angegebenen IDs, selbst wenn andere Filterkriterien nicht zutreffen (ODER-verknüpft mit anderen Kriterien).
      * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
      * @param {'name' | 'kennung'} [sortField] Field to sort by.
      * @param {boolean} [getChildrenRecursively] 
@@ -10112,8 +10198,8 @@ export class OrganisationenApi extends BaseAPI implements OrganisationenApiInter
      * @throws {RequiredError}
      * @memberof OrganisationenApi
      */
-    public organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, organisationIds?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig) {
-        return OrganisationenApiFp(this.configuration).organisationControllerFindOrganizations(offset, limit, kennung, name, searchString, typ, systemrechte, excludeTyp, administriertVon, zugehoerigZu, organisationIds, sortOrder, sortField, getChildrenRecursively, options).then((request) => request(this.axios, this.basePath));
+    public organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig) {
+        return OrganisationenApiFp(this.configuration).organisationControllerFindOrganizations(offset, limit, kennung, name, searchString, typ, systemrechte, excludeTyp, administriertVon, zugehoerigZu, sortOrder, sortField, getChildrenRecursively, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -13796,12 +13882,11 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
          * @param {number} [limit] The requested limit for the page size.
          * @param {RollenArt} [rollenartForPerson] The rollenart of the person for whom the available rollen should be found
          * @param {string} [rolleName] The rolleName for which the available rollen should be found
-         * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
          * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindAvailableRollenForPersonenkontextCreation: async (organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        rolleControllerFindAvailableRollenForPersonenkontextCreation: async (organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, systemrecht?: RollenSystemRechtEnum, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'organisationId' is not null or undefined
             assertParamExists('rolleControllerFindAvailableRollenForPersonenkontextCreation', 'organisationId', organisationId)
             const localVarPath = `/api/rolle/for-personenkontext-creation`;
@@ -13842,10 +13927,6 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
 
             if (rolleName !== undefined) {
                 localVarQueryParameter['rolleName'] = rolleName;
-            }
-
-            if (rollenIds) {
-                localVarQueryParameter['rollenIds'] = rollenIds;
             }
 
             if (systemrecht !== undefined) {
@@ -13906,20 +13987,66 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
             };
         },
         /**
+         * Get a single MPT rolle the user is allowed to administer.
+         * @summary 
+         * @param {string} rolleId The id for the rolle.
+         * @param {string} [organisationId] Restricts the rolle to the given organisation and its children.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        rolleControllerFindRolleForMptZuordnungById: async (rolleId: string, organisationId?: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'rolleId' is not null or undefined
+            assertParamExists('rolleControllerFindRolleForMptZuordnungById', 'rolleId', rolleId)
+            const localVarPath = `/api/rolle/available-for-mpt-zuordnung/{rolleId}`
+                .replace(`{${"rolleId"}}`, encodeURIComponent(String(rolleId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            // authentication oauth2 required
+            // oauth required
+            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
+
+            if (organisationId !== undefined) {
+                localVarQueryParameter['organisationId'] = organisationId;
+            }
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * List all rollen.
          * @summary 
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
          * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
-         * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
          * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
          * @param {Array<RollenMerkmal>} [merkmale] Filter roles by merkmal.
          * @param {Array<string>} [serviceProviderIds] Filter roles by service provider ids.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollen: async (offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        rolleControllerFindRollen: async (offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/api/rolle`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -13954,10 +14081,6 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
 
             if (organisationIds) {
                 localVarQueryParameter['organisationIds'] = organisationIds;
-            }
-
-            if (rolleIds) {
-                localVarQueryParameter['rolleIds'] = rolleIds;
             }
 
             if (rollenarten) {
@@ -14188,11 +14311,10 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
          * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
-         * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollenForMptZuordnung: async (offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        rolleControllerFindRollenForMptZuordnung: async (offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/api/rolle/available-for-mpt-zuordnung`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -14227,10 +14349,6 @@ export const RolleApiAxiosParamCreator = function (configuration?: Configuration
 
             if (organisationIds) {
                 localVarQueryParameter['organisationIds'] = organisationIds;
-            }
-
-            if (rolleIds) {
-                localVarQueryParameter['rolleIds'] = rolleIds;
             }
 
 
@@ -14526,13 +14644,12 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * @param {number} [limit] The requested limit for the page size.
          * @param {RollenArt} [rollenartForPerson] The rollenart of the person for whom the available rollen should be found
          * @param {string} [rolleName] The rolleName for which the available rollen should be found
-         * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
          * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartForPerson, rolleName, rollenIds, systemrecht, options);
+        async rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartForPerson, rolleName, systemrecht, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -14547,21 +14664,32 @@ export const RolleApiFp = function(configuration?: Configuration) {
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
+         * Get a single MPT rolle the user is allowed to administer.
+         * @summary 
+         * @param {string} rolleId The id for the rolle.
+         * @param {string} [organisationId] Restricts the rolle to the given organisation and its children.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async rolleControllerFindRolleForMptZuordnungById(rolleId: string, organisationId?: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RolleWithServiceProvidersResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRolleForMptZuordnungById(rolleId, organisationId, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
          * List all rollen.
          * @summary 
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
          * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
-         * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
          * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
          * @param {Array<RollenMerkmal>} [merkmale] Filter roles by merkmal.
          * @param {Array<string>} [serviceProviderIds] Filter roles by service provider ids.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<RolleWithServiceProvidersResponse>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollen(offset, limit, searchStr, organisationIds, rolleIds, rollenarten, merkmale, serviceProviderIds, options);
+        async rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<RolleWithServiceProvidersResponse>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollen(offset, limit, searchStr, organisationIds, rollenarten, merkmale, serviceProviderIds, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -14617,12 +14745,11 @@ export const RolleApiFp = function(configuration?: Configuration) {
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
          * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
-         * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<RolleWithServiceProvidersResponse>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollenForMptZuordnung(offset, limit, searchStr, organisationIds, rolleIds, options);
+        async rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<RolleWithServiceProvidersResponse>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.rolleControllerFindRollenForMptZuordnung(offset, limit, searchStr, organisationIds, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -14733,13 +14860,12 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * @param {number} [limit] The requested limit for the page size.
          * @param {RollenArt} [rollenartForPerson] The rollenart of the person for whom the available rollen should be found
          * @param {string} [rolleName] The rolleName for which the available rollen should be found
-         * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
          * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: any): AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response> {
-            return localVarFp.rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartForPerson, rolleName, rollenIds, systemrecht, options).then((request) => request(axios, basePath));
+        rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, systemrecht?: RollenSystemRechtEnum, options?: any): AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response> {
+            return localVarFp.rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartForPerson, rolleName, systemrecht, options).then((request) => request(axios, basePath));
         },
         /**
          * Get rolle by id.
@@ -14752,21 +14878,31 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
             return localVarFp.rolleControllerFindRolleByIdWithServiceProviders(rolleId, options).then((request) => request(axios, basePath));
         },
         /**
+         * Get a single MPT rolle the user is allowed to administer.
+         * @summary 
+         * @param {string} rolleId The id for the rolle.
+         * @param {string} [organisationId] Restricts the rolle to the given organisation and its children.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        rolleControllerFindRolleForMptZuordnungById(rolleId: string, organisationId?: string, options?: any): AxiosPromise<RolleWithServiceProvidersResponse> {
+            return localVarFp.rolleControllerFindRolleForMptZuordnungById(rolleId, organisationId, options).then((request) => request(axios, basePath));
+        },
+        /**
          * List all rollen.
          * @summary 
          * @param {number} [offset] The offset of the paginated list.
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
          * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
-         * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
          * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
          * @param {Array<RollenMerkmal>} [merkmale] Filter roles by merkmal.
          * @param {Array<string>} [serviceProviderIds] Filter roles by service provider ids.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: any): AxiosPromise<Array<RolleWithServiceProvidersResponse>> {
-            return localVarFp.rolleControllerFindRollen(offset, limit, searchStr, organisationIds, rolleIds, rollenarten, merkmale, serviceProviderIds, options).then((request) => request(axios, basePath));
+        rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: any): AxiosPromise<Array<RolleWithServiceProvidersResponse>> {
+            return localVarFp.rolleControllerFindRollen(offset, limit, searchStr, organisationIds, rollenarten, merkmale, serviceProviderIds, options).then((request) => request(axios, basePath));
         },
         /**
          * List all rollen that are available for the Rollenerweiterung workflow.
@@ -14818,12 +14954,11 @@ export const RolleApiFactory = function (configuration?: Configuration, basePath
          * @param {number} [limit] The requested limit for the page size.
          * @param {string} [searchStr] The name for the role.
          * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
-         * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: any): AxiosPromise<Array<RolleWithServiceProvidersResponse>> {
-            return localVarFp.rolleControllerFindRollenForMptZuordnung(offset, limit, searchStr, organisationIds, rolleIds, options).then((request) => request(axios, basePath));
+        rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, options?: any): AxiosPromise<Array<RolleWithServiceProvidersResponse>> {
+            return localVarFp.rolleControllerFindRollenForMptZuordnung(offset, limit, searchStr, organisationIds, options).then((request) => request(axios, basePath));
         },
         /**
          * Get Erweiterte Angebote for a rolle.
@@ -14927,13 +15062,12 @@ export interface RolleApiInterface {
      * @param {number} [limit] The requested limit for the page size.
      * @param {RollenArt} [rollenartForPerson] The rollenart of the person for whom the available rollen should be found
      * @param {string} [rolleName] The rolleName for which the available rollen should be found
-     * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
      * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof RolleApiInterface
      */
-    rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig): AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response>;
+    rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig): AxiosPromise<RolleControllerFindRollenAvailableForPersonAdministration200Response>;
 
     /**
      * Get rolle by id.
@@ -14946,13 +15080,23 @@ export interface RolleApiInterface {
     rolleControllerFindRolleByIdWithServiceProviders(rolleId: string, options?: AxiosRequestConfig): AxiosPromise<RolleWithServiceProvidersResponse>;
 
     /**
+     * Get a single MPT rolle the user is allowed to administer.
+     * @summary 
+     * @param {string} rolleId The id for the rolle.
+     * @param {string} [organisationId] Restricts the rolle to the given organisation and its children.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof RolleApiInterface
+     */
+    rolleControllerFindRolleForMptZuordnungById(rolleId: string, organisationId?: string, options?: AxiosRequestConfig): AxiosPromise<RolleWithServiceProvidersResponse>;
+
+    /**
      * List all rollen.
      * @summary 
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
      * @param {string} [searchStr] The name for the role.
      * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
-     * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
      * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
      * @param {Array<RollenMerkmal>} [merkmale] Filter roles by merkmal.
      * @param {Array<string>} [serviceProviderIds] Filter roles by service provider ids.
@@ -14960,7 +15104,7 @@ export interface RolleApiInterface {
      * @throws {RequiredError}
      * @memberof RolleApiInterface
      */
-    rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<Array<RolleWithServiceProvidersResponse>>;
+    rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<Array<RolleWithServiceProvidersResponse>>;
 
     /**
      * List all rollen that are available for the Rollenerweiterung workflow.
@@ -15012,12 +15156,11 @@ export interface RolleApiInterface {
      * @param {number} [limit] The requested limit for the page size.
      * @param {string} [searchStr] The name for the role.
      * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
-     * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof RolleApiInterface
      */
-    rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<Array<RolleWithServiceProvidersResponse>>;
+    rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<Array<RolleWithServiceProvidersResponse>>;
 
     /**
      * Get Erweiterte Angebote for a rolle.
@@ -15127,14 +15270,13 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
      * @param {number} [limit] The requested limit for the page size.
      * @param {RollenArt} [rollenartForPerson] The rollenart of the person for whom the available rollen should be found
      * @param {string} [rolleName] The rolleName for which the available rollen should be found
-     * @param {Array<string>} [rollenIds] The rollenIds that are currently selected and should always be returned.
      * @param {RollenSystemRechtEnum} [systemrecht] The systemrecht for which the available rollen should be found
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof RolleApi
      */
-    public rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, rollenIds?: Array<string>, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig) {
-        return RolleApiFp(this.configuration).rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartForPerson, rolleName, rollenIds, systemrecht, options).then((request) => request(this.axios, this.basePath));
+    public rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId: string, offset?: number, limit?: number, rollenartForPerson?: RollenArt, rolleName?: string, systemrecht?: RollenSystemRechtEnum, options?: AxiosRequestConfig) {
+        return RolleApiFp(this.configuration).rolleControllerFindAvailableRollenForPersonenkontextCreation(organisationId, offset, limit, rollenartForPerson, rolleName, systemrecht, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -15150,13 +15292,25 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
     }
 
     /**
+     * Get a single MPT rolle the user is allowed to administer.
+     * @summary 
+     * @param {string} rolleId The id for the rolle.
+     * @param {string} [organisationId] Restricts the rolle to the given organisation and its children.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof RolleApi
+     */
+    public rolleControllerFindRolleForMptZuordnungById(rolleId: string, organisationId?: string, options?: AxiosRequestConfig) {
+        return RolleApiFp(this.configuration).rolleControllerFindRolleForMptZuordnungById(rolleId, organisationId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
      * List all rollen.
      * @summary 
      * @param {number} [offset] The offset of the paginated list.
      * @param {number} [limit] The requested limit for the page size.
      * @param {string} [searchStr] The name for the role.
      * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
-     * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
      * @param {Array<RollenArt>} [rollenarten] Filter roles by rollenart.
      * @param {Array<RollenMerkmal>} [merkmale] Filter roles by merkmal.
      * @param {Array<string>} [serviceProviderIds] Filter roles by service provider ids.
@@ -15164,8 +15318,8 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
      * @throws {RequiredError}
      * @memberof RolleApi
      */
-    public rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: AxiosRequestConfig) {
-        return RolleApiFp(this.configuration).rolleControllerFindRollen(offset, limit, searchStr, organisationIds, rolleIds, rollenarten, merkmale, serviceProviderIds, options).then((request) => request(this.axios, this.basePath));
+    public rolleControllerFindRollen(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rollenarten?: Array<RollenArt>, merkmale?: Array<RollenMerkmal>, serviceProviderIds?: Array<string>, options?: AxiosRequestConfig) {
+        return RolleApiFp(this.configuration).rolleControllerFindRollen(offset, limit, searchStr, organisationIds, rollenarten, merkmale, serviceProviderIds, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -15224,13 +15378,12 @@ export class RolleApi extends BaseAPI implements RolleApiInterface {
      * @param {number} [limit] The requested limit for the page size.
      * @param {string} [searchStr] The name for the role.
      * @param {Array<string>} [organisationIds] Filters the result to Rollen administered by any of the given organisations.
-     * @param {Array<string>} [rolleIds] The ids of the selected Rollen. If provided, these Rollen will be returned regardless of the other filters since they are required by the frontend
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof RolleApi
      */
-    public rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, rolleIds?: Array<string>, options?: AxiosRequestConfig) {
-        return RolleApiFp(this.configuration).rolleControllerFindRollenForMptZuordnung(offset, limit, searchStr, organisationIds, rolleIds, options).then((request) => request(this.axios, this.basePath));
+    public rolleControllerFindRollenForMptZuordnung(offset?: number, limit?: number, searchStr?: string, organisationIds?: Array<string>, options?: AxiosRequestConfig) {
+        return RolleApiFp(this.configuration).rolleControllerFindRollenForMptZuordnung(offset, limit, searchStr, organisationIds, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
