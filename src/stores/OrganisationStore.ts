@@ -5,9 +5,9 @@ import { type AxiosResponse } from 'axios';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import {
   OrganisationenApiFactory,
+  OrganisationsbeziehungsTyp,
   OrganisationsTyp,
   TraegerschaftTyp,
-  type CreateOrganisationsbeziehungBodyParams,
   type CreateOrganisationBodyParams,
   type OrganisationByIdBodyParams,
   type OrganisationByNameBodyParams,
@@ -96,7 +96,6 @@ type OrganisationState = {
   organisationForSelection: Organisation | null;
   currentSchule?: CurrentSchulDetails | null;
   searchedOrganisations: Array<Organisation>;
-  relationshipErrorCode: string;
   currentKlasse: Organisation | null;
   updatedOrganisation: Organisation | null;
   createdKlasse: Organisation | null;
@@ -201,7 +200,7 @@ type OrganisationActions = {
   clearKlasseFilter(storeKey?: string): void;
   fetchSchulDetails: (organisationId: string) => Promise<void>;
   searchOrganisationsForRelationships: (organisationId: string, searchString?: string) => Promise<void>;
-  createOrganisationRelationship: (params: CreateOrganisationsbeziehungBodyParams) => Promise<void>;
+  createOrganisationRelationship: (source: Organisation, target: Organisation) => Promise<void>;
   updateSchuleById: (params: {
     organisationId: string;
     schultraegerform: string;
@@ -232,7 +231,6 @@ export const useOrganisationStore: StoreDefinition<
       currentKlasse: null,
       currentSchule: null,
       searchedOrganisations: [],
-      relationshipErrorCode: '',
       updatedOrganisation: null,
       createdKlasse: null,
       createdSchule: null,
@@ -298,7 +296,7 @@ export const useOrganisationStore: StoreDefinition<
     },
 
     async searchOrganisationsForRelationships(organisationId: string, searchString?: string): Promise<void> {
-      this.relationshipErrorCode = '';
+      this.errorCode = '';
       this.loading = true;
       this.searchedOrganisations = [];
       try {
@@ -311,18 +309,27 @@ export const useOrganisationStore: StoreDefinition<
           );
         this.searchedOrganisations = response.data;
       } catch (error: unknown) {
-        this.relationshipErrorCode = getResponseErrorCode(error, 'SEARCH_ORGANISATIONS_ERROR');
+        this.errorCode = getResponseErrorCode(error, 'SEARCH_ORGANISATIONS_ERROR');
       } finally {
         this.loading = false;
       }
     },
 
-    async createOrganisationRelationship(params: CreateOrganisationsbeziehungBodyParams): Promise<void> {
-      this.relationshipErrorCode = '';
+    async createOrganisationRelationship(source: Organisation, target: Organisation): Promise<void> {
+      this.errorCode = '';
       try {
-        await organisationApi.organisationControllerCreateOrganisationsbeziehung(params);
+        const schule: Organisation = source.typ === OrganisationsTyp.Schule ? source : target;
+        const zielOrganisation: Organisation = source.typ === OrganisationsTyp.Schule ? target : source;
+        await organisationApi.organisationControllerCreateOrganisationsbeziehung({
+          quellOrganisationId: schule.id,
+          zielOrganisationId: zielOrganisation.id,
+          typ:
+            zielOrganisation.typ === OrganisationsTyp.Behoerde
+              ? OrganisationsbeziehungsTyp.Schulaufsicht
+              : OrganisationsbeziehungsTyp.Schultraeger,
+        });
       } catch (error: unknown) {
-        this.relationshipErrorCode = getResponseErrorCode(error, 'CREATE_RELATIONSHIP_ERROR');
+        this.errorCode = getResponseErrorCode(error, 'CREATE_RELATIONSHIP_ERROR');
       }
     },
 

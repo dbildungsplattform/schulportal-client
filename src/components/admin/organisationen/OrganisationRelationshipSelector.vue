@@ -3,7 +3,6 @@
   import BulkErrorDialog from '@/components/dialog/BulkErrorDialog.vue';
   import SearchField from '@/components/admin/SearchField.vue';
   import {
-    OrganisationsbeziehungsTyp,
     OrganisationsTyp,
     useOrganisationStore,
     type Organisation,
@@ -11,7 +10,6 @@
   } from '@/stores/OrganisationStore';
   import { dedup } from '@/utils/arrays';
   import { buildCSV, download } from '@/utils/file';
-  import { getResponseErrorCode } from '@/utils/errorHandlers';
   import { getDisplayNameForOrg } from '@/utils/formatting';
   import { computed, onMounted, ref, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
@@ -104,7 +102,7 @@
   async function searchOrganisations(searchString: string = ''): Promise<void> {
     searchError.value = '';
     await organisationStore.searchOrganisationsForRelationships(props.organisationId, searchString || undefined);
-    searchError.value = organisationStore.relationshipErrorCode;
+    searchError.value = organisationStore.errorCode;
   }
 
   function updateSelection(organisations: Organisation[]): void {
@@ -156,6 +154,19 @@
     return i18n.te(key) ? t(key) : t('admin.organisation.errors.CREATE_RELATIONSHIP_ERROR');
   }
 
+  async function createRelationshipForOrganisation(organisation: Organisation): Promise<void> {
+    const source: Organisation | undefined = sourceOrganisation.value;
+    if (!source) {
+      errors.value.push({ organisation, message: translateError('CREATE_RELATIONSHIP_ERROR') });
+      return;
+    }
+
+    await organisationStore.createOrganisationRelationship(source, organisation);
+    if (organisationStore.errorCode) {
+      errors.value.push({ organisation, message: translateError(organisationStore.errorCode) });
+    }
+  }
+
   async function createRelationships(): Promise<void> {
     if (isCreating.value || selected.value.length === 0) {
       return;
@@ -164,33 +175,8 @@
     completed.value = 0;
     errors.value = [];
     for (const organisation of selected.value) {
-      const source: Organisation | undefined = sourceOrganisation.value;
-      if (!source) {
-        errors.value.push({ organisation, message: translateError('CREATE_RELATIONSHIP_ERROR') });
-      } else {
-        const schule: Organisation = source.typ === OrganisationsTyp.Schule ? source : organisation;
-        const target: Organisation = source.typ === OrganisationsTyp.Schule ? organisation : source;
-        try {
-          // eslint-disable-next-line no-await-in-loop
-          await organisationStore.createOrganisationRelationship({
-            quellOrganisationId: schule.id,
-            zielOrganisationId: target.id,
-            typ:
-              target.typ === OrganisationsTyp.Behoerde
-                ? OrganisationsbeziehungsTyp.Schulaufsicht
-                : OrganisationsbeziehungsTyp.Schultraeger,
-          });
-          if (organisationStore.relationshipErrorCode) {
-            errors.value.push({ organisation, message: translateError(organisationStore.relationshipErrorCode) });
-          }
-        } catch (error: unknown) {
-          errors.value.push({
-            organisation,
-            message: translateError(getResponseErrorCode(error, 'CREATE_RELATIONSHIP_ERROR')),
-          });
-        }
-        organisationStore.relationshipErrorCode = '';
-      }
+      // eslint-disable-next-line no-await-in-loop
+      await createRelationshipForOrganisation(organisation);
       completed.value++;
     }
     isCreating.value = false;
@@ -202,7 +188,7 @@
     if (isCreating.value) {
       return;
     }
-    organisationStore.relationshipErrorCode = '';
+    organisationStore.errorCode = '';
     emit('update:showComponent', false);
     if (isFinished.value) {
       emit('relationships-updated');

@@ -4,7 +4,6 @@ import { VTreeview } from 'vuetify/components';
 import { DoFactory } from 'test/DoFactory';
 import SearchField from '@/components/admin/SearchField.vue';
 import {
-  OrganisationsbeziehungsTyp,
   OrganisationsTyp,
   useOrganisationStore,
   type Organisation,
@@ -209,11 +208,11 @@ describe('OrganisationRelationshipSelector', (): void => {
     store.searchOrganisationsForRelationships = vi
       .fn()
       .mockImplementationOnce((): Promise<void> => {
-        store.relationshipErrorCode = 'SEARCH_ORGANISATIONS_ERROR';
+        store.errorCode = 'SEARCH_ORGANISATIONS_ERROR';
         return Promise.resolve();
       })
       .mockImplementationOnce((): Promise<void> => {
-        store.relationshipErrorCode = '';
+        store.errorCode = '';
         return Promise.resolve();
       });
     const wrapper: VueWrapper = await mountSelector();
@@ -239,11 +238,7 @@ describe('OrganisationRelationshipSelector', (): void => {
     await select(wrapper, behoerden);
     await wrapper.get('[data-testid="org-selector-create-button"]').trigger('click');
     await flushPromises();
-    expect(store.createOrganisationRelationship).toHaveBeenCalledExactlyOnceWith({
-      quellOrganisationId: schule.id,
-      zielOrganisationId: behoerden[2]!.id,
-      typ: OrganisationsbeziehungsTyp.Schulaufsicht,
-    });
+    expect(store.createOrganisationRelationship).toHaveBeenCalledExactlyOnceWith(schule, behoerden[2]!);
     expect(wrapper.get('[data-testid="org-selector-progress"]').text()).toContain('0%');
     expect(wrapper.find('[data-testid="org-selector-cancel-button"]').exists()).toBe(false);
     finishFirst?.();
@@ -258,7 +253,7 @@ describe('OrganisationRelationshipSelector', (): void => {
   });
 
   it.each([OrganisationsTyp.Behoerde, OrganisationsTyp.Traeger])(
-    'should infer the correct direction and type from %s context',
+    'should pass the source and selected organisation to the store for a %s context',
     async (typ: OrganisationsTyp): Promise<void> => {
       const { store, schule, mountSelector }: TestState = setup();
       const context: Organisation = DoFactory.getOrganisation({ typ });
@@ -268,14 +263,7 @@ describe('OrganisationRelationshipSelector', (): void => {
       await select(wrapper, [schule]);
       await wrapper.get('[data-testid="org-selector-create-button"]').trigger('click');
       await flushPromises();
-      expect(store.createOrganisationRelationship).toHaveBeenCalledExactlyOnceWith({
-        quellOrganisationId: schule.id,
-        zielOrganisationId: context.id,
-        typ:
-          typ === OrganisationsTyp.Behoerde
-            ? OrganisationsbeziehungsTyp.Schulaufsicht
-            : OrganisationsbeziehungsTyp.Schultraeger,
-      });
+      expect(store.createOrganisationRelationship).toHaveBeenCalledExactlyOnceWith(context, schule);
       expect(wrapper.get('[data-testid="org-selector-success"]').text()).toContain(
         '1 Beziehung wurde erfolgreich gespeichert.',
       );
@@ -299,18 +287,24 @@ describe('OrganisationRelationshipSelector', (): void => {
     const { store, behoerden, mountSelector }: TestState = setup();
     store.createOrganisationRelationship = vi
       .fn()
-      .mockResolvedValueOnce(undefined)
       .mockImplementationOnce((): Promise<void> => {
-        store.relationshipErrorCode = 'SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM';
+        store.errorCode = '';
         return Promise.resolve();
       })
-      .mockResolvedValue(undefined);
+      .mockImplementationOnce((): Promise<void> => {
+        store.errorCode = 'SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM';
+        return Promise.resolve();
+      })
+      .mockImplementation((): Promise<void> => {
+        store.errorCode = '';
+        return Promise.resolve();
+      });
     const wrapper: VueWrapper = await mountSelector();
     await select(wrapper, behoerden);
     await wrapper.get('[data-testid="org-selector-create-button"]').trigger('click');
     await flushPromises();
     expect(store.createOrganisationRelationship).toHaveBeenCalledTimes(3);
-    expect(store.relationshipErrorCode).toBe('');
+    expect(store.errorCode).toBe('');
     expect(wrapper.get('[data-testid="org-selector-success"]').text()).toContain(
       '2 Beziehungen wurden erfolgreich gespeichert.',
     );
@@ -327,34 +321,30 @@ describe('OrganisationRelationshipSelector', (): void => {
     expect(downloadSpy).toHaveBeenCalledWith('Fehler-Organisationsbeziehungen.csv', expect.any(Blob));
   });
 
-  it.each([true, false])(
-    'should continue after unexpected errors and never show success for all-failed saves: %s',
-    async (throwError: boolean): Promise<void> => {
-      const { store, behoerden, mountSelector }: TestState = setup();
-      store.createOrganisationRelationship = throwError
-        ? vi.fn().mockRejectedValueOnce(new Error('Network failed')).mockResolvedValue(undefined)
-        : vi.fn().mockImplementation((): Promise<void> => {
-            store.relationshipErrorCode = 'UNKNOWN_ERROR';
-            return Promise.resolve();
-          });
-      const wrapper: VueWrapper = await mountSelector();
-      await select(wrapper, behoerden);
-      await wrapper.get('[data-testid="org-selector-create-button"]').trigger('click');
-      await flushPromises();
-      expect(store.createOrganisationRelationship).toHaveBeenCalledTimes(3);
-      expect(wrapper.find('[data-testid="org-selector-success"]').exists()).toBe(throwError);
-      expect(document.body.textContent).toContain('Die Organisationsbeziehung konnte nicht gespeichert werden.');
-      await new DOMWrapper(document.body)
-        .get('[data-testid="org-selector-bulk-error-discard-button"]')
-        .trigger('click');
-      await new DOMWrapper(document.body)
-        .get('[data-testid="confirm-close-bulk-error-dialog-button"]')
-        .trigger('click');
-      await flushPromises();
-      await wrapper.get('[data-testid="org-selector-finish-button"]').trigger('click');
-      expect(wrapper.emitted('relationships-updated')).toEqual([[]]);
-    },
-  );
+  it('should show a fallback message when the store reports an unrecognised error', async (): Promise<void> => {
+    const { store, behoerden, mountSelector }: TestState = setup();
+    store.createOrganisationRelationship = vi.fn().mockImplementation((): Promise<void> => {
+      store.errorCode = 'UNKNOWN_ERROR';
+      return Promise.resolve();
+    });
+    const wrapper: VueWrapper = await mountSelector();
+    await select(wrapper, behoerden);
+    await wrapper.get('[data-testid="org-selector-create-button"]').trigger('click');
+    await flushPromises();
+
+    expect(store.createOrganisationRelationship).toHaveBeenCalledTimes(3);
+    expect(wrapper.find('[data-testid="org-selector-success"]').exists()).toBe(false);
+    expect(document.body.textContent).toContain('Die Organisationsbeziehung konnte nicht gespeichert werden.');
+    await new DOMWrapper(document.body)
+      .get('[data-testid="org-selector-bulk-error-discard-button"]')
+      .trigger('click');
+    await new DOMWrapper(document.body)
+      .get('[data-testid="confirm-close-bulk-error-dialog-button"]')
+      .trigger('click');
+    await flushPromises();
+    await wrapper.get('[data-testid="org-selector-finish-button"]').trigger('click');
+    expect(wrapper.emitted('relationships-updated')).toEqual([[]]);
+  });
 
   it('should cancel without emitting a save event', async (): Promise<void> => {
     const { mountSelector }: TestState = setup();

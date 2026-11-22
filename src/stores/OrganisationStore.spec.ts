@@ -31,7 +31,6 @@ describe('OrganisationStore', () => {
     expect(organisationStore.searchedOrganisations).toEqual([]);
     expect(organisationStore.createdBehoerde).toBeNull();
     expect(organisationStore.errorCode).toEqual('');
-    expect(organisationStore.relationshipErrorCode).toEqual('');
     expect(organisationStore.loading).toBe(false);
   });
 
@@ -49,14 +48,14 @@ describe('OrganisationStore', () => {
     it('should search eligible organisations and replace stale results', async (): Promise<void> => {
       const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
       store.searchedOrganisations = [DoFactory.getOrganisation()];
-      store.relationshipErrorCode = 'SEARCH_ORGANISATIONS_ERROR';
+      store.errorCode = 'SEARCH_ORGANISATIONS_ERROR';
       mockadapter
         .onGet(new RegExp(`^/api/organisationen/${schule.id}/search-for-relationships(?:\\?|$)`))
         .replyOnce(200, [behoerde]);
 
       const request: Promise<void> = store.searchOrganisationsForRelationships(schule.id, 'Gymnasium');
       expect(store.loading).toBe(true);
-      expect(store.relationshipErrorCode).toBe('');
+      expect(store.errorCode).toBe('');
       expect(store.searchedOrganisations).toEqual([]);
       await request;
 
@@ -78,21 +77,17 @@ describe('OrganisationStore', () => {
 
       await store.searchOrganisationsForRelationships(schule.id);
 
-      expect(store.relationshipErrorCode).toBe('MISSING_PERMISSIONS');
+      expect(store.errorCode).toBe('MISSING_PERMISSIONS');
       expect(store.searchedOrganisations).toEqual([]);
       expect(store.loading).toBe(false);
     });
 
-    it('should save a relationship using the requested type', async (): Promise<void> => {
+    it('should derive the Schulaufsicht payload from a school and Behörde', async (): Promise<void> => {
       const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
-      store.relationshipErrorCode = 'CREATE_RELATIONSHIP_ERROR';
+      store.errorCode = 'CREATE_RELATIONSHIP_ERROR';
       mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(201);
 
-      await store.createOrganisationRelationship({
-        quellOrganisationId: schule.id,
-        zielOrganisationId: behoerde.id,
-        typ: OrganisationsbeziehungsTyp.Schulaufsicht,
-      });
+      await store.createOrganisationRelationship(schule, behoerde);
 
       const requestData: unknown = mockadapter.history.post[0]?.data;
       if (typeof requestData !== 'string') {
@@ -103,8 +98,32 @@ describe('OrganisationStore', () => {
         zielOrganisationId: behoerde.id,
         typ: OrganisationsbeziehungsTyp.Schulaufsicht,
       });
-      expect(store.relationshipErrorCode).toBe('');
+      expect(store.errorCode).toBe('');
     });
+
+    it.each([OrganisationsTyp.Behoerde, OrganisationsTyp.Traeger])(
+      'should derive the relationship direction and type for a %s source',
+      async (sourceType: OrganisationsTyp): Promise<void> => {
+        const { store, schule }: ReturnType<typeof setup> = setup();
+        const source: Organisation = DoFactory.getOrganisation({ typ: sourceType });
+        mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(201);
+
+        await store.createOrganisationRelationship(source, schule);
+
+        const requestData: unknown = mockadapter.history.post[0]?.data;
+        if (typeof requestData !== 'string') {
+          throw new Error('The relationship request payload is missing.');
+        }
+        expect(JSON.parse(requestData)).toEqual({
+          quellOrganisationId: schule.id,
+          zielOrganisationId: source.id,
+          typ:
+            sourceType === OrganisationsTyp.Behoerde
+              ? OrganisationsbeziehungsTyp.Schulaufsicht
+              : OrganisationsbeziehungsTyp.Schultraeger,
+        });
+      },
+    );
 
     it('should surface save errors and clear them on the next save', async (): Promise<void> => {
       const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
@@ -112,20 +131,21 @@ describe('OrganisationStore', () => {
         i18nKey: 'SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM',
       });
 
-      await store.createOrganisationRelationship({
-        quellOrganisationId: schule.id,
-        zielOrganisationId: behoerde.id,
-        typ: OrganisationsbeziehungsTyp.Schulaufsicht,
-      });
+      await store.createOrganisationRelationship(schule, behoerde);
 
-      expect(store.relationshipErrorCode).toBe('SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM');
+      expect(store.errorCode).toBe('SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM');
       mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(201);
-      await store.createOrganisationRelationship({
-        quellOrganisationId: schule.id,
-        zielOrganisationId: behoerde.id,
-        typ: OrganisationsbeziehungsTyp.Schulaufsicht,
-      });
-      expect(store.relationshipErrorCode).toBe('');
+      await store.createOrganisationRelationship(schule, behoerde);
+      expect(store.errorCode).toBe('');
+    });
+
+    it('should use the fallback error code for unstructured save errors', async (): Promise<void> => {
+      const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
+      mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(500, 'Unexpected server error');
+
+      await store.createOrganisationRelationship(schule, behoerde);
+
+      expect(store.errorCode).toBe('CREATE_RELATIONSHIP_ERROR');
     });
   });
 
