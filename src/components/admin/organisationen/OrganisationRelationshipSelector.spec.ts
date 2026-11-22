@@ -335,12 +335,8 @@ describe('OrganisationRelationshipSelector', (): void => {
     expect(store.createOrganisationRelationship).toHaveBeenCalledTimes(3);
     expect(wrapper.find('[data-testid="org-selector-success"]').exists()).toBe(false);
     expect(document.body.textContent).toContain('Die Organisationsbeziehung konnte nicht gespeichert werden.');
-    await new DOMWrapper(document.body)
-      .get('[data-testid="org-selector-bulk-error-discard-button"]')
-      .trigger('click');
-    await new DOMWrapper(document.body)
-      .get('[data-testid="confirm-close-bulk-error-dialog-button"]')
-      .trigger('click');
+    await new DOMWrapper(document.body).get('[data-testid="org-selector-bulk-error-discard-button"]').trigger('click');
+    await new DOMWrapper(document.body).get('[data-testid="confirm-close-bulk-error-dialog-button"]').trigger('click');
     await flushPromises();
     await wrapper.get('[data-testid="org-selector-finish-button"]').trigger('click');
     expect(wrapper.emitted('relationships-updated')).toEqual([[]]);
