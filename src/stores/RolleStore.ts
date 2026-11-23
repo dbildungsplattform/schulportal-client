@@ -245,7 +245,6 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               filter.limit,
               filter.searchString,
               filter.organisationIds,
-              undefined,
               filter.rollenarten,
               filter.merkmale,
               filter.serviceProviderIds,
@@ -367,20 +366,9 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
             return;
           }
 
-          const { data }: AxiosResponse<Array<RolleWithServiceProvidersResponse>> =
-            await rolleApi.rolleControllerFindRollenForMptZuordnung(
-              undefined,
-              undefined,
-              undefined,
-              [organisationId],
-              [rolleId],
-            );
-          const rolle: RolleWithServiceProvidersResponse | undefined = data[0];
-          if (!rolle) {
-            this.errorCode = 'UNSPECIFIED_ERROR';
-            return;
-          }
-          this.currentMptRolle = mapRolleWithServiceProvidersResponseToRolle(rolle);
+          const { data }: { data: RolleWithServiceProvidersResponse } =
+            await rolleApi.rolleControllerFindRolleForMptZuordnungById(rolleId, organisationId);
+          this.currentMptRolle = mapRolleWithServiceProvidersResponseToRolle(data);
         } catch (error: unknown) {
           this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
         } finally {
@@ -490,7 +478,6 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               params.limit,
               params.rollenartForPerson,
               params.rolleName,
-              undefined,
               params.systemrecht,
             );
           this.rollenForPersonenkontextCreation = data.items

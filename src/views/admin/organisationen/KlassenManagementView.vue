@@ -70,7 +70,6 @@
       systemrechte: [RollenSystemRecht.KlassenVerwalten],
       offset: pageOffset.value,
       limit: searchFilterStore.klassenPerPage,
-      organisationIds: selectedKlassen.value.map((k: Organisation) => k.id),
       sortField: searchFilterStore.organisationenSortField ?? undefined,
       sortOrder: searchFilterStore.organisationenSortOrder ?? undefined,
     };
@@ -81,10 +80,18 @@
   });
 
   const finalKlassen: ComputedRef<Organisation[]> = computed(() => {
-    // If there are selected Klassen, filter allKlassen to show only those that are selected
+    // If there are selected Klassen, show them even if the current search result does not contain them.
+    // The selection is kept in the frontend, so it is not sent to the backend anymore.
     if (selectedKlassen.value.length > 0) {
       const selectedIds: Set<string> = new Set(selectedKlassen.value.map((klasse: Organisation) => klasse.id));
-      return organisationStore.allKlassen.filter((klasse: Organisation) => selectedIds.has(klasse.id));
+      const visibleSelected: Organisation[] = organisationStore.allKlassen.filter((klasse: Organisation) =>
+        selectedIds.has(klasse.id),
+      );
+      const visibleIds: Set<string> = new Set(visibleSelected.map((klasse: Organisation) => klasse.id));
+      const missingSelected: Organisation[] = selectedKlassen.value.filter(
+        (klasse: Organisation) => !visibleIds.has(klasse.id),
+      );
+      return [...visibleSelected, ...missingSelected];
     }
 
     // Otherwise, return allKlassen as is
