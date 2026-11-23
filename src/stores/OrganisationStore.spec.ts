@@ -29,12 +29,19 @@ describe('OrganisationStore', () => {
   it('should initialize state correctly', () => {
     expect(organisationStore.allOrganisationen).toEqual([]);
     expect(organisationStore.searchedOrganisations).toEqual([]);
+    expect(organisationStore.relationshipSearchLoading).toBe(false);
     expect(organisationStore.createdBehoerde).toBeNull();
     expect(organisationStore.errorCode).toEqual('');
+    expect(organisationStore.relationshipErrorCode).toEqual('');
     expect(organisationStore.loading).toBe(false);
   });
 
   describe('relationship actions', (): void => {
+    type DeferredResponse<T> = {
+      promise: Promise<T>;
+      resolve: (value: T) => void;
+    };
+
     function setup(): { store: OrganisationStore; schule: Organisation; behoerde: Organisation } {
       setActivePinia(createPinia());
       const store: OrganisationStore = useOrganisationStore();
@@ -45,17 +52,33 @@ describe('OrganisationStore', () => {
       return { store, schule, behoerde };
     }
 
+    function createDeferredResponse<T>(): DeferredResponse<T> {
+      let resolvePromise: ((value: T) => void) | undefined;
+      const promise: Promise<T> = new Promise<T>((resolve: (value: T | PromiseLike<T>) => void): void => {
+        resolvePromise = (value: T): void => resolve(value);
+      });
+      const resolve: (value: T) => void = (value: T): void => {
+        if (!resolvePromise) {
+          throw new Error('The deferred response has not been initialized.');
+        }
+        resolvePromise(value);
+      };
+
+      return { promise, resolve };
+    }
+
     it('should search eligible organisations and replace stale results', async (): Promise<void> => {
       const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
       store.searchedOrganisations = [DoFactory.getOrganisation()];
-      store.errorCode = 'SEARCH_ORGANISATIONS_ERROR';
+      store.errorCode = 'DETAIL_LOADING_ERROR';
       mockadapter
         .onGet(new RegExp(`^/api/organisationen/${schule.id}/search-for-relationships(?:\\?|$)`))
         .replyOnce(200, [behoerde]);
 
       const request: Promise<void> = store.searchOrganisationsForRelationships(schule.id, 'Gymnasium');
-      expect(store.loading).toBe(true);
-      expect(store.errorCode).toBe('');
+      expect(store.relationshipSearchLoading).toBe(true);
+      expect(store.loading).toBe(false);
+      expect(store.errorCode).toBe('DETAIL_LOADING_ERROR');
       expect(store.searchedOrganisations).toEqual([]);
       await request;
 
@@ -65,21 +88,87 @@ describe('OrganisationStore', () => {
       expect(requestUrl.searchParams.get('limit')).toBe('200');
       expect(requestUrl.searchParams.get('searchString')).toBe('Gymnasium');
       expect(store.searchedOrganisations).toEqual([behoerde]);
+      expect(store.errorCode).toBe('DETAIL_LOADING_ERROR');
+      expect(store.relationshipErrorCode).toBe('');
+      expect(store.relationshipSearchLoading).toBe(false);
       expect(store.loading).toBe(false);
     });
 
     it('should surface candidate search errors and stop loading', async (): Promise<void> => {
       const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
       store.searchedOrganisations = [behoerde];
+      store.errorCode = 'DETAIL_LOADING_ERROR';
       mockadapter
         .onGet(new RegExp(`^/api/organisationen/${schule.id}/search-for-relationships(?:\\?|$)`))
         .replyOnce(500, { code: 'MISSING_PERMISSIONS' });
 
       await store.searchOrganisationsForRelationships(schule.id);
 
-      expect(store.errorCode).toBe('MISSING_PERMISSIONS');
+      expect(store.errorCode).toBe('DETAIL_LOADING_ERROR');
+      expect(store.relationshipErrorCode).toBe('MISSING_PERMISSIONS');
       expect(store.searchedOrganisations).toEqual([]);
+      expect(store.relationshipSearchLoading).toBe(false);
       expect(store.loading).toBe(false);
+    });
+
+    it('should ignore stale search responses and keep loading for the latest request', async (): Promise<void> => {
+      const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
+      const staleOrganisation: Organisation = DoFactory.getOrganisation();
+      const staleSuccessResponse: DeferredResponse<[number, Organisation[]]> =
+        createDeferredResponse<[number, Organisation[]]>();
+      const staleErrorResponse: DeferredResponse<[number, { code: string }]> =
+        createDeferredResponse<[number, { code: string }]>();
+      const latestResponse: DeferredResponse<[number, Organisation[]]> =
+        createDeferredResponse<[number, Organisation[]]>();
+      const searchUrl: RegExp = new RegExp(`^/api/organisationen/${schule.id}/search-for-relationships(?:\\?|$)`);
+      mockadapter.onGet(searchUrl).replyOnce(() => staleSuccessResponse.promise);
+      mockadapter.onGet(searchUrl).replyOnce(() => staleErrorResponse.promise);
+      mockadapter.onGet(searchUrl).replyOnce(() => latestResponse.promise);
+
+      const staleSuccessRequest: Promise<void> = store.searchOrganisationsForRelationships(schule.id, 'older');
+      const staleErrorRequest: Promise<void> = store.searchOrganisationsForRelationships(schule.id, 'oldest');
+      const latestRequest: Promise<void> = store.searchOrganisationsForRelationships(schule.id, 'latest');
+
+      staleSuccessResponse.resolve([200, [staleOrganisation]]);
+      await staleSuccessRequest;
+      expect(store.searchedOrganisations).toEqual([]);
+      expect(store.relationshipErrorCode).toBe('');
+      expect(store.relationshipSearchLoading).toBe(true);
+
+      staleErrorResponse.resolve([500, { code: 'STALE_SEARCH_ERROR' }]);
+      await staleErrorRequest;
+      expect(store.searchedOrganisations).toEqual([]);
+      expect(store.relationshipErrorCode).toBe('');
+      expect(store.relationshipSearchLoading).toBe(true);
+
+      latestResponse.resolve([200, [behoerde]]);
+      await latestRequest;
+      expect(store.searchedOrganisations).toEqual([behoerde]);
+      expect(store.relationshipSearchLoading).toBe(false);
+    });
+
+    it('should not let an older response replace a completed latest search', async (): Promise<void> => {
+      const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
+      const staleOrganisation: Organisation = DoFactory.getOrganisation();
+      const staleResponse: DeferredResponse<[number, Organisation[]]> =
+        createDeferredResponse<[number, Organisation[]]>();
+      const latestResponse: DeferredResponse<[number, Organisation[]]> =
+        createDeferredResponse<[number, Organisation[]]>();
+      const searchUrl: RegExp = new RegExp(`^/api/organisationen/${schule.id}/search-for-relationships(?:\\?|$)`);
+      mockadapter.onGet(searchUrl).replyOnce(() => staleResponse.promise);
+      mockadapter.onGet(searchUrl).replyOnce(() => latestResponse.promise);
+
+      const staleRequest: Promise<void> = store.searchOrganisationsForRelationships(schule.id, 'older');
+      const latestRequest: Promise<void> = store.searchOrganisationsForRelationships(schule.id, 'latest');
+      latestResponse.resolve([200, [behoerde]]);
+      await latestRequest;
+      expect(store.searchedOrganisations).toEqual([behoerde]);
+      expect(store.relationshipSearchLoading).toBe(false);
+
+      staleResponse.resolve([200, [staleOrganisation]]);
+      await staleRequest;
+      expect(store.searchedOrganisations).toEqual([behoerde]);
+      expect(store.relationshipSearchLoading).toBe(false);
     });
 
     it('should derive the Schulaufsicht payload from a school and Behörde', async (): Promise<void> => {
@@ -98,7 +187,8 @@ describe('OrganisationStore', () => {
         zielOrganisationId: behoerde.id,
         typ: OrganisationsbeziehungsTyp.Schulaufsicht,
       });
-      expect(store.errorCode).toBe('');
+      expect(store.errorCode).toBe('CREATE_RELATIONSHIP_ERROR');
+      expect(store.relationshipErrorCode).toBe('');
     });
 
     it.each([OrganisationsTyp.Behoerde, OrganisationsTyp.Traeger])(
@@ -125,18 +215,50 @@ describe('OrganisationStore', () => {
       },
     );
 
-    it('should surface save errors and clear them on the next save', async (): Promise<void> => {
+    it('should derive a Schultraeger relationship when the school is the context', async (): Promise<void> => {
+      const { store, schule }: ReturnType<typeof setup> = setup();
+      const schultraeger: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Traeger });
+      mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(201);
+
+      await store.createOrganisationRelationship(schule, schultraeger);
+
+      const requestData: unknown = mockadapter.history.post[0]?.data;
+      if (typeof requestData !== 'string') {
+        throw new Error('The relationship request payload is missing.');
+      }
+      expect(JSON.parse(requestData)).toEqual({
+        quellOrganisationId: schule.id,
+        zielOrganisationId: schultraeger.id,
+        typ: OrganisationsbeziehungsTyp.Schultraeger,
+      });
+    });
+
+    it('should reject unsupported relationship types without sending a request', async (): Promise<void> => {
+      const { store }: ReturnType<typeof setup> = setup();
+      const contextOrganisation: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
+      const selectedOrganisation: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Traeger });
+
+      await store.createOrganisationRelationship(contextOrganisation, selectedOrganisation);
+
+      expect(mockadapter.history.post).toHaveLength(0);
+      expect(store.relationshipErrorCode).toBe('CREATE_RELATIONSHIP_ERROR');
+    });
+
+    it('should set relationship errors without changing detail error state', async (): Promise<void> => {
       const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
+      store.errorCode = 'DETAIL_LOADING_ERROR';
       mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(400, {
         i18nKey: 'SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM',
       });
 
       await store.createOrganisationRelationship(schule, behoerde);
 
-      expect(store.errorCode).toBe('SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM');
+      expect(store.relationshipErrorCode).toBe('SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM');
+      expect(store.errorCode).toBe('DETAIL_LOADING_ERROR');
       mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(201);
       await store.createOrganisationRelationship(schule, behoerde);
-      expect(store.errorCode).toBe('');
+      expect(store.errorCode).toBe('DETAIL_LOADING_ERROR');
+      expect(store.relationshipErrorCode).toBe('');
     });
 
     it('should use the fallback error code for unstructured save errors', async (): Promise<void> => {
@@ -145,7 +267,104 @@ describe('OrganisationStore', () => {
 
       await store.createOrganisationRelationship(schule, behoerde);
 
-      expect(store.errorCode).toBe('CREATE_RELATIONSHIP_ERROR');
+      expect(store.relationshipErrorCode).toBe('CREATE_RELATIONSHIP_ERROR');
+    });
+
+    it('should save relationships sequentially, update progress, and retain individual failures', async (): Promise<void> => {
+      const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
+      const schultraeger: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Traeger });
+      const anotherBehoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
+      const selectedOrganisations: Organisation[] = [behoerde, schultraeger, anotherBehoerde];
+      const secondResponse: DeferredResponse<[number, { i18nKey: string }]> =
+        createDeferredResponse<[number, { i18nKey: string }]>();
+      mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(201);
+      mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(() => secondResponse.promise);
+      mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(201);
+
+      const batchRequest: Promise<void> = store.createOrganisationRelationships(schule, selectedOrganisations);
+      expect(store.relationshipBatch.isRunning).toBe(true);
+      expect(store.relationshipBatch.isComplete).toBe(false);
+      expect(store.relationshipBatch.completed).toBe(0);
+      expect(store.relationshipBatch.total).toBe(3);
+      expect(store.relationshipBatch.progress).toBe(0);
+
+      await store.createOrganisationRelationships(schule, [DoFactory.getOrganisation()]);
+      expect(store.relationshipBatch.isRunning).toBe(true);
+      expect(store.relationshipBatch.total).toBe(3);
+
+      await vi.waitFor((): void => {
+        expect(mockadapter.history.post).toHaveLength(2);
+      });
+      expect(store.relationshipBatch.completed).toBe(1);
+      expect(store.relationshipBatch.progress).toBe(34);
+      expect(store.relationshipBatch.failures).toEqual([]);
+
+      secondResponse.resolve([400, { i18nKey: 'RELATIONSHIP_CONSISTENCY_ERROR' }]);
+      await batchRequest;
+
+      expect(mockadapter.history.post).toHaveLength(3);
+      expect(store.relationshipBatch.isRunning).toBe(false);
+      expect(store.relationshipBatch.isComplete).toBe(true);
+      expect(store.relationshipBatch.completed).toBe(3);
+      expect(store.relationshipBatch.progress).toBe(100);
+      expect(store.relationshipBatch.failures).toEqual([
+        { organisation: schultraeger, errorCode: 'RELATIONSHIP_CONSISTENCY_ERROR' },
+      ]);
+      expect(store.relationshipErrorCode).toBe('');
+    });
+
+    it('should record failures for every selection when the context organisation is unavailable', async (): Promise<void> => {
+      const { store, behoerde }: ReturnType<typeof setup> = setup();
+      const schultraeger: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Traeger });
+
+      await store.createOrganisationRelationships(undefined, [behoerde, schultraeger]);
+
+      expect(mockadapter.history.post).toHaveLength(0);
+      expect(store.relationshipBatch.isComplete).toBe(true);
+      expect(store.relationshipBatch.completed).toBe(2);
+      expect(store.relationshipBatch.progress).toBe(100);
+      expect(store.relationshipBatch.failures).toEqual([
+        { organisation: behoerde, errorCode: 'CREATE_RELATIONSHIP_ERROR' },
+        { organisation: schultraeger, errorCode: 'CREATE_RELATIONSHIP_ERROR' },
+      ]);
+      expect(store.relationshipErrorCode).toBe('CREATE_RELATIONSHIP_ERROR');
+    });
+
+    it('should clear batch state and the previous relationship error for an empty batch', async (): Promise<void> => {
+      const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
+      store.relationshipErrorCode = 'PREVIOUS_ERROR';
+      store.relationshipBatch.failures = [{ organisation: behoerde, errorCode: 'PREVIOUS_ERROR' }];
+      store.relationshipBatch.completed = 1;
+
+      await store.createOrganisationRelationships(schule, []);
+
+      expect(store.relationshipBatch).toEqual({
+        isRunning: false,
+        isComplete: false,
+        completed: 0,
+        total: 0,
+        progress: 0,
+        failures: [],
+      });
+      expect(store.relationshipErrorCode).toBe('');
+      expect(mockadapter.history.post).toHaveLength(0);
+    });
+
+    it('should reset completed relationship batch state', async (): Promise<void> => {
+      const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
+      mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(201);
+      await store.createOrganisationRelationships(schule, [behoerde]);
+
+      store.resetOrganisationRelationshipBatch();
+
+      expect(store.relationshipBatch).toEqual({
+        isRunning: false,
+        isComplete: false,
+        completed: 0,
+        total: 0,
+        progress: 0,
+        failures: [],
+      });
     });
   });
 

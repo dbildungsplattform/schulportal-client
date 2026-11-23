@@ -21,6 +21,7 @@ import { useSearchFilterStore, type SearchFilterStore } from './SearchFilterStor
 
 const organisationApi: OrganisationenApiInterface = OrganisationenApiFactory(undefined, '', axiosApiInstance);
 const searchFilterStore: SearchFilterStore = useSearchFilterStore();
+const relationshipSearchRequestTokens: WeakMap<object, symbol> = new WeakMap<object, symbol>();
 
 export type Organisation = {
   id: string;
@@ -85,6 +86,20 @@ export type AutoCompleteStore<T> = {
 
 export type CurrentSchulDetails = Organisation & { schultraegerform?: Organisation | null };
 
+export type OrganisationRelationshipBatchFailure = {
+  organisation: Organisation;
+  errorCode: string;
+};
+
+export type OrganisationRelationshipBatch = {
+  isRunning: boolean;
+  isComplete: boolean;
+  completed: number;
+  total: number;
+  progress: number;
+  failures: OrganisationRelationshipBatchFailure[];
+};
+
 type OrganisationState = {
   allOrganisationen: Array<Organisation>;
   allKlassen: Array<Organisation>;
@@ -96,6 +111,9 @@ type OrganisationState = {
   organisationForSelection: Organisation | null;
   currentSchule?: CurrentSchulDetails | null;
   searchedOrganisations: Array<Organisation>;
+  relationshipSearchLoading: boolean;
+  relationshipErrorCode: string;
+  relationshipBatch: OrganisationRelationshipBatch;
   currentKlasse: Organisation | null;
   updatedOrganisation: Organisation | null;
   createdKlasse: Organisation | null;
@@ -199,7 +217,15 @@ type OrganisationActions = {
   clearKlasseFilter(storeKey?: string): void;
   fetchSchulDetails: (organisationId: string) => Promise<void>;
   searchOrganisationsForRelationships: (organisationId: string, searchString?: string) => Promise<void>;
-  createOrganisationRelationship: (source: Organisation, target: Organisation) => Promise<void>;
+  createOrganisationRelationship: (
+    contextOrganisation: Organisation,
+    selectedOrganisation: Organisation,
+  ) => Promise<void>;
+  createOrganisationRelationships: (
+    contextOrganisation: Organisation | undefined,
+    selectedOrganisations: Organisation[],
+  ) => Promise<void>;
+  resetOrganisationRelationshipBatch: () => void;
   updateSchuleById: (params: {
     organisationId: string;
     schultraegerform: string;
@@ -230,6 +256,16 @@ export const useOrganisationStore: StoreDefinition<
       currentKlasse: null,
       currentSchule: null,
       searchedOrganisations: [],
+      relationshipSearchLoading: false,
+      relationshipErrorCode: '',
+      relationshipBatch: {
+        isRunning: false,
+        isComplete: false,
+        completed: 0,
+        total: 0,
+        progress: 0,
+        failures: [],
+      },
       updatedOrganisation: null,
       createdKlasse: null,
       createdSchule: null,
@@ -294,8 +330,10 @@ export const useOrganisationStore: StoreDefinition<
     },
 
     async searchOrganisationsForRelationships(organisationId: string, searchString?: string): Promise<void> {
-      this.errorCode = '';
-      this.loading = true;
+      const requestToken: symbol = Symbol();
+      relationshipSearchRequestTokens.set(this, requestToken);
+      this.relationshipErrorCode = '';
+      this.relationshipSearchLoading = true;
       this.searchedOrganisations = [];
       try {
         const response: AxiosResponse<OrganisationResponse[]> =
@@ -305,30 +343,103 @@ export const useOrganisationStore: StoreDefinition<
             200,
             searchString || undefined,
           );
-        this.searchedOrganisations = response.data;
+        if (relationshipSearchRequestTokens.get(this) === requestToken) {
+          this.searchedOrganisations = response.data;
+        }
       } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'SEARCH_ORGANISATIONS_ERROR');
+        if (relationshipSearchRequestTokens.get(this) === requestToken) {
+          this.relationshipErrorCode = getResponseErrorCode(error, 'SEARCH_ORGANISATIONS_ERROR');
+        }
       } finally {
-        this.loading = false;
+        if (relationshipSearchRequestTokens.get(this) === requestToken) {
+          this.relationshipSearchLoading = false;
+        }
       }
     },
 
-    async createOrganisationRelationship(source: Organisation, target: Organisation): Promise<void> {
-      this.errorCode = '';
+    async createOrganisationRelationship(
+      contextOrganisation: Organisation,
+      selectedOrganisation: Organisation,
+    ): Promise<void> {
+      this.relationshipErrorCode = '';
+      const isSchulaufsichtPair: boolean =
+        (contextOrganisation.typ === OrganisationsTyp.Schule &&
+          selectedOrganisation.typ === OrganisationsTyp.Behoerde) ||
+        (contextOrganisation.typ === OrganisationsTyp.Behoerde && selectedOrganisation.typ === OrganisationsTyp.Schule);
+      const isSchultraegerPair: boolean =
+        (contextOrganisation.typ === OrganisationsTyp.Schule &&
+          selectedOrganisation.typ === OrganisationsTyp.Traeger) ||
+        (contextOrganisation.typ === OrganisationsTyp.Traeger && selectedOrganisation.typ === OrganisationsTyp.Schule);
+      if (!isSchulaufsichtPair && !isSchultraegerPair) {
+        this.relationshipErrorCode = 'CREATE_RELATIONSHIP_ERROR';
+        return;
+      }
+
+      const [schoolOrganisation, relatedOrganisation]: [Organisation, Organisation] =
+        contextOrganisation.typ === OrganisationsTyp.Schule
+          ? [contextOrganisation, selectedOrganisation]
+          : [selectedOrganisation, contextOrganisation];
       try {
-        const schule: Organisation = source.typ === OrganisationsTyp.Schule ? source : target;
-        const zielOrganisation: Organisation = source.typ === OrganisationsTyp.Schule ? target : source;
         await organisationApi.organisationControllerCreateOrganisationsbeziehung({
-          quellOrganisationId: schule.id,
-          zielOrganisationId: zielOrganisation.id,
-          typ:
-            zielOrganisation.typ === OrganisationsTyp.Behoerde
-              ? OrganisationsbeziehungsTyp.Schulaufsicht
-              : OrganisationsbeziehungsTyp.Schultraeger,
+          quellOrganisationId: schoolOrganisation.id,
+          zielOrganisationId: relatedOrganisation.id,
+          typ: isSchulaufsichtPair ? OrganisationsbeziehungsTyp.Schulaufsicht : OrganisationsbeziehungsTyp.Schultraeger,
         });
       } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'CREATE_RELATIONSHIP_ERROR');
+        this.relationshipErrorCode = getResponseErrorCode(error, 'CREATE_RELATIONSHIP_ERROR');
       }
+    },
+
+    resetOrganisationRelationshipBatch(): void {
+      this.relationshipBatch = {
+        isRunning: false,
+        isComplete: false,
+        completed: 0,
+        total: 0,
+        progress: 0,
+        failures: [],
+      };
+    },
+
+    async createOrganisationRelationships(
+      contextOrganisation: Organisation | undefined,
+      selectedOrganisations: Organisation[],
+    ): Promise<void> {
+      if (this.relationshipBatch.isRunning) {
+        return;
+      }
+
+      this.resetOrganisationRelationshipBatch();
+      this.relationshipErrorCode = '';
+      if (selectedOrganisations.length === 0) {
+        return;
+      }
+
+      this.relationshipBatch.isRunning = true;
+      this.relationshipBatch.total = selectedOrganisations.length;
+
+      for (const selectedOrganisation of selectedOrganisations) {
+        if (contextOrganisation) {
+          // eslint-disable-next-line no-await-in-loop
+          await this.createOrganisationRelationship(contextOrganisation, selectedOrganisation);
+        } else {
+          this.relationshipErrorCode = 'CREATE_RELATIONSHIP_ERROR';
+        }
+
+        if (this.relationshipErrorCode) {
+          this.relationshipBatch.failures.push({
+            organisation: selectedOrganisation,
+            errorCode: this.relationshipErrorCode,
+          });
+        }
+        this.relationshipBatch.completed++;
+        this.relationshipBatch.progress = Math.ceil(
+          (this.relationshipBatch.completed / this.relationshipBatch.total) * 100,
+        );
+      }
+
+      this.relationshipBatch.isRunning = false;
+      this.relationshipBatch.isComplete = true;
     },
 
     async fetchSchuleDetailsForKlassen(): Promise<void> {

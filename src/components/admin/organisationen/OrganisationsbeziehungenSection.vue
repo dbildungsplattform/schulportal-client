@@ -14,6 +14,7 @@
   import { SortOrder } from '@/utils/sorting';
   import { computed, onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
+  import { useDisplay } from 'vuetify';
 
   type Props = {
     headline: string;
@@ -30,6 +31,7 @@
   };
 
   const { t }: Composer = useI18n({ useScope: 'global' });
+  const { smAndDown }: { smAndDown: Ref<boolean> } = useDisplay();
   const organisationsbeziehungStore: OrganisationsbeziehungStore = useOrganisationsbeziehungStore();
 
   const isOpen: Ref<boolean> = ref(false);
@@ -210,7 +212,8 @@
               md="auto"
             >
               <v-btn
-                class="primary organisationsbeziehungen-add-button"
+                :block="smAndDown"
+                class="primary"
                 data-testid="organisationsbeziehungen-add-button"
                 @click="showSelector = true"
               >
@@ -275,11 +278,5 @@
   }
   .chevron.rotate {
     transform: rotate(180deg);
-  }
-
-  @media (max-width: 959px) {
-    .organisationsbeziehungen-add-button.v-btn.primary {
-      width: 100%;
-    }
   }
 </style>

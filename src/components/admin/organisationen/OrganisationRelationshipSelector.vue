@@ -6,6 +6,7 @@
     OrganisationsTyp,
     useOrganisationStore,
     type Organisation,
+    type OrganisationRelationshipBatchFailure,
     type OrganisationStore,
   } from '@/stores/OrganisationStore';
   import { dedup } from '@/utils/arrays';
@@ -39,31 +40,41 @@
   const organisationStore: OrganisationStore = useOrganisationStore();
   const selected: Ref<Organisation[]> = ref([]);
   const opened: Ref<string[]> = ref(['select-all']);
-  const searchError: Ref<string> = ref('');
-  const isCreating: Ref<boolean> = ref(false);
-  const isFinished: Ref<boolean> = ref(false);
-  const completed: Ref<number> = ref(0);
-  const errors: Ref<RelationshipError[]> = ref([]);
   const showErrorDialog: Ref<boolean> = ref(false);
 
-  const sourceOrganisation: ComputedRef<Organisation | undefined> = computed(() =>
+  function translateError(code: string): string {
+    const key: string = `admin.organisation.errors.${code}`;
+    return i18n.te(key) ? t(key) : t('admin.organisation.errors.CREATE_RELATIONSHIP_ERROR');
+  }
+
+  const isCreating: ComputedRef<boolean> = computed(() => organisationStore.relationshipBatch.isRunning);
+  const isFinished: ComputedRef<boolean> = computed(() => organisationStore.relationshipBatch.isComplete);
+  const errors: ComputedRef<RelationshipError[]> = computed(() =>
+    organisationStore.relationshipBatch.failures.map(
+      (failure: OrganisationRelationshipBatchFailure): RelationshipError => ({
+        organisation: failure.organisation,
+        message: translateError(failure.errorCode),
+      }),
+    ),
+  );
+  const contextOrganisation: ComputedRef<Organisation | undefined> = computed(() =>
     [organisationStore.currentOrganisation, organisationStore.currentSchule].find(
       (organisation: Organisation | null | undefined): organisation is Organisation =>
         organisation?.id === props.organisationId,
     ),
   );
   const searchPlaceholder: ComputedRef<string> = computed(() =>
-    sourceOrganisation.value?.typ === OrganisationsTyp.Schule
+    contextOrganisation.value?.typ === OrganisationsTyp.Schule
       ? t('admin.organisation.searchPlaceholderBehoerde')
       : t('admin.organisation.searchPlaceholderSchule'),
   );
   const searchHoverText: ComputedRef<string> = computed(() =>
-    sourceOrganisation.value?.typ === OrganisationsTyp.Schule
+    contextOrganisation.value?.typ === OrganisationsTyp.Schule
       ? t('admin.organisation.searchByName')
       : t('admin.organisation.searchByNameOrKennung'),
   );
   const emptyStateText: ComputedRef<string> = computed(() =>
-    sourceOrganisation.value?.typ === OrganisationsTyp.Schule
+    contextOrganisation.value?.typ === OrganisationsTyp.Schule
       ? t('admin.organisation.noBehoerdenFound')
       : t('admin.organisation.noSchulenFound'),
   );
@@ -73,7 +84,7 @@
       (org: Organisation): string => org.id,
     ).filter(
       (org: Organisation): boolean =>
-        sourceOrganisation.value?.typ !== OrganisationsTyp.Schule || org.typ === OrganisationsTyp.Behoerde,
+        contextOrganisation.value?.typ !== OrganisationsTyp.Schule || org.typ === OrganisationsTyp.Behoerde,
     ),
   );
   const treeItems: ComputedRef<TreeNode[]> = computed(() =>
@@ -94,15 +105,13 @@
     (): boolean =>
       availableOrganisations.value.length > 0 && selected.value.length === availableOrganisations.value.length,
   );
-  const progress: ComputedRef<number> = computed(() =>
-    selected.value.length ? (completed.value / selected.value.length) * 100 : 0,
+  const progress: ComputedRef<number> = computed(() => organisationStore.relationshipBatch.progress);
+  const savedCount: ComputedRef<number> = computed(
+    () => organisationStore.relationshipBatch.completed - errors.value.length,
   );
-  const savedCount: ComputedRef<number> = computed(() => completed.value - errors.value.length);
 
   async function searchOrganisations(searchString: string = ''): Promise<void> {
-    searchError.value = '';
     await organisationStore.searchOrganisationsForRelationships(props.organisationId, searchString || undefined);
-    searchError.value = organisationStore.errorCode;
   }
 
   function updateSelection(organisations: Organisation[]): void {
@@ -149,38 +158,11 @@
     return entry.message;
   }
 
-  function translateError(code: string): string {
-    const key: string = `admin.organisation.errors.${code}`;
-    return i18n.te(key) ? t(key) : t('admin.organisation.errors.CREATE_RELATIONSHIP_ERROR');
-  }
-
-  async function createRelationshipForOrganisation(organisation: Organisation): Promise<void> {
-    const source: Organisation | undefined = sourceOrganisation.value;
-    if (!source) {
-      errors.value.push({ organisation, message: translateError('CREATE_RELATIONSHIP_ERROR') });
-      return;
-    }
-
-    await organisationStore.createOrganisationRelationship(source, organisation);
-    if (organisationStore.errorCode) {
-      errors.value.push({ organisation, message: translateError(organisationStore.errorCode) });
-    }
-  }
-
   async function createRelationships(): Promise<void> {
     if (isCreating.value || selected.value.length === 0) {
       return;
     }
-    isCreating.value = true;
-    completed.value = 0;
-    errors.value = [];
-    for (const organisation of selected.value) {
-      // eslint-disable-next-line no-await-in-loop
-      await createRelationshipForOrganisation(organisation);
-      completed.value++;
-    }
-    isCreating.value = false;
-    isFinished.value = true;
+    await organisationStore.createOrganisationRelationships(contextOrganisation.value, [...selected.value]);
     showErrorDialog.value = errors.value.length > 0;
   }
 
@@ -188,9 +170,11 @@
     if (isCreating.value) {
       return;
     }
-    organisationStore.errorCode = '';
+    const relationshipsUpdated: boolean = isFinished.value;
+    organisationStore.relationshipErrorCode = '';
+    organisationStore.resetOrganisationRelationshipBatch();
     emit('update:showComponent', false);
-    if (isFinished.value) {
+    if (relationshipsUpdated) {
       emit('relationships-updated');
     }
   }
@@ -231,7 +215,7 @@
       </h3>
       <template v-if="!isCreating && !isFinished">
         <SpshAlert
-          v-if="searchError"
+          v-if="organisationStore.relationshipErrorCode"
           :model-value="true"
           :title="t('admin.organisation.searchErrorTitle')"
           :text="t('admin.organisation.searchErrorTitle')"
@@ -252,7 +236,7 @@
           />
         </v-row>
         <v-row
-          v-if="organisationStore.loading"
+          v-if="organisationStore.relationshipSearchLoading"
           justify="center"
         >
           <v-col cols="auto">
@@ -264,7 +248,7 @@
           </v-col>
         </v-row>
         <p
-          v-if="!organisationStore.loading && treeItems.length === 0"
+          v-if="!organisationStore.relationshipSearchLoading && treeItems.length === 0"
           class="text-body text-medium-emphasis pa-6"
           data-testid="org-selector-empty"
         >
@@ -292,7 +276,7 @@
               v-if="item.id === 'select-all'"
               :model-value="allSelected"
               :indeterminate="selected.length > 0 && !allSelected"
-              :disabled="availableOrganisations.length === 0 || organisationStore.loading"
+              :disabled="availableOrganisations.length === 0 || organisationStore.relationshipSearchLoading"
               :aria-label="item.title"
               data-testid="org-selector-select-all"
               @click.stop
@@ -329,7 +313,7 @@
             <v-btn
               block
               class="primary"
-              :disabled="selected.length === 0 || organisationStore.loading"
+              :disabled="selected.length === 0 || organisationStore.relationshipSearchLoading"
               data-testid="org-selector-create-button"
               @click="createRelationships"
             >

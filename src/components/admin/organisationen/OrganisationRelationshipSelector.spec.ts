@@ -36,7 +36,26 @@ function setup(): TestState {
   store.currentSchule = schule;
   store.searchedOrganisations = behoerden;
   store.searchOrganisationsForRelationships = vi.fn().mockResolvedValue(undefined);
-  store.createOrganisationRelationship = vi.fn().mockResolvedValue(undefined);
+  store.createOrganisationRelationships = vi.fn(
+    (contextOrganisation: Organisation | undefined, selectedOrganisations: Organisation[]): Promise<void> => {
+      store.relationshipBatch = {
+        isRunning: false,
+        isComplete: true,
+        completed: selectedOrganisations.length,
+        total: selectedOrganisations.length,
+        progress: selectedOrganisations.length > 0 ? 100 : 0,
+        failures: contextOrganisation
+          ? []
+          : selectedOrganisations.map(
+              (organisation: Organisation): { organisation: Organisation; errorCode: string } => ({
+                organisation,
+                errorCode: 'CREATE_RELATIONSHIP_ERROR',
+              }),
+            ),
+      };
+      return Promise.resolve();
+    },
+  );
   async function mountSelector(organisationId: string = schule.id, showComponent: boolean = true): Promise<VueWrapper> {
     const mountedWrapper: unknown = mount(OrganisationRelationshipSelector, {
       attachTo: document.getElementById('app') || '',
@@ -193,7 +212,7 @@ describe('OrganisationRelationshipSelector', (): void => {
     const { store, behoerden, mountSelector }: TestState = setup();
     const wrapper: VueWrapper = await mountSelector();
     await select(wrapper, [behoerden[0]!]);
-    store.loading = true;
+    store.relationshipSearchLoading = true;
     await nextTick();
     expect(wrapper.get('[data-testid="org-selector-search-loading"]').classes()).toContain('v-progress-circular');
     expect(wrapper.get('[data-testid="org-selector-search-loading"]').element.closest('.v-row')?.className).toContain(
@@ -208,11 +227,11 @@ describe('OrganisationRelationshipSelector', (): void => {
     store.searchOrganisationsForRelationships = vi
       .fn()
       .mockImplementationOnce((): Promise<void> => {
-        store.errorCode = 'SEARCH_ORGANISATIONS_ERROR';
+        store.relationshipErrorCode = 'SEARCH_ORGANISATIONS_ERROR';
         return Promise.resolve();
       })
       .mockImplementationOnce((): Promise<void> => {
-        store.errorCode = '';
+        store.relationshipErrorCode = '';
         return Promise.resolve();
       });
     const wrapper: VueWrapper = await mountSelector();
@@ -222,28 +241,47 @@ describe('OrganisationRelationshipSelector', (): void => {
     expect(wrapper.find('[data-testid="org-selector-error-alert"]').exists()).toBe(false);
   });
 
-  it('should process sequentially, show progress and count three successful saves', async (): Promise<void> => {
+  it('should show store progress and count three successful saves', async (): Promise<void> => {
     const { store, schule, behoerden, mountSelector }: TestState = setup();
-    let finishFirst: (() => void) | undefined;
-    store.createOrganisationRelationship = vi
-      .fn()
-      .mockImplementationOnce(
-        (): Promise<void> =>
-          new Promise((resolve: () => void): void => {
-            finishFirst = resolve;
-          }),
-      )
-      .mockResolvedValue(undefined);
+    let finishBatch: (() => void) | undefined;
+    store.createOrganisationRelationships = vi.fn(
+      (_contextOrganisation: Organisation | undefined, selectedOrganisations: Organisation[]): Promise<void> => {
+        store.relationshipBatch = {
+          isRunning: true,
+          isComplete: false,
+          completed: 0,
+          total: selectedOrganisations.length,
+          progress: 0,
+          failures: [],
+        };
+        return new Promise<void>((resolve: () => void): void => {
+          finishBatch = (): void => {
+            store.relationshipBatch = {
+              isRunning: false,
+              isComplete: true,
+              completed: selectedOrganisations.length,
+              total: selectedOrganisations.length,
+              progress: 100,
+              failures: [],
+            };
+            resolve();
+          };
+        });
+      },
+    );
     const wrapper: VueWrapper = await mountSelector();
     await select(wrapper, behoerden);
     await wrapper.get('[data-testid="org-selector-create-button"]').trigger('click');
     await flushPromises();
-    expect(store.createOrganisationRelationship).toHaveBeenCalledExactlyOnceWith(schule, behoerden[2]!);
+    expect(store.createOrganisationRelationships).toHaveBeenCalledExactlyOnceWith(schule, [
+      behoerden[2]!,
+      behoerden[1]!,
+      behoerden[0]!,
+    ]);
     expect(wrapper.get('[data-testid="org-selector-progress"]').text()).toContain('0%');
     expect(wrapper.find('[data-testid="org-selector-cancel-button"]').exists()).toBe(false);
-    finishFirst?.();
+    finishBatch?.();
     await flushPromises();
-    expect(store.createOrganisationRelationship).toHaveBeenCalledTimes(3);
     expect(wrapper.get('[data-testid="org-selector-progress"]').text()).toContain('100%');
     expect(wrapper.get('[data-testid="org-selector-success"]').text()).toContain(
       '3 Beziehungen wurden erfolgreich gespeichert.',
@@ -263,7 +301,7 @@ describe('OrganisationRelationshipSelector', (): void => {
       await select(wrapper, [schule]);
       await wrapper.get('[data-testid="org-selector-create-button"]').trigger('click');
       await flushPromises();
-      expect(store.createOrganisationRelationship).toHaveBeenCalledExactlyOnceWith(context, schule);
+      expect(store.createOrganisationRelationships).toHaveBeenCalledExactlyOnceWith(context, [schule]);
       expect(wrapper.get('[data-testid="org-selector-success"]').text()).toContain(
         '1 Beziehung wurde erfolgreich gespeichert.',
       );
@@ -278,33 +316,41 @@ describe('OrganisationRelationshipSelector', (): void => {
     store.currentSchule = null;
     await wrapper.get('[data-testid="org-selector-create-button"]').trigger('click');
     await flushPromises();
-    expect(store.createOrganisationRelationship).not.toHaveBeenCalled();
+    expect(store.createOrganisationRelationships).toHaveBeenCalledExactlyOnceWith(undefined, [behoerden[0]!]);
     expect(wrapper.find('[data-testid="org-selector-success"]').exists()).toBe(false);
     expect(wrapper.getComponent({ name: 'BulkErrorDialog' }).props('errors')).toHaveLength(1);
   });
 
   it('should continue after a translated consistency failure, count successes and export errors', async (): Promise<void> => {
     const { store, behoerden, mountSelector }: TestState = setup();
-    store.createOrganisationRelationship = vi
-      .fn()
-      .mockImplementationOnce((): Promise<void> => {
-        store.errorCode = '';
+    store.errorCode = 'DETAIL_LOADING_ERROR';
+    store.createOrganisationRelationships = vi.fn(
+      (_contextOrganisation: Organisation | undefined, selectedOrganisations: Organisation[]): Promise<void> => {
+        store.relationshipBatch = {
+          isRunning: false,
+          isComplete: true,
+          completed: selectedOrganisations.length,
+          total: selectedOrganisations.length,
+          progress: 100,
+          failures: [
+            {
+              organisation: selectedOrganisations[1]!,
+              errorCode: 'SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM',
+            },
+          ],
+        };
         return Promise.resolve();
-      })
-      .mockImplementationOnce((): Promise<void> => {
-        store.errorCode = 'SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM';
-        return Promise.resolve();
-      })
-      .mockImplementation((): Promise<void> => {
-        store.errorCode = '';
-        return Promise.resolve();
-      });
+      },
+    );
     const wrapper: VueWrapper = await mountSelector();
     await select(wrapper, behoerden);
     await wrapper.get('[data-testid="org-selector-create-button"]').trigger('click');
     await flushPromises();
-    expect(store.createOrganisationRelationship).toHaveBeenCalledTimes(3);
-    expect(store.errorCode).toBe('');
+    expect(store.createOrganisationRelationships).toHaveBeenCalledExactlyOnceWith(
+      store.currentSchule,
+      expect.any(Array),
+    );
+    expect(store.errorCode).toBe('DETAIL_LOADING_ERROR');
     expect(wrapper.get('[data-testid="org-selector-success"]').text()).toContain(
       '2 Beziehungen wurden erfolgreich gespeichert.',
     );
@@ -323,16 +369,30 @@ describe('OrganisationRelationshipSelector', (): void => {
 
   it('should show a fallback message when the store reports an unrecognised error', async (): Promise<void> => {
     const { store, behoerden, mountSelector }: TestState = setup();
-    store.createOrganisationRelationship = vi.fn().mockImplementation((): Promise<void> => {
-      store.errorCode = 'UNKNOWN_ERROR';
-      return Promise.resolve();
-    });
+    store.createOrganisationRelationships = vi.fn(
+      (_contextOrganisation: Organisation | undefined, selectedOrganisations: Organisation[]): Promise<void> => {
+        store.relationshipBatch = {
+          isRunning: false,
+          isComplete: true,
+          completed: selectedOrganisations.length,
+          total: selectedOrganisations.length,
+          progress: 100,
+          failures: selectedOrganisations.map(
+            (organisation: Organisation): { organisation: Organisation; errorCode: string } => ({
+              organisation,
+              errorCode: 'UNKNOWN_ERROR',
+            }),
+          ),
+        };
+        return Promise.resolve();
+      },
+    );
     const wrapper: VueWrapper = await mountSelector();
     await select(wrapper, behoerden);
     await wrapper.get('[data-testid="org-selector-create-button"]').trigger('click');
     await flushPromises();
 
-    expect(store.createOrganisationRelationship).toHaveBeenCalledTimes(3);
+    expect(store.createOrganisationRelationships).toHaveBeenCalledTimes(1);
     expect(wrapper.find('[data-testid="org-selector-success"]').exists()).toBe(false);
     expect(document.body.textContent).toContain('Die Organisationsbeziehung konnte nicht gespeichert werden.');
     await new DOMWrapper(document.body).get('[data-testid="org-selector-bulk-error-discard-button"]').trigger('click');

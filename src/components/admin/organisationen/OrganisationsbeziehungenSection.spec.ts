@@ -33,7 +33,19 @@ function setup(showDienststellennummerColumn: boolean = true): TestState {
   const organisation: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Schule });
   organisationStore.currentSchule = organisation;
   organisationStore.searchOrganisationsForRelationships = vi.fn().mockResolvedValue(undefined);
-  organisationStore.createOrganisationRelationship = vi.fn().mockResolvedValue(undefined);
+  organisationStore.createOrganisationRelationships = vi.fn(
+    (_contextOrganisation: Organisation | undefined, selectedOrganisations: Organisation[]): Promise<void> => {
+      organisationStore.relationshipBatch = {
+        isRunning: false,
+        isComplete: true,
+        completed: selectedOrganisations.length,
+        total: selectedOrganisations.length,
+        progress: 100,
+        failures: [],
+      };
+      return Promise.resolve();
+    },
+  );
   const mountedWrapper: unknown = mount(OrganisationsbeziehungenSection, {
     attachTo: document.getElementById('app') || '',
     props: {
