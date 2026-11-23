@@ -14,7 +14,7 @@ frontendHostname: ""
 
 containerSecurityContext:
   enabled: true
-  runAsUser: 101
+  runAsUser: 10000
   runAsNonRoot: true
   privileged: false
   readOnlyRootFilesystem: false

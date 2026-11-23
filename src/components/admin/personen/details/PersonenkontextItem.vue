@@ -48,8 +48,8 @@
       ({{ befristung }})
     </span>
     <template v-if="!props.hidePendingLabel">
-      <span v-if="props.pendingState === PendingState.CREATED"> ({{ t('willBeCreated') }})</span>
-      <span v-else-if="props.pendingState === PendingState.DELETED"> ({{ t('willBeRemoved') }})</span>
+      <span v-if="props.pendingState === PendingState.CREATED"> ({{ $t('willBeCreated') }})</span>
+      <span v-else-if="props.pendingState === PendingState.DELETED"> ({{ $t('willBeRemoved') }})</span>
     </template>
   </span>
 </template>
