@@ -105,7 +105,6 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
-  vi.clearAllTimers();
   vi.unstubAllGlobals();
 });
 
@@ -371,6 +370,54 @@ describe('ServiceProviderDetailsBySchuleView', () => {
         '[data-testid="service-provider-rollenerweiterungen"] .v-chip',
       );
       expect(chips?.length).toBe(2);
+    });
+  });
+
+  describe('ServiceProviderDetailsBySchuleView - Scroll', () => {
+    let treeviewContainer: DOMWrapper<Element>;
+
+    beforeEach(async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      await wrapper!.get('[data-testid="rollenerweiterung-bearbeiten-button"]').trigger('click');
+      await flushPromises();
+      treeviewContainer = wrapper!.find('[data-testid="rollenerweiterung-treeview-container"]');
+      vi.spyOn(treeviewContainer.element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 320, 0, 0));
+    });
+
+    afterEach(() => {
+      wrapper?.unmount();
+      vi.useRealTimers();
+    });
+
+    test('scrolls once after the transition and cancels the fallback', async () => {
+      await treeviewContainer.trigger('transitionend');
+
+      expect(window.scrollTo).toHaveBeenCalledExactlyOnceWith({ top: 200, behavior: 'smooth' });
+
+      vi.advanceTimersByTime(500);
+      await treeviewContainer.trigger('transitionend');
+
+      expect(window.scrollTo).toHaveBeenCalledTimes(1);
+    });
+
+    test('scrolls once after the fallback and removes the transition listener', async () => {
+      vi.advanceTimersByTime(499);
+      expect(window.scrollTo).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1);
+      expect(window.scrollTo).toHaveBeenCalledExactlyOnceWith({ top: 200, behavior: 'smooth' });
+
+      await treeviewContainer.trigger('transitionend');
+      expect(window.scrollTo).toHaveBeenCalledTimes(1);
+    });
+
+    test('does not scroll after the view is unmounted', () => {
+      wrapper!.unmount();
+
+      vi.advanceTimersByTime(500);
+      treeviewContainer.element.dispatchEvent(new Event('transitionend'));
+
+      expect(window.scrollTo).not.toHaveBeenCalled();
     });
   });
 
