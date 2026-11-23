@@ -33,23 +33,6 @@ describe('OrganisationStore', () => {
   });
 
   describe('getAllOrganisations', () => {
-    it('should include selected organisation IDs in the list request', async (): Promise<void> => {
-      const klassen: Organisation[] = [DoFactory.getKlasse(), DoFactory.getKlasse()];
-      const organisationIds: string[] = klassen.map((klasse: Organisation): string => klasse.id);
-      const query: URLSearchParams = new URLSearchParams({ offset: '0', limit: '30' });
-      organisationIds.forEach((organisationId: string): void => {
-        query.append('organisationIds', organisationId);
-      });
-      mockadapter.onGet(`/api/organisationen?${query.toString()}`).replyOnce(200, klassen);
-
-      await organisationStore.getAllOrganisationen({ offset: 0, limit: 30, organisationIds });
-      await flushPromises();
-
-      expect(organisationStore.allOrganisationen).toEqual(klassen);
-      expect(organisationStore.errorCode).toBe('');
-      expect(organisationStore.loading).toBe(false);
-    });
-
     it('should fetch all organisations and update state', async () => {
       const mockResponse: Organisation[] = [
         {
@@ -803,19 +786,17 @@ describe('OrganisationStore', () => {
     });
 
     it('should fetch schule details', async () => {
-      mockadapter
-        .onGet('/api/organisationen?limit=30&typ=SCHULE&systemrechte=KLASSEN_VERWALTEN&organisationIds=101')
-        .replyOnce(200, [
-          {
-            id: '101',
-            kennung: '123456',
-            name: 'Schule 1',
-            namensergaenzung: 'Ergänzung',
-            kuerzel: 'O1',
-            typ: OrganisationsTyp.Schule,
-            administriertVon: '1',
-          },
-        ]);
+      mockadapter.onPost('/api/organisationen/by-ids', { organisationIds: ['101'] }).replyOnce(200, [
+        {
+          id: '101',
+          kennung: '123456',
+          name: 'Schule 1',
+          namensergaenzung: 'Ergänzung',
+          kuerzel: 'O1',
+          typ: OrganisationsTyp.Schule,
+          administriertVon: '1',
+        },
+      ]);
 
       await organisationStore.fetchSchuleDetailsForKlassen();
 
@@ -835,9 +816,7 @@ describe('OrganisationStore', () => {
             },
         expectedError: string,
       ) => {
-        mockadapter
-          .onGet('/api/organisationen?limit=30&typ=SCHULE&systemrechte=KLASSEN_VERWALTEN&organisationIds=101')
-          .replyOnce(500, response);
+        mockadapter.onPost('/api/organisationen/by-ids').replyOnce(500, response);
 
         await organisationStore.fetchSchuleDetailsForKlassen();
 
