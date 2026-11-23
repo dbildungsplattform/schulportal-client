@@ -142,6 +142,33 @@ describe('SchulenFilter', () => {
   });
 
   describe.each([false, true])('selection contract when multiple is %s', (multiple: boolean) => {
+    test('should load options when readonly is removed without changing the filter', async () => {
+      const selected: Organisation = DoFactory.getSchule();
+      const loadSpy: MockInstance = vi.spyOn(organisationStore, 'loadOrganisationenForFilter');
+      const wrapper: VueWrapper = mountComponent({
+        multiple,
+        readonly: true,
+        selectedSchulen: multiple ? [selected] : selected,
+        systemrechteForSearch: [RollenSystemRechtEnum.KlassenVerwalten],
+      });
+      await flushPromises();
+      expectInputDisabledAttrToBe(true);
+      expect(loadSpy).not.toHaveBeenCalled();
+
+      await wrapper.setProps({ readonly: false });
+      await flushPromises();
+
+      expectInputDisabledAttrToBe(false);
+      expect(loadSpy).toHaveBeenCalledOnce();
+      expect(loadSpy).toHaveBeenLastCalledWith(defaultFilter, undefined);
+
+      await wrapper.setProps({ readonly: true });
+      await flushPromises();
+
+      expectInputDisabledAttrToBe(true);
+      expect(loadSpy).toHaveBeenCalledOnce();
+    });
+
     test('it normalizes empty Vuetify selections', async () => {
       const selected: Organisation = DoFactory.getSchule();
       const wrapper: VueWrapper = mountComponent({

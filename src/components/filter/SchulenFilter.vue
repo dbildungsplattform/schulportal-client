@@ -228,7 +228,7 @@
   );
 
   watch(
-    [schulenFilter],
+    [schulenFilter, isInputDisabled],
     (_values: unknown[]) => {
       if (!isEmptySelection(selectedSchulen.value) && isInputDisabled.value) {
         return;
