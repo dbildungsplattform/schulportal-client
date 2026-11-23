@@ -83,18 +83,13 @@ async function fillForm(args: Partial<FormFields>): Promise<Partial<FormSelector
   const { organisation, rollenart, rollenname, merkmale, provider, systemrechte }: Partial<FormFields> = args;
   const selectors: Partial<FormSelectors> = {};
   if (organisation) {
+    const selectedOrganisation: Organisation =
+      organisation === organisationObject.id ? organisationObject : DoFactory.getSchule({ id: organisation });
     const orgSelect: VueWrapper | undefined = wrapper
       ?.findComponent({ ref: 'rolle-creation-form' })
       .findComponent({ name: 'SchulenFilter' })
       .findComponent({ ref: 'rolle-form-organisation-select' });
-    await orgSelect?.setValue(organisation);
-    const schulenFilterComponent: VueWrapper | undefined = wrapper
-      ?.findComponent({ ref: 'rolle-creation-form' })
-      .findComponent({ name: 'SchulenFilter' });
-    (schulenFilterComponent?.vm as unknown as { $emit: (event: string, ...args: unknown[]) => void }).$emit(
-      'update:selectedSchulen',
-      organisation,
-    );
+    await orgSelect?.setValue(selectedOrganisation);
     await nextTick();
     selectors.orgSelect = orgSelect;
   }

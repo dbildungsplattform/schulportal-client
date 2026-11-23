@@ -9,6 +9,8 @@ import {
   type OrganisationResponse,
   type OrganisationResponseLegacy,
   OrganisationsTyp,
+  type OrganisationsbeziehungWithOrganisationenResponse,
+  OrganisationsbeziehungsTyp,
   type PersonendatensatzResponse,
   type PersonenkontexteUpdateResponse,
   type PersonenkontextRolleFieldsResponse,
@@ -34,7 +36,12 @@ import {
 } from '@/api-client/generated/api';
 import type { Organisation } from '@/stores/OrganisationStore';
 import { type Personendatensatz } from '@/stores/PersonStore';
-import type { Rolle, RolleResponse, RolleWithServiceProvidersResponse } from '@/stores/RolleStore';
+import type {
+  Rolle,
+  RolleResponse,
+  RolleWithServiceProvidersResponse,
+  TranslatedRolleWithAttrs,
+} from '@/stores/RolleStore';
 import {
   type ManageableServiceProviderDetail,
   type RollenErweiterungenUebersicht,
@@ -221,6 +228,26 @@ export class DoFactory {
     };
   }
 
+  public static getOrganisationsbeziehung(
+    props?: Partial<OrganisationsbeziehungWithOrganisationenResponse>,
+  ): OrganisationsbeziehungWithOrganisationenResponse {
+    return {
+      id: faker.string.uuid(),
+      typ: OrganisationsbeziehungsTyp.Schultraeger,
+      quelle: {
+        id: faker.string.uuid(),
+        name: DoFactory.getFakeSchuleName(),
+        dienststellennummer: faker.string.numeric(7),
+      },
+      ziel: {
+        id: faker.string.uuid(),
+        name: faker.company.name(),
+        dienststellennummer: faker.string.numeric(7),
+      },
+      ...props,
+    };
+  }
+
   public static getUserinfoResponse(props?: Partial<UserinfoResponse>): UserinfoResponse {
     const firstName: string = faker.person.firstName();
     const lastName: string = faker.person.lastName();
@@ -349,6 +376,17 @@ export class DoFactory {
       systemrechte: [],
       administeredBySchulstrukturknotenName: this.getFakeSchuleName(),
       administeredBySchulstrukturknotenKennung: faker.string.numeric(7),
+      ...props,
+    };
+  }
+
+  public static getTranslatedRolleWithAttrs(props?: Partial<TranslatedRolleWithAttrs>): TranslatedRolleWithAttrs {
+    const rolle: Rolle = this.getRolle();
+    return {
+      value: rolle.id,
+      title: rolle.name,
+      rollenart: rolle.rollenart,
+      merkmale: rolle.merkmale,
       ...props,
     };
   }

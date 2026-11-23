@@ -56,8 +56,8 @@ const setup = async (
 }> => {
   const organisationStore: OrganisationStore = useOrganisationStore();
   organisationStore.$reset();
-  vi.spyOn(organisationStore, 'getRootKinderSchultraeger').mockResolvedValue();
-  organisationStore.schultraeger = [
+  vi.spyOn(organisationStore, 'getRootChildren').mockResolvedValue();
+  organisationStore.rootChildren = [
     DoFactory.getOrganisation({
       id: '2',
       name: 'Öffentliche Schulen',
@@ -79,8 +79,8 @@ const setup = async (
   ];
   organisationStore.errorCode = '';
   if (initialLookupError) {
-    vi.spyOn(organisationStore, 'getRootKinderSchultraeger').mockImplementationOnce((): Promise<void> => {
-      organisationStore.schultraeger = [];
+    vi.spyOn(organisationStore, 'getRootChildren').mockImplementationOnce((): Promise<void> => {
+      organisationStore.rootChildren = [];
       organisationStore.errorCode = initialLookupError;
       return Promise.resolve();
     });
@@ -200,17 +200,17 @@ describe('BehoerdeCreationView', () => {
     } = await setup('SCHULTRAEGER_ERROR');
 
     expect(wrapper.findComponent(BehoerdeForm).exists()).toBe(false);
-    expect(organisationStore.schultraeger).toEqual([]);
+    expect(organisationStore.rootChildren).toEqual([]);
     expect(wrapper.getComponent({ name: 'SpshAlert' }).props('text')).toBe(
       'Die Zuständigkeitsbereiche konnten nicht geladen werden.',
     );
 
     let finishRetry: () => void = vi.fn();
-    vi.spyOn(organisationStore, 'getRootKinderSchultraeger').mockImplementationOnce(
+    vi.spyOn(organisationStore, 'getRootChildren').mockImplementationOnce(
       (): Promise<void> =>
         new Promise<void>((resolve: () => void): void => {
           finishRetry = (): void => {
-            organisationStore.schultraeger = [DoFactory.getOrganisation()];
+            organisationStore.rootChildren = [DoFactory.getOrganisation()];
             resolve();
           };
         }),
@@ -219,7 +219,7 @@ describe('BehoerdeCreationView', () => {
     await wrapper.get('[data-testid$="alert-button"]').trigger('click');
     await flushPromises();
 
-    expect(organisationStore.getRootKinderSchultraeger).toHaveBeenCalledTimes(2);
+    expect(organisationStore.getRootChildren).toHaveBeenCalledTimes(2);
     expect(organisationStore.errorCode).toBe('');
     expect(wrapper.findComponent(BehoerdeForm).exists()).toBe(false);
 
@@ -227,10 +227,10 @@ describe('BehoerdeCreationView', () => {
     await flushPromises();
 
     expect(wrapper.getComponent(BehoerdeForm).props('zustaendigkeitsbereichList')).toEqual(
-      organisationStore.schultraeger,
+      organisationStore.rootChildren,
     );
     expect(wrapper.getComponent(BehoerdeForm).props('initialValues')).toMatchObject({
-      selectedZustaendigkeitsbereich: organisationStore.schultraeger[0]?.id,
+      selectedZustaendigkeitsbereich: organisationStore.rootChildren[0]?.id,
     });
   });
 
@@ -243,7 +243,7 @@ describe('BehoerdeCreationView', () => {
       organisationStore: OrganisationStore;
     } = await setup('SCHULTRAEGER_ERROR');
 
-    vi.spyOn(organisationStore, 'getRootKinderSchultraeger').mockImplementationOnce((): Promise<void> => {
+    vi.spyOn(organisationStore, 'getRootChildren').mockImplementationOnce((): Promise<void> => {
       organisationStore.errorCode = 'SCHULTRAEGER_ERROR';
       return Promise.resolve();
     });
@@ -251,7 +251,7 @@ describe('BehoerdeCreationView', () => {
     await wrapper.get('[data-testid$="alert-button"]').trigger('click');
     await flushPromises();
 
-    expect(organisationStore.getRootKinderSchultraeger).toHaveBeenCalledTimes(2);
+    expect(organisationStore.getRootChildren).toHaveBeenCalledTimes(2);
     expect(organisationStore.errorCode).toBe('SCHULTRAEGER_ERROR');
     expect(wrapper.findComponent(BehoerdeForm).exists()).toBe(false);
     expect(wrapper.get('[data-testid$="alert-title"]').isVisible()).toBe(true);
@@ -396,7 +396,7 @@ describe('BehoerdeCreationView', () => {
     expect(wrapper.get<HTMLInputElement>('[data-testid="behoerdenname-input"] input').element.value).toBe(
       'Existing Behoerde',
     );
-    expect(organisationStore.getRootKinderSchultraeger).toHaveBeenCalledOnce();
+    expect(organisationStore.getRootChildren).toHaveBeenCalledOnce();
   });
 
   test('clears unsaved changes only after a successful save', async (): Promise<void> => {

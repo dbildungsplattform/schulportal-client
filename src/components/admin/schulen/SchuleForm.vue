@@ -17,9 +17,11 @@
     object({
       selectedSchulform: string(),
       selectedDienststellennummer: string()
+        .max(255, t('admin.schule.rules.dienststellennummer.max'))
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.schule.rules.dienststellennummer.noLeadingTrailingSpaces'))
         .required(t('admin.schule.rules.dienststellennummer.required')),
       selectedSchulname: string()
+        .max(255, t('admin.schule.rules.schulname.max'))
         .matches(DIN_91379A_EXT, t('admin.schule.rules.schulname.matches'))
         .matches(NO_LEADING_TRAILING_SPACES, t('admin.schule.rules.schulname.noLeadingTrailingSpaces'))
         .required(t('admin.schule.rules.schulname.required')),
@@ -198,16 +200,16 @@
       </v-row>
       <FormRow
         :error-label="selectedEmailAdressProps['error']"
-        label-for-id="email-adress-input"
+        label-for-id="email-address-input"
         :is-required="true"
         :label="$t('admin.schule.emailAdresse')"
       >
         <v-text-field
           v-bind="selectedEmailAdressProps"
-          ref="email-adress-input"
+          ref="email-address-input"
           v-model="selectedEmailAdress"
           clearable
-          data-testid="email-adress-input"
+          data-testid="email-address-input"
           :placeholder="$t('admin.schule.emailAdresse')"
           variant="outlined"
           density="compact"

@@ -49,12 +49,18 @@ describe('rolleStore', () => {
 
   describe('createRolle', () => {
     it('should create rolle and update state', async () => {
-      const mockResponse: RolleResponse = DoFactory.getRolleResponse({
+      const mockResponse: RolleWithServiceProvidersResponse = DoFactory.getRolleWithServiceProviders({
         administeredBySchulstrukturknoten: '1234',
         rollenart: RollenArt.Lehr,
         name: 'Lehrer',
         merkmale: [RollenMerkmal.KopersPflicht],
         systemrechte: [{ name: RollenSystemRechtEnum.RollenVerwalten, isTechnical: false }],
+        serviceProviders: [
+          {
+            id: '5678',
+            name: 'Testangebot',
+          },
+        ],
       });
 
       mockadapter.onPost('/api/rolle').replyOnce(200, mockResponse);
@@ -73,6 +79,7 @@ describe('rolleStore', () => {
       expect(rolleStore.createdRolle!.rollenart).toEqual(RollenArt.Lehr);
       expect(rolleStore.createdRolle!.merkmale).toEqual([RollenMerkmal.KopersPflicht]);
       expect(rolleStore.createdRolle!.systemrechte).toEqual(new Set([RollenSystemRechtEnum.RollenVerwalten]));
+      expect(rolleStore.createdRolle!.serviceProviders).toEqual([{ id: '5678', name: 'Testangebot' }]);
       expect(rolleStore.createdRolle).toEqual(rolleStore.currentRolle);
       expect(rolleStore.loading).toBe(false);
     });
@@ -310,7 +317,6 @@ describe('rolleStore', () => {
         limit: 15,
         searchString: 'MPT',
         organisationIds: ['organisation-1', 'organisation-2'],
-        rolleIds: ['rolle-1', 'rolle-2'],
       });
       expect(rolleStore.loading).toBe(true);
       await promise;
@@ -320,7 +326,6 @@ describe('rolleStore', () => {
       expect(query.get('limit')).toBe('15');
       expect(query.get('searchStr')).toBe('MPT');
       expect(query.getAll('organisationIds')).toEqual(['organisation-1', 'organisation-2']);
-      expect(query.getAll('rolleIds')).toEqual(['rolle-1', 'rolle-2']);
       expect(rolleStore.allRollen).toEqual(mockResponse);
       expect(rolleStore.totalRollen).toBe(4);
       expect(rolleStore.loading).toBe(false);
@@ -510,10 +515,10 @@ describe('rolleStore', () => {
       expect(rolleStore.loading).toBe(false);
     });
 
-    it('should load a role through the MPT-authorized list endpoint on direct navigation', async () => {
+    it('should load a role through the MPT-authorized endpoint on direct navigation', async () => {
       const rolle: RolleWithServiceProvidersResponse = DoFactory.getRolleWithServiceProviders();
       rolleStore.currentMptRolle = DoFactory.getRolle();
-      mockadapter.onGet().replyOnce(200, [rolle]);
+      mockadapter.onGet().replyOnce(200, rolle);
 
       const promise: Promise<void> = rolleStore.getMptRolleById(rolle.id, 'organisation-1');
       expect(rolleStore.loading).toBe(true);
@@ -521,16 +526,15 @@ describe('rolleStore', () => {
       await promise;
 
       const requestUrl: string = mockadapter.history.get[0]?.url ?? '';
-      expect(requestUrl).toContain('/api/rolle/available-for-mpt-zuordnung');
-      expect(requestUrl).toContain('organisationIds=organisation-1');
-      expect(requestUrl).toContain(`rolleIds=${rolle.id}`);
+      expect(requestUrl).toContain(`/api/rolle/available-for-mpt-zuordnung/${rolle.id}`);
+      expect(requestUrl).toContain('organisationId=organisation-1');
       expect(rolleStore.currentMptRolle?.id).toBe(rolle.id);
       expect(rolleStore.errorCode).toBe('');
       expect(rolleStore.loading).toBe(false);
     });
 
-    it('should set an error when the requested MPT role is not returned', async () => {
-      mockadapter.onGet().replyOnce(200, []);
+    it('should set an error when the requested MPT role is not found', async () => {
+      mockadapter.onGet().replyOnce(404);
 
       await rolleStore.getMptRolleById('rolle-1', 'organisation-1');
 
@@ -820,7 +824,6 @@ describe('rolleStore', () => {
         limit: 20,
         rollenartForPerson: RollenArt.Lehr,
         rolleName: 'Lehrer',
-        rollenIds: ['rolle-1', 'rolle-2'],
         systemrecht: RollenSystemRechtEnum.RollenVerwalten,
       });
 
@@ -836,8 +839,7 @@ describe('rolleStore', () => {
       expect(rolleStore.rollenForPersonenkontextCreation[1]?.rollenart).toBe(rolleB.rollenart);
       expect(mockadapter.history.get[0]?.url).toContain('organisationId=organisation-1');
       expect(mockadapter.history.get[0]?.url).toContain('rollenartForPerson=LEHR');
-      expect(mockadapter.history.get[0]?.url).toContain('rollenIds=rolle-1');
-      expect(mockadapter.history.get[0]?.url).toContain('rollenIds=rolle-2');
+      expect(mockadapter.history.get[0]?.url).not.toContain('rollenIds');
       expect(rolleStore.errorCode).toBe('');
       expect(rolleStore.loading).toBe(false);
     });

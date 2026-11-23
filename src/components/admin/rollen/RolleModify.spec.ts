@@ -59,10 +59,6 @@ beforeEach(async () => {
       selectedPersonen: new Map([
         ['test', new PersonWithZuordnungen(person, [DoFactory.getZuordnung({ sskName: '1a' })])],
       ]),
-      organisationen: [
-        { title: organisation.name, value: organisation.id },
-        { title: 'orga1', value: '1133' },
-      ],
       rollen: [
         {
           value: rolle.id,
@@ -105,7 +101,7 @@ describe('RolleModify', () => {
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'schulenFilter' })
       .findComponent({ ref: 'personenkontext-create-organisation-select' });
-    await organisationAutocomplete?.setValue(organisation.id);
+    await organisationAutocomplete?.setValue(organisation);
     organisationAutocomplete?.vm.$emit('update:search', organisation.id);
     await nextTick();
 
@@ -113,7 +109,14 @@ describe('RolleModify', () => {
     const rolleAutocomplete: VueWrapper | undefined = wrapper
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'rolle-select' });
-    await rolleAutocomplete?.setValue(rolle.id);
+    await rolleAutocomplete?.setValue(
+      DoFactory.getTranslatedRolleWithAttrs({
+        value: rolle.id,
+        title: rolle.name,
+        rollenart: rolle.rollenart,
+        merkmale: rolle.merkmale,
+      }),
+    );
     rolleAutocomplete?.vm.$emit('update:search', rolle.id);
     await nextTick();
 
@@ -153,7 +156,7 @@ describe('RolleModify', () => {
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'schulenFilter' })
       .findComponent({ ref: 'personenkontext-create-organisation-select' });
-    await organisationAutocomplete?.setValue('O1');
+    await organisationAutocomplete?.setValue(DoFactory.getSchule({ id: 'O1' }));
     organisationAutocomplete?.vm.$emit('update:search', 'O1');
     await nextTick();
 
@@ -161,7 +164,7 @@ describe('RolleModify', () => {
     const rolleAutocomplete: VueWrapper | undefined = wrapper
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'rolle-select' });
-    await rolleAutocomplete?.setValue('54321');
+    await rolleAutocomplete?.setValue(DoFactory.getTranslatedRolleWithAttrs({ value: '54321' }));
     rolleAutocomplete?.vm.$emit('update:search', '54321');
     await nextTick();
 
@@ -217,7 +220,7 @@ describe('RolleModify', () => {
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'schulenFilter' })
       .findComponent({ ref: 'personenkontext-create-organisation-select' });
-    await organisationAutocomplete?.setValue(organisation.id);
+    await organisationAutocomplete?.setValue(organisation);
     organisationAutocomplete?.vm.$emit('update:search', organisation.id);
     await nextTick();
 
@@ -225,7 +228,14 @@ describe('RolleModify', () => {
     const rolleAutocomplete: VueWrapper | undefined = wrapper
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'rolle-select' });
-    await rolleAutocomplete?.setValue(kopersRolle.id);
+    await rolleAutocomplete?.setValue(
+      DoFactory.getTranslatedRolleWithAttrs({
+        value: kopersRolle.id,
+        title: kopersRolle.name,
+        rollenart: kopersRolle.rollenart,
+        merkmale: kopersRolle.merkmale,
+      }),
+    );
     rolleAutocomplete?.vm.$emit('update:search', kopersRolle.id);
     await nextTick();
 
@@ -280,14 +290,21 @@ describe('RolleModify', () => {
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'schulenFilter' })
       .findComponent({ ref: 'personenkontext-create-organisation-select' });
-    await organisationAutocomplete?.setValue(organisation.id);
+    await organisationAutocomplete?.setValue(organisation);
     organisationAutocomplete?.vm.$emit('update:search', organisation.id);
     await nextTick();
 
     const rolleAutocomplete: VueWrapper | undefined = wrapper
       ?.findComponent({ ref: 'personenkontext-create' })
       .findComponent({ ref: 'rolle-select' });
-    await rolleAutocomplete?.setValue(rolleLern.id);
+    await rolleAutocomplete?.setValue(
+      DoFactory.getTranslatedRolleWithAttrs({
+        value: rolleLern.id,
+        title: rolleLern.name,
+        rollenart: rolleLern.rollenart,
+        merkmale: rolleLern.merkmale,
+      }),
+    );
     rolleAutocomplete?.vm.$emit('update:search', rolleLern.id);
     await nextTick();
 

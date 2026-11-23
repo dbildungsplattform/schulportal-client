@@ -1,11 +1,9 @@
-import type { OrganisationResponseLegacy } from '@/api-client/generated';
 import routes from '@/router/routes';
 import { useBulkOperationStore, type BulkOperationStore } from '@/stores/BulkOperationStore';
 import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
-import { RollenArt, type RolleResponse } from '@/stores/RolleStore';
+import { RollenArt, type RolleResponse, type TranslatedRolleWithAttrs } from '@/stores/RolleStore';
 import type { Person } from '@/stores/types/Person';
 import { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
-import type { TranslatedObject } from '@/types';
 import { flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { vi, type MockInstance } from 'vitest';
@@ -17,12 +15,10 @@ let wrapper: VueWrapper | null = null;
 let router: Router;
 const bulkOperationStore: BulkOperationStore = useBulkOperationStore();
 
-const organisation: OrganisationResponseLegacy = DoFactory.getOrganisationenResponseLegacy();
 const person: Person = DoFactory.getPerson();
 
 type Props = {
   isDialogVisible: boolean;
-  organisationen: TranslatedObject[] | undefined;
   selectedPersonen: Map<string, PersonWithZuordnungen>;
   selectedOrganisationFromFilter: Organisation;
   selectedRolleFromFilter?: RolleResponse;
@@ -31,10 +27,6 @@ type Props = {
 function mountComponent(partialProps: Partial<Props> = {}): VueWrapper<InstanceType<typeof RolleUnassign>> {
   const props: Props = {
     isDialogVisible: true,
-    organisationen: [
-      { title: organisation.name, value: organisation.id },
-      { title: 'orga1', value: '1133' },
-    ],
     selectedPersonen: new Map<string, PersonWithZuordnungen>([
       [person.id, new PersonWithZuordnungen(person, [DoFactory.getZuordnung()])],
     ]),
@@ -78,6 +70,11 @@ beforeEach(async () => {
   vi.restoreAllMocks();
 });
 
+afterEach(() => {
+  wrapper?.unmount();
+  wrapper = null;
+});
+
 describe('RolleUnassign.vue', () => {
   test('renders the component', () => {
     wrapper = mountComponent();
@@ -102,14 +99,60 @@ describe('RolleUnassign.vue', () => {
     const submitButton: Element | null = document.body.querySelector('[data-testid="rolle-unassign-submit-button"]');
 
     expect(submitButton).not.toBeNull();
-    await nextTick();
+    await flushPromises();
+
+    const personenkontextCreate: VueWrapper = wrapper.findComponent({ ref: 'personenkontext-create' });
+    const rolleAutocomplete: VueWrapper = personenkontextCreate.findComponent({ ref: 'rolle-select' });
+    expect(personenkontextCreate.props()).toHaveProperty(
+      'selectedRolle',
+      expect.objectContaining({ value: 'rolle-id-123', title: 'Lehrer' }),
+    );
 
     const unassignSpy: MockInstance = vi.spyOn(bulkOperationStore, 'bulkUnassignPersonenFromRolle');
 
     submitButton?.dispatchEvent(new Event('click'));
     await flushPromises();
 
-    expect(unassignSpy).toHaveBeenCalledTimes(1);
+    expect(personenkontextCreate.props()).toHaveProperty(
+      'selectedRolle',
+      expect.objectContaining({ value: 'rolle-id-123', title: 'Lehrer' }),
+    );
+    expect(rolleAutocomplete.props()).toHaveProperty('error', false);
+    await vi.waitFor(() => expect(unassignSpy).toHaveBeenCalledTimes(1));
+  });
+
+  test('does not restore the filter Rolle after replacing and clearing the selection', async () => {
+    wrapper = mountComponent();
+    const personenkontextCreate: VueWrapper = wrapper.findComponent({ ref: 'personenkontext-create' });
+    const rolleAutocomplete: VueWrapper = personenkontextCreate.findComponent({ ref: 'rolle-select' });
+    const replacementRolle: TranslatedRolleWithAttrs = DoFactory.getTranslatedRolleWithAttrs();
+
+    expect(personenkontextCreate.props()).toHaveProperty(
+      'selectedRolle',
+      expect.objectContaining({ value: 'rolle-id-123', title: 'Lehrer' }),
+    );
+    expect(rolleAutocomplete.props()).toHaveProperty(
+      'modelValue',
+      expect.objectContaining({ value: 'rolle-id-123', title: 'Lehrer' }),
+    );
+
+    await rolleAutocomplete.setValue(replacementRolle);
+    await flushPromises();
+    expect(personenkontextCreate.props()).toHaveProperty('selectedRolle', replacementRolle);
+    expect(rolleAutocomplete.props()).toHaveProperty('modelValue', replacementRolle);
+
+    await rolleAutocomplete.get('.v-field__clearable .v-icon').trigger('click');
+    await flushPromises();
+    expect(personenkontextCreate.props()).toHaveProperty('selectedRolle', null);
+    expect(rolleAutocomplete.props()).toHaveProperty('modelValue', null);
+
+    const unassignSpy: MockInstance = vi.spyOn(bulkOperationStore, 'bulkUnassignPersonenFromRolle');
+    const submitButton: Element | null = document.body.querySelector('[data-testid="rolle-unassign-submit-button"]');
+    submitButton?.dispatchEvent(new Event('click'));
+    await flushPromises();
+
+    await vi.waitFor(() => expect(rolleAutocomplete.props()).toHaveProperty('error', true));
+    expect(unassignSpy).not.toHaveBeenCalled();
   });
 
   test('cancel button closes dialog and resets store', async () => {
@@ -142,6 +185,7 @@ describe('RolleUnassign.vue', () => {
   });
 
   test('shows error dialog when showErrorDialog is true', async () => {
+    wrapper = mountComponent();
     await nextTick();
 
     (wrapper?.vm as unknown as { showErrorDialog: boolean }).showErrorDialog = true;

@@ -6,20 +6,19 @@ import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import {
   DbiamPersonenuebersichtApiFactory,
   PersonenApiFactory,
-  PersonenFrontendApiFactory,
   type DbiamCreatePersonWithPersonenkontexteBodyParams,
   type DbiamPersonenuebersichtApiInterface,
   type DBiamPersonenuebersichtControllerFindPersonenuebersichten200Response,
   type DBiamPersonenuebersichtResponse,
   type DBiamPersonenzuordnungResponse,
   type LockUserBodyParams,
+  type PersonControllerFindPersons200Response,
   type PersonenApiInterface,
   type PersonendatensatzResponse,
-  type PersonenFrontendApiInterface,
   type PersonenuebersichtBodyParams,
-  type PersonFrontendControllerFindPersons200Response,
   type PersonLandesbediensteterSearchPersonenkontextResponse,
   type PersonLandesbediensteterSearchResponse,
+  type PersonLockOccasion,
   type PersonMetadataBodyParams,
 } from '../api-client/generated/api';
 import { Person } from './types/Person';
@@ -28,7 +27,6 @@ import { PersonWithZuordnungen } from './types/PersonWithZuordnungen';
 import { Zuordnung } from './types/Zuordnung';
 
 const personenApi: PersonenApiInterface = PersonenApiFactory(undefined, '', axiosApiInstance);
-const personenFrontendApi: PersonenFrontendApiInterface = PersonenFrontendApiFactory(undefined, '', axiosApiInstance);
 const personenuebersichtApi: DbiamPersonenuebersichtApiInterface = DbiamPersonenuebersichtApiFactory(
   undefined,
   '',
@@ -65,9 +63,9 @@ export type Personendatensatz = {
 
 export type {
   PersonendatensatzResponse,
-  SortOrder,
-  PersonLandesbediensteterSearchResponse,
   PersonLandesbediensteterSearchPersonenkontextResponse,
+  PersonLandesbediensteterSearchResponse,
+  SortOrder,
 };
 
 type PersonState = {
@@ -88,6 +86,7 @@ export type PersonFilter = {
   offset?: number;
   organisationIDs?: Array<string>;
   rolleIDs?: Array<string>;
+  sperrgruende?: PersonLockOccasion[];
   searchFilter?: string;
   sortOrder?: SortOrder;
   sortField?: SortField;
@@ -148,8 +147,8 @@ export const usePersonStore: StoreDefinition<'personStore', PersonState, PersonG
         this.loading = true;
         try {
           // Fetch all persons
-          const { data }: AxiosResponse<PersonFrontendControllerFindPersons200Response> =
-            await personenFrontendApi.personFrontendControllerFindPersons(
+          const { data }: AxiosResponse<PersonControllerFindPersons200Response> =
+            await personenApi.personControllerFindPersons(
               filter.offset,
               filter.limit,
               undefined,
@@ -158,6 +157,7 @@ export const usePersonStore: StoreDefinition<'personStore', PersonState, PersonG
               undefined,
               filter.organisationIDs,
               filter.rolleIDs,
+              filter.sperrgruende,
               filter.searchFilter,
               filter.sortOrder,
               filter.sortField,

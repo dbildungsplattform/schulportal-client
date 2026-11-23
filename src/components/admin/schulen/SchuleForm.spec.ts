@@ -93,7 +93,7 @@ describe('SchuleForm', () => {
       expect(wrapper?.find('[data-testid="schulform-radio-group"]').exists()).toBe(true);
       expect(wrapper?.find('[data-testid="dienststellennummer-input"]').exists()).toBe(true);
       expect(wrapper?.find('[data-testid="schulname-input"]').exists()).toBe(true);
-      expect(wrapper?.find('[data-testid="email-adress-input"]').exists()).toBe(true);
+      expect(wrapper?.find('[data-testid="email-address-input"]').exists()).toBe(true);
     });
 
     it('should not render form fields when errorCode is set', () => {
@@ -289,7 +289,7 @@ describe('SchuleForm', () => {
       createWrapper();
       await wrapper?.vm.$nextTick();
 
-      const input = wrapper?.find('[data-testid="email-adress-input"]');
+      const input = wrapper?.find('[data-testid="email-address-input"]');
       expect(input?.exists()).toBe(true);
     });
   });

@@ -9,14 +9,15 @@ import {
   type OrganisationStore,
 } from '@/stores/OrganisationStore';
 import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
-import { DOMWrapper, flushPromises, mount, VueWrapper } from '@vue/test-utils';
+import { DOMWrapper, enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
-import { expect, test, type MockInstance } from 'vitest';
+import { afterEach, expect, test, type MockInstance } from 'vitest';
 import { nextTick, type Component, type ComputedRef, type DefineComponent } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import KlassenManagementView from './KlassenManagementView.vue';
 
 let wrapper: VueWrapper | null = null;
+enableAutoUnmount(afterEach);
 
 async function mountComponent(): Promise<VueWrapper> {
   const router: Router = createRouter({
@@ -61,8 +62,8 @@ async function selectSchule(schule?: Partial<Organisation> | null): Promise<Orga
     total: 1,
     loading: false,
   });
-  searchFilterStore.selectedSchuleForKlassen = schuleWithDefaults.id;
-  await schuleAutocomplete?.setValue(schuleWithDefaults.id);
+  searchFilterStore.selectedSchuleForKlassen = schuleWithDefaults;
+  await schuleAutocomplete?.setValue(schuleWithDefaults);
   return schuleWithDefaults;
 }
 
@@ -70,7 +71,7 @@ async function selectKlasse(
   klasse: Partial<Organisation> | null,
   schule?: Organisation,
 ): Promise<Organisation | undefined> {
-  const klasseFilterStoreKey: string = '';
+  const klasseFilterStoreKey: string = 'klassen-management';
   const klasseAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ ref: 'klasse-select' }).findComponent({
     name: 'v-autocomplete',
   });
@@ -87,7 +88,7 @@ async function selectKlasse(
   });
   const klasseWithDefaults: Organisation = DoFactory.getKlasse(schule, klasse);
   organisationStore.klassenFilters.get(klasseFilterStoreKey)!.filterResult = [klasseWithDefaults];
-  await klasseAutocomplete?.setValue([klasseWithDefaults.id]);
+  await klasseAutocomplete?.setValue([klasseWithDefaults]);
   return klasseWithDefaults;
 }
 
@@ -145,7 +146,6 @@ describe('KlassenManagementView', () => {
     organisationStore.totalKlassen = 2;
 
     organisationStore.getAllOrganisationen = vi.fn();
-    organisationStore.getKlassenByOrganisationId = vi.fn();
     organisationStore.deleteOrganisationById = vi.fn();
 
     authStore.currentUser = authUser;
@@ -215,7 +215,7 @@ describe('KlassenManagementView', () => {
   });
   describe.each([[true], [false]])('when searchFilterStore has data (%s)', (hasStoreData: boolean) => {
     test('it populates filter', async () => {
-      searchFilterStore.selectedSchuleForKlassen = hasStoreData ? schule1.id : null;
+      searchFilterStore.selectedSchuleForKlassen = hasStoreData ? schule1 : null;
       organisationStore.organisationenFilters.set('klassen-management', {
         filterResult: [schule1],
         total: 1,
@@ -246,7 +246,7 @@ describe('KlassenManagementView', () => {
     expect(wrapper?.find('.v-data-table-footer__info').text()).toContain('31-50');
 
     const organisationAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ ref: 'schule-select' });
-    await organisationAutocomplete?.setValue('O1');
+    await organisationAutocomplete?.setValue(DoFactory.getSchule({ id: 'O1' }));
     await nextTick();
     await wrapper?.find('.v-pagination__prev button:not(.v-btn--disabled)').trigger('click');
 
@@ -275,7 +275,7 @@ describe('KlassenManagementView', () => {
     organisationStore.totalOrganisationen = 2;
 
     const organisationAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ ref: 'schule-select' });
-    await organisationAutocomplete?.setValue('O1');
+    await organisationAutocomplete?.setValue(DoFactory.getSchule({ id: 'O1' }));
     await nextTick();
 
     await itemsPerPageSelection?.setValue(50);
@@ -350,7 +350,6 @@ describe('KlassenManagementView', () => {
       includeTyp: OrganisationsTyp.Klasse,
       limit: searchFilterStore.klassenPerPage,
       offset: 0,
-      organisationIds: [],
       systemrechte: [RollenSystemRechtEnum.KlassenVerwalten],
     };
     expect(organisationStore.getAllOrganisationen).toHaveBeenLastCalledWith(expectedFilter);
@@ -396,7 +395,6 @@ describe('KlassenManagementView', () => {
       systemrechte: [RollenSystemRechtEnum.KlassenVerwalten],
       offset: 0,
       limit: searchFilterStore.klassenPerPage,
-      organisationIds: [klasse.id],
       administriertVon: [schule.id],
     });
   });
@@ -478,6 +476,67 @@ describe('KlassenManagementView', () => {
         sortOrder: 'asc',
       }),
     );
+  });
+
+  test('it still shows selected Klassen that are missing from the search result', async () => {
+    const missingKlasse: Organisation = DoFactory.getKlasse(schule1, {
+      name: '7x-selektiert',
+      schuleDetails: schule1.name,
+    });
+    searchFilterStore.selectedKlassenForKlassen = [missingKlasse];
+    try {
+      wrapper = await mountComponent();
+      await flushPromises();
+
+      expect(organisationStore.allKlassen.some((klasse: Organisation) => klasse.id === missingKlasse.id)).toBe(false);
+      expect(wrapper.find('[data-testid="klasse-table"]').text()).toContain('7x-selektiert');
+    } finally {
+      searchFilterStore.selectedKlassenForKlassen = [];
+    }
+  });
+
+  test('it counts only the selected Klassen in the table when a selection exists', async () => {
+    organisationStore.totalKlassen = 30;
+    searchFilterStore.selectedKlassenForKlassen = [
+      DoFactory.getKlasse(schule1, { name: '7x-a' }),
+      DoFactory.getKlasse(schule1, { name: '7x-b' }),
+    ];
+    try {
+      wrapper = await mountComponent();
+      await flushPromises();
+
+      interface KlassenManagementView extends DefineComponent {
+        totalKlassenCount: ComputedRef<number>;
+        totalKlassen: ComputedRef<number>;
+      }
+      const vm: KlassenManagementView = wrapper.vm as unknown as KlassenManagementView;
+
+      expect(vm.totalKlassenCount).toBe(2);
+      expect(vm.totalKlassen).toBe(42);
+    } finally {
+      searchFilterStore.selectedKlassenForKlassen = [];
+    }
+  });
+
+  test('it requests the selected page of the search with offset and without organisationIds', async () => {
+    wrapper = await mountComponent();
+    await flushPromises();
+
+    interface KlassenManagementView extends DefineComponent {
+      setKlassenPage: (page: number) => void;
+    }
+    // Totals above the page size, otherwise the table clamps the page to 1 on updates
+    organisationStore.totalKlassen = 100;
+    organisationStore.totalOrganisationen = 100;
+    (wrapper.vm as unknown as KlassenManagementView).setKlassenPage(2);
+    await flushPromises();
+
+    const lastFilter: OrganisationenFilter | undefined = vi.mocked(organisationStore.getAllOrganisationen).mock
+      .lastCall?.[0];
+    expect(lastFilter?.offset).toBe(searchFilterStore.klassenPerPage);
+    expect(lastFilter).not.toHaveProperty('organisationIds');
+
+    searchFilterStore.klassenPage = 1;
   });
 
   test('it should call deleteOrganisationById when deleting a Klasse', async () => {

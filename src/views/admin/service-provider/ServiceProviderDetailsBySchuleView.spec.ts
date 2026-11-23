@@ -1,7 +1,6 @@
-import { DOMWrapper, VueWrapper, enableAutoUnmount, mount } from '@vue/test-utils';
-import { createPinia, setActivePinia } from 'pinia';
+import { DOMWrapper, VueWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import type { MockInstance } from 'vitest';
-import { nextTick, type Component, type ComponentPublicInstance } from 'vue';
+import { nextTick, type ComponentPublicInstance } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 
 import {
@@ -13,6 +12,7 @@ import type { RollenerweiterungAssignErrorDialogProps } from '@/components/admin
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
+import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
 import { RollenArt, useRolleStore, type RolleStore } from '@/stores/RolleStore';
 import {
   ServiceProviderKategorie,
@@ -29,8 +29,7 @@ const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
 const authStore: AuthStore = useAuthStore();
 const rolleStore: RolleStore = useRolleStore();
 const configStore: ConfigStore = useConfigStore();
-
-enableAutoUnmount(afterEach);
+const organisationStore: OrganisationStore = useOrganisationStore();
 
 const mockServiceProvider: ManageableServiceProviderDetail = DoFactory.getManageableServiceProviderDetail({
   kategorie: ServiceProviderKategorie.Hinweise,
@@ -38,8 +37,38 @@ const mockServiceProvider: ManageableServiceProviderDetail = DoFactory.getManage
   relevantSystemrechte: [RollenSystemRechtEnum.AngeboteVerwalten, RollenSystemRechtEnum.RollenErweitern],
 });
 
+type OrganisationCacheCase = {
+  cache: 'different' | 'empty' | 'matching';
+  hasQuery: boolean;
+  shouldReload: boolean;
+};
+
+const organisationCacheCases: OrganisationCacheCase[] = [
+  { cache: 'different', hasQuery: true, shouldReload: true },
+  { cache: 'empty', hasQuery: true, shouldReload: true },
+  { cache: 'matching', hasQuery: true, shouldReload: false },
+  { cache: 'empty', hasQuery: false, shouldReload: false },
+  { cache: 'different', hasQuery: false, shouldReload: false },
+];
+
+enableAutoUnmount(afterEach);
+
+async function mountView(): Promise<void> {
+  wrapper = mount(ServiceProviderDetailsBySchuleView, {
+    attachTo: document.getElementById('app') || '',
+    global: { plugins: [router] },
+  });
+  await flushPromises();
+}
+
 beforeEach(async () => {
-  setActivePinia(createPinia());
+  vi.restoreAllMocks();
+  vi.clearAllMocks();
+  serviceProviderStore.$reset();
+  authStore.$reset();
+  rolleStore.$reset();
+  configStore.$reset();
+  organisationStore.$reset();
   document.body.innerHTML = `
     <div>
       <div id="app"></div>
@@ -58,36 +87,15 @@ beforeEach(async () => {
   });
   await router.isReady();
 
-  wrapper = mount(ServiceProviderDetailsBySchuleView, {
-    attachTo: document.getElementById('app') || '',
-    global: {
-      components: {
-        ServiceProviderDetailsView: ServiceProviderDetailsBySchuleView as Component,
-      },
-      mocks: {
-        route: {
-          fullPath: 'full/path',
-        },
-      },
-      plugins: [router],
-    },
-  });
   serviceProviderStore.currentServiceProvider = mockServiceProvider;
   const mockItems: RollenerweiterungWithExtendedDataResponse[] = Array.from({ length: 2 }, () =>
     DoFactory.getRollenerweiterungItem(),
   );
   serviceProviderStore.rollenerweiterungen = DoFactory.getRollenerweiterungenResponse(mockItems);
   serviceProviderStore.rollenerweiterungenUebersicht = DoFactory.buildRollenerweiterungenUebersicht(mockItems);
-  configStore.configData = {
-    befristungBearbeitenEnabled: true,
-    rolleBearbeitenEnabled: true,
-    rolleErweiternEnabled: true,
-    setUemPasswordEnabled: true,
-    schulischeAngeboteErstellen: true,
-  };
+  configStore.configData = { schulischeAngeboteErstellen: true } as FeatureFlagResponse;
   authStore.hasRollenerweiternPermission = true;
   authStore.grantedGatedRollenSystemrechte = [];
-  configStore.configData = { schulischeAngeboteErstellen: true } as FeatureFlagResponse;
 
   rolleStore.allRollen = [
     DoFactory.getRolleWithServiceProviders({ rollenart: RollenArt.Lehr }),
@@ -99,10 +107,75 @@ beforeEach(async () => {
 afterEach(() => {
   vi.clearAllTimers();
   vi.unstubAllGlobals();
-  wrapper?.unmount();
+});
+
+describe('ServiceProviderDetailsBySchuleView organisation resolution', () => {
+  test.each(organisationCacheCases)(
+    'handles a $cache organisation cache with query present=$hasQuery and reload=$shouldReload',
+    async ({ cache, hasQuery, shouldReload }: OrganisationCacheCase): Promise<void> => {
+      const requestedOrganisation: Organisation = DoFactory.getSchule({ id: 'some-org-id' });
+      const cachedOrganisation: Organisation | null =
+        cache === 'empty' ? null : cache === 'matching' ? requestedOrganisation : DoFactory.getSchule();
+      organisationStore.currentOrganisation = cachedOrganisation;
+
+      await router.replace({
+        name: 'angebot-details-schulspezifisch',
+        params: { id: mockServiceProvider.id },
+        query: hasQuery ? { orga: requestedOrganisation.id } : {},
+      });
+
+      const lookupSpy: MockInstance = vi
+        .spyOn(organisationStore, 'getOrganisationById')
+        .mockReset()
+        .mockImplementationOnce((): Promise<void> => {
+          organisationStore.currentOrganisation = requestedOrganisation;
+          return Promise.resolve();
+        });
+      const loadSpy: MockInstance = vi.spyOn(serviceProviderStore, 'getRollenerweiterungenById').mockClear();
+
+      await mountView();
+      const view: VueWrapper = wrapper!;
+
+      expect(lookupSpy).toHaveBeenCalledTimes(shouldReload ? 1 : 0);
+      if (shouldReload) {
+        expect(lookupSpy).toHaveBeenCalledWith(requestedOrganisation.id);
+      }
+
+      const expectedOrganisation: Organisation | null = hasQuery ? requestedOrganisation : cachedOrganisation;
+      expect(organisationStore.currentOrganisation).toEqual(expectedOrganisation);
+      expect(view.find('[data-testid="layout-card-headline"]').attributes('title')).toBe(expectedOrganisation?.name);
+      if (expectedOrganisation) {
+        expect(view.find('[data-testid="layout-card-headline"]').text()).toContain(expectedOrganisation.name);
+      }
+      expect(view.findComponent({ name: 'RollenerweiterungAssignErrorDialog' }).props('dstNr')).toBe(
+        expectedOrganisation?.kennung ?? '',
+      );
+      expect(loadSpy).toHaveBeenCalledWith({
+        serviceProviderId: mockServiceProvider.id,
+        organisationIds: hasQuery ? [requestedOrganisation.id] : [],
+      });
+    },
+  );
 });
 
 describe('ServiceProviderDetailsBySchuleView', () => {
+  beforeEach(async () => {
+    await mountView();
+  });
+
+  test('persists rollenerweiterungen for the organisation from the query', async () => {
+    const persistSpy: MockInstance = vi
+      .spyOn(serviceProviderStore, 'persistRollenerweiterungenForServiceProvider')
+      .mockResolvedValue(undefined);
+
+    await wrapper?.find('[data-testid="rollenerweiterung-bearbeiten-button"]').trigger('click');
+    await flushPromises();
+    await wrapper?.find('[data-testid="rollenerweiterung-save-button"]').trigger('click');
+    await flushPromises();
+
+    expect(persistSpy).toHaveBeenCalledWith(expect.objectContaining({ organisationId: 'some-org-id' }));
+  });
+
   test('it renders the service provider details page and shows its data', () => {
     expect(wrapper).toBeTruthy();
     expect(wrapper?.find('[data-testid="service-provider-details-by-schule-card"]').isVisible()).toBe(true);
@@ -209,16 +282,8 @@ describe('ServiceProviderDetailsBySchuleView', () => {
       });
       await router.isReady();
 
-      wrapper = mount(ServiceProviderDetailsBySchuleView, {
-        attachTo: document.getElementById('app') || '',
-        global: {
-          plugins: [router],
-        },
-      });
-      serviceProviderStore.currentServiceProvider = mockServiceProvider;
-
       const push: MockInstance = vi.spyOn(router, 'push');
-      await wrapper.find('[data-testid="service-provider-bearbeiten-button"]').trigger('click');
+      await wrapper!.find('[data-testid="service-provider-bearbeiten-button"]').trigger('click');
 
       expect(push).toHaveBeenCalledWith({
         name: 'angebot-edit',
