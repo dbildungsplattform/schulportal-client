@@ -486,7 +486,7 @@ describe('SchulenFilter', () => {
               .setValue(multiple ? [selectedSchule] : selectedSchule);
 
             const classes: Array<string> = wrapper.findComponent({ ref: 'schule-select' }).classes();
-            if (highlightSelection || autoSelectedSchule) {
+            if (readonly || highlightSelection || autoSelectedSchule) {
               expect(classes).toContain('selected');
             } else {
               expect(classes).not.toContain('selected');
