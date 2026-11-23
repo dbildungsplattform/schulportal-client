@@ -124,7 +124,6 @@ export type OrganisationenFilter = {
   excludeTyp?: OrganisationsTyp[];
   administriertVon?: Array<string>;
   zugehoerigZu?: Array<string>;
-  organisationIds?: Array<string>;
   sortOrder?: SortOrder;
   sortField?: OrganisationSortField;
 };
@@ -262,7 +261,6 @@ export const useOrganisationStore: StoreDefinition<
           filter?.excludeTyp,
           filter?.administriertVon,
           filter?.zugehoerigZu,
-          filter?.organisationIds,
           filter?.sortOrder,
           filter?.sortField,
         );
@@ -321,19 +319,8 @@ export const useOrganisationStore: StoreDefinition<
 
       this.loading = true;
       try {
-        const response: AxiosResponse<Organisation[]> = await organisationApi.organisationControllerFindOrganizations(
-          undefined,
-          searchFilterStore.klassenPerPage,
-          undefined,
-          undefined,
-          undefined,
-          OrganisationsTyp.Schule,
-          ['KLASSEN_VERWALTEN'],
-          undefined,
-          undefined,
-          undefined,
-          uncachedIds,
-        );
+        const response: AxiosResponse<Organisation[]> =
+          await organisationApi.organisationControllerFindOrganisationsByIds({ organisationIds: uncachedIds });
 
         const newSchulenMap: Map<string, string> = new Map(
           response.data.map((org: Organisation) => [org.id, `${org.kennung} (${org.name.trim()})`]),
