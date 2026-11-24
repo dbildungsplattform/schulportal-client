@@ -133,13 +133,16 @@ describe('rolleStore', () => {
         }),
       ];
 
-      mockadapter
-        .onGet('/api/rolle?offset=0&limit=30&searchStr=')
-        .replyOnce(200, mockResponse, { 'x-paging-total': '1' });
+      mockadapter.onGet('/api/rolle?offset=0&limit=30&searchStr=').replyOnce(200, {
+        total: 1,
+        offset: 0,
+        limit: 10,
+        items: mockResponse,
+      });
       const getAllRollenPromise: Promise<void> = rolleStore.getAllRollen({ offset: 0, limit: 30, searchString: '' });
       expect(rolleStore.loading).toBe(true);
       await getAllRollenPromise;
-      expect(rolleStore.allRollen).toEqual([...mockResponse]);
+      expect(rolleStore.allRollen).toEqual(mockResponse);
       expect(rolleStore.totalRollen).toBe(1);
       expect(rolleStore.loading).toBe(false);
     });
@@ -197,8 +200,11 @@ describe('rolleStore', () => {
   describe('getRollenAvailableForErweiterung', () => {
     it('should load available rollen and pass all filters to the api', async () => {
       const mockResponse: RolleWithServiceProvidersResponse[] = [DoFactory.getRolleWithServiceProviders()];
-      mockadapter.onGet(/^\/api\/rolle\/available-for-erweiterung/).replyOnce(200, mockResponse, {
-        'x-paging-total': '12',
+      mockadapter.onGet(/^\/api\/rolle\/available-for-erweiterung/).replyOnce(200, {
+        total: 12,
+        offset: 10,
+        limit: 5,
+        items: mockResponse,
       });
 
       const promise: Promise<void> = rolleStore.getRollenAvailableForErweiterung({
@@ -257,8 +263,11 @@ describe('rolleStore', () => {
   describe('getRollenAvailableForImport', () => {
     it('should load rollen available for import and pass all filters to the api', async () => {
       const mockResponse: RolleWithServiceProvidersResponse[] = [DoFactory.getRolleWithServiceProviders()];
-      mockadapter.onGet(/^\/api\/rolle\/available-for-import/).replyOnce(200, mockResponse, {
-        'x-paging-total': '8',
+      mockadapter.onGet(/^\/api\/rolle\/available-for-import/).replyOnce(200, {
+        total: 8,
+        offset: 20,
+        limit: 10,
+        items: mockResponse,
       });
 
       const promise: Promise<void> = rolleStore.getRollenAvailableForImport({
@@ -308,8 +317,11 @@ describe('rolleStore', () => {
   describe('getRollenForMptZuordnung', () => {
     it('should load rollen for MPT assignment and pass all filters to the api', async () => {
       const mockResponse: RolleWithServiceProvidersResponse[] = [DoFactory.getRolleWithServiceProviders()];
-      mockadapter.onGet(/^\/api\/rolle\/available-for-mpt-zuordnung/).replyOnce(200, mockResponse, {
-        'x-paging-total': '4',
+      mockadapter.onGet(/^\/api\/rolle\/available-for-mpt-zuordnung/).replyOnce(200, {
+        total: 4,
+        offset: 30,
+        limit: 15,
+        items: mockResponse,
       });
 
       const promise: Promise<void> = rolleStore.getRollenForMptZuordnung({
@@ -515,10 +527,10 @@ describe('rolleStore', () => {
       expect(rolleStore.loading).toBe(false);
     });
 
-    it('should load a role through the MPT-authorized list endpoint on direct navigation', async () => {
+    it('should load a role through the MPT-authorized endpoint on direct navigation', async () => {
       const rolle: RolleWithServiceProvidersResponse = DoFactory.getRolleWithServiceProviders();
       rolleStore.currentMptRolle = DoFactory.getRolle();
-      mockadapter.onGet().replyOnce(200, [rolle]);
+      mockadapter.onGet().replyOnce(200, rolle);
 
       const promise: Promise<void> = rolleStore.getMptRolleById(rolle.id, 'organisation-1');
       expect(rolleStore.loading).toBe(true);
@@ -526,16 +538,15 @@ describe('rolleStore', () => {
       await promise;
 
       const requestUrl: string = mockadapter.history.get[0]?.url ?? '';
-      expect(requestUrl).toContain('/api/rolle/available-for-mpt-zuordnung');
-      expect(requestUrl).toContain('organisationIds=organisation-1');
-      expect(requestUrl).toContain(`rolleIds=${rolle.id}`);
+      expect(requestUrl).toContain(`/api/rolle/available-for-mpt-zuordnung/${rolle.id}`);
+      expect(requestUrl).toContain('organisationId=organisation-1');
       expect(rolleStore.currentMptRolle?.id).toBe(rolle.id);
       expect(rolleStore.errorCode).toBe('');
       expect(rolleStore.loading).toBe(false);
     });
 
-    it('should set an error when the requested MPT role is not returned', async () => {
-      mockadapter.onGet().replyOnce(200, []);
+    it('should set an error when the requested MPT role is not found', async () => {
+      mockadapter.onGet().replyOnce(404);
 
       await rolleStore.getMptRolleById('rolle-1', 'organisation-1');
 

@@ -4,6 +4,7 @@ import type { OrganisationSortField, SortOrder } from '@/utils/sorting';
 import { type AxiosResponse } from 'axios';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import {
+  OrganisationControllerFindOrganizations200Response,
   OrganisationenApiFactory,
   OrganisationsTyp,
   TraegerschaftTyp,
@@ -124,7 +125,6 @@ export type OrganisationenFilter = {
   excludeTyp?: OrganisationsTyp[];
   administriertVon?: Array<string>;
   zugehoerigZu?: Array<string>;
-  organisationIds?: Array<string>;
   sortOrder?: SortOrder;
   sortField?: OrganisationSortField;
 };
@@ -251,36 +251,37 @@ export const useOrganisationStore: StoreDefinition<
     async getAllOrganisationen(filter?: OrganisationenFilter): Promise<void> {
       this.loading = true;
       try {
-        const response: AxiosResponse<Organisation[]> = await organisationApi.organisationControllerFindOrganizations(
-          filter?.offset,
-          filter?.limit,
-          undefined,
-          undefined,
-          filter?.searchString,
-          filter?.includeTyp,
-          filter?.systemrechte,
-          filter?.excludeTyp,
-          filter?.administriertVon,
-          filter?.zugehoerigZu,
-          filter?.organisationIds,
-          filter?.sortOrder,
-          filter?.sortField,
-        );
+        const response: AxiosResponse<OrganisationControllerFindOrganizations200Response> =
+          await organisationApi.organisationControllerFindOrganizations(
+            filter?.offset,
+            filter?.limit,
+            undefined,
+            undefined,
+            filter?.searchString,
+            filter?.includeTyp,
+            filter?.systemrechte,
+            filter?.excludeTyp,
+            filter?.administriertVon,
+            filter?.zugehoerigZu,
+            filter?.sortOrder,
+            filter?.sortField,
+          );
+
         if (filter?.includeTyp === OrganisationsTyp.Klasse) {
-          this.allKlassen = response.data;
-          this.totalKlassen = +response.headers['x-paging-total'];
+          this.allKlassen = response.data.items;
+          this.totalKlassen = response.data.total;
           await this.fetchSchuleDetailsForKlassen();
         } else if (filter?.includeTyp === OrganisationsTyp.Schule) {
-          this.allSchulen = response.data;
+          this.allSchulen = response.data.items;
           // The total number of all Schulen before applying pagination (To use in the Result table to show all Einträge)
-          this.totalSchulen = +response.headers['x-paging-total'];
+          this.totalSchulen = response.data.total;
         } else if (filter?.includeTyp === OrganisationsTyp.Traeger) {
-          this.allSchultraeger = response.data;
-          this.totalSchultraeger = +response.headers['x-paging-total'];
+          this.allSchultraeger = response.data.items;
+          this.totalSchultraeger = response.data.total;
           await this.fetchSchuleDetailsForSchultraeger();
         } else {
-          this.allOrganisationen = response.data;
-          this.totalOrganisationen = +response.headers['x-paging-total'];
+          this.allOrganisationen = response.data.items;
+          this.totalOrganisationen = response.data.total;
         }
         this.loading = false;
       } catch (error: unknown) {
@@ -321,19 +322,8 @@ export const useOrganisationStore: StoreDefinition<
 
       this.loading = true;
       try {
-        const response: AxiosResponse<Organisation[]> = await organisationApi.organisationControllerFindOrganizations(
-          undefined,
-          searchFilterStore.klassenPerPage,
-          undefined,
-          undefined,
-          undefined,
-          OrganisationsTyp.Schule,
-          ['KLASSEN_VERWALTEN'],
-          undefined,
-          undefined,
-          undefined,
-          uncachedIds,
-        );
+        const response: AxiosResponse<Organisation[]> =
+          await organisationApi.organisationControllerFindOrganisationsByIds({ organisationIds: uncachedIds });
 
         const newSchulenMap: Map<string, string> = new Map(
           response.data.map((org: Organisation) => [org.id, `${org.kennung} (${org.name.trim()})`]),
@@ -359,24 +349,25 @@ export const useOrganisationStore: StoreDefinition<
       );
       this.loading = true;
       try {
-        const response: AxiosResponse<Organisation[]> = await organisationApi.organisationControllerFindOrganizations(
-          undefined,
-          searchFilterStore.klassenPerPage,
-          undefined,
-          undefined,
-          undefined,
-          OrganisationsTyp.Schule,
-          ['SCHULTRAEGER_VERWALTEN'],
-          undefined,
-          undefined,
-          // Sending Schulträger IDs in zugehoerigZu to get the direct children
-          Array.from(schultraegerIds),
-          undefined,
-        );
+        const response: AxiosResponse<OrganisationControllerFindOrganizations200Response> =
+          await organisationApi.organisationControllerFindOrganizations(
+            undefined,
+            searchFilterStore.klassenPerPage,
+            undefined,
+            undefined,
+            undefined,
+            OrganisationsTyp.Schule,
+            ['SCHULTRAEGER_VERWALTEN'],
+            undefined,
+            undefined,
+            // Sending Schulträger IDs in zugehoerigZu to get the direct children
+            Array.from(schultraegerIds),
+            undefined,
+          );
         // Map Schulträger IDs to multiple assigned Schulen
         const schulenMap: Map<string, string[]> = new Map();
 
-        response.data.forEach((org: Organisation) => {
+        response.data.items.forEach((org: Organisation) => {
           if (org.zugehoerigZu) {
             if (!schulenMap.has(org.zugehoerigZu)) {
               schulenMap.set(org.zugehoerigZu, []);
@@ -643,7 +634,7 @@ export const useOrganisationStore: StoreDefinition<
       this.errorCode = '';
       this.loading = true;
       try {
-        const { data }: { data: Array<OrganisationResponse> } =
+        const { data }: { data: OrganisationControllerFindOrganizations200Response } =
           await organisationApi.organisationControllerFindOrganizations(
             filter.offset,
             filter.limit,
@@ -659,9 +650,9 @@ export const useOrganisationStore: StoreDefinition<
           );
 
         if (type === SchuleType.ASSIGNED) {
-          this.schulenFromTraeger = data;
+          this.schulenFromTraeger = data.items;
         } else {
-          this.schulenWithoutTraeger = data;
+          this.schulenWithoutTraeger = data.items;
         }
       } catch (error: unknown) {
         this.errorCode = getResponseErrorCode(error, 'SCHULTRAEGER_ERROR');
@@ -712,21 +703,22 @@ export const useOrganisationStore: StoreDefinition<
         this.organisationenFilters.set(storeKey, organisationenFilter);
       }
       try {
-        const response: AxiosResponse<Organisation[]> = await organisationApi.organisationControllerFindOrganizations(
-          filter?.offset,
-          filter?.limit,
-          undefined,
-          undefined,
-          filter?.searchString,
-          filter?.includeTyp,
-          filter?.systemrechte,
-          filter?.excludeTyp,
-          filter?.administriertVon,
-          filter?.zugehoerigZu,
-          undefined,
-        );
-        organisationenFilter.filterResult = response.data;
-        organisationenFilter.total = +response.headers['x-paging-total'];
+        const response: AxiosResponse<OrganisationControllerFindOrganizations200Response> =
+          await organisationApi.organisationControllerFindOrganizations(
+            filter?.offset,
+            filter?.limit,
+            undefined,
+            undefined,
+            filter?.searchString,
+            filter?.includeTyp,
+            filter?.systemrechte,
+            filter?.excludeTyp,
+            filter?.administriertVon,
+            filter?.zugehoerigZu,
+            undefined,
+          );
+        organisationenFilter.filterResult = response.data.items;
+        organisationenFilter.total = response.data.total;
       } catch (error: unknown) {
         organisationenFilter.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
       } finally {
@@ -755,20 +747,21 @@ export const useOrganisationStore: StoreDefinition<
 
       klassenFilter.loading = true;
       try {
-        const response: AxiosResponse<Organisation[]> = await organisationApi.organisationControllerFindOrganizations(
-          0,
-          200,
-          undefined,
-          undefined,
-          filter?.searchString,
-          OrganisationsTyp.Klasse,
-          filter?.systemrechte,
-          undefined,
-          filter?.administriertVon,
-          undefined,
-        );
-        klassenFilter.filterResult = response.data;
-        klassenFilter.total = +response.headers['x-paging-pagetotal'];
+        const response: AxiosResponse<OrganisationControllerFindOrganizations200Response> =
+          await organisationApi.organisationControllerFindOrganizations(
+            0,
+            200,
+            undefined,
+            undefined,
+            filter?.searchString,
+            OrganisationsTyp.Klasse,
+            filter?.systemrechte,
+            undefined,
+            filter?.administriertVon,
+            undefined,
+          );
+        klassenFilter.filterResult = response.data.items;
+        klassenFilter.total = response.data.total;
       } catch (error: unknown) {
         klassenFilter.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
       } finally {

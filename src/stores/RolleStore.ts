@@ -4,6 +4,7 @@ import { type AxiosResponse } from 'axios';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import {
   RolleApiFactory,
+  RolleControllerFindRollen200Response,
   RolleControllerFindRollenAvailableForPersonAdministration200Response,
   RollenArt,
   RollenMerkmal,
@@ -239,19 +240,18 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
       async getAllRollen(filter: RolleFilter) {
         this.loading = true;
         try {
-          const response: AxiosResponse<Array<RolleWithServiceProvidersResponse>> =
+          const response: AxiosResponse<RolleControllerFindRollen200Response> =
             await rolleApi.rolleControllerFindRollen(
               filter.offset,
               filter.limit,
               filter.searchString,
               filter.organisationIds,
-              undefined,
               filter.rollenarten,
               filter.merkmale,
               filter.serviceProviderIds,
             );
-          this.allRollen = response.data;
-          this.totalRollen = +response.headers['x-paging-total'];
+          this.allRollen = response.data.items;
+          this.totalRollen = response.data.total;
         } catch (error: unknown) {
           this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
         } finally {
@@ -262,7 +262,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
       async getRollenAvailableForErweiterung(filter: RollenForErweiterungFilter): Promise<void> {
         this.loading = true;
         try {
-          const response: AxiosResponse<Array<RolleWithServiceProvidersResponse>> =
+          const response: AxiosResponse<RolleControllerFindRollen200Response> =
             await rolleApi.rolleControllerFindRollenAvailableForErweiterung(
               filter.organisationId,
               filter.offset,
@@ -271,8 +271,8 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               filter.rollenarten,
               filter.systemrechte,
             );
-          this.allRollen = response.data;
-          this.totalRollen = +response.headers['x-paging-total'];
+          this.allRollen = response.data.items;
+          this.totalRollen = response.data.total;
         } catch (error: unknown) {
           this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
         } finally {
@@ -283,7 +283,7 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
       async getRollenAvailableForImport(filter: RollenForImportFilter): Promise<void> {
         this.loading = true;
         try {
-          const response: AxiosResponse<Array<RolleWithServiceProvidersResponse>> =
+          const response: AxiosResponse<RolleControllerFindRollen200Response> =
             await rolleApi.rolleControllerFindRollenAvailableForImport(
               filter.organisationId,
               filter.offset,
@@ -291,8 +291,8 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               filter.searchString,
               filter.rollenarten,
             );
-          this.allRollen = response.data;
-          this.totalRollen = +response.headers['x-paging-total'];
+          this.allRollen = response.data.items;
+          this.totalRollen = response.data.total;
         } catch (error: unknown) {
           this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
         } finally {
@@ -303,15 +303,15 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
       async getRollenForMptZuordnung(filter: RollenForMptZuordnungFilter): Promise<void> {
         this.loading = true;
         try {
-          const response: AxiosResponse<Array<RolleWithServiceProvidersResponse>> =
+          const response: AxiosResponse<RolleControllerFindRollen200Response> =
             await rolleApi.rolleControllerFindRollenForMptZuordnung(
               filter.offset,
               filter.limit,
               filter.searchString,
               filter.organisationIds,
             );
-          this.allRollen = response.data;
-          this.totalRollen = +response.headers['x-paging-total'];
+          this.allRollen = response.data.items;
+          this.totalRollen = response.data.total;
         } catch (error: unknown) {
           this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
         } finally {
@@ -367,20 +367,9 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
             return;
           }
 
-          const { data }: AxiosResponse<Array<RolleWithServiceProvidersResponse>> =
-            await rolleApi.rolleControllerFindRollenForMptZuordnung(
-              undefined,
-              undefined,
-              undefined,
-              [organisationId],
-              [rolleId],
-            );
-          const rolle: RolleWithServiceProvidersResponse | undefined = data[0];
-          if (!rolle) {
-            this.errorCode = 'UNSPECIFIED_ERROR';
-            return;
-          }
-          this.currentMptRolle = mapRolleWithServiceProvidersResponseToRolle(rolle);
+          const { data }: { data: RolleWithServiceProvidersResponse } =
+            await rolleApi.rolleControllerFindRolleForMptZuordnungById(rolleId, organisationId);
+          this.currentMptRolle = mapRolleWithServiceProvidersResponseToRolle(data);
         } catch (error: unknown) {
           this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
         } finally {
@@ -490,7 +479,6 @@ export const useRolleStore: StoreDefinition<'rolleStore', RolleState, RolleGette
               params.limit,
               params.rollenartForPerson,
               params.rolleName,
-              undefined,
               params.systemrecht,
             );
           this.rollenForPersonenkontextCreation = data.items

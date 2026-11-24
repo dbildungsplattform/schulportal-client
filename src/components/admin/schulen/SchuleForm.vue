@@ -200,16 +200,16 @@
       </v-row>
       <FormRow
         :error-label="selectedEmailAdressProps['error']"
-        label-for-id="email-adress-input"
+        label-for-id="email-address-input"
         :is-required="true"
         :label="$t('admin.schule.emailAdresse')"
       >
         <v-text-field
           v-bind="selectedEmailAdressProps"
-          ref="email-adress-input"
+          ref="email-address-input"
           v-model="selectedEmailAdress"
           clearable
-          data-testid="email-adress-input"
+          data-testid="email-address-input"
           :placeholder="$t('admin.schule.emailAdresse')"
           variant="outlined"
           density="compact"
