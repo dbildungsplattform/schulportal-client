@@ -1064,9 +1064,7 @@ describe('PersonManagementView', () => {
     await nextTick();
 
     const rolleModify: VueWrapper<InstanceType<typeof RolleModify>> = wrapper!.findComponent(RolleModify);
-    expect(rolleModify.props('rollen')).toEqual(
-      expect.arrayContaining([expect.objectContaining({ value: '99999' })]),
-    );
+    expect(rolleModify.props('rollen')).toEqual(expect.arrayContaining([expect.objectContaining({ value: '99999' })]));
   });
 
   test.each([

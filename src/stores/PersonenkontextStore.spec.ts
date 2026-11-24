@@ -445,11 +445,7 @@ describe('PersonenkontextStore', () => {
           .replyOnce(200, mockResponse);
         personenkontextStore.errorCode = 'PREVIOUS_ERROR';
 
-        const promise: Promise<void> = personenkontextStore.zuordnenLandesbedienstete(
-          updates,
-          mockPersonId,
-          '1234567',
-        );
+        const promise: Promise<void> = personenkontextStore.zuordnenLandesbedienstete(updates, mockPersonId, '1234567');
         expect(personenkontextStore.loading).toBe(true);
         expect(personenkontextStore.errorCode).toBe('');
         await promise;
