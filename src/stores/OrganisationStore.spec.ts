@@ -860,6 +860,20 @@ describe('OrganisationStore', () => {
       expect(organisationStore.allKlassen[0]?.schuleDetails).toBe('123456 (Schule 1)');
     });
 
+    it('should use cached schule details without making a request', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
+      const schule: Organisation = DoFactory.getSchule();
+      const klasse: Organisation = DoFactory.getKlasse(schule);
+      organisationStore.allKlassen = [klasse];
+      organisationStore.cachedSchulenMap.set(schule.id, 'cached school details');
+
+      await organisationStore.fetchSchuleDetailsForKlassen();
+
+      expect(organisationStore.allKlassen).toEqual([{ ...klasse, schuleDetails: 'cached school details' }]);
+      expect(mockadapter.history.post).toHaveLength(0);
+      expect(organisationStore.errorCode).toBe('');
+    });
+
     it.each([
       ['some mock server error', 'UNSPECIFIED_ERROR'],
       [{ i18nKey: 'GET_ERROR' }, 'GET_ERROR'],
