@@ -78,6 +78,15 @@ function emit(wrapper: VueWrapper, componentName: string, event: string, ...args
 }
 
 describe('OrganisationsbeziehungenSection', (): void => {
+  it('should reset the relationship batch when unmounted', (): void => {
+    const { wrapper, organisationStore }: TestState = setup();
+    organisationStore.resetOrganisationRelationshipBatch = vi.fn();
+
+    wrapper.unmount();
+
+    expect(organisationStore.resetOrganisationRelationshipBatch).toHaveBeenCalledOnce();
+  });
+
   it('should render its headline without loading while collapsed and load when expanded', async (): Promise<void> => {
     const { wrapper, store, organisation, openSection }: TestState = setup();
     expect(wrapper.get('[data-testid="organisationsbeziehungen-headline"]').text()).toBe(

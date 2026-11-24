@@ -357,7 +357,6 @@
           </p>
         </v-container>
         <v-progress-linear
-          class="mt-5"
           :model-value="progress"
           color="primary"
           height="25"

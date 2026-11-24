@@ -11,6 +11,7 @@
     useOrganisationsbeziehungStore,
     type OrganisationsbeziehungStore,
   } from '@/stores/OrganisationsbeziehungStore';
+  import { useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
   import { SortOrder } from '@/utils/sorting';
   import { computed, onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
@@ -33,6 +34,7 @@
   const { t }: Composer = useI18n({ useScope: 'global' });
   const { smAndDown }: { smAndDown: Ref<boolean> } = useDisplay();
   const organisationsbeziehungStore: OrganisationsbeziehungStore = useOrganisationsbeziehungStore();
+  const organisationStore: OrganisationStore = useOrganisationStore();
 
   const isOpen: Ref<boolean> = ref(false);
   const showSelector: Ref<boolean> = ref(false);
@@ -149,6 +151,7 @@
   });
 
   onBeforeUnmount(() => {
+    organisationStore.resetOrganisationRelationshipBatch();
     organisationsbeziehungStore.$reset();
   });
 </script>
