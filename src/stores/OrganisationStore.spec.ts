@@ -5,6 +5,7 @@ import { flushPromises } from '@vue/test-utils';
 import MockAdapter from 'axios-mock-adapter';
 import { createPinia, setActivePinia } from 'pinia';
 import { DoFactory } from 'test/DoFactory';
+import { watch, type WatchStopHandle } from 'vue';
 import {
   OrganisationsbeziehungsTyp,
   SchuleType,
@@ -421,6 +422,34 @@ describe('OrganisationStore', () => {
         failures: [],
       });
       expect(store.relationshipErrorCode).toBe('');
+    });
+
+    it('should stop before the next save when reset between selections', async (): Promise<void> => {
+      const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
+      const anotherBehoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
+      mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(201);
+      const stopWatching: WatchStopHandle = watch(
+        (): number => store.relationshipBatch.progress,
+        (progress: number): void => {
+          if (progress > 0) {
+            store.resetOrganisationRelationshipBatch();
+          }
+        },
+        { flush: 'sync' },
+      );
+
+      await store.createOrganisationRelationships(schule, [behoerde, anotherBehoerde]);
+      stopWatching();
+
+      expect(mockadapter.history.post).toHaveLength(1);
+      expect(store.relationshipBatch).toEqual({
+        isRunning: false,
+        isComplete: false,
+        completed: 0,
+        total: 0,
+        progress: 0,
+        failures: [],
+      });
     });
   });
 
@@ -946,6 +975,19 @@ describe('OrganisationStore', () => {
       expect(organisationStore.loading).toBe(false);
     });
 
+    it('should update an organisation without a version-specific type', async (): Promise<void> => {
+      const mockResponse: Organisation = DoFactory.getOrganisation({
+        typ: OrganisationsTyp.Schule,
+        name: 'Updated Schule',
+      });
+      mockadapter.onPatch('/api/organisationen/schule-id/name').replyOnce(200, mockResponse);
+
+      await organisationStore.updateOrganisationNameById('schule-id', 'Updated Schule', OrganisationsTyp.Schule);
+
+      expect(organisationStore.updatedOrganisation).toEqual(mockResponse);
+      expect(organisationStore.loading).toBe(false);
+    });
+
     it('should handle string error', async () => {
       organisationStore.currentOrganisation = {
         id: '2',
@@ -1089,6 +1131,17 @@ describe('OrganisationStore', () => {
         schultraegerform: mockParentsTree.parents[0],
       });
       expect(organisationStore.errorCode).toBe('');
+      expect(organisationStore.loading).toBe(false);
+    });
+
+    it('should not set school details for a non-school organisation', async (): Promise<void> => {
+      const behoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
+      mockadapter.onGet('/api/organisationen/behoerde-id').replyOnce(200, behoerde);
+      mockadapter.onPost('/api/organisationen/parents-by-ids').replyOnce(200, { parents: [] });
+
+      await organisationStore.fetchSchulDetails('behoerde-id');
+
+      expect(organisationStore.currentSchule).toBeNull();
       expect(organisationStore.loading).toBe(false);
     });
 
@@ -1293,6 +1346,10 @@ describe('OrganisationStore', () => {
         DoFactory.getOrganisation({
           zugehoerigZu: mockSchultraeger[0]!.id,
         }),
+        DoFactory.getOrganisation({
+          zugehoerigZu: mockSchultraeger[0]!.id,
+        }),
+        DoFactory.getOrganisation({ zugehoerigZu: null }),
       ];
 
       mockadapter.onGet(url).replyOnce(200, {
@@ -1621,6 +1678,26 @@ describe('OrganisationStore', () => {
       expect(organisationStore.loading).toBe(false);
     });
 
+    it('should not set a creation field for a Behörde created through this action', async (): Promise<void> => {
+      const response: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
+      mockadapter.onPost('/api/organisationen').replyOnce(200, response);
+
+      await organisationStore.createOrganisation(
+        'admin-id',
+        'parent-id',
+        undefined,
+        response.name,
+        undefined,
+        undefined,
+        OrganisationsTyp.Behoerde,
+      );
+
+      expect(organisationStore.createdKlasse).toBeNull();
+      expect(organisationStore.createdSchule).toBeNull();
+      expect(organisationStore.createdSchultraeger).toBeNull();
+      expect(organisationStore.loading).toBe(false);
+    });
+
     it('should handle string error', async () => {
       mockadapter.onPost('/api/organisationen').replyOnce(500, 'some mock server error');
       const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation(
@@ -1858,6 +1935,16 @@ describe('OrganisationStore', () => {
   });
 
   describe('resetOrganisationenFilter', () => {
+    it('should initialize an empty filter when no filter exists', (): void => {
+      organisationStore.resetOrganisationenFilter();
+
+      expect(organisationStore.organisationenFilters.get('')).toEqual({
+        filterResult: [],
+        loading: false,
+        total: 0,
+      });
+    });
+
     describe.each([['', undefined, 'something']])('when store key is %s', (storeKey: string | undefined) => {
       test('should reset filter', () => {
         const organisationen: Organisation[] = [DoFactory.getSchule()];
@@ -1883,6 +1970,18 @@ describe('OrganisationStore', () => {
   });
 
   describe('clearOrganisationenFilter', () => {
+    it('should clear the default filter key', (): void => {
+      organisationStore.organisationenFilters.set('', {
+        filterResult: [DoFactory.getSchule()],
+        loading: true,
+        total: 1,
+      });
+
+      organisationStore.clearOrganisationenFilter();
+
+      expect(organisationStore.organisationenFilters.has('')).toBe(false);
+    });
+
     describe.each([['', undefined, 'something']])('when store key is %s', (storeKey: string | undefined) => {
       test('should delete the filter', () => {
         organisationStore.organisationenFilters = new Map([
@@ -1965,6 +2064,16 @@ describe('OrganisationStore', () => {
   });
 
   describe('resetKlasseFilter', () => {
+    it('should initialize an empty filter when no filter exists', (): void => {
+      organisationStore.resetKlasseFilter();
+
+      expect(organisationStore.klassenFilters.get('')).toEqual({
+        filterResult: [],
+        loading: false,
+        total: 0,
+      });
+    });
+
     describe.each([['', undefined, 'something']])('when store key is %s', (storeKey: string | undefined) => {
       const klassen: Organisation[] = [DoFactory.getKlasse()];
       test('should reset filter', () => {
@@ -1983,6 +2092,18 @@ describe('OrganisationStore', () => {
   });
 
   describe('clearKlasseFilter', () => {
+    it('should clear the default filter key', (): void => {
+      organisationStore.klassenFilters.set('', {
+        filterResult: [DoFactory.getKlasse()],
+        loading: true,
+        total: 1,
+      });
+
+      organisationStore.clearKlasseFilter();
+
+      expect(organisationStore.klassenFilters.has('')).toBe(false);
+    });
+
     describe.each([['', undefined, 'something']])('when store key is %s', (storeKey: string | undefined) => {
       test('should delete the filter', () => {
         organisationStore.klassenFilters = new Map([
