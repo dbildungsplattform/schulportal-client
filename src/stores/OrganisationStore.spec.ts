@@ -94,6 +94,24 @@ describe('OrganisationStore', () => {
       expect(store.loading).toBe(false);
     });
 
+    it('should load eligible organisations from the paged search response body', async (): Promise<void> => {
+      const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
+      mockadapter
+        .onGet(new RegExp(`^/api/organisationen/${schule.id}/search-for-relationships(?:\\?|$)`))
+        .replyOnce(200, {
+          items: [behoerde],
+          total: 1,
+          offset: 0,
+          limit: 200,
+        });
+
+      await store.searchOrganisationsForRelationships(schule.id);
+
+      expect(store.searchedOrganisations).toEqual([behoerde]);
+      expect(store.relationshipSearchLoading).toBe(false);
+      expect(store.relationshipErrorCode).toBe('');
+    });
+
     it('should surface candidate search errors and stop loading', async (): Promise<void> => {
       const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
       store.searchedOrganisations = [behoerde];

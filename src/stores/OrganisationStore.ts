@@ -339,7 +339,7 @@ export const useOrganisationStore: StoreDefinition<
       this.relationshipSearchLoading = true;
       this.searchedOrganisations = [];
       try {
-        const response: AxiosResponse<OrganisationResponse[]> =
+        const response: AxiosResponse<OrganisationResponse[] | OrganisationControllerFindOrganizations200Response> =
           await organisationApi.organisationControllerSearchOrganisationsForRelationships(
             organisationId,
             0,
@@ -347,7 +347,7 @@ export const useOrganisationStore: StoreDefinition<
             searchString || undefined,
           );
         if (relationshipSearchRequestTokens.get(this) === requestToken) {
-          this.searchedOrganisations = response.data;
+          this.searchedOrganisations = Array.isArray(response.data) ? response.data : response.data.items;
         }
       } catch (error: unknown) {
         if (relationshipSearchRequestTokens.get(this) === requestToken) {
