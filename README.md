@@ -95,6 +95,10 @@ JIRA_PAT=your_personal_access_token_here
 2. `npm run generate-client` ausführen
 3. api.ts wird generiert und beinhaltet alle Controller für die spezifizierten Endpunkte
 
+After regeneration, update consumers and HTTP mocks to match the generated response types.
+Paginated organisation and role lists expose `items` and `total` in the response body,
+not `x-paging-*` headers. Organisation lookups by IDs still return an array.
+
 ### Package (Create Docker Image )
 
 If you push a tag upstream a container will be created for you. (Check Github under Packages)

@@ -1,4 +1,9 @@
-import { OrganisationResponse, OrganisationsTyp, type OrganisationRootChildrenResponse } from '@/api-client/generated';
+import {
+  OrganisationResponse,
+  OrganisationsTyp,
+  type OrganisationControllerFindOrganizations200Response,
+  type OrganisationRootChildrenResponse,
+} from '@/api-client/generated';
 import axiosApiInstance from '@/services/ApiService';
 import { faker } from '@faker-js/faker';
 import { flushPromises } from '@vue/test-utils';
@@ -14,18 +19,31 @@ import {
   type OrganisationStore,
 } from './OrganisationStore';
 
-const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
+const setup = (): { organisationStore: OrganisationStore; mockadapter: MockAdapter } => {
+  setActivePinia(createPinia());
+  const organisationStore: OrganisationStore = useOrganisationStore();
+  organisationStore.$reset();
+  vi.restoreAllMocks();
+  const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
+  onTestFinished(() => mockadapter.restore());
+  return { organisationStore, mockadapter };
+};
+
+const pagedResponse = (
+  items: OrganisationResponse[],
+  total: number = items.length,
+  pageTotal: number = items.length,
+): OrganisationControllerFindOrganizations200Response => ({
+  items,
+  total,
+  offset: 0,
+  limit: 30,
+  pageTotal,
+});
 
 describe('OrganisationStore', () => {
-  let organisationStore: OrganisationStore;
-  beforeEach(() => {
-    setActivePinia(createPinia());
-    organisationStore = useOrganisationStore();
-    organisationStore.$reset();
-    mockadapter.reset();
-  });
-
   it('should initialize state correctly', () => {
+    const { organisationStore }: ReturnType<typeof setup> = setup();
     expect(organisationStore.allOrganisationen).toEqual([]);
     expect(organisationStore.createdBehoerde).toBeNull();
     expect(organisationStore.errorCode).toEqual('');
@@ -33,30 +51,39 @@ describe('OrganisationStore', () => {
   });
 
   describe('getAllOrganisations', () => {
-    it('should fetch all organisations and update state', async () => {
-      const mockResponse: Organisation[] = [
-        {
-          id: '1',
-          kennung: 'Org1',
-          name: 'Organisation 1',
-          namensergaenzung: 'Ergänzung',
-          kuerzel: 'O1',
-          typ: OrganisationsTyp.Klasse,
-          administriertVon: '1',
-        },
-      ];
+    it('should clear results and counts when the paginated response is empty', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
+      organisationStore.allOrganisationen = [DoFactory.getOrganisation()];
+      organisationStore.totalOrganisationen = 42;
+      mockadapter.onGet('/api/organisationen').replyOnce(200, pagedResponse([]));
 
-      mockadapter.onGet('/api/organisationen?offset=0&limit=30').replyOnce(200, mockResponse);
+      await organisationStore.getAllOrganisationen();
+      await flushPromises();
+
+      expect(organisationStore.allOrganisationen).toEqual([]);
+      expect(organisationStore.totalOrganisationen).toBe(0);
+      expect(organisationStore.errorCode).toBe('');
+      expect(organisationStore.loading).toBe(false);
+    });
+
+    it('should fetch all organisations and update state', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
+      const mockResponse: OrganisationResponse[] = [DoFactory.getOrganisationResponse()];
+
+      mockadapter.onGet('/api/organisationen?offset=0&limit=30').replyOnce(200, pagedResponse(mockResponse, 42));
       const getAllOrganisationenPromise: Promise<void> = organisationStore.getAllOrganisationen({
         offset: 0,
         limit: 30,
       });
       await getAllOrganisationenPromise;
       expect(organisationStore.allOrganisationen).toEqual(mockResponse);
+      expect(organisationStore.totalOrganisationen).toBe(42);
+      expect(organisationStore.errorCode).toBe('');
       expect(organisationStore.loading).toBe(false);
     });
 
     it('should handle string error', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/organisationen?offset=0&limit=30').replyOnce(500, 'some mock server error');
       const getAllOrganisationenPromise: Promise<void> = organisationStore.getAllOrganisationen({
         offset: 0,
@@ -70,6 +97,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/organisationen?offset=0&limit=30').replyOnce(500, { code: 'some mock server error' });
       const getAllOrganisationenPromise: Promise<void> = organisationStore.getAllOrganisationen({
         offset: 0,
@@ -83,20 +111,12 @@ describe('OrganisationStore', () => {
     });
 
     it('should accept filter', async () => {
-      const mockResponse: Organisation[] = [
-        {
-          id: '1',
-          kennung: 'Org1',
-          name: 'Organisation 1',
-          namensergaenzung: 'Ergänzung',
-          kuerzel: 'O1',
-          typ: OrganisationsTyp.Klasse,
-        },
-      ];
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
+      const mockResponse: OrganisationResponse[] = [DoFactory.getOrganisationResponse()];
 
       mockadapter
         .onGet('/api/organisationen?offset=0&limit=30&searchString=searchString&systemrechte=ROLLEN_VERWALTEN')
-        .replyOnce(200, mockResponse);
+        .replyOnce(200, pagedResponse(mockResponse));
       const getAllOrganisationenPromise: Promise<void> = organisationStore.getAllOrganisationen({
         offset: 0,
         limit: 30,
@@ -109,45 +129,41 @@ describe('OrganisationStore', () => {
     });
 
     it('should accept filter for typ Klasse', async () => {
-      const mockResponse: Organisation[] = [
-        {
-          id: '1',
-          kennung: 'Org1',
-          name: 'Organisation 1',
-          namensergaenzung: 'Ergänzung',
-          kuerzel: 'O1',
-          typ: OrganisationsTyp.Klasse,
-          schuleDetails: '---',
-        },
-      ];
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
+      const schule: OrganisationResponse = DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Schule });
+      const klasse: OrganisationResponse = DoFactory.getOrganisationResponse({
+        typ: OrganisationsTyp.Klasse,
+        administriertVon: schule.id,
+      });
+      const mockResponse: OrganisationResponse[] = [klasse];
 
-      mockadapter.onGet('/api/organisationen?offset=0&limit=30&typ=KLASSE').replyOnce(200, mockResponse);
-      mockadapter.onGet('/api/organisationen?limit=30&typ=SCHULE&systemrechte=KLASSEN_VERWALTEN').replyOnce(200, []);
+      mockadapter
+        .onGet('/api/organisationen?offset=0&limit=30&typ=KLASSE')
+        .replyOnce(200, pagedResponse(mockResponse, 42));
+      mockadapter.onPost('/api/organisationen/by-ids', { organisationIds: [schule.id] }).replyOnce(200, [schule]);
       const getAllOrganisationenPromise: Promise<void> = organisationStore.getAllOrganisationen({
         offset: 0,
         limit: 30,
         includeTyp: OrganisationsTyp.Klasse,
       });
       await getAllOrganisationenPromise;
-      expect(organisationStore.allKlassen).toEqual(mockResponse);
+      expect(organisationStore.allKlassen).toEqual([
+        { ...klasse, schuleDetails: `${schule.kennung} (${schule.name.trim()})` },
+      ]);
+      expect(organisationStore.totalKlassen).toBe(42);
+      expect(organisationStore.errorCode).toBe('');
       expect(organisationStore.loading).toBe(false);
     });
 
     it('should accept filter for typ Schule', async () => {
-      const mockResponse: Organisation[] = [
-        {
-          id: '1',
-          kennung: 'Org1',
-          name: 'Organisation 1',
-          namensergaenzung: 'Ergänzung',
-          kuerzel: 'O1',
-          typ: OrganisationsTyp.Schule,
-        },
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
+      const mockResponse: OrganisationResponse[] = [
+        DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Schule }),
       ];
 
-      mockadapter.onGet('/api/organisationen?offset=0&limit=30&typ=SCHULE').replyOnce(200, mockResponse, {
-        'x-paging-total': '1',
-      });
+      mockadapter
+        .onGet('/api/organisationen?offset=0&limit=30&typ=SCHULE')
+        .replyOnce(200, pagedResponse(mockResponse, 42));
       const getAllOrganisationenPromise: Promise<void> = organisationStore.getAllOrganisationen({
         offset: 0,
         limit: 30,
@@ -156,28 +172,25 @@ describe('OrganisationStore', () => {
 
       await getAllOrganisationenPromise;
       expect(organisationStore.allSchulen).toEqual(mockResponse);
-      expect(organisationStore.totalSchulen).toEqual(1);
+      expect(organisationStore.totalSchulen).toEqual(42);
       expect(organisationStore.loading).toBe(false);
     });
 
     it('should accept filter for typ Traeger', async () => {
-      const mockResponse: Organisation[] = [
-        {
-          id: '1',
-          kennung: 'Org1',
-          name: 'Organisation 1',
-          namensergaenzung: 'Ergänzung',
-          kuerzel: 'O1',
-          typ: OrganisationsTyp.Traeger,
-        },
-      ];
-
-      mockadapter.onGet('/api/organisationen?offset=0&limit=30&typ=TRAEGER').replyOnce(200, mockResponse, {
-        'x-paging-total': '1',
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
+      const traeger: OrganisationResponse = DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Traeger });
+      const schule: OrganisationResponse = DoFactory.getOrganisationResponse({
+        typ: OrganisationsTyp.Schule,
+        zugehoerigZu: traeger.id,
       });
+      const mockResponse: OrganisationResponse[] = [traeger];
+
       mockadapter
-        .onGet('/api/organisationen?limit=30&typ=SCHULE&systemrechte=SCHULTRAEGER_VERWALTEN&administriertVon=999')
-        .replyOnce(200, []);
+        .onGet('/api/organisationen?offset=0&limit=30&typ=TRAEGER')
+        .replyOnce(200, pagedResponse(mockResponse, 42));
+      mockadapter
+        .onGet(`/api/organisationen?limit=30&typ=SCHULE&systemrechte=SCHULTRAEGER_VERWALTEN&zugehoerigZu=${traeger.id}`)
+        .replyOnce(200, pagedResponse([schule]));
 
       const getAllOrganisationenPromise: Promise<void> = organisationStore.getAllOrganisationen({
         offset: 0,
@@ -185,13 +198,16 @@ describe('OrganisationStore', () => {
         includeTyp: OrganisationsTyp.Traeger,
       });
       await getAllOrganisationenPromise;
-      expect(organisationStore.allSchultraeger).toEqual(mockResponse);
+      expect(organisationStore.allSchultraeger).toEqual([{ ...traeger, schuleDetails: schule.kennung }]);
+      expect(organisationStore.totalSchultraeger).toBe(42);
+      expect(organisationStore.errorCode).toBe('');
       expect(organisationStore.loading).toBe(false);
     });
   });
 
   describe('getOrganisationById', () => {
     it('should load schule and update state', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: Organisation[] = [
         {
           id: '1',
@@ -215,6 +231,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should load klasse and update state', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: Organisation[] = [
         {
           id: '2',
@@ -238,6 +255,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/organisationen/1').replyOnce(500, 'some mock server error');
       const getOrganisationByIdPromise: Promise<void> = organisationStore.getOrganisationById(
         '1',
@@ -250,6 +268,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/organisationen/1').replyOnce(500, { code: 'some mock server error' });
       const getOrganisationByIdPromise: Promise<void> = organisationStore.getOrganisationById(
         '1',
@@ -265,6 +284,7 @@ describe('OrganisationStore', () => {
 
   describe('loadOrganisationForSelection', () => {
     it('should load one initial object without changing current results or context', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const organisation: Organisation = DoFactory.getSchule();
       const current: Organisation = DoFactory.getSchule();
       organisationStore.currentOrganisation = current;
@@ -288,6 +308,7 @@ describe('OrganisationStore', () => {
       [{ i18nKey: 'ORGANISATION_NOT_FOUND' }, 'ORGANISATION_NOT_FOUND'],
       ['server error', 'UNSPECIFIED_ERROR'],
     ])('should clear the previous lookup and expose errors', async (response: unknown, errorCode: string) => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const organisation: Organisation = DoFactory.getSchule();
       organisationStore.organisationForSelection = organisation;
       mockadapter.onGet(`/api/organisationen/${organisation.id}`).replyOnce(500, response);
@@ -305,6 +326,7 @@ describe('OrganisationStore', () => {
 
   describe('getLockingOrganisationById', () => {
     it('should load the locking Organisation and update state', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: Organisation[] = [
         {
           id: '1',
@@ -325,6 +347,7 @@ describe('OrganisationStore', () => {
     });
 
     it('uses parentOrganisationen, if possible', async () => {
+      const { organisationStore }: ReturnType<typeof setup> = setup();
       const mockResponse: Organisation[] = [
         {
           id: '1',
@@ -344,6 +367,7 @@ describe('OrganisationStore', () => {
     });
 
     it('uses allOrganisationen, if possible', async () => {
+      const { organisationStore }: ReturnType<typeof setup> = setup();
       const mockResponse: Organisation[] = [
         {
           id: '1',
@@ -363,6 +387,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/organisationen/1').replyOnce(500, 'some mock server error');
       const promise: Promise<void> = organisationStore.getLockingOrganisationById('1');
       await promise;
@@ -372,6 +397,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/organisationen/1').replyOnce(500, { code: 'some mock server error' });
       const promise: Promise<void> = organisationStore.getLockingOrganisationById('1');
       expect(organisationStore.loading).toBe(true);
@@ -400,6 +426,7 @@ describe('OrganisationStore', () => {
     };
 
     it('should load the Organisations and update state', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/organisationen/parents-by-ids').replyOnce(200, mockResponse);
       await organisationStore.getParentOrganisationsByIds(requestIds);
       expect(organisationStore.parentOrganisationen).toEqual(mockOrganisationen);
@@ -408,6 +435,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/organisationen/parents-by-ids').replyOnce(500, 'some mock server error');
       const getParentOrganisationsByIdPromise: Promise<void> =
         organisationStore.getParentOrganisationsByIds(requestIds);
@@ -418,6 +446,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/organisationen/parents-by-ids').replyOnce(500, { code: 'some mock server error' });
       const getParentOrganisationsByIdPromise: Promise<void> =
         organisationStore.getParentOrganisationsByIds(requestIds);
@@ -431,6 +460,7 @@ describe('OrganisationStore', () => {
 
   describe('updateOrganisationNameById', () => {
     it('should update the organisation and update state', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: Organisation = {
         id: '1',
         kennung: 'Org1',
@@ -466,6 +496,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should update schultraeger and update state', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: Organisation = {
         id: '2',
         kennung: '1111',
@@ -501,6 +532,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       organisationStore.currentOrganisation = {
         id: '2',
         kennung: '1111',
@@ -526,6 +558,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       organisationStore.currentOrganisation = {
         id: '2',
         kennung: '1111',
@@ -551,6 +584,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should throw error when klasse version is not found', async () => {
+      const { organisationStore }: ReturnType<typeof setup> = setup();
       // Set currentKlasse version to undefined to trigger the error
       organisationStore.currentKlasse = {
         id: '2',
@@ -576,6 +610,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should throw error when traeger version is not found', async () => {
+      const { organisationStore }: ReturnType<typeof setup> = setup();
       // Set currentOrganisation version to undefined to trigger the error
       organisationStore.currentOrganisation = {
         id: '2',
@@ -604,6 +639,7 @@ describe('OrganisationStore', () => {
 
   describe('fetchSchulDetails', () => {
     it('should load schule details with its schultraegerform', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockSchule: Organisation = {
         id: 'schule-1',
         kennung: '1234567',
@@ -647,6 +683,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should preserve the error code from a failed organisation request', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       organisationStore.errorCode = 'PREVIOUS_ERROR';
       const mockParentsTree: { parents: OrganisationResponse[] } = { parents: [] };
 
@@ -661,6 +698,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/organisationen/1').replyOnce(500, 'some mock server error');
       const getOrganisationByIdPromise: Promise<void> = organisationStore.fetchSchulDetails('schule-1');
       await getOrganisationByIdPromise;
@@ -672,6 +710,7 @@ describe('OrganisationStore', () => {
 
   describe('updateSchuleById', () => {
     it('should update school details and set the updated organisation', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockUpdatedSchool: Organisation = {
         id: 'schule-1',
         kennung: '1234567',
@@ -698,6 +737,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should set an error code when the school update request fails', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPut('/api/organisationen/schule-1').replyOnce(500, { i18nKey: 'SCHULE_UPDATE_FAILED' });
 
       await organisationStore.updateSchuleById({
@@ -715,6 +755,7 @@ describe('OrganisationStore', () => {
 
   describe('getRootChildren', () => {
     it('should update rootChildren', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: OrganisationRootChildrenResponse = {
         oeffentlich: {
           id: '2',
@@ -753,6 +794,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/organisationen/root/children').replyOnce(500, 'some mock server error');
       const getRootChildrenPromise: Promise<void> = organisationStore.getRootChildren();
       await getRootChildrenPromise;
@@ -761,6 +803,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/organisationen/root/children').replyOnce(500, { i18nKey: 'GET_ERROR' });
       const getRootChildrenPromise: Promise<void> = organisationStore.getRootChildren();
       await getRootChildrenPromise;
@@ -780,12 +823,14 @@ describe('OrganisationStore', () => {
       },
     ];
 
-    beforeEach(() => {
+    const setupKlassen = (): ReturnType<typeof setup> => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       organisationStore.allKlassen = [...mockKlassen];
-      organisationStore.loading = false;
-    });
+      return { organisationStore, mockadapter };
+    };
 
     it('should fetch schule details', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setupKlassen();
       mockadapter.onPost('/api/organisationen/by-ids', { organisationIds: ['101'] }).replyOnce(200, [
         {
           id: '101',
@@ -816,6 +861,7 @@ describe('OrganisationStore', () => {
             },
         expectedError: string,
       ) => {
+        const { organisationStore, mockadapter }: ReturnType<typeof setup> = setupKlassen();
         mockadapter.onPost('/api/organisationen/by-ids').replyOnce(500, response);
 
         await organisationStore.fetchSchuleDetailsForKlassen();
@@ -834,15 +880,18 @@ describe('OrganisationStore', () => {
     const zugehoerigZuParams: string = mockSchultraeger.map((st: Organisation) => `zugehoerigZu=${st.id}`).join('&');
     const url: string = `/api/organisationen?limit=30&typ=SCHULE&systemrechte=SCHULTRAEGER_VERWALTEN&${zugehoerigZuParams}`;
 
-    beforeEach(() => {
+    const setupSchultraeger = (): ReturnType<typeof setup> => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       organisationStore.allSchultraeger = [...mockSchultraeger];
-      organisationStore.errorCode = '';
-      organisationStore.loading = false;
-    });
+      return { organisationStore, mockadapter };
+    };
 
     it('should fetch Schule details for Schulträger', async () => {
-      const mockResponse: Organisation[] = [DoFactory.getOrganisation({ zugehoerigZu: mockSchultraeger[0]!.id })];
-      mockadapter.onGet(url).replyOnce(200, mockResponse);
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setupSchultraeger();
+      const mockResponse: OrganisationResponse[] = [
+        DoFactory.getOrganisationResponse({ zugehoerigZu: mockSchultraeger[0]!.id }),
+      ];
+      mockadapter.onGet(url).replyOnce(200, pagedResponse(mockResponse));
 
       await organisationStore.fetchSchuleDetailsForSchultraeger();
 
@@ -868,6 +917,7 @@ describe('OrganisationStore', () => {
             },
         expectedError: string,
       ) => {
+        const { organisationStore, mockadapter }: ReturnType<typeof setup> = setupSchultraeger();
         mockadapter.onGet(url).replyOnce(500, response);
 
         await organisationStore.fetchSchuleDetailsForSchultraeger();
@@ -880,22 +930,14 @@ describe('OrganisationStore', () => {
 
   describe('fetchSchulen', () => {
     it('should load all schulen for a specific traeger ID (ASSIGNED)', async () => {
-      const mockResponse: Array<Organisation> = [
-        {
-          id: '11',
-          kennung: '652464',
-          name: 'Schule from Traeger',
-          namensergaenzung: 'Ergänzung',
-          kuerzel: 'O1',
-          typ: OrganisationsTyp.Schule,
-          administriertVon: '2',
-          zugehoerigZu: '2',
-        },
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
+      const mockResponse: OrganisationResponse[] = [
+        DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Schule, zugehoerigZu: '2' }),
       ];
 
       mockadapter
         .onGet('/api/organisationen?searchString=&typ=SCHULE&systemrechte=SCHULTRAEGER_VERWALTEN&zugehoerigZu=2')
-        .replyOnce(200, mockResponse);
+        .replyOnce(200, pagedResponse(mockResponse));
 
       await organisationStore.fetchSchulen(
         { searchString: '', zugehoerigZu: ['2'], offset: undefined, limit: undefined },
@@ -908,6 +950,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle a server error and set default error code', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter
         .onGet('/api/organisationen?searchString=&typ=SCHULE&systemrechte=SCHULTRAEGER_VERWALTEN&zugehoerigZu=999')
         .replyOnce(500, 'some mock server error');
@@ -923,6 +966,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle API error responses containing a specific error code', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter
         .onGet('/api/organisationen?searchString=&typ=SCHULE&systemrechte=SCHULTRAEGER_VERWALTEN&zugehoerigZu=999')
         .replyOnce(500, { code: 'MOCK_ERROR_CODE' });
@@ -938,21 +982,13 @@ describe('OrganisationStore', () => {
     });
 
     it('should load unassigned schulen when called with SchuleType.UNASSIGNED', async () => {
-      const mockResponse: Array<Organisation> = [
-        {
-          id: '22',
-          kennung: '123456',
-          name: 'Unassigned Schule',
-          namensergaenzung: '',
-          kuerzel: 'U1',
-          typ: OrganisationsTyp.Schule,
-          administriertVon: null,
-          zugehoerigZu: null,
-        },
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
+      const mockResponse: OrganisationResponse[] = [
+        DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Schule, zugehoerigZu: null }),
       ];
       mockadapter
         .onGet('/api/organisationen?limit=50&searchString=&typ=SCHULE&systemrechte=SCHULTRAEGER_VERWALTEN')
-        .replyOnce(200, mockResponse);
+        .replyOnce(200, pagedResponse(mockResponse));
 
       await organisationStore.fetchSchulen(
         { searchString: '', zugehoerigZu: undefined, offset: undefined, limit: 50 },
@@ -967,6 +1003,7 @@ describe('OrganisationStore', () => {
 
   describe('assignSchuleToTraeger', () => {
     it('should assign schule to traeger', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/organisationen/2/zugehoerig').replyOnce(201);
       const assignSchuleToTraegerPromise: Promise<void> = organisationStore.assignSchuleToTraeger('2', {
         organisationId: '11',
@@ -976,6 +1013,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/organisationen/999/zugehoerig').replyOnce(500, 'some mock server error');
       const assignSchuleToTraegerPromise: Promise<void> = organisationStore.assignSchuleToTraeger('999', {
         organisationId: '997979797',
@@ -986,6 +1024,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/organisationen/999/zugehoerig').replyOnce(500, { code: 'some mock server error' });
       const assignSchuleToTraegerPromise: Promise<void> = organisationStore.assignSchuleToTraeger('999', {
         organisationId: '997979797',
@@ -999,6 +1038,7 @@ describe('OrganisationStore', () => {
 
   describe('setItsLearningForSchule', () => {
     it('should successfully activate itslearning for an organisation', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: Organisation = {
         id: '1',
         kennung: 'Org1',
@@ -1021,6 +1061,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle a generic error and set UNSPECIFIED_ERROR', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPut('/api/organisationen/1/enable-for-its-learning').networkErrorOnce();
 
       const promise: Promise<void> = organisationStore.setItsLearningForSchule('1');
@@ -1032,6 +1073,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle Axios-specific error with i18nKey or default error code', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPut('/api/organisationen/1/enable-for-its-learning').replyOnce(500, { i18nKey: 'ENABLE_ERROR' });
 
       const promise: Promise<void> = organisationStore.setItsLearningForSchule('1');
@@ -1045,6 +1087,7 @@ describe('OrganisationStore', () => {
 
   describe('createOrganisation', () => {
     it('should create schule and update state', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: Organisation[] = [
         {
           id: '1',
@@ -1074,6 +1117,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should create klasse and update state', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: Organisation[] = [
         {
           id: '1',
@@ -1103,6 +1147,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should create Schulträger and update state', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: Organisation[] = [
         {
           id: '1',
@@ -1132,6 +1177,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/organisationen').replyOnce(500, 'some mock server error');
       const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation(
         '1',
@@ -1150,6 +1196,7 @@ describe('OrganisationStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/organisationen').replyOnce(500, { i18nKey: 'SOME_MOCK_SERVER_ERROR' });
       const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation(
         '1',
@@ -1169,13 +1216,9 @@ describe('OrganisationStore', () => {
   });
 
   describe('createBehoerde', () => {
-    beforeEach(() => {
-      organisationStore.$reset();
-      vi.restoreAllMocks();
-    });
-
     describe('without kennung', () => {
       it('should omit kennung from the request and update state', async () => {
+        const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
         const administriertVon: string = DoFactory.getOrganisation().id;
         const zugehoerigZu: string = DoFactory.getOrganisation().id;
         const mockResponse: Organisation = DoFactory.getOrganisation({
@@ -1212,6 +1255,7 @@ describe('OrganisationStore', () => {
 
     describe('with an unstructured error response', () => {
       it('should set the fallback error code', async () => {
+        const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
         const mockBehoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
         const administriertVon: string = DoFactory.getOrganisation().id;
         const zugehoerigZu: string = DoFactory.getOrganisation().id;
@@ -1235,6 +1279,7 @@ describe('OrganisationStore', () => {
 
     describe('with a structured error response', () => {
       it('should set the error code from i18nKey', async () => {
+        const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
         const mockBehoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
         const administriertVon: string = DoFactory.getOrganisation().id;
         const zugehoerigZu: string = DoFactory.getOrganisation().id;
@@ -1262,6 +1307,7 @@ describe('OrganisationStore', () => {
     const endpoint: string = `/api/organisationen/${organisationId}`;
 
     it('should delete organisation and update state', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onDelete(endpoint).replyOnce(200);
       const deleteOrganisationPromise: Promise<void> = organisationStore.deleteOrganisationById(organisationId);
       expect(organisationStore.loadingDelete).toBe(true);
@@ -1276,6 +1322,7 @@ describe('OrganisationStore', () => {
       ['some mock server error', 'UNSPECIFIED_ERROR'],
       [{ i18nKey: 'some mock server error' }, 'some mock server error'],
     ])('should handle error', async (error: ErrorType, expectedErrorCode: string) => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onDelete(endpoint).replyOnce(500, error);
       const deleteOrganisationPromise: Promise<void> = organisationStore.deleteOrganisationById(organisationId);
       expect(organisationStore.loadingDelete).toBe(true);
@@ -1287,10 +1334,11 @@ describe('OrganisationStore', () => {
 
   describe('loadOrganisationenForFilter', () => {
     it('should replace current results and preserve the server total without a filter', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const previous: Organisation = DoFactory.getSchule();
-      const result: Organisation = DoFactory.getSchule();
+      const result: OrganisationResponse = DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Schule });
       organisationStore.organisationenFilters.set('', { filterResult: [previous], total: 99, loading: false });
-      mockadapter.onGet('/api/organisationen').replyOnce(200, [result], { 'x-paging-total': '42' });
+      mockadapter.onGet('/api/organisationen').replyOnce(200, pagedResponse([result], 42));
 
       await organisationStore.loadOrganisationenForFilter();
       await flushPromises();
@@ -1313,11 +1361,12 @@ describe('OrganisationStore', () => {
       const defaultUrl: string = '/api/organisationen?offset=0&limit=30&typ=SCHULE';
 
       test('should load organisationen for filter', async () => {
-        const mockResponse: Organisation[] = [DoFactory.getSchule()];
+        const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
+        const mockResponse: OrganisationResponse[] = [
+          DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Schule }),
+        ];
 
-        mockadapter.onGet(defaultUrl).replyOnce(200, mockResponse, {
-          'x-paging-total': '1',
-        });
+        mockadapter.onGet(defaultUrl).replyOnce(200, pagedResponse(mockResponse));
         const promise: Promise<void> = organisationStore.loadOrganisationenForFilter(defaultFilter, storeKey);
         const store: AutoCompleteStore<Organisation> = organisationStore.organisationenFilters.get(storeKey)!;
         expect(store).toBeDefined();
@@ -1329,6 +1378,7 @@ describe('OrganisationStore', () => {
       });
 
       it('should handle string error', async () => {
+        const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
         mockadapter.onGet(defaultUrl).replyOnce(500, 'some mock server error');
         const promise: Promise<void> = organisationStore.loadOrganisationenForFilter(defaultFilter, storeKey);
         const store: AutoCompleteStore<Organisation> = organisationStore.organisationenFilters.get(storeKey)!;
@@ -1341,6 +1391,7 @@ describe('OrganisationStore', () => {
       });
 
       it('should handle error code', async () => {
+        const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
         mockadapter.onGet(defaultUrl).replyOnce(500, { code: 'some mock server error' });
         const promise: Promise<void> = organisationStore.loadOrganisationenForFilter(defaultFilter, storeKey);
         const store: AutoCompleteStore<Organisation> = organisationStore.organisationenFilters.get(storeKey)!;
@@ -1357,6 +1408,7 @@ describe('OrganisationStore', () => {
   describe('resetOrganisationenFilter', () => {
     describe.each([['', undefined, 'something']])('when store key is %s', (storeKey: string | undefined) => {
       test('should reset filter', () => {
+        const { organisationStore }: ReturnType<typeof setup> = setup();
         const organisationen: Organisation[] = [DoFactory.getSchule()];
         organisationStore.organisationenFilters = new Map([
           [
@@ -1382,6 +1434,7 @@ describe('OrganisationStore', () => {
   describe('clearOrganisationenFilter', () => {
     describe.each([['', undefined, 'something']])('when store key is %s', (storeKey: string | undefined) => {
       test('should delete the filter', () => {
+        const { organisationStore }: ReturnType<typeof setup> = setup();
         organisationStore.organisationenFilters = new Map([
           [storeKey ?? '', { filterResult: [DoFactory.getSchule()], loading: true, total: 1 }],
         ]);
@@ -1392,11 +1445,35 @@ describe('OrganisationStore', () => {
   });
 
   describe('loadKlassenForFilter', () => {
-    test('it initializes the field, if it does not exist', async () => {
-      const mockResponse: Organisation[] = [DoFactory.getSchule()];
-      mockadapter.onGet('/api/organisationen?offset=0&limit=200&typ=KLASSE').replyOnce(200, mockResponse, {
-        'x-paging-total': '1',
+    it('should count returned Klassen when pageTotal is omitted', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
+      const items: OrganisationResponse[] = [DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Klasse })];
+      const response: OrganisationControllerFindOrganizations200Response = {
+        items,
+        total: 42,
+        offset: 0,
+        limit: 200,
+      };
+      mockadapter.onGet('/api/organisationen?offset=0&limit=200&typ=KLASSE').replyOnce(200, response);
+
+      await organisationStore.loadKlassenForFilter();
+      await flushPromises();
+
+      expect(organisationStore.klassenFilters.get('')).toMatchObject({
+        filterResult: items,
+        total: 1,
+        loading: false,
       });
+    });
+
+    test('it initializes the field, if it does not exist', async () => {
+      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
+      const mockResponse: OrganisationResponse[] = [
+        DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Klasse }),
+      ];
+      mockadapter
+        .onGet('/api/organisationen?offset=0&limit=200&typ=KLASSE')
+        .replyOnce(200, pagedResponse(mockResponse));
       expect(organisationStore.klassenFilters.get('unknownKey')).toBeUndefined();
       await organisationStore.loadKlassenForFilter(undefined, 'unknownKey');
       await flushPromises();
@@ -1405,22 +1482,26 @@ describe('OrganisationStore', () => {
 
     describe.each(['', undefined, 'something'])('when store key is %s', (storeKey: string | undefined) => {
       test('should load klassen for filter', async () => {
-        const mockResponse: Organisation[] = [DoFactory.getSchule()];
+        const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
+        const mockResponse: OrganisationResponse[] = [
+          DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Klasse }),
+        ];
 
-        mockadapter.onGet('/api/organisationen?offset=0&limit=200&typ=KLASSE').replyOnce(200, mockResponse, {
-          'x-paging-pagetotal': '1',
-        });
+        mockadapter
+          .onGet('/api/organisationen?offset=0&limit=200&typ=KLASSE')
+          .replyOnce(200, pagedResponse(mockResponse, 42, 3));
         const promise: Promise<void> = organisationStore.loadKlassenForFilter(undefined, storeKey);
         await promise;
         await flushPromises();
         const klassenFilter: AutoCompleteStore<Organisation> = organisationStore.klassenFilters.get(storeKey ?? '')!;
         expect(klassenFilter).toBeDefined();
         expect(klassenFilter.filterResult).toEqual(mockResponse);
-        expect(klassenFilter.total).toEqual(1);
+        expect(klassenFilter.total).toEqual(3);
         expect(klassenFilter.loading).toBe(false);
       });
 
       it('should handle string error', async () => {
+        const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
         mockadapter.onGet('/api/organisationen?offset=0&limit=200&typ=KLASSE').replyOnce(500, 'some mock server error');
         const getAllOrganisationenPromise: Promise<void> = organisationStore.loadKlassenForFilter(undefined, storeKey);
         await getAllOrganisationenPromise;
@@ -1432,6 +1513,7 @@ describe('OrganisationStore', () => {
       });
 
       it('should handle error code', async () => {
+        const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
         mockadapter
           .onGet('/api/organisationen?offset=0&limit=200&typ=KLASSE')
           .replyOnce(500, { code: 'some mock server error' });
@@ -1449,6 +1531,7 @@ describe('OrganisationStore', () => {
     describe.each([['', undefined, 'something']])('when store key is %s', (storeKey: string | undefined) => {
       const klassen: Organisation[] = [DoFactory.getKlasse()];
       test('should reset filter', () => {
+        const { organisationStore }: ReturnType<typeof setup> = setup();
         organisationStore.klassenFilters = new Map([
           [storeKey ?? '', { filterResult: klassen, loading: true, total: 1 }],
         ]);
@@ -1466,6 +1549,7 @@ describe('OrganisationStore', () => {
   describe('clearKlasseFilter', () => {
     describe.each([['', undefined, 'something']])('when store key is %s', (storeKey: string | undefined) => {
       test('should delete the filter', () => {
+        const { organisationStore }: ReturnType<typeof setup> = setup();
         organisationStore.klassenFilters = new Map([
           [storeKey ?? '', { filterResult: [DoFactory.getKlasse()], loading: true, total: 1 }],
         ]);
