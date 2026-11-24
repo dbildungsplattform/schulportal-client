@@ -17,6 +17,7 @@
     inputColsMd: number;
     buttonCols: number;
     buttonColsMd: number;
+    placeholder?: string;
   };
 
   const emit: Emits = defineEmits<{
@@ -57,7 +58,7 @@
         data-testid="search-filter-input"
         density="compact"
         hide-details
-        :placeholder="$t('admin.searchResultTable')"
+        :placeholder="props.placeholder ?? $t('admin.searchResultTable')"
         required="true"
         :title="props.hoverText"
         variant="outlined"

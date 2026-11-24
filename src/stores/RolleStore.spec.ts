@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { DoFactory } from 'test/DoFactory';
 import {
   RolleControllerFindRollenAvailableForPersonAdministration200Response,
+  type RolleControllerFindRollen200Response,
   RollenArt,
   RollenMerkmal,
   RollenSystemRechtEnum,
@@ -15,24 +16,34 @@ import { useRolleStore, type RolleStore } from './RolleStore';
 
 import axiosApiInstance from '@/services/ApiService';
 
-const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
+const setup = (): { rolleStore: RolleStore; mockadapter: MockAdapter } => {
+  setActivePinia(createPinia());
+  const rolleStore: RolleStore = useRolleStore();
+  rolleStore.$reset();
+  vi.restoreAllMocks();
+  const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
+  onTestFinished(() => mockadapter.restore());
+  return { rolleStore, mockadapter };
+};
+
+const pagedResponse = (
+  items: RolleWithServiceProvidersResponse[],
+  total: number = items.length,
+): RolleControllerFindRollen200Response => ({
+  items,
+  total,
+  offset: 0,
+  limit: 30,
+});
 
 // The generated client bakes query params into the request URL, so they have to be parsed back out.
-function getRequestQuery(index: number): URLSearchParams {
+function getRequestQuery(mockadapter: MockAdapter, index: number): URLSearchParams {
   return new URL(mockadapter.history.get[index]!.url!, 'http://localhost').searchParams;
 }
 
 describe('rolleStore', () => {
-  let rolleStore: RolleStore;
-  beforeEach(() => {
-    setActivePinia(createPinia());
-    rolleStore = useRolleStore();
-    rolleStore.$reset();
-    mockadapter.reset();
-    vi.restoreAllMocks();
-  });
-
   it('should initalize state correctly', () => {
+    const { rolleStore }: ReturnType<typeof setup> = setup();
     expect(rolleStore.createdRolle).toEqual(null);
     expect(rolleStore.updatedRolle).toEqual(null);
     expect(rolleStore.currentRolle).toEqual(null);
@@ -49,6 +60,7 @@ describe('rolleStore', () => {
 
   describe('createRolle', () => {
     it('should create rolle and update state', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: RolleWithServiceProvidersResponse = DoFactory.getRolleWithServiceProviders({
         administeredBySchulstrukturknoten: '1234',
         rollenart: RollenArt.Lehr,
@@ -85,6 +97,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/rolle').replyOnce(500, 'some mock server error');
       const createRollePromise: Promise<void> = rolleStore.createRolle(
         'Lehrer',
@@ -101,6 +114,7 @@ describe('rolleStore', () => {
       expect(rolleStore.loading).toBe(false);
     });
     it('should handle error code', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/rolle').replyOnce(500, { i18nKey: 'SOME_MOCK_SERVER_ERROR' });
       const createRollePromise: Promise<void> = rolleStore.createRolle(
         'Lehrer',
@@ -119,9 +133,24 @@ describe('rolleStore', () => {
   });
 
   describe('getAllRollen', () => {
+    it('should clear results and counts when the paginated response is empty', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
+      rolleStore.allRollen = [DoFactory.getRolleWithServiceProviders()];
+      rolleStore.totalRollen = 42;
+      mockadapter.onGet('/api/rolle').replyOnce(200, pagedResponse([]));
+
+      await rolleStore.getAllRollen({});
+
+      expect(rolleStore.allRollen).toEqual([]);
+      expect(rolleStore.totalRollen).toBe(0);
+      expect(rolleStore.errorCode).toBe('');
+      expect(rolleStore.loading).toBe(false);
+    });
+
     it('should load rollen and update state', async () => {
-      const mockResponse: RolleResponse[] = [
-        DoFactory.getRolleResponse({
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
+      const mockResponse: RolleWithServiceProvidersResponse[] = [
+        DoFactory.getRolleWithServiceProviders({
           administeredBySchulstrukturknoten: '1234',
           rollenart: RollenArt.Lehr,
           name: 'Lehrer',
@@ -133,21 +162,17 @@ describe('rolleStore', () => {
         }),
       ];
 
-      mockadapter.onGet('/api/rolle?offset=0&limit=30&searchStr=').replyOnce(200, {
-        total: 1,
-        offset: 0,
-        limit: 10,
-        items: mockResponse,
-      });
+      mockadapter.onGet('/api/rolle?offset=0&limit=30&searchStr=').replyOnce(200, pagedResponse(mockResponse, 42));
       const getAllRollenPromise: Promise<void> = rolleStore.getAllRollen({ offset: 0, limit: 30, searchString: '' });
       expect(rolleStore.loading).toBe(true);
       await getAllRollenPromise;
-      expect(rolleStore.allRollen).toEqual(mockResponse);
-      expect(rolleStore.totalRollen).toBe(1);
+      expect(rolleStore.allRollen).toEqual([...mockResponse]);
+      expect(rolleStore.totalRollen).toBe(42);
       expect(rolleStore.loading).toBe(false);
     });
 
     it('should handle string error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/rolle?offset=0&limit=30&searchStr=').replyOnce(500, 'some mock server error');
       const getAllRollenPromise: Promise<void> = rolleStore.getAllRollen({ offset: 0, limit: 30, searchString: '' });
       expect(rolleStore.loading).toBe(true);
@@ -158,6 +183,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/rolle?offset=0&limit=30&searchStr=').replyOnce(500, { code: 'some mock server error' });
       const getAllRollenPromise: Promise<void> = rolleStore.getAllRollen({ offset: 0, limit: 30, searchString: '' });
       expect(rolleStore.loading).toBe(true);
@@ -168,6 +194,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle an i18n error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/rolle?offset=0&limit=30&searchStr=').replyOnce(500, { i18nKey: 'ROLLEN_LIST_ERROR' });
 
       await rolleStore.getAllRollen({ offset: 0, limit: 30, searchString: '' });
@@ -177,7 +204,8 @@ describe('rolleStore', () => {
     });
 
     it('should pass all filter params to the api', async () => {
-      mockadapter.onGet(/\/api\/rolle/).replyOnce(200, [], {});
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
+      mockadapter.onGet(/\/api\/rolle/).replyOnce(200, pagedResponse([]));
 
       await rolleStore.getAllRollen({
         offset: 0,
@@ -199,13 +227,9 @@ describe('rolleStore', () => {
 
   describe('getRollenAvailableForErweiterung', () => {
     it('should load available rollen and pass all filters to the api', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: RolleWithServiceProvidersResponse[] = [DoFactory.getRolleWithServiceProviders()];
-      mockadapter.onGet(/^\/api\/rolle\/available-for-erweiterung/).replyOnce(200, {
-        total: 12,
-        offset: 10,
-        limit: 5,
-        items: mockResponse,
-      });
+      mockadapter.onGet(/^\/api\/rolle\/available-for-erweiterung/).replyOnce(200, pagedResponse(mockResponse, 12));
 
       const promise: Promise<void> = rolleStore.getRollenAvailableForErweiterung({
         offset: 10,
@@ -218,7 +242,7 @@ describe('rolleStore', () => {
       expect(rolleStore.loading).toBe(true);
       await promise;
 
-      const query: URLSearchParams = getRequestQuery(0);
+      const query: URLSearchParams = getRequestQuery(mockadapter, 0);
       expect(query.get('offset')).toBe('10');
       expect(query.get('limit')).toBe('5');
       expect(query.get('searchStr')).toBe('Lehr');
@@ -234,6 +258,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle a structured error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet(/^\/api\/rolle\/available-for-erweiterung/).replyOnce(500, { i18nKey: 'ERWEITERUNG_ERROR' });
 
       const promise: Promise<void> = rolleStore.getRollenAvailableForErweiterung({
@@ -247,6 +272,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle an unstructured error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet(/^\/api\/rolle\/available-for-erweiterung/).replyOnce(500, 'server error');
 
       const promise: Promise<void> = rolleStore.getRollenAvailableForErweiterung({
@@ -262,13 +288,9 @@ describe('rolleStore', () => {
 
   describe('getRollenAvailableForImport', () => {
     it('should load rollen available for import and pass all filters to the api', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: RolleWithServiceProvidersResponse[] = [DoFactory.getRolleWithServiceProviders()];
-      mockadapter.onGet(/^\/api\/rolle\/available-for-import/).replyOnce(200, {
-        total: 8,
-        offset: 20,
-        limit: 10,
-        items: mockResponse,
-      });
+      mockadapter.onGet(/^\/api\/rolle\/available-for-import/).replyOnce(200, pagedResponse(mockResponse, 8));
 
       const promise: Promise<void> = rolleStore.getRollenAvailableForImport({
         organisationId: 'organisation-2',
@@ -280,7 +302,7 @@ describe('rolleStore', () => {
       expect(rolleStore.loading).toBe(true);
       await promise;
 
-      const query: URLSearchParams = getRequestQuery(0);
+      const query: URLSearchParams = getRequestQuery(mockadapter, 0);
       expect(query.get('organisationId')).toBe('organisation-2');
       expect(query.get('offset')).toBe('20');
       expect(query.get('limit')).toBe('10');
@@ -292,6 +314,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle a structured error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet(/^\/api\/rolle\/available-for-import/).replyOnce(500, { i18nKey: 'IMPORT_ERROR' });
 
       const promise: Promise<void> = rolleStore.getRollenAvailableForImport({ organisationId: 'organisation-2' });
@@ -303,6 +326,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle an unstructured error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet(/^\/api\/rolle\/available-for-import/).replyOnce(500, 'server error');
 
       const promise: Promise<void> = rolleStore.getRollenAvailableForImport({ organisationId: 'organisation-2' });
@@ -316,13 +340,9 @@ describe('rolleStore', () => {
 
   describe('getRollenForMptZuordnung', () => {
     it('should load rollen for MPT assignment and pass all filters to the api', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: RolleWithServiceProvidersResponse[] = [DoFactory.getRolleWithServiceProviders()];
-      mockadapter.onGet(/^\/api\/rolle\/available-for-mpt-zuordnung/).replyOnce(200, {
-        total: 4,
-        offset: 30,
-        limit: 15,
-        items: mockResponse,
-      });
+      mockadapter.onGet(/^\/api\/rolle\/available-for-mpt-zuordnung/).replyOnce(200, pagedResponse(mockResponse, 4));
 
       const promise: Promise<void> = rolleStore.getRollenForMptZuordnung({
         offset: 30,
@@ -333,7 +353,7 @@ describe('rolleStore', () => {
       expect(rolleStore.loading).toBe(true);
       await promise;
 
-      const query: URLSearchParams = getRequestQuery(0);
+      const query: URLSearchParams = getRequestQuery(mockadapter, 0);
       expect(query.get('offset')).toBe('30');
       expect(query.get('limit')).toBe('15');
       expect(query.get('searchStr')).toBe('MPT');
@@ -344,6 +364,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle a structured error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet(/^\/api\/rolle\/available-for-mpt-zuordnung/).replyOnce(500, { i18nKey: 'MPT_LIST_ERROR' });
 
       const promise: Promise<void> = rolleStore.getRollenForMptZuordnung({});
@@ -355,6 +376,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle an unstructured error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet(/^\/api\/rolle\/available-for-mpt-zuordnung/).replyOnce(500, 'server error');
 
       const promise: Promise<void> = rolleStore.getRollenForMptZuordnung({});
@@ -368,6 +390,7 @@ describe('rolleStore', () => {
 
   describe('getRolleById', () => {
     it('should load Rolle and update state', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: RolleResponse = DoFactory.getRolleResponse({
         administeredBySchulstrukturknoten: '1234',
         rollenart: RollenArt.Lehr,
@@ -396,6 +419,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/rolle/1').replyOnce(500, 'some mock server error');
       const getRolleByIdPromise: Promise<void> = rolleStore.getRolleById('1');
       expect(rolleStore.loading).toBe(true);
@@ -406,6 +430,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/rolle/1').replyOnce(500, { code: 'some mock server error' });
       const getRolleByIdPromise: Promise<void> = rolleStore.getRolleById('1');
       expect(rolleStore.loading).toBe(true);
@@ -416,6 +441,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle an i18n error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/rolle/1').replyOnce(500, { i18nKey: 'ROLLE_READ_ERROR' });
 
       await rolleStore.getRolleById('1');
@@ -428,6 +454,7 @@ describe('rolleStore', () => {
 
   describe('getRollenForPersonAdministration', () => {
     it('should load rollen for person administration and update state', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: RolleControllerFindRollenAvailableForPersonAdministration200Response = {
         total: 1,
         offset: 0,
@@ -447,7 +474,7 @@ describe('rolleStore', () => {
       expect(rolleStore.loading).toBe(true);
       await getRollenForPersonAdministrationPromise;
 
-      const query: URLSearchParams = getRequestQuery(0);
+      const query: URLSearchParams = getRequestQuery(mockadapter, 0);
       expect(query.get('searchStr')).toBe('Lehr');
       expect(query.get('limit')).toBe('25');
       expect(query.get('offset')).toBe('0');
@@ -459,6 +486,7 @@ describe('rolleStore', () => {
     });
 
     it('should pass all filter params to the person administration endpoint', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet(/^\/api\/rolle\/available-for-person-administration/).replyOnce(200, {
         total: 0,
         offset: 30,
@@ -474,7 +502,7 @@ describe('rolleStore', () => {
         systemrechte: [RollenSystemRechtEnum.PersonenVerwalten, RollenSystemRechtEnum.MptRollenZuordnen],
       });
 
-      const query: URLSearchParams = getRequestQuery(0);
+      const query: URLSearchParams = getRequestQuery(mockadapter, 0);
       expect(query.get('searchStr')).toBe('SuS');
       expect(query.get('limit')).toBe('30');
       expect(query.get('offset')).toBe('30');
@@ -486,6 +514,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle error when loading rollen for person administration', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet(/^\/api\/rolle\/available-for-person-administration/).replyOnce(500, 'some mock server error');
 
       const getRollenForPersonAdministrationPromise: Promise<void> = rolleStore.getRollenForPersonAdministration({
@@ -504,6 +533,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle a structured error when loading rollen for person administration', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet(/^\/api\/rolle\/available-for-person-administration/).replyOnce(500, {
         i18nKey: 'PERSON_ADMINISTRATION_ROLLEN_ERROR',
       });
@@ -517,6 +547,7 @@ describe('rolleStore', () => {
 
   describe('getMptRolleById', () => {
     it('should use the role already loaded by MPT role management', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       const rolle: RolleWithServiceProvidersResponse = DoFactory.getRolleWithServiceProviders();
       rolleStore.allRollen = [rolle];
 
@@ -528,6 +559,7 @@ describe('rolleStore', () => {
     });
 
     it('should load a role through the MPT-authorized endpoint on direct navigation', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       const rolle: RolleWithServiceProvidersResponse = DoFactory.getRolleWithServiceProviders();
       rolleStore.currentMptRolle = DoFactory.getRolle();
       mockadapter.onGet().replyOnce(200, rolle);
@@ -546,6 +578,7 @@ describe('rolleStore', () => {
     });
 
     it('should set an error when the requested MPT role is not found', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet().replyOnce(404);
 
       await rolleStore.getMptRolleById('rolle-1', 'organisation-1');
@@ -556,6 +589,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle a structured loading error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet().replyOnce(500, { code: 'MPT_ROLLE_LOADING_ERROR' });
 
       await rolleStore.getMptRolleById('rolle-1', 'organisation-1');
@@ -566,6 +600,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle an unstructured loading error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet().replyOnce(500, 'server error');
 
       await rolleStore.getMptRolleById('rolle-1', 'organisation-1');
@@ -578,6 +613,7 @@ describe('rolleStore', () => {
 
   describe('getRollenerweiterungenForRolle', () => {
     it('should load service providers assigned as role extensions', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       const serviceProvider: ServiceProviderResponse = DoFactory.getServiceProviderResponse();
       rolleStore.rollenerweiterungServiceProviders = [DoFactory.getServiceProviderResponse()];
       mockadapter
@@ -594,6 +630,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle an unstructured error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter
         .onGet('/api/rolle/rolle-1/angebote-via-rollenerweiterungen?organisationId=organisation-1')
         .replyOnce(500, 'server error');
@@ -605,6 +642,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle a structured error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter
         .onGet('/api/rolle/rolle-1/angebote-via-rollenerweiterungen?organisationId=organisation-1')
         .replyOnce(500, { code: 'ROLLE_EXTENSION_READ_ERROR' });
@@ -616,6 +654,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle an i18n error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter
         .onGet('/api/rolle/rolle-1/angebote-via-rollenerweiterungen?organisationId=organisation-1')
         .replyOnce(500, { i18nKey: 'ROLLE_EXTENSION_READ_I18N_ERROR' });
@@ -630,6 +669,7 @@ describe('rolleStore', () => {
 
   describe('persistRollenerweiterungenForRolle', () => {
     it('should persist added and removed service providers', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       const expectedBody: ApplyRollenerweiterungChangesBodyParams = {
         addErweiterungenForServiceProviderIds: ['service-provider-add'],
         removeErweiterungenForServiceProviderIds: ['service-provider-remove'],
@@ -653,6 +693,7 @@ describe('rolleStore', () => {
     });
 
     it('should map multi errors by service provider id', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/rolle/rolle-1/organisation/organisation-1/apply').replyOnce(500, {
         code: 500,
         idsWithI18nKeys: [
@@ -676,6 +717,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle an unstructured error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/rolle/rolle-1/organisation/organisation-1/apply').replyOnce(500, 'server error');
 
       await rolleStore.persistRollenerweiterungenForRolle({
@@ -690,6 +732,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle a structured non-multi error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter
         .onPost('/api/rolle/rolle-1/organisation/organisation-1/apply')
         .replyOnce(500, { code: 'ROLLE_EXTENSION_WRITE_ERROR' });
@@ -708,6 +751,7 @@ describe('rolleStore', () => {
 
   describe('updateRolle', () => {
     it('should update Rolle and update state', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: RolleWithServiceProvidersResponse = DoFactory.getRolleWithServiceProviders({
         administeredBySchulstrukturknoten: '1234',
         rollenart: RollenArt.Lehr,
@@ -737,6 +781,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle string error on update', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPut('/api/rolle/1').replyOnce(500, 'some mock server error');
       const updateRollePromise: Promise<void> = rolleStore.updateRolle(
         '1',
@@ -754,6 +799,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle error code on update', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPut('/api/rolle/1').replyOnce(500, { code: 'some mock server error' });
       const updateRollePromise: Promise<void> = rolleStore.updateRolle(
         '1',
@@ -771,6 +817,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle an i18n error on update', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPut('/api/rolle/1').replyOnce(500, { i18nKey: 'ROLLE_UPDATE_I18N_ERROR' });
 
       await rolleStore.updateRolle('1', 'Updated Lehrer', [], [], [], 2);
@@ -782,6 +829,7 @@ describe('rolleStore', () => {
 
     describe('deleteRolle', () => {
       it('should delete Rolle and update state', async () => {
+        const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
         mockadapter.onDelete('/api/rolle/1').replyOnce(200);
         const deleteRollePromise: Promise<void> = rolleStore.deleteRolleById('1');
         expect(rolleStore.loading).toBe(true);
@@ -790,6 +838,7 @@ describe('rolleStore', () => {
       });
 
       it('should handle string error on update', async () => {
+        const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
         mockadapter.onDelete('/api/rolle/1').replyOnce(500, 'some mock server error');
         const deleteRollePromise: Promise<void> = rolleStore.deleteRolleById('1');
         expect(rolleStore.loading).toBe(true);
@@ -799,6 +848,7 @@ describe('rolleStore', () => {
       });
 
       it('should handle error code on update', async () => {
+        const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
         mockadapter.onDelete('/api/rolle/1').replyOnce(500, { code: 'some mock server error' });
         const deleteRollePromise: Promise<void> = rolleStore.deleteRolleById('1');
         expect(rolleStore.loading).toBe(true);
@@ -808,6 +858,7 @@ describe('rolleStore', () => {
       });
 
       it('should handle an i18n error on delete', async () => {
+        const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
         mockadapter.onDelete('/api/rolle/1').replyOnce(500, { i18nKey: 'ROLLE_DELETE_I18N_ERROR' });
 
         await rolleStore.deleteRolleById('1');
@@ -820,6 +871,7 @@ describe('rolleStore', () => {
 
   describe('getRollenForPersonenkontextCreation', () => {
     it('should load available Rollen and update state', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       const rolleA: RolleResponse = DoFactory.getRolleResponse({ name: 'a' });
       const rolleB: RolleResponse = DoFactory.getRolleResponse({ name: 'b' });
       const mockResponse: RolleControllerFindRollenAvailableForPersonAdministration200Response = {
@@ -857,6 +909,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle a structured error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet(/\/api\/rolle\/for-personenkontext-creation/).replyOnce(500, { code: 'ROLLE_ERROR_CODE' });
 
       await rolleStore.getRollenForPersonenkontextCreation({ organisationId: 'organisation-1' });
@@ -867,6 +920,7 @@ describe('rolleStore', () => {
     });
 
     it('should handle an unstructured error', async () => {
+      const { rolleStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet(/\/api\/rolle\/for-personenkontext-creation/).replyOnce(500, 'server error');
 
       await rolleStore.getRollenForPersonenkontextCreation({ organisationId: 'organisation-1' });

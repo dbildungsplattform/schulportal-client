@@ -999,7 +999,6 @@ export const DbiamPersonenkontextErrorI18nKeyEnum = {
     NurLehrUndLernAnKlasse: 'NUR_LEHR_UND_LERN_AN_KLASSE',
     GleicheRolleAnKlasseWieSchule: 'GLEICHE_ROLLE_AN_KLASSE_WIE_SCHULE',
     OrganisationMatchesRollenart: 'ORGANISATION_MATCHES_ROLLENART',
-    PersonenkontextAnlageError: 'PERSONENKONTEXT_ANLAGE_ERROR',
     RolleNurAnPassendeOrganisation: 'ROLLE_NUR_AN_PASSENDE_ORGANISATION',
     PersonalnummerNichtEindeutig: 'PERSONALNUMMER_NICHT_EINDEUTIG',
     PersonHatKeineKoperspflichtigeRolle: 'PERSON_HAT_KEINE_KOPERSPFLICHTIGE_ROLLE'
@@ -1086,7 +1085,6 @@ export interface DbiamRolleError {
 
 export const DbiamRolleErrorI18nKeyEnum = {
     RolleError: 'ROLLE_ERROR',
-    AddSystemrechtError: 'ADD_SYSTEMRECHT_ERROR',
     RolleHatPersonenkontexteError: 'ROLLE_HAT_PERSONENKONTEXTE_ERROR',
     UpdateMerkmaleError: 'UPDATE_MERKMALE_ERROR',
     RollennameEnthaeltLeerzeichen: 'ROLLENNAME_ENTHAELT_LEERZEICHEN',
@@ -5060,296 +5058,6 @@ export type UpdateServiceProviderBodyParamsRollenartenWhitelistEnum = typeof Upd
 /**
  * 
  * @export
- * @interface UserExeternalDataResponseItslearning
- */
-export interface UserExeternalDataResponseItslearning {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseItslearning
-     */
-    'personId': string;
-}
-/**
- * 
- * @export
- * @interface UserExeternalDataResponseOnlineDateiablage
- */
-export interface UserExeternalDataResponseOnlineDateiablage {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseOnlineDateiablage
-     */
-    'personId': string;
-}
-/**
- * 
- * @export
- * @interface UserExeternalDataResponseOpsh
- */
-export interface UserExeternalDataResponseOpsh {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseOpsh
-     */
-    'vorname': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseOpsh
-     */
-    'nachname': string;
-    /**
-     * 
-     * @type {Array<UserExeternalDataResponseOpshPk>}
-     * @memberof UserExeternalDataResponseOpsh
-     */
-    'personenkontexte': Array<UserExeternalDataResponseOpshPk>;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseOpsh
-     */
-    'emailAdresse': string;
-}
-/**
- * 
- * @export
- * @interface UserExeternalDataResponseOpshPk
- */
-export interface UserExeternalDataResponseOpshPk {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseOpshPk
-     */
-    'rollenArt': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseOpshPk
-     */
-    'dstNr': string;
-}
-/**
- * 
- * @export
- * @interface UserExeternalDataResponseVidis
- */
-export interface UserExeternalDataResponseVidis {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseVidis
-     */
-    'personId': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseVidis
-     */
-    'vorname': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseVidis
-     */
-    'nachname': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseVidis
-     */
-    'rollenart': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExeternalDataResponseVidis
-     */
-    'emailAdresse': string;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof UserExeternalDataResponseVidis
-     */
-    'dienststellenNummern': Array<string>;
-}
-/**
- * 
- * @export
- * @interface UserExternalDataBodyParams
- */
-export interface UserExternalDataBodyParams {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataBodyParams
-     */
-    'sub': string;
-}
-/**
- * 
- * @export
- * @interface UserExternalDataResponse
- */
-export interface UserExternalDataResponse {
-    /**
-     * 
-     * @type {UserExternalDataResponseOx}
-     * @memberof UserExternalDataResponse
-     */
-    'ox'?: UserExternalDataResponseOx;
-    /**
-     * 
-     * @type {UserExeternalDataResponseItslearning}
-     * @memberof UserExternalDataResponse
-     */
-    'itslearning': UserExeternalDataResponseItslearning;
-    /**
-     * 
-     * @type {UserExeternalDataResponseVidis}
-     * @memberof UserExternalDataResponse
-     */
-    'vidis': UserExeternalDataResponseVidis;
-    /**
-     * 
-     * @type {UserExeternalDataResponseOpsh}
-     * @memberof UserExternalDataResponse
-     */
-    'opsh': UserExeternalDataResponseOpsh;
-    /**
-     * 
-     * @type {UserExeternalDataResponseOnlineDateiablage}
-     * @memberof UserExternalDataResponse
-     */
-    'onlineDateiablage': UserExeternalDataResponseOnlineDateiablage;
-    /**
-     * 
-     * @type {UserExternalDataResponseIqshHelpdesk}
-     * @memberof UserExternalDataResponse
-     */
-    'iqshHelpdesk': UserExternalDataResponseIqshHelpdesk;
-    /**
-     * 
-     * @type {UserExternalDataResponsePolyteia}
-     * @memberof UserExternalDataResponse
-     */
-    'polyteia': UserExternalDataResponsePolyteia;
-}
-/**
- * 
- * @export
- * @interface UserExternalDataResponseIqshHelpdesk
- */
-export interface UserExternalDataResponseIqshHelpdesk {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponseIqshHelpdesk
-     */
-    'vorname': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponseIqshHelpdesk
-     */
-    'nachname': string;
-    /**
-     * 
-     * @type {Array<UserExternalDataResponseIqshHelpdeskPk>}
-     * @memberof UserExternalDataResponseIqshHelpdesk
-     */
-    'personenkontexte': Array<UserExternalDataResponseIqshHelpdeskPk>;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponseIqshHelpdesk
-     */
-    'emailAdresse': string;
-}
-/**
- * 
- * @export
- * @interface UserExternalDataResponseIqshHelpdeskPk
- */
-export interface UserExternalDataResponseIqshHelpdeskPk {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponseIqshHelpdeskPk
-     */
-    'rolleId': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponseIqshHelpdeskPk
-     */
-    'dstNr': string;
-}
-/**
- * 
- * @export
- * @interface UserExternalDataResponseOx
- */
-export interface UserExternalDataResponseOx {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponseOx
-     */
-    'id': string;
-}
-/**
- * 
- * @export
- * @interface UserExternalDataResponsePolyteia
- */
-export interface UserExternalDataResponsePolyteia {
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponsePolyteia
-     */
-    'vorname': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponsePolyteia
-     */
-    'familienname': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserExternalDataResponsePolyteia
-     */
-    'rollenart'?: UserExternalDataResponsePolyteiaRollenartEnum;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof UserExternalDataResponsePolyteia
-     */
-    'dienststellenNummern': Array<string>;
-}
-
-export const UserExternalDataResponsePolyteiaRollenartEnum = {
-    Lern: 'LERN',
-    Lehr: 'LEHR',
-    Extern: 'EXTERN',
-    Orgadmin: 'ORGADMIN',
-    Leit: 'LEIT',
-    Sysadmin: 'SYSADMIN',
-    Sorgber: 'SORGBER',
-    Schb: 'SCHB',
-    Nlehr: 'NLEHR'
-} as const;
-
-export type UserExternalDataResponsePolyteiaRollenartEnum = typeof UserExternalDataResponsePolyteiaRollenartEnum[keyof typeof UserExternalDataResponsePolyteiaRollenartEnum];
-
-/**
- * 
- * @export
  * @interface UserExternalDataV2BodyParams
  */
 export interface UserExternalDataV2BodyParams {
@@ -8254,49 +7962,6 @@ export const KeycloakinternalApiAxiosParamCreator = function (configuration?: Co
     return {
         /**
          * 
-         * @summary External Data about requested in user.
-         * @param {string} apiKey Internal API key for server-to-server communication
-         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        keycloakInternalControllerGetExternalData: async (apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'apiKey' is not null or undefined
-            assertParamExists('keycloakInternalControllerGetExternalData', 'apiKey', apiKey)
-            // verify required parameter 'userExternalDataBodyParams' is not null or undefined
-            assertParamExists('keycloakInternalControllerGetExternalData', 'userExternalDataBodyParams', userExternalDataBodyParams)
-            const localVarPath = `/keycloakinternal/externaldata`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            if (apiKey != null) {
-                localVarHeaderParameter['api-key'] = String(apiKey);
-            }
-
-
-    
-            localVarHeaderParameter['Content-Type'] = 'application/json';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(userExternalDataBodyParams, localVarRequestOptions, configuration)
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * 
          * @summary External Data about the requested user, scoped to a single Angebot.
          * @param {string} apiKey Internal API key for server-to-server communication
          * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
@@ -8350,18 +8015,6 @@ export const KeycloakinternalApiFp = function(configuration?: Configuration) {
     return {
         /**
          * 
-         * @summary External Data about requested in user.
-         * @param {string} apiKey Internal API key for server-to-server communication
-         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserExternalDataResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.keycloakInternalControllerGetExternalData(apiKey, userExternalDataBodyParams, options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-        /**
-         * 
          * @summary External Data about the requested user, scoped to a single Angebot.
          * @param {string} apiKey Internal API key for server-to-server communication
          * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
@@ -8384,17 +8037,6 @@ export const KeycloakinternalApiFactory = function (configuration?: Configuratio
     return {
         /**
          * 
-         * @summary External Data about requested in user.
-         * @param {string} apiKey Internal API key for server-to-server communication
-         * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: any): AxiosPromise<UserExternalDataResponse> {
-            return localVarFp.keycloakInternalControllerGetExternalData(apiKey, userExternalDataBodyParams, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * 
          * @summary External Data about the requested user, scoped to a single Angebot.
          * @param {string} apiKey Internal API key for server-to-server communication
          * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
@@ -8415,17 +8057,6 @@ export const KeycloakinternalApiFactory = function (configuration?: Configuratio
 export interface KeycloakinternalApiInterface {
     /**
      * 
-     * @summary External Data about requested in user.
-     * @param {string} apiKey Internal API key for server-to-server communication
-     * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof KeycloakinternalApiInterface
-     */
-    keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig): AxiosPromise<UserExternalDataResponse>;
-
-    /**
-     * 
      * @summary External Data about the requested user, scoped to a single Angebot.
      * @param {string} apiKey Internal API key for server-to-server communication
      * @param {UserExternalDataV2BodyParams} userExternalDataV2BodyParams 
@@ -8444,19 +8075,6 @@ export interface KeycloakinternalApiInterface {
  * @extends {BaseAPI}
  */
 export class KeycloakinternalApi extends BaseAPI implements KeycloakinternalApiInterface {
-    /**
-     * 
-     * @summary External Data about requested in user.
-     * @param {string} apiKey Internal API key for server-to-server communication
-     * @param {UserExternalDataBodyParams} userExternalDataBodyParams 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof KeycloakinternalApi
-     */
-    public keycloakInternalControllerGetExternalData(apiKey: string, userExternalDataBodyParams: UserExternalDataBodyParams, options?: AxiosRequestConfig) {
-        return KeycloakinternalApiFp(this.configuration).keycloakInternalControllerGetExternalData(apiKey, userExternalDataBodyParams, options).then((request) => request(this.axios, this.basePath));
-    }
-
     /**
      * 
      * @summary External Data about the requested user, scoped to a single Angebot.
@@ -9855,6 +9473,63 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
             };
         },
         /**
+         * Search organisations that may be linked to the requested organisation.
+         * @summary 
+         * @param {string} organisationId The id of an organization
+         * @param {number} [offset] The offset of the paginated list.
+         * @param {number} [limit] The requested limit for the page size.
+         * @param {string} [searchString] Search string used to filter eligible organisations by name or Kennung.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        organisationControllerSearchOrganisationsForRelationships: async (organisationId: string, offset?: number, limit?: number, searchString?: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'organisationId' is not null or undefined
+            assertParamExists('organisationControllerSearchOrganisationsForRelationships', 'organisationId', organisationId)
+            const localVarPath = `/api/organisationen/{organisationId}/search-for-relationships`
+                .replace(`{${"organisationId"}}`, encodeURIComponent(String(organisationId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            // authentication oauth2 required
+            // oauth required
+            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
+
+            if (offset !== undefined) {
+                localVarQueryParameter['offset'] = offset;
+            }
+
+            if (limit !== undefined) {
+                localVarQueryParameter['limit'] = limit;
+            }
+
+            if (searchString !== undefined) {
+                localVarQueryParameter['searchString'] = searchString;
+            }
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * 
          * @param {string} organisationId The id of an organization
          * @param {UpdateOrganisationBodyParams} updateOrganisationBodyParams 
@@ -10132,6 +9807,20 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
+         * Search organisations that may be linked to the requested organisation.
+         * @summary 
+         * @param {string} organisationId The id of an organization
+         * @param {number} [offset] The offset of the paginated list.
+         * @param {number} [limit] The requested limit for the page size.
+         * @param {string} [searchString] Search string used to filter eligible organisations by name or Kennung.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async organisationControllerSearchOrganisationsForRelationships(organisationId: string, offset?: number, limit?: number, searchString?: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<OrganisationResponse>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerSearchOrganisationsForRelationships(organisationId, offset, limit, searchString, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
          * 
          * @param {string} organisationId The id of an organization
          * @param {UpdateOrganisationBodyParams} updateOrganisationBodyParams 
@@ -10322,6 +10011,19 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
             return localVarFp.organisationControllerGetZugehoerigeOrganisationen(organisationId, options).then((request) => request(axios, basePath));
         },
         /**
+         * Search organisations that may be linked to the requested organisation.
+         * @summary 
+         * @param {string} organisationId The id of an organization
+         * @param {number} [offset] The offset of the paginated list.
+         * @param {number} [limit] The requested limit for the page size.
+         * @param {string} [searchString] Search string used to filter eligible organisations by name or Kennung.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        organisationControllerSearchOrganisationsForRelationships(organisationId: string, offset?: number, limit?: number, searchString?: string, options?: any): AxiosPromise<Array<OrganisationResponse>> {
+            return localVarFp.organisationControllerSearchOrganisationsForRelationships(organisationId, offset, limit, searchString, options).then((request) => request(axios, basePath));
+        },
+        /**
          * 
          * @param {string} organisationId The id of an organization
          * @param {UpdateOrganisationBodyParams} updateOrganisationBodyParams 
@@ -10507,6 +10209,19 @@ export interface OrganisationenApiInterface {
      * @memberof OrganisationenApiInterface
      */
     organisationControllerGetZugehoerigeOrganisationen(organisationId: string, options?: AxiosRequestConfig): AxiosPromise<OrganisationControllerFindOrganizations200Response>;
+
+    /**
+     * Search organisations that may be linked to the requested organisation.
+     * @summary 
+     * @param {string} organisationId The id of an organization
+     * @param {number} [offset] The offset of the paginated list.
+     * @param {number} [limit] The requested limit for the page size.
+     * @param {string} [searchString] Search string used to filter eligible organisations by name or Kennung.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganisationenApiInterface
+     */
+    organisationControllerSearchOrganisationsForRelationships(organisationId: string, offset?: number, limit?: number, searchString?: string, options?: AxiosRequestConfig): AxiosPromise<Array<OrganisationResponse>>;
 
     /**
      * 
@@ -10723,6 +10438,21 @@ export class OrganisationenApi extends BaseAPI implements OrganisationenApiInter
      */
     public organisationControllerGetZugehoerigeOrganisationen(organisationId: string, options?: AxiosRequestConfig) {
         return OrganisationenApiFp(this.configuration).organisationControllerGetZugehoerigeOrganisationen(organisationId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Search organisations that may be linked to the requested organisation.
+     * @summary 
+     * @param {string} organisationId The id of an organization
+     * @param {number} [offset] The offset of the paginated list.
+     * @param {number} [limit] The requested limit for the page size.
+     * @param {string} [searchString] Search string used to filter eligible organisations by name or Kennung.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof OrganisationenApi
+     */
+    public organisationControllerSearchOrganisationsForRelationships(organisationId: string, offset?: number, limit?: number, searchString?: string, options?: AxiosRequestConfig) {
+        return OrganisationenApiFp(this.configuration).organisationControllerSearchOrganisationsForRelationships(organisationId, offset, limit, searchString, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
