@@ -4,7 +4,8 @@ import {
   type Organisation,
   type OrganisationStore,
 } from '@/stores/OrganisationStore';
-import { DOMWrapper, VueWrapper, mount } from '@vue/test-utils';
+import { useOrganisationsbeziehungStore, type OrganisationsbeziehungStore } from '@/stores/OrganisationsbeziehungStore';
+import { DOMWrapper, VueWrapper, flushPromises, mount } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { nextTick, type Component } from 'vue';
@@ -114,6 +115,84 @@ describe('SchuleDetailsView', () => {
 
     expect(wrapper?.get('[data-testid="schultraegerform"]').text()).toBe('Unbekannte Organisation');
     expect(wrapper?.get('[data-testid="schule-itslearning-enabled"]').text()).toBe('Ja');
+  });
+
+  test('it keeps the selector mounted through search recovery and partial save failures', async () => {
+    const behoerden: Organisation[] = [
+      DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde }),
+      DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde }),
+    ];
+    organisationStore.currentSchule = mockSchule;
+    organisationStore.searchedOrganisations = behoerden;
+    organisationStore.searchOrganisationsForRelationships = vi
+      .fn()
+      .mockImplementationOnce((): Promise<void> => {
+        organisationStore.relationshipErrorCode = 'SEARCH_ORGANISATIONS_ERROR';
+        return Promise.resolve();
+      })
+      .mockImplementationOnce((): Promise<void> => {
+        organisationStore.relationshipErrorCode = '';
+        return Promise.resolve();
+      });
+    organisationStore.createOrganisationRelationships = vi.fn(
+      (_contextOrganisation: Organisation | undefined, selectedOrganisations: Organisation[]): Promise<void> => {
+        organisationStore.relationshipBatch = {
+          isRunning: false,
+          isComplete: true,
+          completed: selectedOrganisations.length,
+          total: selectedOrganisations.length,
+          progress: 100,
+          failures: [
+            {
+              organisation: selectedOrganisations[1]!,
+              errorCode: 'SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM',
+            },
+          ],
+        };
+        return Promise.resolve();
+      },
+    );
+    const relationshipStore: OrganisationsbeziehungStore = useOrganisationsbeziehungStore();
+    relationshipStore.loadBeziehungen = vi.fn().mockResolvedValue(undefined);
+    await nextTick();
+
+    await wrapper?.get('[data-testid="organisationsbeziehungen-toggle-button"]').trigger('click');
+    await flushPromises();
+    await wrapper?.get('[data-testid="organisationsbeziehungen-add-button"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper?.find('[data-testid="org-selector-error-alert"]').exists()).toBe(true);
+    expect(wrapper?.find('[data-testid="schule-details-container"]').exists()).toBe(true);
+    expect(organisationStore.errorCode).toBe('');
+
+    await wrapper?.get('[data-testid="apply-search-filter-button"]').trigger('click');
+    await flushPromises();
+    expect(wrapper?.find('[data-testid="org-selector-error-alert"]').exists()).toBe(false);
+
+    if (wrapper === null) {
+      throw new Error('The SchuleDetailsView was not mounted.');
+    }
+    const mountedWrapper: VueWrapper = wrapper;
+    await Promise.all(
+      behoerden.map((behoerde: Organisation) =>
+        mountedWrapper.get(`[data-testid="org-selector-checkbox-${behoerde.id}"] input`).trigger('click'),
+      ),
+    );
+    await wrapper?.get('[data-testid="org-selector-create-button"]').trigger('click');
+    await flushPromises();
+
+    const bulkErrorDialog: DOMWrapper<Element> = new DOMWrapper(document.body);
+    expect(organisationStore.createOrganisationRelationships).toHaveBeenCalledExactlyOnceWith(
+      mockSchule,
+      expect.any(Array),
+    );
+    expect(organisationStore.errorCode).toBe('');
+    expect(wrapper?.find('[data-testid="schule-details-container"]').exists()).toBe(true);
+    expect(wrapper?.find('[data-testid="organisation-relationship-selector-section"]').exists()).toBe(true);
+    expect(bulkErrorDialog.text()).toContain('1 Beziehung wurde erfolgreich gespeichert.');
+    expect(bulkErrorDialog.text()).toContain(
+      'Schule und Schulaufsichtsbehörde müssen demselben Zuständigkeitsbereich zugeordnet sein.',
+    );
   });
 
   test('it hides content when error exists', async () => {

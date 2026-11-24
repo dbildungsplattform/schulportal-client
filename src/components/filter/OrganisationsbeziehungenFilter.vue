@@ -30,7 +30,8 @@
   >
     <v-col
       cols="12"
-      md="5"
+      md="auto"
+      class="organisationsbeziehungen-filter-column"
     >
       <v-text-field
         autocomplete="off"
@@ -47,3 +48,11 @@
     </v-col>
   </v-row>
 </template>
+
+<style scoped>
+  @media (min-width: 960px) {
+    .organisationsbeziehungen-filter-column {
+      width: 340px;
+    }
+  }
+</style>

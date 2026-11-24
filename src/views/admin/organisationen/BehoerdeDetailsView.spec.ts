@@ -12,6 +12,7 @@ import {
   type Organisation,
   type OrganisationStore,
 } from '@/stores/OrganisationStore';
+import { useOrganisationsbeziehungStore, type OrganisationsbeziehungStore } from '@/stores/OrganisationsbeziehungStore';
 import BehoerdeDetailsView from './BehoerdeDetailsView.vue';
 import LabeledField from '@/components/admin/LabeledField.vue';
 import OrganisationsbeziehungenSection from '@/components/admin/organisationen/OrganisationsbeziehungenSection.vue';
@@ -78,6 +79,77 @@ describe('BehoerdeDetailsView', (): void => {
     );
     expect(section.exists()).toBe(true);
     expect(section.props()).toMatchObject({ organisationId: behoerde.id, showDienststellennummerColumn: true });
+  });
+
+  it('should keep the selector mounted through search recovery and partial save failures', async (): Promise<void> => {
+    const schulen: Organisation[] = [DoFactory.getSchule(), DoFactory.getSchule()];
+    organisationStore.searchedOrganisations = schulen;
+    organisationStore.searchOrganisationsForRelationships = vi
+      .fn()
+      .mockImplementationOnce((): Promise<void> => {
+        organisationStore.relationshipErrorCode = 'SEARCH_ORGANISATIONS_ERROR';
+        return Promise.resolve();
+      })
+      .mockImplementationOnce((): Promise<void> => {
+        organisationStore.relationshipErrorCode = '';
+        return Promise.resolve();
+      });
+    organisationStore.createOrganisationRelationships = vi.fn(
+      (_contextOrganisation: Organisation | undefined, selectedOrganisations: Organisation[]): Promise<void> => {
+        organisationStore.relationshipBatch = {
+          isRunning: false,
+          isComplete: true,
+          completed: selectedOrganisations.length,
+          total: selectedOrganisations.length,
+          progress: 100,
+          failures: [
+            {
+              organisation: selectedOrganisations[1]!,
+              errorCode: 'SCHULAUFSICHT_SCHULE_UND_AUFSICHT_SELBER_BAUM',
+            },
+          ],
+        };
+        return Promise.resolve();
+      },
+    );
+    const relationshipStore: OrganisationsbeziehungStore = useOrganisationsbeziehungStore();
+    relationshipStore.loadBeziehungen = vi.fn().mockResolvedValue(undefined);
+
+    await mountView();
+    await wrapper.get('[data-testid="organisationsbeziehungen-toggle-button"]').trigger('click');
+    await flushPromises();
+    await wrapper.get('[data-testid="organisationsbeziehungen-add-button"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="org-selector-error-alert"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="behoerde-details-container"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="behoerde-details-error"]').exists()).toBe(false);
+    expect(organisationStore.errorCode).toBe('');
+
+    await wrapper.get('[data-testid="apply-search-filter-button"]').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('[data-testid="org-selector-error-alert"]').exists()).toBe(false);
+
+    await Promise.all(
+      schulen.map((schule: Organisation) =>
+        wrapper.get(`[data-testid="org-selector-checkbox-${schule.id}"] input`).trigger('click'),
+      ),
+    );
+    await wrapper.get('[data-testid="org-selector-create-button"]').trigger('click');
+    await flushPromises();
+
+    expect(organisationStore.createOrganisationRelationships).toHaveBeenCalledExactlyOnceWith(
+      behoerde,
+      expect.any(Array),
+    );
+    expect(organisationStore.errorCode).toBe('');
+    expect(wrapper.find('[data-testid="behoerde-details-container"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="organisation-relationship-selector-section"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="behoerde-details-error"]').exists()).toBe(false);
+    expect(document.body.textContent).toContain('1 Beziehung wurde erfolgreich gespeichert.');
+    expect(document.body.textContent).toContain(
+      'Schule und Schulaufsichtsbehörde müssen demselben Zuständigkeitsbereich zugeordnet sein.',
+    );
   });
 
   it.each([OrganisationsTyp.Schule, OrganisationsTyp.Traeger, OrganisationsTyp.Land])(

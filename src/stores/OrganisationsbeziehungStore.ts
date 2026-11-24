@@ -27,6 +27,11 @@ type OrganisationsbeziehungState = {
   loading: boolean;
 };
 
+type PagedOrganisationsbeziehungenResponse = {
+  items: Array<OrganisationsbeziehungWithOrganisationenResponse>;
+  total: number;
+};
+
 type OrganisationsbeziehungGetters = object;
 
 type OrganisationsbeziehungActions = {
@@ -58,17 +63,23 @@ export const useOrganisationsbeziehungStore: StoreDefinition<
       this.loading = true;
       this.errorCode = '';
       try {
-        const response: AxiosResponse<Array<OrganisationsbeziehungWithOrganisationenResponse>> =
-          await organisationApi.organisationControllerGetOrganisationsbeziehungen(
-            organisationId,
-            params?.offset,
-            params?.limit,
-            params?.searchString || undefined,
-            params?.sortOrder,
-            params?.sortField,
-          );
-        this.beziehungen = response.data;
-        this.total = +response.headers['x-paging-total'];
+        const response: AxiosResponse<
+          Array<OrganisationsbeziehungWithOrganisationenResponse> | PagedOrganisationsbeziehungenResponse
+        > = await organisationApi.organisationControllerGetOrganisationsbeziehungen(
+          organisationId,
+          params?.offset,
+          params?.limit,
+          params?.searchString || undefined,
+          params?.sortOrder,
+          params?.sortField,
+        );
+        if (Array.isArray(response.data)) {
+          this.beziehungen = response.data;
+          this.total = +response.headers['x-paging-total'];
+        } else {
+          this.beziehungen = response.data.items;
+          this.total = response.data.total;
+        }
       } catch (error: unknown) {
         this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
       } finally {
