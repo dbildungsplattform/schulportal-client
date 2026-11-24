@@ -20,7 +20,11 @@ const axiosApiInstance: AxiosInstance = axios.create({
 axiosApiInstance.interceptors.response.use(
   (res: AxiosResponse) => res,
   async (error: unknown) => {
-    if (error instanceof AxiosError && error.response?.status === HttpStatusCode.Unauthorized) {
+    if (
+      error instanceof AxiosError &&
+      error.response?.status === HttpStatusCode.Unauthorized &&
+      !useAuthStore().isLoggingOut
+    ) {
       window.location.href = `/api/auth/login?redirectUrl=${location.href}`;
     }
     // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors

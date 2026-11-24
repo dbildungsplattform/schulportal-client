@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, nextTick, onMounted, ref, type ComputedRef, type Ref } from 'vue';
+  import { computed, nextTick, onBeforeUnmount, onMounted, ref, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
   import { useRoute, useRouter, type RouteLocationNormalizedLoaded, type Router } from 'vue-router';
   import { useDisplay } from 'vuetify';
@@ -58,6 +58,7 @@
   const currentServiceProviderId: string = route.params['id'] as string;
 
   const treeviewContainer: Ref<HTMLElement | null> = ref(null);
+  let cleanupTreeviewScroll: (() => void) | undefined;
 
   // ── Edit mode state ────────────────────────────────────────────────────────
   const isEditingRollenerweiterungen: Ref<boolean> = ref(false);
@@ -178,12 +179,14 @@
   const vidisInfoDialogOpen: Ref<boolean> = ref(false);
 
   function scrollToTreeview(offset: number = 120): void {
+    cleanupTreeviewScroll?.();
     const el: HTMLElement | null = treeviewContainer.value;
     if (!el) {
       return;
     }
 
     const scroll = (): void => {
+      cleanupTreeviewScroll?.();
       const top: number = el.getBoundingClientRect().top + window.scrollY;
       window.scrollTo({
         top: top - offset, // scroll a bit above the element
@@ -191,15 +194,15 @@
       });
     };
 
-    const onTransitionEnd = (): void => {
-      scroll();
-      el.removeEventListener('transitionend', onTransitionEnd);
-    };
-
-    el.addEventListener('transitionend', onTransitionEnd);
+    el.addEventListener('transitionend', scroll);
 
     // Fallback in case transitionend doesn't fire
-    setTimeout(scroll, 500);
+    const scrollTimeout: ReturnType<typeof setTimeout> = setTimeout(scroll, 500);
+    cleanupTreeviewScroll = (): void => {
+      clearTimeout(scrollTimeout);
+      el.removeEventListener('transitionend', scroll);
+      cleanupTreeviewScroll = undefined;
+    };
   }
 
   // ── Edit mode actions ─────────────────────────────────────────────────────
@@ -298,6 +301,10 @@
   });
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
+  onBeforeUnmount(() => {
+    cleanupTreeviewScroll?.();
+  });
+
   onMounted(async () => {
     serviceProviderStore.errorCode = '';
     serviceProviderStore.errors.clear();
@@ -579,6 +586,7 @@
               <div
                 v-if="isEditingRollenerweiterungen"
                 ref="treeviewContainer"
+                data-testid="rollenerweiterung-treeview-container"
               >
                 <LayoutCard
                   :closable="false"

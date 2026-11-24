@@ -36,6 +36,13 @@ npm run format
 npm run coverage
 ```
 
+### Logout and pending API requests
+
+Logout entry points mark `AuthStore.isLoggingOut` before navigating to `/api/auth/logout`.
+While logout is in progress, the API response interceptor still rejects failed requests,
+but does not start login redirects for late HTTP 401 responses. This prevents background
+requests from interrupting the Keycloak logout. A new page load initializes the flag to `false`.
+
 ## AI Agents and MCP
 
 ### Copilot Instructions
