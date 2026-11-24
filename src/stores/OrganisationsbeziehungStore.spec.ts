@@ -40,6 +40,23 @@ describe('OrganisationsbeziehungStore', () => {
       expect(store.errorCode).toBe('');
     });
 
+    it('should load beziehungen and total from the paged response body', async () => {
+      const beziehungen: Array<OrganisationsbeziehungWithOrganisationenResponse> = [
+        DoFactory.getOrganisationsbeziehung(),
+        DoFactory.getOrganisationsbeziehung(),
+      ];
+      mockadapter
+        .onGet(/\/api\/organisationen\/org-1\/beziehungen.*/)
+        .replyOnce(200, { items: beziehungen, total: 27, offset: 0, limit: 30 });
+
+      await store.loadBeziehungen('org-1');
+
+      expect(store.loading).toBe(false);
+      expect(store.beziehungen).toEqual(beziehungen);
+      expect(store.total).toBe(27);
+      expect(store.errorCode).toBe('');
+    });
+
     it('should send pagination, search and sorting params', async () => {
       mockadapter.onGet(/\/api\/organisationen\/org-1\/beziehungen.*/).replyOnce(200, [], { 'x-paging-total': '0' });
 
