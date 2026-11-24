@@ -12,7 +12,7 @@
   import { dedup } from '@/utils/arrays';
   import { buildCSV, download } from '@/utils/file';
   import { getDisplayNameForOrg } from '@/utils/formatting';
-  import { computed, onMounted, ref, type ComputedRef, type Ref } from 'vue';
+  import { computed, onBeforeUnmount, onMounted, ref, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
 
   type Props = {
@@ -171,7 +171,6 @@
       return;
     }
     const relationshipsUpdated: boolean = isFinished.value;
-    organisationStore.relationshipErrorCode = '';
     organisationStore.resetOrganisationRelationshipBatch();
     emit('update:showComponent', false);
     if (relationshipsUpdated) {
@@ -197,6 +196,10 @@
     if (props.showComponent) {
       await searchOrganisations();
     }
+  });
+
+  onBeforeUnmount((): void => {
+    organisationStore.resetOrganisationRelationshipBatch();
   });
 </script>
 

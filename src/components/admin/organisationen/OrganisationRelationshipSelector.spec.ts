@@ -409,4 +409,42 @@ describe('OrganisationRelationshipSelector', (): void => {
     expect(wrapper.emitted('update:showComponent')).toEqual([[false]]);
     expect(wrapper.emitted('relationships-updated')).toBeUndefined();
   });
+
+  it('should reset relationship batch state when unmounted', async (): Promise<void> => {
+    const { store, behoerden, mountSelector }: TestState = setup();
+    store.resetOrganisationRelationshipBatch = vi.fn((): void => {
+      store.relationshipErrorCode = '';
+      store.relationshipBatch = {
+        isRunning: false,
+        isComplete: false,
+        completed: 0,
+        total: 0,
+        progress: 0,
+        failures: [],
+      };
+    });
+    const wrapper: VueWrapper = await mountSelector();
+    store.relationshipErrorCode = 'RELATIONSHIP_ERROR';
+    store.relationshipBatch = {
+      isRunning: true,
+      isComplete: false,
+      completed: 1,
+      total: 3,
+      progress: 34,
+      failures: [{ organisation: behoerden[0]!, errorCode: 'RELATIONSHIP_ERROR' }],
+    };
+
+    wrapper.unmount();
+
+    expect(store.resetOrganisationRelationshipBatch).toHaveBeenCalledTimes(1);
+    expect(store.relationshipBatch).toEqual({
+      isRunning: false,
+      isComplete: false,
+      completed: 0,
+      total: 0,
+      progress: 0,
+      failures: [],
+    });
+    expect(store.relationshipErrorCode).toBe('');
+  });
 });

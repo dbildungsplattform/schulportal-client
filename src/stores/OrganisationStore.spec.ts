@@ -384,6 +384,44 @@ describe('OrganisationStore', () => {
         failures: [],
       });
     });
+
+    it('should keep a reset batch cleared when an in-flight save resolves', async (): Promise<void> => {
+      const { store, schule, behoerde }: ReturnType<typeof setup> = setup();
+      const anotherBehoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
+      const pendingResponse: DeferredResponse<[number, { i18nKey: string }]> =
+        createDeferredResponse<[number, { i18nKey: string }]>();
+      mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(() => pendingResponse.promise);
+      mockadapter.onPost('/api/organisationen/beziehungen').replyOnce(201);
+
+      const batchRequest: Promise<void> = store.createOrganisationRelationships(schule, [behoerde, anotherBehoerde]);
+      await vi.waitFor((): void => {
+        expect(mockadapter.history.post).toHaveLength(1);
+      });
+
+      store.resetOrganisationRelationshipBatch();
+      expect(store.relationshipBatch).toEqual({
+        isRunning: false,
+        isComplete: false,
+        completed: 0,
+        total: 0,
+        progress: 0,
+        failures: [],
+      });
+
+      pendingResponse.resolve([400, { i18nKey: 'RELATIONSHIP_CONSISTENCY_ERROR' }]);
+      await batchRequest;
+
+      expect(mockadapter.history.post).toHaveLength(1);
+      expect(store.relationshipBatch).toEqual({
+        isRunning: false,
+        isComplete: false,
+        completed: 0,
+        total: 0,
+        progress: 0,
+        failures: [],
+      });
+      expect(store.relationshipErrorCode).toBe('');
+    });
   });
 
   describe('getAllOrganisations', () => {
