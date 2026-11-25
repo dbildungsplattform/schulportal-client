@@ -45,6 +45,7 @@
   function computeUrlAndTab(serviceProvider: StartPageServiceProvider): { url: string; newTab: boolean } {
     if (
       serviceProvider.requires2fa &&
+      authStore.acr !== StepUpLevel.GOLD &&
       twoFactorAuthentificationStore.errorCode === PrivacyIdeaErrorEnum.PiUnavailableError
     ) {
       return { url: SERVICE_NOT_AVAILABLE_2FA, newTab: false };

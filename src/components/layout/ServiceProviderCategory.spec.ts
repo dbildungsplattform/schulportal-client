@@ -1,5 +1,6 @@
 import { ServiceProviderSystem, PrivacyIdeaErrorEnum } from '@/api-client/generated';
 import ServiceProviderCard from '@/components/cards/ServiceProviderCard.vue';
+import { type AuthStore, StepUpLevel, useAuthStore } from '@/stores/AuthStore';
 import { ServiceProviderKategorie, type StartPageServiceProvider } from '@/stores/ServiceProviderStore';
 import {
   type TwoFactorAuthentificationStore,
@@ -121,5 +122,23 @@ describe('ServiceProviderCategory.vue', () => {
     });
 
     store.errorCode = '';
+  });
+
+  test('keeps 2FA offer links for GOLD sessions if privacyIdea is unavailable', async () => {
+    const authStore: AuthStore = useAuthStore();
+    authStore.acr = StepUpLevel.GOLD;
+    const store: TwoFactorAuthentificationStore = useTwoFactorAuthentificationStore();
+    store.errorCode = PrivacyIdeaErrorEnum.PiUnavailableError;
+    await nextTick();
+
+    expect(wrapper?.findAllComponents(ServiceProviderCard)[0]?.props()).toMatchObject({
+      href: 'https://service-a.com',
+    });
+    expect(wrapper?.findAllComponents(ServiceProviderCard)[2]?.props()).toMatchObject({
+      href: '',
+    });
+
+    store.errorCode = '';
+    authStore.acr = StepUpLevel.NONE;
   });
 });
