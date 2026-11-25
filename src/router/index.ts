@@ -95,6 +95,9 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
     }
     const twoFactorAuthentificationStore: TwoFactorAuthentificationStore = useTwoFactorAuthentificationStore();
     await twoFactorAuthentificationStore.get2FAState(personId);
+    if (twoFactorAuthentificationStore.errorCode === PrivacyIdeaErrorEnum.PiUnavailableError) {
+      return { path: `/service-not-available/${ServiceIdentifier.TWO_FACTOR_AUTHENTICATION}` };
+    }
     if (twoFactorAuthentificationStore.hasToken) {
       handleGoToPreviousPage();
       return false;
