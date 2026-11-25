@@ -7,6 +7,7 @@ import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { type Organisation } from '@/stores/OrganisationStore';
 import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
 import {
+  ServiceProviderKategorie,
   useServiceProviderStore,
   type ManageableServiceProviderListEntry,
   type ServiceProviderStore,
@@ -15,15 +16,67 @@ import { DoFactory } from 'test/DoFactory';
 import { afterEach, type Mock, type MockInstance } from 'vitest';
 import ServiceProviderManagementBySchuleView from './ServiceProviderManagementBySchuleView.vue';
 
-let router: Router;
-const authStore: AuthStore = useAuthStore();
-const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
-const searchFilterStore: SearchFilterStore = useSearchFilterStore();
+type BySchuleViewWrapper = VueWrapper<InstanceType<typeof ServiceProviderManagementBySchuleView>>;
+
+type SetupOptions = {
+  serviceProviderState?: Partial<ServiceProviderStore['$state']>;
+  searchFilterState?: Partial<SearchFilterStore['$state']>;
+  authState?: Partial<AuthStore['$state']>;
+};
+
+type SetupResult = {
+  wrapper: BySchuleViewWrapper;
+  router: Router;
+  authStore: AuthStore;
+  serviceProviderStore: ServiceProviderStore;
+};
+
+interface ServiceProviderManagementBySchuleView {
+  selectedOrganisationId: string;
+}
+
+const NEW_KATEGORIEN: ReadonlyArray<{ kategorie: ServiceProviderKategorie; label: string }> = [
+  { kategorie: ServiceProviderKategorie.UnterrichtUndLernen, label: 'Unterricht und Lernen' },
+  { kategorie: ServiceProviderKategorie.KommunikationUndZusammenarbeit, label: 'Kommunikation und Zusammenarbeit' },
+  { kategorie: ServiceProviderKategorie.SchulorganisationUndVerwaltung, label: 'Schulorganisation und -verwaltung' },
+  { kategorie: ServiceProviderKategorie.FortbildungUndQualifizierung, label: 'Fortbildung und Qualifizierung' },
+  { kategorie: ServiceProviderKategorie.InformationenUndPortale, label: 'Informationen und Portale' },
+  { kategorie: ServiceProviderKategorie.HilfeUndUnterstuetzung, label: 'Hilfe & Unterstützung' },
+];
 
 enableAutoUnmount(afterEach);
 
-function mountComponent(): VueWrapper<InstanceType<typeof ServiceProviderManagementBySchuleView>> {
-  return mount(ServiceProviderManagementBySchuleView, {
+async function setup(options: SetupOptions = {}): Promise<SetupResult> {
+  document.body.innerHTML = `
+    <div>
+      <div id="app"></div>
+    </div>
+  `;
+
+  const router: Router = createRouter({
+    history: createWebHistory(),
+    routes,
+  });
+  router.push('/');
+  await router.isReady();
+
+  const authStore: AuthStore = useAuthStore();
+  authStore.$reset();
+  authStore.$patch(options.authState ?? {});
+
+  const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
+  serviceProviderStore.$reset();
+  serviceProviderStore.manageableServiceProvidersForOrganisation = [
+    DoFactory.getManageableServiceProviderListEntryResponse({ hasSomeVerwaltenPermission: true }),
+    DoFactory.getManageableServiceProviderListEntryResponse({ hasSomeVerwaltenPermission: false }),
+  ];
+  serviceProviderStore.$patch(options.serviceProviderState ?? {});
+
+  const searchFilterStore: SearchFilterStore = useSearchFilterStore();
+  searchFilterStore.$reset();
+  searchFilterStore.$patch(options.searchFilterState ?? {});
+
+  const wrapper: BySchuleViewWrapper = mount(ServiceProviderManagementBySchuleView, {
     attachTo: document.getElementById('app') || '',
     global: {
       components: {
@@ -32,48 +85,40 @@ function mountComponent(): VueWrapper<InstanceType<typeof ServiceProviderManagem
       plugins: [router],
     },
   });
+
+  return { wrapper, router, authStore, serviceProviderStore };
 }
-
-interface ServiceProviderManagementBySchuleView {
-  selectedOrganisationId: string;
-}
-
-beforeEach(async () => {
-  document.body.innerHTML = `
-    <div>
-      <div id="app"></div>
-    </div>
-  `;
-
-  router = createRouter({
-    history: createWebHistory(),
-    routes,
-  });
-
-  router.push('/');
-  await router.isReady();
-
-  serviceProviderStore.manageableServiceProvidersForOrganisation = [
-    DoFactory.getManageableServiceProviderListEntryResponse({ hasSomeVerwaltenPermission: true }),
-    DoFactory.getManageableServiceProviderListEntryResponse({ hasSomeVerwaltenPermission: false }),
-  ];
-  serviceProviderStore.errorCode = '';
-});
 
 describe('ServiceProviderManagementBySchuleView', () => {
-  it('should render', () => {
-    const wrapper: VueWrapper = mountComponent() as VueWrapper;
+  it('should render', async () => {
+    const { wrapper }: SetupResult = await setup();
     expect(wrapper.exists()).toBe(true);
   });
 
+  it('renders the translated new kategorien truncated with the full name as hover text', async () => {
+    const { wrapper }: SetupResult = await setup({
+      serviceProviderState: {
+        manageableServiceProvidersForOrganisation: NEW_KATEGORIEN.map(
+          ({ kategorie }: { kategorie: ServiceProviderKategorie }) =>
+            DoFactory.getManageableServiceProviderListEntryResponse({ kategorie }),
+        ),
+      },
+    });
+
+    const titles: Array<string | undefined> = wrapper
+      .findAll('.v-data-table__tr .line-clamp-2')
+      .map((cell: DOMWrapper<Element>) => cell.attributes('title'));
+    expect(titles).toEqual(expect.arrayContaining(NEW_KATEGORIEN.map(({ label }: { label: string }) => label)));
+  });
+
   it('it sets and resets filters', async () => {
-    const wrapper: VueWrapper = mountComponent() as VueWrapper;
+    const { wrapper, serviceProviderStore }: SetupResult = await setup();
 
     const schule: Organisation = DoFactory.getSchule();
 
-    const schuleAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchulenFilter' });
+    const schuleAutocomplete: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
 
-    schuleAutocomplete?.vm.$emit('update:selectedSchulen', schule);
+    schuleAutocomplete.vm.$emit('update:selectedSchulen', schule);
     await nextTick();
     await flushPromises();
 
@@ -82,7 +127,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
 
     expect(selectedSchule).toBe(schule.id);
 
-    await wrapper?.find('[data-testid="reset-filter-button"]').trigger('click');
+    await wrapper.find('[data-testid="reset-filter-button"]').trigger('click');
     await nextTick();
     await flushPromises();
 
@@ -91,9 +136,9 @@ describe('ServiceProviderManagementBySchuleView', () => {
 
   it('should set selectedOrganisationId from searchFilterStore on mount', async () => {
     const schuleId: string = 'test-schule-id';
-    searchFilterStore.selectedSchuleForSchulischeServiceProvider = DoFactory.getSchule({ id: schuleId });
-
-    const wrapper: VueWrapper = mountComponent() as VueWrapper;
+    const { wrapper }: SetupResult = await setup({
+      searchFilterState: { selectedSchuleForSchulischeServiceProvider: DoFactory.getSchule({ id: schuleId }) },
+    });
     await nextTick();
 
     const selectedSchule: string = (wrapper.vm as unknown as ServiceProviderManagementBySchuleView)
@@ -103,9 +148,9 @@ describe('ServiceProviderManagementBySchuleView', () => {
   });
 
   it('should not set selectedOrganisationId when searchFilterStore value is null on mount', async () => {
-    searchFilterStore.selectedSchuleForSchulischeServiceProvider = null;
-
-    const wrapper: VueWrapper = mountComponent() as VueWrapper;
+    const { wrapper }: SetupResult = await setup({
+      searchFilterState: { selectedSchuleForSchulischeServiceProvider: null },
+    });
     await nextTick();
 
     const selectedSchule: string = (wrapper.vm as unknown as ServiceProviderManagementBySchuleView)
@@ -115,19 +160,19 @@ describe('ServiceProviderManagementBySchuleView', () => {
   });
 
   test('it routes to Service Provider details page', async () => {
+    const { wrapper, router }: SetupResult = await setup();
     const push: MockInstance = vi.spyOn(router, 'push');
-    const wrapper: VueWrapper = mountComponent() as VueWrapper;
     await nextTick();
 
     const schule: Organisation = DoFactory.getSchule();
 
-    const schuleAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchulenFilter' });
-    schuleAutocomplete?.vm.$emit('update:selectedSchulen', schule);
+    const schuleAutocomplete: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
+    schuleAutocomplete.vm.$emit('update:selectedSchulen', schule);
     await nextTick();
 
     await flushPromises();
 
-    await wrapper?.find('.v-data-table__tr').trigger('click');
+    await wrapper.find('.v-data-table__tr').trigger('click');
 
     await vi.waitFor(() => {
       expect(push).toHaveBeenCalledTimes(1);
@@ -135,8 +180,8 @@ describe('ServiceProviderManagementBySchuleView', () => {
   });
 
   describe('ServiceProviderDelete', () => {
-    it('renders ServiceProviderDelete button for each row', (): void => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementBySchuleView>> = mountComponent();
+    it('renders ServiceProviderDelete button for each row', async (): Promise<void> => {
+      const { wrapper, serviceProviderStore }: SetupResult = await setup();
       // Find all delete icons (activators)
       const deleteIcons: DOMWrapper<Element>[] = wrapper.findAll(
         '[data-testid="open-service-provider-delete-dialog-icon"]',
@@ -149,7 +194,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('opens and confirms delete dialog, calls store method', async (): Promise<void> => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementBySchuleView>> = mountComponent();
+      const { wrapper, serviceProviderStore }: SetupResult = await setup();
       // Find first delete icon and click it
       const deleteIcon: DOMWrapper<Element> = wrapper.find('[data-testid="open-service-provider-delete-dialog-icon"]');
       await deleteIcon.trigger('click');
@@ -173,7 +218,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('opens vidis info dialog with provider name and closes it on ok click', async () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementBySchuleView>> = mountComponent();
+      const { wrapper, serviceProviderStore }: SetupResult = await setup();
       const vidisProvider: ManageableServiceProviderListEntry = DoFactory.getManageableServiceProviderListEntryResponse(
         {
           hasSomeVerwaltenPermission: true,
@@ -217,9 +262,9 @@ describe('ServiceProviderManagementBySchuleView', () => {
 
     describe('onCloseDeleteDialog', () => {
       it('removes provider and reloads list if successful', async () => {
-        const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementBySchuleView>> = mountComponent();
-        const schuleAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchulenFilter' });
-        schuleAutocomplete?.vm.$emit('update:selectedSchulen', DoFactory.getSchule({ id: 'some-id' }));
+        const { wrapper, serviceProviderStore }: SetupResult = await setup();
+        const schuleAutocomplete: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
+        schuleAutocomplete.vm.$emit('update:selectedSchulen', DoFactory.getSchule({ id: 'some-id' }));
 
         const remainingProvider: ManageableServiceProviderListEntry =
           serviceProviderStore.manageableServiceProvidersForOrganisation[1]!;
@@ -257,7 +302,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('renders SpshAlert when errorCode is set', async () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementBySchuleView>> = mountComponent();
+      const { wrapper, serviceProviderStore }: SetupResult = await setup();
       serviceProviderStore.errorCode = 'UNSPECIFIED_ERROR';
       await nextTick();
       const alert: DOMWrapper<Element> = wrapper.find(
@@ -267,9 +312,9 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('clears error and reloads data when alert button is clicked', async () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementBySchuleView>> = mountComponent();
-      const schuleAutocomplete: VueWrapper | undefined = wrapper?.findComponent({ name: 'SchulenFilter' });
-      schuleAutocomplete?.vm.$emit('update:selectedSchulen', DoFactory.getSchule({ id: 'some-id' }));
+      const { wrapper, serviceProviderStore }: SetupResult = await setup();
+      const schuleAutocomplete: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
+      schuleAutocomplete.vm.$emit('update:selectedSchulen', DoFactory.getSchule({ id: 'some-id' }));
 
       serviceProviderStore.errorCode = 'UNSPECIFIED_ERROR';
       await nextTick();
@@ -291,43 +336,42 @@ describe('ServiceProviderManagementBySchuleView', () => {
   describe('VidisSyncDialog', () => {
     const orgId: string = 'test-schule-id';
 
-    async function selectSchule(wrapper: VueWrapper): Promise<void> {
-      const schuleFilter: VueWrapper | undefined = wrapper.findComponent({ name: 'SchulenFilter' });
-      schuleFilter?.vm.$emit('update:selectedSchulen', DoFactory.getSchule({ id: orgId }));
+    function setupWithVidisPermission(): Promise<SetupResult> {
+      return setup({ authState: { hasVidisPermission: true } });
+    }
+
+    async function selectSchule(wrapper: BySchuleViewWrapper): Promise<void> {
+      const schuleFilter: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
+      schuleFilter.vm.$emit('update:selectedSchulen', DoFactory.getSchule({ id: orgId }));
       await nextTick();
       await flushPromises();
     }
 
-    beforeEach(() => {
-      authStore.hasVidisPermission = true;
-    });
-
-    it('does not render the sync button when the user lacks vidis permission', () => {
-      authStore.hasVidisPermission = false;
-      const wrapper: VueWrapper | undefined = mountComponent();
+    it('does not render the sync button when the user lacks vidis permission', async () => {
+      const { wrapper }: SetupResult = await setup({ authState: { hasVidisPermission: false } });
       expect(wrapper.find('[data-testid="open-vidis-sync-dialog-button"]').exists()).toBe(false);
     });
 
-    it('renders the sync button when the user has vidis permission', () => {
-      const wrapper: VueWrapper | undefined = mountComponent();
+    it('renders the sync button when the user has vidis permission', async () => {
+      const { wrapper }: SetupResult = await setupWithVidisPermission();
       expect(wrapper.find('[data-testid="open-vidis-sync-dialog-button"]').exists()).toBe(true);
     });
 
-    it('disables the sync button when no Schule is selected', () => {
-      const wrapper: VueWrapper | undefined = mountComponent();
+    it('disables the sync button when no Schule is selected', async () => {
+      const { wrapper }: SetupResult = await setupWithVidisPermission();
       const btn: DOMWrapper<Element> = wrapper.find('[data-testid="open-vidis-sync-dialog-button"]');
       expect(btn.attributes('disabled')).toBeDefined();
     });
 
     it('enables the sync button once a Schule is selected', async () => {
-      const wrapper: VueWrapper | undefined = mountComponent();
+      const { wrapper }: SetupResult = await setupWithVidisPermission();
       await selectSchule(wrapper);
       const btn: DOMWrapper<Element> = wrapper.find('[data-testid="open-vidis-sync-dialog-button"]');
       expect(btn.attributes('disabled')).toBeUndefined();
     });
 
     it('opens the VidisSyncDialog when the button is clicked', async () => {
-      const wrapper: VueWrapper | undefined = mountComponent();
+      const { wrapper }: SetupResult = await setupWithVidisPermission();
       await selectSchule(wrapper);
 
       await wrapper.find('[data-testid="open-vidis-sync-dialog-button"]').trigger('click');
@@ -338,7 +382,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('calls syncServiceProvidersForSchule with the selected organisation id', async () => {
-      const wrapper: VueWrapper | undefined = mountComponent();
+      const { wrapper, serviceProviderStore }: SetupResult = await setupWithVidisPermission();
       await selectSchule(wrapper);
 
       const syncSpy: Mock<ServiceProviderStore['syncServiceProvidersForSchule']> = vi
@@ -359,7 +403,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('reloads the service provider list after a successful sync', async () => {
-      const wrapper: VueWrapper | undefined = mountComponent();
+      const { wrapper, serviceProviderStore }: SetupResult = await setupWithVidisPermission();
       await selectSchule(wrapper);
 
       vi.spyOn(serviceProviderStore, 'syncServiceProvidersForSchule').mockResolvedValue();
@@ -380,7 +424,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('does not reload the list when sync fails', async () => {
-      const wrapper: VueWrapper | undefined = mountComponent();
+      const { wrapper, serviceProviderStore }: SetupResult = await setupWithVidisPermission();
 
       const reloadSpy: Mock<ServiceProviderStore['getManageableServiceProvidersForOrganisation']> = vi
         .spyOn(serviceProviderStore, 'getManageableServiceProvidersForOrganisation')
@@ -408,7 +452,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('does not show SpshAlert when errorCode is VIDIS_API_ERROR', async () => {
-      const wrapper: VueWrapper | undefined = mountComponent();
+      const { wrapper, serviceProviderStore }: SetupResult = await setupWithVidisPermission();
       serviceProviderStore.errorCode = 'VIDIS_API_ERROR';
       await nextTick();
 
@@ -416,7 +460,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('keeps the table visible when errorCode is VIDIS_API_ERROR', async () => {
-      const wrapper: VueWrapper | undefined = mountComponent();
+      const { wrapper, serviceProviderStore }: SetupResult = await setupWithVidisPermission();
       serviceProviderStore.errorCode = 'VIDIS_API_ERROR';
       await nextTick();
 
@@ -424,11 +468,11 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('clears errorCode when the sync dialog is closed', async () => {
-      const wrapper: VueWrapper | undefined = mountComponent();
+      const { wrapper, serviceProviderStore }: SetupResult = await setupWithVidisPermission();
       serviceProviderStore.errorCode = 'VIDIS_API_ERROR';
       await nextTick();
 
-      const dialog: VueWrapper | undefined = wrapper.findComponent({ name: 'VidisSyncDialog' });
+      const dialog: VueWrapper = wrapper.findComponent({ name: 'VidisSyncDialog' });
       if (dialog.exists()) {
         dialog.vm.$emit('onClose', false);
       }

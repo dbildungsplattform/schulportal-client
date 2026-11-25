@@ -11,15 +11,23 @@ import {
 } from './SearchFilterStore';
 import { ServiceProviderKategorie, type ServiceProviderIdNameResponse } from './ServiceProviderStore';
 
-describe('SearchFilterStore', () => {
-  let searchFilterStore: SearchFilterStore;
-  beforeEach(() => {
-    setActivePinia(createPinia());
-    searchFilterStore = useSearchFilterStore();
-    searchFilterStore.$reset();
-  });
+const NEW_KATEGORIEN: ReadonlyArray<ServiceProviderKategorie> = [
+  ServiceProviderKategorie.UnterrichtUndLernen,
+  ServiceProviderKategorie.KommunikationUndZusammenarbeit,
+  ServiceProviderKategorie.SchulorganisationUndVerwaltung,
+  ServiceProviderKategorie.FortbildungUndQualifizierung,
+  ServiceProviderKategorie.InformationenUndPortale,
+  ServiceProviderKategorie.HilfeUndUnterstuetzung,
+];
 
+function setup(): SearchFilterStore {
+  setActivePinia(createPinia());
+  return useSearchFilterStore();
+}
+
+describe('SearchFilterStore', () => {
   it('should initalize state correctly', () => {
+    const searchFilterStore: SearchFilterStore = setup();
     expect(searchFilterStore.selectedKlassen).toEqual([]);
     expect(searchFilterStore.selectedRollen).toEqual([]);
     expect(searchFilterStore.selectedStatusForPersonen).toEqual([]);
@@ -43,6 +51,7 @@ describe('SearchFilterStore', () => {
   });
 
   it('should change the state', () => {
+    const searchFilterStore: SearchFilterStore = setup();
     const selectedKlassen: Organisation[] = [DoFactory.getKlasse(), DoFactory.getKlasse()];
     // it sets the selectedKlassen
     searchFilterStore.setKlasseFilterForPersonen(selectedKlassen);
@@ -111,7 +120,31 @@ describe('SearchFilterStore', () => {
     expect(searchFilterStore.selectedKategorienForServiceProvider).toEqual(DEFAULT_SERVICE_PROVIDER_KATEGORIEN);
   });
 
+  it('should select the new kategorien but not SCHULISCH by default', () => {
+    const searchFilterStore: SearchFilterStore = setup();
+
+    expect(searchFilterStore.selectedKategorienForServiceProvider).toEqual([
+      ServiceProviderKategorie.Email,
+      ServiceProviderKategorie.Unterricht,
+      ServiceProviderKategorie.Verwaltung,
+      ServiceProviderKategorie.Hinweise,
+      ...NEW_KATEGORIEN,
+    ]);
+    expect(searchFilterStore.selectedKategorienForServiceProvider).not.toContain(ServiceProviderKategorie.Schulisch);
+  });
+
+  it('should restore the new kategorien when resetting the kategorien selection', () => {
+    const searchFilterStore: SearchFilterStore = setup();
+    searchFilterStore.setKategorienForServiceProvider([ServiceProviderKategorie.Schulisch]);
+
+    searchFilterStore.resetKategorienForServiceProvider();
+
+    expect(searchFilterStore.selectedKategorienForServiceProvider).toEqual(expect.arrayContaining([...NEW_KATEGORIEN]));
+    expect(searchFilterStore.selectedKategorienForServiceProvider).not.toContain(ServiceProviderKategorie.Schulisch);
+  });
+
   it('should persist, clear and reset the person status selection', () => {
+    const searchFilterStore: SearchFilterStore = setup();
     searchFilterStore.setStatusFilterForPersonen([PersonStatusFilter.Locked]);
     expect(searchFilterStore.selectedStatusForPersonen).toEqual([PersonStatusFilter.Locked]);
 
@@ -124,22 +157,26 @@ describe('SearchFilterStore', () => {
   });
 
   it('should set merkmale filter for rollen', () => {
+    const searchFilterStore: SearchFilterStore = setup();
     searchFilterStore.setMerkmaleFilterForRollen([RollenMerkmal.KopersPflicht]);
     expect(searchFilterStore.selectedMerkmaleForRollen).toEqual([RollenMerkmal.KopersPflicht]);
   });
 
   it('should set rollenarten filter for rollen', () => {
+    const searchFilterStore: SearchFilterStore = setup();
     searchFilterStore.setRollenartenFilterForRollen([RollenArt.Lehr]);
     expect(searchFilterStore.selectedRollenartenForRollen).toEqual([RollenArt.Lehr]);
   });
 
   it('should set organisationen filter for rollen', () => {
+    const searchFilterStore: SearchFilterStore = setup();
     const organisations: Organisation[] = [DoFactory.getSchule(), DoFactory.getSchule()];
     searchFilterStore.setOrganisationenFilterForRollen(organisations);
     expect(searchFilterStore.selectedOrganisationenForRollen).toEqual(organisations);
   });
 
   it('should set selected service providers for rollen', () => {
+    const searchFilterStore: SearchFilterStore = setup();
     const firstProvider: ServiceProviderIdNameResponse = DoFactory.getServiceProviderResponse({
       id: 'sp1',
       name: 'Provider One',

@@ -1,27 +1,35 @@
 import { ServiceProviderKategorie, type ServiceProviderResponse } from '@/api-client/generated/api';
-import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
+import { enableAutoUnmount, flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import AngebotSelectionTreeview from './AngebotSelectionTreeview.vue';
 
-let wrapper: VueWrapper<InstanceType<typeof AngebotSelectionTreeview>> | null = null;
+type TreeviewWrapper = VueWrapper<InstanceType<typeof AngebotSelectionTreeview>>;
+type TreeviewProps = Partial<InstanceType<typeof AngebotSelectionTreeview>['$props']>;
 
-const emailAngebot: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
-  name: 'Zentrale E-Mail',
-  kategorie: ServiceProviderKategorie.Email,
-});
-const firstUnterrichtAngebot: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
-  name: 'Anton Unterricht',
-  kategorie: ServiceProviderKategorie.Unterricht,
-});
-const secondUnterrichtAngebot: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
-  name: 'Zulu Unterricht',
-  kategorie: ServiceProviderKategorie.Unterricht,
-});
+enableAutoUnmount(afterEach);
 
-function mountComponent(
-  props: Partial<InstanceType<typeof AngebotSelectionTreeview>['$props']> = {},
-): VueWrapper<InstanceType<typeof AngebotSelectionTreeview>> {
-  wrapper = mount(AngebotSelectionTreeview, {
+function setup(props: TreeviewProps = {}): {
+  wrapper: TreeviewWrapper;
+  emailAngebot: ServiceProviderResponse;
+  firstUnterrichtAngebot: ServiceProviderResponse;
+  secondUnterrichtAngebot: ServiceProviderResponse;
+} {
+  document.body.innerHTML = '<div><div id="app"></div></div>';
+
+  const emailAngebot: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
+    name: 'Zentrale E-Mail',
+    kategorie: ServiceProviderKategorie.Email,
+  });
+  const firstUnterrichtAngebot: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
+    name: 'Anton Unterricht',
+    kategorie: ServiceProviderKategorie.Unterricht,
+  });
+  const secondUnterrichtAngebot: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
+    name: 'Zulu Unterricht',
+    kategorie: ServiceProviderKategorie.Unterricht,
+  });
+
+  const wrapper: TreeviewWrapper = mount(AngebotSelectionTreeview, {
     attachTo: document.getElementById('app') || '',
     props: {
       availableServiceProviders: [secondUnterrichtAngebot, emailAngebot, firstUnterrichtAngebot],
@@ -30,73 +38,79 @@ function mountComponent(
       ...props,
     },
   });
-  return wrapper;
+
+  return { wrapper, emailAngebot, firstUnterrichtAngebot, secondUnterrichtAngebot };
 }
-
-beforeEach((): void => {
-  document.body.innerHTML = '<div><div id="app"></div></div>';
-});
-
-afterEach((): void => {
-  wrapper?.unmount();
-  wrapper = null;
-});
 
 describe('AngebotSelectionTreeview', (): void => {
   it('renders non-empty categories in start-page order with sorted offers and selected count', async (): Promise<void> => {
-    const component: VueWrapper<InstanceType<typeof AngebotSelectionTreeview>> = mountComponent();
+    const { wrapper }: ReturnType<typeof setup> = setup();
     await flushPromises();
 
-    const text: string = component.text();
+    const text: string = wrapper.text();
     expect(text.indexOf('E-Mail')).toBeLessThan(text.indexOf('Unterricht'));
     expect(text.indexOf('Anton Unterricht')).toBeLessThan(text.indexOf('Zulu Unterricht'));
     expect(text).toContain('(1 von 2)');
     expect(text).not.toContain('Verwaltung');
   });
 
+  it('renders offers of the new kategorien under their translated label', async (): Promise<void> => {
+    const newKategorieAngebot: ServiceProviderResponse = DoFactory.getServiceProviderResponse({
+      name: 'Fortbildungsportal',
+      kategorie: ServiceProviderKategorie.FortbildungUndQualifizierung,
+    });
+    const { wrapper }: ReturnType<typeof setup> = setup({
+      availableServiceProviders: [newKategorieAngebot],
+      initiallySelectedServiceProviderIds: [],
+    });
+    await flushPromises();
+
+    const category: string = wrapper
+      .find(`[data-testid="angebot-category-${ServiceProviderKategorie.FortbildungUndQualifizierung}"]`)
+      .text();
+    expect(category).toContain('Fortbildung und Qualifizierung');
+    expect(wrapper.text()).toContain('Fortbildungsportal');
+  });
+
   it('opens all category groups initially', (): void => {
-    const component: VueWrapper<InstanceType<typeof AngebotSelectionTreeview>> = mountComponent();
-    const treeview: VueWrapper = component.findComponent({ name: 'VTreeview' });
+    const { wrapper }: ReturnType<typeof setup> = setup();
+    const treeview: VueWrapper = wrapper.findComponent({ name: 'VTreeview' });
     const treeviewProps: { opened?: Array<string> } = treeview.props();
 
     expect(treeviewProps.opened).toEqual(
-      expect.arrayContaining([
-        'group-EMAIL',
-        'group-UNTERRICHT',
-        'group-VERWALTUNG',
-        'group-SCHULISCH',
-        'group-HINWEISE',
-      ]),
+      expect.arrayContaining(
+        Object.values(ServiceProviderKategorie).map((kategorie: ServiceProviderKategorie) => `group-${kategorie}`),
+      ),
     );
   });
 
   it('emits only selectable offer ids', (): void => {
-    const component: VueWrapper<InstanceType<typeof AngebotSelectionTreeview>> = mountComponent();
-    const treeview: VueWrapper = component.findComponent({ name: 'VTreeview' });
+    const { wrapper, emailAngebot }: ReturnType<typeof setup> = setup();
+    const treeview: VueWrapper = wrapper.findComponent({ name: 'VTreeview' });
     treeview.vm.$emit('update:modelValue', [emailAngebot.id, emailAngebot.id, 'group-EMAIL', 123]);
 
-    expect(component.emitted('update:selectedServiceProviderIds')?.at(-1)?.[0]).toEqual([emailAngebot.id]);
+    expect(wrapper.emitted('update:selectedServiceProviderIds')?.at(-1)?.[0]).toEqual([emailAngebot.id]);
   });
 
   it('selects all offers in a category through the category checkbox', async (): Promise<void> => {
-    const component: VueWrapper<InstanceType<typeof AngebotSelectionTreeview>> = mountComponent({
+    const { wrapper, firstUnterrichtAngebot, secondUnterrichtAngebot }: ReturnType<typeof setup> = setup({
       initiallySelectedServiceProviderIds: [],
     });
 
-    await component.find('[data-testid="angebot-category-checkbox-UNTERRICHT"]').trigger('click');
+    await wrapper.find('[data-testid="angebot-category-checkbox-UNTERRICHT"]').trigger('click');
 
-    expect(component.emitted('update:selectedServiceProviderIds')?.at(-1)?.[0]).toEqual(
+    expect(wrapper.emitted('update:selectedServiceProviderIds')?.at(-1)?.[0]).toEqual(
       expect.arrayContaining([firstUnterrichtAngebot.id, secondUnterrichtAngebot.id]),
     );
   });
 
   it('renders the empty state when service providers are temporarily undefined', async (): Promise<void> => {
-    const component: VueWrapper<InstanceType<typeof AngebotSelectionTreeview>> = mountComponent({
+    const { wrapper }: ReturnType<typeof setup> = setup({
       availableServiceProviders: undefined,
     });
     await flushPromises();
 
-    expect(component.find('[data-testid="angebot-selection-tree-empty"]').exists()).toBe(true);
-    expect(component.find('[data-testid="angebot-selection-tree"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="angebot-selection-tree-empty"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="angebot-selection-tree"]').exists()).toBe(false);
   });
 });

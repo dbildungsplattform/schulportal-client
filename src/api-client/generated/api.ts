@@ -396,7 +396,13 @@ export const CreateServiceProviderBodyParamsKategorieEnum = {
     Unterricht: 'UNTERRICHT',
     Verwaltung: 'VERWALTUNG',
     Schulisch: 'SCHULISCH',
-    Hinweise: 'HINWEISE'
+    Hinweise: 'HINWEISE',
+    UnterrichtUndLernen: 'UNTERRICHT_UND_LERNEN',
+    KommunikationUndZusammenarbeit: 'KOMMUNIKATION_UND_ZUSAMMENARBEIT',
+    SchulorganisationUndVerwaltung: 'SCHULORGANISATION_UND_VERWALTUNG',
+    FortbildungUndQualifizierung: 'FORTBILDUNG_UND_QUALIFIZIERUNG',
+    InformationenUndPortale: 'INFORMATIONEN_UND_PORTALE',
+    HilfeUndUnterstuetzung: 'HILFE_UND_UNTERSTUETZUNG'
 } as const;
 
 export type CreateServiceProviderBodyParamsKategorieEnum = typeof CreateServiceProviderBodyParamsKategorieEnum[keyof typeof CreateServiceProviderBodyParamsKategorieEnum];
@@ -4566,7 +4572,13 @@ export const ServiceProviderKategorie = {
     Unterricht: 'UNTERRICHT',
     Verwaltung: 'VERWALTUNG',
     Schulisch: 'SCHULISCH',
-    Hinweise: 'HINWEISE'
+    Hinweise: 'HINWEISE',
+    UnterrichtUndLernen: 'UNTERRICHT_UND_LERNEN',
+    KommunikationUndZusammenarbeit: 'KOMMUNIKATION_UND_ZUSAMMENARBEIT',
+    SchulorganisationUndVerwaltung: 'SCHULORGANISATION_UND_VERWALTUNG',
+    FortbildungUndQualifizierung: 'FORTBILDUNG_UND_QUALIFIZIERUNG',
+    InformationenUndPortale: 'INFORMATIONEN_UND_PORTALE',
+    HilfeUndUnterstuetzung: 'HILFE_UND_UNTERSTUETZUNG'
 } as const;
 
 export type ServiceProviderKategorie = typeof ServiceProviderKategorie[keyof typeof ServiceProviderKategorie];
@@ -5029,7 +5041,13 @@ export const UpdateServiceProviderBodyParamsKategorieEnum = {
     Unterricht: 'UNTERRICHT',
     Verwaltung: 'VERWALTUNG',
     Schulisch: 'SCHULISCH',
-    Hinweise: 'HINWEISE'
+    Hinweise: 'HINWEISE',
+    UnterrichtUndLernen: 'UNTERRICHT_UND_LERNEN',
+    KommunikationUndZusammenarbeit: 'KOMMUNIKATION_UND_ZUSAMMENARBEIT',
+    SchulorganisationUndVerwaltung: 'SCHULORGANISATION_UND_VERWALTUNG',
+    FortbildungUndQualifizierung: 'FORTBILDUNG_UND_QUALIFIZIERUNG',
+    InformationenUndPortale: 'INFORMATIONEN_UND_PORTALE',
+    HilfeUndUnterstuetzung: 'HILFE_UND_UNTERSTUETZUNG'
 } as const;
 
 export type UpdateServiceProviderBodyParamsKategorieEnum = typeof UpdateServiceProviderBodyParamsKategorieEnum[keyof typeof UpdateServiceProviderBodyParamsKategorieEnum];

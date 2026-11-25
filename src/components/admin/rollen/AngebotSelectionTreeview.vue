@@ -42,13 +42,12 @@
   const emit: Emits = defineEmits<Emits>();
   const { t }: Composer = useI18n({ useScope: 'global' });
 
-  const categoryDefinitions: Array<CategoryDefinition> = [
-    { kategorie: ServiceProviderKategorie.Email, labelKey: 'angebot.mappingFrontBackEnd.kategorien.EMAIL' },
-    { kategorie: ServiceProviderKategorie.Unterricht, labelKey: 'angebot.mappingFrontBackEnd.kategorien.UNTERRICHT' },
-    { kategorie: ServiceProviderKategorie.Verwaltung, labelKey: 'angebot.mappingFrontBackEnd.kategorien.VERWALTUNG' },
-    { kategorie: ServiceProviderKategorie.Schulisch, labelKey: 'angebot.mappingFrontBackEnd.kategorien.SCHULISCH' },
-    { kategorie: ServiceProviderKategorie.Hinweise, labelKey: 'angebot.mappingFrontBackEnd.kategorien.HINWEISE' },
-  ];
+  const categoryDefinitions: Array<CategoryDefinition> = Object.values(ServiceProviderKategorie).map(
+    (kategorie: ServiceProviderKategorie): CategoryDefinition => ({
+      kategorie,
+      labelKey: `angebot.mappingFrontBackEnd.kategorien.${kategorie}`,
+    }),
+  );
 
   const selected: Ref<Array<string>> = ref([...(props.initiallySelectedServiceProviderIds ?? [])]);
   const opened: Ref<Array<string>> = ref(
