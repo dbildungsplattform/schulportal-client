@@ -22,7 +22,14 @@ import { PersonenUebersicht } from './types/PersonenUebersicht';
 import type { PersonWithZuordnungen } from './types/PersonWithZuordnungen';
 import { Zuordnung } from './types/Zuordnung';
 
-const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
+const setup = (): { personStore: PersonStore; mockadapter: MockAdapter } => {
+  setActivePinia(createPinia());
+  const personStore: PersonStore = usePersonStore();
+  personStore.$reset();
+  const mockadapter: MockAdapter = new MockAdapter(axiosApiInstance);
+  onTestFinished(() => mockadapter.restore());
+  return { personStore, mockadapter };
+};
 
 function getUserLockBodyParams(lock: boolean): LockUserBodyParams {
   return {
@@ -50,21 +57,15 @@ function getMockPersonendatensatz(): Personendatensatz {
 }
 
 describe('PersonStore', () => {
-  let personStore: PersonStore;
-  beforeEach(() => {
-    setActivePinia(createPinia());
-    personStore = usePersonStore();
-    personStore.$reset();
-    mockadapter.reset();
-  });
-
   it('should initalize state correctly', () => {
+    const { personStore }: ReturnType<typeof setup> = setup();
     expect(personStore.errorCode).toEqual('');
     expect(personStore.loading).toBe(false);
   });
 
   describe('getAllPersons', () => {
     it('should load persons and their overviews, and update state', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockSchule: Organisation = DoFactory.getOrganisation();
       // Mock data for persons
       const mockPersons: PersonendatensatzResponse[] = [
@@ -130,6 +131,7 @@ describe('PersonStore', () => {
     });
 
     it('should skip, if persons or their overviews are missing', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockSchule: Organisation = DoFactory.getOrganisation();
       // Mock data for persons
       const mockPersons: PersonendatensatzResponse[] = [
@@ -182,6 +184,7 @@ describe('PersonStore', () => {
     });
 
     it('should return empty map if no persons were found', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       // Mock response for persons
       const mockPersonsResponse: PersonControllerFindPersons200Response = {
         offset: 0,
@@ -202,6 +205,7 @@ describe('PersonStore', () => {
     });
 
     it('should load persons according to filter', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockPersons: PersonendatensatzResponse[] = [DoFactory.getPersonendatensatzResponse()];
 
       const mockPersonsResponse: PersonControllerFindPersons200Response = {
@@ -215,9 +219,6 @@ describe('PersonStore', () => {
 
       const personIds: string[] = mockPersons.map((person: PersonendatensatzResponse) => person.person.id);
       mockadapter.onPost('/api/dbiam/personenuebersicht', { personIds }).replyOnce(200, {
-        total: 1,
-        offset: 0,
-        limit: 1,
         items: [DoFactory.getDBiamPersonenuebersichtResponse({ personId: mockPersons[0]!.person.id })],
       });
 
@@ -250,6 +251,7 @@ describe('PersonStore', () => {
     });
 
     it('should filter by lock reasons without an organisation', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet(/^\/api\/personen(?:\?|$)/).replyOnce(200, {
         offset: 0,
         limit: 30,
@@ -275,6 +277,7 @@ describe('PersonStore', () => {
       { response: { i18nKey: 'PERSON_LIST_ERROR' }, expected: 'PERSON_LIST_ERROR' },
       { response: 'server error', expected: 'UNSPECIFIED_ERROR' },
     ])('should surface list request errors: $expected', async ({ response, expected }) => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/personen').replyOnce(500, response);
 
       const request: Promise<void> = personStore.getAllPersons({});
@@ -286,6 +289,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle error code in response', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockPersons: PersonendatensatzResponse[] = [
         DoFactory.getPersonendatensatzResponse(),
         DoFactory.getPersonendatensatzResponse(),
@@ -313,6 +317,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle string error response', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockPersons: PersonendatensatzResponse[] = [
         DoFactory.getPersonendatensatzResponse(),
         DoFactory.getPersonendatensatzResponse(),
@@ -340,6 +345,7 @@ describe('PersonStore', () => {
 
   describe('getPersonById', () => {
     it('should load Person and update state', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const dateOptions: Intl.DateTimeFormatOptions = {
         day: '2-digit',
         month: '2-digit',
@@ -386,6 +392,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/personen/2345').replyOnce(500, 'some mock server error');
       const getPersonByIdPromise: Promise<void> = personStore.getPersonById('2345');
       expect(personStore.loading).toBe(true);
@@ -395,6 +402,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/personen/2345').replyOnce(500, { code: 'some mock server error' });
       const getPersonByIdPromise: Promise<void> = personStore.getPersonById('2345');
       expect(personStore.loading).toBe(true);
@@ -406,6 +414,7 @@ describe('PersonStore', () => {
 
   describe('resetPassword', () => {
     it('should reset and return password', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const userId: string = '2345';
       const mockResponse: string = 'fakePassword';
 
@@ -418,6 +427,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const userId: string = '2345';
 
       mockadapter.onPatch(`/api/personen/${userId}/password`).replyOnce(500, 'some error');
@@ -429,6 +439,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const userId: string = '2345';
 
       mockadapter.onPatch(`/api/personen/${userId}/password`).replyOnce(500, { code: 'some mock server error' });
@@ -442,6 +453,7 @@ describe('PersonStore', () => {
 
   describe('resetDevicePassword', () => {
     it('should reset and return device password when given a personId', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const userId: string = '2345';
       const mockResponse: string = 'fakePassword';
 
@@ -454,6 +466,7 @@ describe('PersonStore', () => {
     });
 
     it('should reset and return device password without a personId', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: string = 'fakePassword';
 
       mockadapter.onPatch(`/api/personen/uem-password`).replyOnce(202, mockResponse);
@@ -465,6 +478,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const userId: string = '2345';
 
       mockadapter.onPatch(`/api/personen/${userId}/uem-password`).replyOnce(500, 'some error');
@@ -476,6 +490,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const userId: string = '2345';
 
       mockadapter.onPatch(`/api/personen/${userId}/uem-password`).replyOnce(500, { i18nKey: 'SOME_MOCK_ERROR' });
@@ -489,6 +504,7 @@ describe('PersonStore', () => {
 
   describe('deletePersonById', () => {
     it('should delete a person and update state', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const personId: string = '1234';
 
       mockadapter.onDelete(`/api/personen/${personId}`).replyOnce(204);
@@ -500,6 +516,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const personId: string = '1234';
 
       mockadapter.onDelete(`/api/personen/${personId}`).replyOnce(500, 'some error');
@@ -511,6 +528,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const personId: string = '1234';
 
       mockadapter.onDelete(`/api/personen/${personId}`).replyOnce(500, { code: 'some mock server error' });
@@ -524,6 +542,7 @@ describe('PersonStore', () => {
 
   describe('getPersonenuebersichtById', () => {
     it('should get Personenuebersicht', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockResponse: DBiamPersonenuebersichtResponse = DoFactory.getDBiamPersonenuebersichtResponse();
 
       mockadapter.onGet(`/api/dbiam/personenuebersicht/${mockResponse.personId}`).replyOnce(200, mockResponse);
@@ -537,6 +556,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/dbiam/personenuebersicht/1').replyOnce(500, 'some error');
       const getPersonenuebersichtByIdPromise: Promise<void> = personStore.getPersonenuebersichtById('1');
       expect(personStore.loading).toBe(true);
@@ -546,6 +566,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/dbiam/personenuebersicht/1').replyOnce(500, { code: 'some mock server error' });
       const getPersonenuebersichtByIdPromise: Promise<void> = personStore.getPersonenuebersichtById('1');
       expect(personStore.loading).toBe(true);
@@ -557,6 +578,7 @@ describe('PersonStore', () => {
 
   describe('lockPerson', () => {
     it('should lock the person and update state', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockPerson: PersonendatensatzResponse = DoFactory.getPersonendatensatzResponse();
       const mockResponse: PersonLockResponse = {
         message: 'User has been successfully locked.',
@@ -574,6 +596,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const personId: string = '1234';
 
       mockadapter.onPut(`/api/personen/${personId}/lock-user`).replyOnce(500, 'some mock server error');
@@ -586,6 +609,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const personId: string = '1234';
 
       mockadapter.onPut(`/api/personen/${personId}/lock-user`).replyOnce(500, { code: 'LOCK_FAILED_ERROR' });
@@ -600,6 +624,7 @@ describe('PersonStore', () => {
 
   describe('syncPersonById', () => {
     it('should sync a person', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const personId: string = '1234';
 
       mockadapter.onPost(`/api/personen/${personId}/sync`).replyOnce(200);
@@ -611,6 +636,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const personId: string = '1234';
 
       mockadapter.onPost(`/api/personen/${personId}/sync`).replyOnce(500, 'some error');
@@ -622,6 +648,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const personId: string = '1234';
 
       mockadapter.onPost(`/api/personen/${personId}/sync`).replyOnce(500, { code: 'some mock server error' });
@@ -635,6 +662,7 @@ describe('PersonStore', () => {
 
   describe('resetState', () => {
     it('should reset state', () => {
+      const { personStore }: ReturnType<typeof setup> = setup();
       personStore.errorCode = 'some error';
       personStore.loading = true;
       personStore.totalPersons = 1;
@@ -649,6 +677,7 @@ describe('PersonStore', () => {
 
   describe('changePersonMetaDataById', () => {
     it('should update person metadata and set patchedPerson', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const personId = '1234';
       const vorname = 'Samuel';
       const familienname = 'Vimes';
@@ -694,6 +723,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle error and set errorCode', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const personId: string = '1234';
       const vorname: string = 'Samuel';
       const familienname: string = 'Vimes';
@@ -707,6 +737,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle unknown error', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const personId: string = '1234';
       const vorname: string = 'Samuel';
       const familienname: string = 'Vimes';
@@ -722,6 +753,7 @@ describe('PersonStore', () => {
 
   describe('getLandesbedienstetePerson', () => {
     it('should load Landesbedienstete persons and update state', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       const mockLandesbedienstetePersonen: PersonLandesbediensteterSearchResponse[] = [
         DoFactory.getPersonLandesbediensteterSearchResponse(),
         DoFactory.getPersonLandesbediensteterSearchResponse(),
@@ -744,6 +776,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle string error', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/personen/landesbediensteter').replyOnce(500, 'some mock server error');
 
       const getLandesbedienstetePersonPromise: Promise<void> = personStore.getLandesbedienstetePerson();
@@ -754,6 +787,7 @@ describe('PersonStore', () => {
     });
 
     it('should handle error code', async () => {
+      const { personStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onGet('/api/personen/landesbediensteter').replyOnce(500, { code: 'some mock server error' });
 
       const getLandesbedienstetePersonPromise: Promise<void> = personStore.getLandesbedienstetePerson();

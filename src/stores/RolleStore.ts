@@ -4,7 +4,7 @@ import { type AxiosResponse } from 'axios';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import {
   RolleApiFactory,
-  RolleControllerFindRollen200Response,
+  type RolleControllerFindRollen200Response,
   RolleControllerFindRollenAvailableForPersonAdministration200Response,
   RollenArt,
   RollenMerkmal,

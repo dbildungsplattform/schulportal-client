@@ -999,7 +999,6 @@ export const DbiamPersonenkontextErrorI18nKeyEnum = {
     NurLehrUndLernAnKlasse: 'NUR_LEHR_UND_LERN_AN_KLASSE',
     GleicheRolleAnKlasseWieSchule: 'GLEICHE_ROLLE_AN_KLASSE_WIE_SCHULE',
     OrganisationMatchesRollenart: 'ORGANISATION_MATCHES_ROLLENART',
-    PersonenkontextAnlageError: 'PERSONENKONTEXT_ANLAGE_ERROR',
     RolleNurAnPassendeOrganisation: 'ROLLE_NUR_AN_PASSENDE_ORGANISATION',
     PersonalnummerNichtEindeutig: 'PERSONALNUMMER_NICHT_EINDEUTIG',
     PersonHatKeineKoperspflichtigeRolle: 'PERSON_HAT_KEINE_KOPERSPFLICHTIGE_ROLLE'
@@ -1086,7 +1085,6 @@ export interface DbiamRolleError {
 
 export const DbiamRolleErrorI18nKeyEnum = {
     RolleError: 'ROLLE_ERROR',
-    AddSystemrechtError: 'ADD_SYSTEMRECHT_ERROR',
     RolleHatPersonenkontexteError: 'ROLLE_HAT_PERSONENKONTEXTE_ERROR',
     UpdateMerkmaleError: 'UPDATE_MERKMALE_ERROR',
     RollennameEnthaeltLeerzeichen: 'ROLLENNAME_ENTHAELT_LEERZEICHEN',
