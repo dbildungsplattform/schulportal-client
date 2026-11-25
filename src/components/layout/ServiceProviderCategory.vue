@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { PrivacyIdeaErrorEnum } from '@/api-client/generated';
   import ServiceProviderCard from '@/components/cards/ServiceProviderCard.vue';
-  import { ServiceIdentifier } from '@/router/service-identifier.enum';
+  import { SERVICE_NOT_AVAILABLE_2FA } from '@/router/service-identifier.enum';
   import { type AuthStore, StepUpLevel, useAuthStore } from '@/stores/AuthStore';
   import type { StartPageServiceProvider } from '@/stores/ServiceProviderStore';
   import {
@@ -12,7 +12,6 @@
   const authStore: AuthStore = useAuthStore();
   const twoFactorAuthentificationStore: TwoFactorAuthentificationStore = useTwoFactorAuthentificationStore();
   const NO_SECOND_FACTOR: string = '/no-second-factor';
-  const SERVICE_NOT_AVAILABLE_2FA: string = `/service-not-available/${ServiceIdentifier.TWO_FACTOR_AUTHENTICATION}`;
 
   const props: {
     categoryTitle: string;
