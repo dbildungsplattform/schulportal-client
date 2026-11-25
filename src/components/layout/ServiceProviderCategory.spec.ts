@@ -110,9 +110,15 @@ describe('ServiceProviderCategory.vue', () => {
     store.errorCode = PrivacyIdeaErrorEnum.PiUnavailableError;
     await nextTick();
 
-    expect(wrapper?.findAllComponents(ServiceProviderCard)[0]?.props()).toMatchObject({ href: '/service-not-available/2FA' });
-    expect(wrapper?.findAllComponents(ServiceProviderCard)[1]?.props()).toMatchObject({ href: 'https://service-b.com' });
-    expect(wrapper?.findAllComponents(ServiceProviderCard)[2]?.props()).toMatchObject({ href: '/service-not-available/2FA' });
+    expect(wrapper?.findAllComponents(ServiceProviderCard)[0]?.props()).toMatchObject({
+      href: '/service-not-available/2FA',
+    });
+    expect(wrapper?.findAllComponents(ServiceProviderCard)[1]?.props()).toMatchObject({
+      href: 'https://service-b.com',
+    });
+    expect(wrapper?.findAllComponents(ServiceProviderCard)[2]?.props()).toMatchObject({
+      href: '/service-not-available/2FA',
+    });
 
     store.errorCode = '';
   });
