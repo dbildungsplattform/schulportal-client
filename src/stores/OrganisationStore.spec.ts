@@ -1398,16 +1398,22 @@ describe('OrganisationStore', () => {
       ];
 
       mockadapter.onPost('/api/organisationen').replyOnce(200, mockResponse);
-      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation(
-        '1',
-        'Org1',
-        'Organisation 1',
-        'Ergänzung',
-        'Org1',
-        OrganisationsTyp.Schule,
-      );
+      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation({
+        administriertVon: '1',
+        kennung: 'Org1',
+        name: 'Organisation 1',
+        typ: OrganisationsTyp.Schule,
+        emailAdress: 'test@schule.de',
+      });
       expect(organisationStore.loading).toBe(true);
       await createOrganisationPromise;
+      expect(JSON.parse(mockadapter.history.post[0]!.data as string)).toEqual({
+        administriertVon: '1',
+        kennung: 'Org1',
+        name: 'Organisation 1',
+        typ: OrganisationsTyp.Schule,
+        emailAdress: 'test@schule.de',
+      });
       expect(organisationStore.createdSchule).toEqual(mockResponse);
       expect(organisationStore.loading).toBe(false);
     });
@@ -1427,14 +1433,11 @@ describe('OrganisationStore', () => {
       ];
 
       mockadapter.onPost('/api/organisationen').replyOnce(200, mockResponse);
-      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation(
-        '1',
-        'Org1',
-        'Organisation 1',
-        'Ergänzung',
-        '01',
-        OrganisationsTyp.Klasse,
-      );
+      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation({
+        administriertVon: '1',
+        name: 'Organisation 1',
+        typ: OrganisationsTyp.Klasse,
+      });
       expect(organisationStore.loading).toBe(true);
       await createOrganisationPromise;
       expect(organisationStore.createdKlasse).toEqual(mockResponse);
@@ -1456,14 +1459,11 @@ describe('OrganisationStore', () => {
       ];
 
       mockadapter.onPost('/api/organisationen').replyOnce(200, mockResponse);
-      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation(
-        '1',
-        'Org1',
-        'Organisation 1',
-        'Ergänzung',
-        'Org1',
-        OrganisationsTyp.Traeger,
-      );
+      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation({
+        administriertVon: '1',
+        name: 'Organisation 1',
+        typ: OrganisationsTyp.Traeger,
+      });
       expect(organisationStore.loading).toBe(true);
       await createOrganisationPromise;
       expect(organisationStore.createdSchultraeger).toEqual(mockResponse);
@@ -1475,14 +1475,11 @@ describe('OrganisationStore', () => {
       const response: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
       mockadapter.onPost('/api/organisationen').replyOnce(200, response);
 
-      await organisationStore.createOrganisation(
-        'admin-id',
-        undefined,
-        response.name,
-        undefined,
-        undefined,
-        OrganisationsTyp.Behoerde,
-      );
+      await organisationStore.createOrganisation({
+        administriertVon: 'admin-id',
+        name: response.name,
+        typ: OrganisationsTyp.Behoerde,
+      });
 
       expect(organisationStore.createdKlasse).toBeNull();
       expect(organisationStore.createdSchule).toBeNull();
@@ -1493,14 +1490,12 @@ describe('OrganisationStore', () => {
     it('should handle string error', async () => {
       const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/organisationen').replyOnce(500, 'some mock server error');
-      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation(
-        '1',
-        'Org1',
-        'Organisation 1',
-        'Ergänzung',
-        'Org1',
-        OrganisationsTyp.Schule,
-      );
+      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation({
+        administriertVon: '1',
+        kennung: 'Org1',
+        name: 'Organisation 1',
+        typ: OrganisationsTyp.Schule,
+      });
       expect(organisationStore.loading).toBe(true);
       await createOrganisationPromise;
       expect(organisationStore.createdSchule).toEqual(null);
@@ -1511,14 +1506,12 @@ describe('OrganisationStore', () => {
     it('should handle error code', async () => {
       const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/organisationen').replyOnce(500, { i18nKey: 'SOME_MOCK_SERVER_ERROR' });
-      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation(
-        '1',
-        'Org1',
-        'Organisation 1',
-        'Ergänzung',
-        'Org1',
-        OrganisationsTyp.Schule,
-      );
+      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation({
+        administriertVon: '1',
+        kennung: 'Org1',
+        name: 'Organisation 1',
+        typ: OrganisationsTyp.Schule,
+      });
       expect(organisationStore.loading).toBe(true);
       await createOrganisationPromise;
       expect(organisationStore.createdSchule).toEqual(null);

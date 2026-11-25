@@ -229,16 +229,13 @@ describe('SchuleCreationView', () => {
     await flushPromises();
 
     expect(createOrganisationSpy).toHaveBeenCalledOnce();
-    expect(createOrganisationSpy).toHaveBeenCalledWith(
-      payload.selectedSchulform,
-      payload.selectedDienststellennummer,
-      payload.selectedSchulname,
-      undefined,
-      undefined,
-      'SCHULE',
-      undefined,
-      payload.selectedEmailAdress,
-    );
+    expect(createOrganisationSpy).toHaveBeenCalledWith({
+      administriertVon: payload.selectedSchulform,
+      kennung: payload.selectedDienststellennummer,
+      name: payload.selectedSchulname,
+      typ: 'SCHULE',
+      emailAdress: payload.selectedEmailAdress,
+    });
   });
 
   test('it renders success template after successful form submission', async () => {
@@ -377,7 +374,6 @@ describe('SchuleCreationView', () => {
   });
 
   describe('navigation interception', () => {
-
     test('triggers unsaved changes dialog if form is dirty', async () => {
       const expectedCallsToNext: number = 0;
       organisationStore.rootChildren = [schultraegerOrganisation];

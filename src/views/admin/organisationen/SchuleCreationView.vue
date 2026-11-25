@@ -59,16 +59,13 @@
       selectedEmailAdress,
     }: SchuleDetailsForm = params;
     cacheSubmittedValues(params);
-    await organisationStore.createOrganisation(
-      selectedSchulform as string,
-      selectedDienststellennummer,
-      selectedSchulname as string,
-      undefined,
-      undefined,
-      OrganisationsTyp.Schule,
-      undefined,
-      selectedEmailAdress,
-    );
+    await organisationStore.createOrganisation({
+      administriertVon: selectedSchulform as string,
+      kennung: selectedDienststellennummer,
+      name: selectedSchulname as string,
+      typ: OrganisationsTyp.Schule,
+      emailAdress: selectedEmailAdress,
+    });
 
     if (!organisationStore.errorCode) {
       isDirty.value = false;

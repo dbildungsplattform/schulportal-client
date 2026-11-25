@@ -7,7 +7,6 @@ import {
   OrganisationenApiFactory,
   OrganisationsbeziehungsTyp,
   OrganisationsTyp,
-  TraegerschaftTyp,
   type CreateOrganisationBodyParams,
   type OrganisationByNameBodyParams,
   type OrganisationControllerFindOrganizations200Response,
@@ -167,6 +166,14 @@ export type GetAdministrierteOrganisationenFilter = {
   searchFilter?: string;
 };
 
+export type CreateOrganisationParams = {
+  administriertVon: string;
+  name: string;
+  typ: OrganisationsTyp;
+  kennung?: string;
+  emailAdress?: string;
+};
+
 type OrganisationGetters = object;
 type OrganisationActions = {
   getAllOrganisationen: (filter?: OrganisationenFilter) => Promise<void>;
@@ -174,16 +181,7 @@ type OrganisationActions = {
   loadOrganisationForSelection: (organisationId: string) => Promise<void>;
   getLockingOrganisationById: (organisationId: string) => Promise<void>;
   getParentOrganisationsByIds: (organisationIds: string[]) => Promise<void>;
-  createOrganisation: (
-    administriertVon: string,
-    kennung: string | undefined,
-    name: string,
-    namensergaenzung: string | undefined,
-    kuerzel: string | undefined,
-    typ: OrganisationsTyp,
-    traegerschaft?: TraegerschaftTyp,
-    emailAdress?: string,
-  ) => Promise<void>;
+  createOrganisation: (params: CreateOrganisationParams) => Promise<void>;
   createBehoerde: (administriertVon: string, name: string) => Promise<void>;
   deleteOrganisationById: (organisationId: string) => Promise<void>;
   updateOrganisationNameById: (organisationId: string, name: string, type: OrganisationsTyp) => Promise<void>;
@@ -565,35 +563,15 @@ export const useOrganisationStore: StoreDefinition<
       }
     },
 
-    async createOrganisation(
-      administriertVon: string,
-      kennung: string | undefined,
-      name: string,
-      namensergaenzung: string | undefined,
-      kuerzel: string | undefined,
-      typ: OrganisationsTyp,
-      traegerschaft?: TraegerschaftTyp,
-      emailAdress?: string,
-    ): Promise<void> {
+    async createOrganisation(params: CreateOrganisationParams): Promise<void> {
       this.loading = true;
       try {
-        const createOrganisationBodyParams: CreateOrganisationBodyParams = {
-          administriertVon: administriertVon,
-          kennung: kennung,
-          name: name,
-          namensergaenzung: namensergaenzung,
-          kuerzel: kuerzel,
-          typ: typ,
-          traegerschaft: traegerschaft,
-          emailAdress: emailAdress,
-        };
-        const { data }: { data: Organisation } =
-          await organisationApi.organisationControllerCreateOrganisation(createOrganisationBodyParams);
-        if (typ === OrganisationsTyp.Klasse) {
+        const { data }: { data: Organisation } = await organisationApi.organisationControllerCreateOrganisation(params);
+        if (params.typ === OrganisationsTyp.Klasse) {
           this.createdKlasse = data;
-        } else if (typ === OrganisationsTyp.Schule) {
+        } else if (params.typ === OrganisationsTyp.Schule) {
           this.createdSchule = data;
-        } else if (typ === OrganisationsTyp.Traeger) {
+        } else if (params.typ === OrganisationsTyp.Traeger) {
           this.createdSchultraeger = data;
         }
       } catch (error: unknown) {

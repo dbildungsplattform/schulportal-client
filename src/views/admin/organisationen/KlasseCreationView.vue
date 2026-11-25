@@ -120,14 +120,11 @@
 
   const onSubmit = async ({ selectedSchule, selectedKlassenname }: ValidationSchema): Promise<void> => {
     initialFormValues.selectedSchule = selectedSchule;
-    await organisationStore.createOrganisation(
-      selectedSchule,
-      undefined,
-      selectedKlassenname,
-      undefined,
-      undefined,
-      OrganisationsTyp.Klasse,
-    );
+    await organisationStore.createOrganisation({
+      administriertVon: selectedSchule,
+      name: selectedKlassenname,
+      typ: OrganisationsTyp.Klasse,
+    });
   };
 
   onMounted(() => {
