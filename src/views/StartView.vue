@@ -38,6 +38,7 @@
   const twoFactorAuthentificationStore: TwoFactorAuthentificationStore = useTwoFactorAuthentificationStore();
   const authStore: AuthStore = useAuthStore();
   const meldungStore: MeldungStore = useMeldungStore();
+  const error: Ref<string> = ref('');
 
   function filterSortProviders(
     providers: StartPageServiceProvider[],
@@ -166,6 +167,7 @@
       : Promise.resolve();
 
     await Promise.allSettled([...logoPromises, twoFAStatePromise]);
+    error.value = twoFactorAuthentificationStore.errorCode;
   });
 
   onBeforeMount(async () => {
@@ -292,6 +294,7 @@
         "
         :service-providers="emailServiceProviders"
         :has-token="getHasToken()"
+        :error="error"
       />
       <!-- Categorie 2: Class -->
       <ServiceProviderCategory
@@ -302,6 +305,7 @@
         "
         :service-providers="classServiceProviders"
         :has-token="getHasToken()"
+        :error="error"
       />
       <!-- Categorie 3: Administration -->
       <ServiceProviderCategory
@@ -312,6 +316,7 @@
         "
         :service-providers="administrationServiceProviders"
         :has-token="getHasToken()"
+        :error="error"
       />
       <!-- Categorie 4: Schulisch -->
       <ServiceProviderCategory
@@ -322,6 +327,7 @@
         "
         :service-providers="schulischServiceProviders"
         :has-token="getHasToken()"
+        :error="error"
       />
       <!-- Categorie 5: Hints -->
       <ServiceProviderCategory
@@ -332,6 +338,7 @@
         "
         :service-providers="hintsServiceProviders"
         :has-token="getHasToken()"
+        :error="error"
       />
     </template>
   </v-card>

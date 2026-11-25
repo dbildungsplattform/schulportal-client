@@ -1,19 +1,23 @@
 <script setup lang="ts">
+  import { PrivacyIdeaErrorEnum } from '@/api-client/generated';
   import ServiceProviderCard from '@/components/cards/ServiceProviderCard.vue';
   import { type AuthStore, StepUpLevel, useAuthStore } from '@/stores/AuthStore';
   import type { StartPageServiceProvider } from '@/stores/ServiceProviderStore';
 
   const authStore: AuthStore = useAuthStore();
   const NO_SECOND_FACTOR: string = '/no-second-factor';
+  const TWOFA_SERVIVE_NOT_AVAILABLE: string = '/service-not-available/2FA';
 
   const props: {
     categoryTitle: string;
     serviceProviders: Array<StartPageServiceProvider>;
     hasToken: boolean;
+    error: string;
   } = defineProps<{
     categoryTitle: string;
     serviceProviders: Array<StartPageServiceProvider>;
     hasToken: boolean;
+    error: string;
   }>();
 
   function getInternalServiceProviderUrl(target: string): string {
@@ -35,6 +39,10 @@
   }
 
   function computeUrlAndTab(serviceProvider: StartPageServiceProvider): { url: string; newTab: boolean } {
+    if (props.error === PrivacyIdeaErrorEnum.PiUnavailableError) {
+      return { url: TWOFA_SERVIVE_NOT_AVAILABLE, newTab: false };
+    }
+
     if (serviceProvider.target === 'URL') {
       if (serviceProvider.requires2fa && !props.hasToken && authStore.acr !== StepUpLevel.GOLD) {
         return { url: NO_SECOND_FACTOR, newTab: false };
