@@ -9,7 +9,6 @@ import {
   OrganisationsTyp,
   TraegerschaftTyp,
   type CreateOrganisationBodyParams,
-  type OrganisationByIdBodyParams,
   type OrganisationByNameBodyParams,
   type OrganisationControllerFindOrganizations200Response,
   type OrganisationenApiInterface,
@@ -18,10 +17,8 @@ import {
   type ParentOrganisationenResponse,
   type RollenSystemRechtEnum,
 } from '../api-client/generated/api';
-import { useSearchFilterStore, type SearchFilterStore } from './SearchFilterStore';
 
 const organisationApi: OrganisationenApiInterface = OrganisationenApiFactory(undefined, '', axiosApiInstance);
-const searchFilterStore: SearchFilterStore = useSearchFilterStore();
 const relationshipSearchRequestTokens: WeakMap<object, symbol> = new WeakMap<object, symbol>();
 const relationshipBatchRequestTokens: WeakMap<object, symbol> = new WeakMap<object, symbol>();
 const relationshipBatchRequestsInFlight: WeakSet<object> = new WeakSet<object>();
@@ -34,7 +31,6 @@ export type Organisation = {
   kuerzel?: string;
   typ: OrganisationsTyp;
   administriertVon?: string | null;
-  zugehoerigZu?: string | null;
   schuleDetails?: string;
   version?: number;
   itslearningEnabled?: boolean;
@@ -124,8 +120,6 @@ type OrganisationState = {
   createdSchultraeger: Organisation | null;
   createdBehoerde: Organisation | null;
   lockingOrganisation: Organisation | null;
-  schulenFromTraeger: Array<Organisation>;
-  schulenWithoutTraeger: Array<Organisation>;
   totalKlassen: number;
   totalSchulen: number;
   totalSchultraeger: number;
@@ -146,7 +140,6 @@ export type OrganisationenFilter = {
   includeTyp?: OrganisationsTyp;
   excludeTyp?: OrganisationsTyp[];
   administriertVon?: Array<string>;
-  zugehoerigZu?: Array<string>;
   sortOrder?: SortOrder;
   sortField?: OrganisationSortField;
 };
@@ -159,7 +152,6 @@ export type OrganisationenFilterForAutocomplete = {
   includeTyp?: OrganisationsTyp;
   excludeTyp?: OrganisationsTyp[];
   administriertVon?: Array<string>;
-  zugehoerigZu?: Array<string>;
 };
 
 export type KlassenFilter = {
@@ -175,11 +167,6 @@ export type GetAdministrierteOrganisationenFilter = {
   searchFilter?: string;
 };
 
-export enum SchuleType {
-  ASSIGNED = 'assigned',
-  UNASSIGNED = 'unassigned',
-}
-
 type OrganisationGetters = object;
 type OrganisationActions = {
   getAllOrganisationen: (filter?: OrganisationenFilter) => Promise<void>;
@@ -189,7 +176,6 @@ type OrganisationActions = {
   getParentOrganisationsByIds: (organisationIds: string[]) => Promise<void>;
   createOrganisation: (
     administriertVon: string,
-    zugehoerigZu: string,
     kennung: string | undefined,
     name: string,
     namensergaenzung: string | undefined,
@@ -198,14 +184,11 @@ type OrganisationActions = {
     traegerschaft?: TraegerschaftTyp,
     emailAdress?: string,
   ) => Promise<void>;
-  createBehoerde: (administriertVon: string, zugehoerigZu: string, name: string) => Promise<void>;
+  createBehoerde: (administriertVon: string, name: string) => Promise<void>;
   deleteOrganisationById: (organisationId: string) => Promise<void>;
   updateOrganisationNameById: (organisationId: string, name: string, type: OrganisationsTyp) => Promise<void>;
   getRootChildren: () => Promise<void>;
-  fetchSchulen: (filter: OrganisationenFilter, type: SchuleType) => Promise<void>;
-  assignSchuleToTraeger(schultraegerId: string, organisationIdBodyParams: OrganisationByIdBodyParams): Promise<void>;
   fetchSchuleDetailsForKlassen: () => Promise<void>;
-  fetchSchuleDetailsForSchultraeger: () => Promise<void>;
   setItsLearningForSchule: (organisationId: string) => Promise<void>;
   loadOrganisationenForFilter(filter?: OrganisationenFilterForAutocomplete, storeKey?: string): Promise<void>;
   resetOrganisationenFilter(storeKey?: string): void;
@@ -275,8 +258,6 @@ export const useOrganisationStore: StoreDefinition<
       createdSchultraeger: null,
       createdBehoerde: null,
       lockingOrganisation: null,
-      schulenFromTraeger: [],
-      schulenWithoutTraeger: [],
       totalKlassen: 0,
       totalSchulen: 0,
       totalSchultraeger: 0,
@@ -305,7 +286,6 @@ export const useOrganisationStore: StoreDefinition<
             filter?.systemrechte,
             filter?.excludeTyp,
             filter?.administriertVon,
-            filter?.zugehoerigZu,
             filter?.sortOrder,
             filter?.sortField,
           );
@@ -320,7 +300,6 @@ export const useOrganisationStore: StoreDefinition<
         } else if (filter?.includeTyp === OrganisationsTyp.Traeger) {
           this.allSchultraeger = response.data.items;
           this.totalSchultraeger = response.data.total;
-          await this.fetchSchuleDetailsForSchultraeger();
         } else {
           this.allOrganisationen = response.data.items;
           this.totalOrganisationen = response.data.total;
@@ -514,51 +493,6 @@ export const useOrganisationStore: StoreDefinition<
       }
     },
 
-    async fetchSchuleDetailsForSchultraeger(): Promise<void> {
-      const schultraegerIds: Set<string> = new Set(
-        this.allSchultraeger.map((schultraeger: Organisation) => schultraeger.id),
-      );
-      this.loading = true;
-      try {
-        const response: AxiosResponse<OrganisationControllerFindOrganizations200Response> =
-          await organisationApi.organisationControllerFindOrganizations(
-            undefined,
-            searchFilterStore.klassenPerPage,
-            undefined,
-            undefined,
-            undefined,
-            OrganisationsTyp.Schule,
-            ['SCHULTRAEGER_VERWALTEN'],
-            undefined,
-            undefined,
-            // Sending Schulträger IDs in zugehoerigZu to get the direct children
-            Array.from(schultraegerIds),
-            undefined,
-          );
-        // Map Schulträger IDs to multiple assigned Schulen
-        const schulenMap: Map<string, string[]> = new Map();
-
-        response.data.items.forEach((org: Organisation) => {
-          if (org.zugehoerigZu) {
-            if (!schulenMap.has(org.zugehoerigZu)) {
-              schulenMap.set(org.zugehoerigZu, []);
-            }
-
-            schulenMap.get(org.zugehoerigZu)!.push(`${org.kennung}`);
-          }
-        });
-
-        this.allSchultraeger = this.allSchultraeger.map((schultraeger: Organisation) => ({
-          ...schultraeger,
-          schuleDetails: schulenMap.get(schultraeger.id)?.join(', ') || '---',
-        }));
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
-      } finally {
-        this.loading = false;
-      }
-    },
-
     async getOrganisationById(organisationId: string, organisationsTyp?: OrganisationsTyp): Promise<void> {
       this.errorCode = '';
       this.loading = true;
@@ -633,7 +567,6 @@ export const useOrganisationStore: StoreDefinition<
 
     async createOrganisation(
       administriertVon: string,
-      zugehoerigZu: string,
       kennung: string | undefined,
       name: string,
       namensergaenzung: string | undefined,
@@ -646,7 +579,6 @@ export const useOrganisationStore: StoreDefinition<
       try {
         const createOrganisationBodyParams: CreateOrganisationBodyParams = {
           administriertVon: administriertVon,
-          zugehoerigZu: zugehoerigZu,
           kennung: kennung,
           name: name,
           namensergaenzung: namensergaenzung,
@@ -671,12 +603,11 @@ export const useOrganisationStore: StoreDefinition<
       }
     },
 
-    async createBehoerde(administriertVon: string, zugehoerigZu: string, name: string): Promise<void> {
+    async createBehoerde(administriertVon: string, name: string): Promise<void> {
       this.loading = true;
       try {
         const createOrganisationBodyParams: CreateOrganisationBodyParams = {
           administriertVon: administriertVon,
-          zugehoerigZu: zugehoerigZu,
           name: name,
           typ: OrganisationsTyp.Behoerde,
         };
@@ -775,7 +706,6 @@ export const useOrganisationStore: StoreDefinition<
           params.organisationId,
           {
             administriertVon: params.schultraegerform,
-            zugehoerigZu: params.schultraegerform,
             name: params.name,
             emailAdress: params.emailAdress,
             typ: OrganisationsTyp.Schule,
@@ -797,55 +727,6 @@ export const useOrganisationStore: StoreDefinition<
         this.rootChildren = Object.values(response.data) as Organisation[];
       } catch (error: unknown) {
         this.errorCode = getResponseErrorCode(error, 'SCHULTRAEGER_ERROR');
-      }
-    },
-
-    // This method will search for both assigned or unassigned Schulen depending on the parameter "type" which could be either 'assigned' or 'unassigned'.
-    async fetchSchulen(filter: OrganisationenFilter, type: SchuleType): Promise<void> {
-      this.errorCode = '';
-      this.loading = true;
-      try {
-        const { data }: { data: OrganisationControllerFindOrganizations200Response } =
-          await organisationApi.organisationControllerFindOrganizations(
-            filter.offset,
-            filter.limit,
-            undefined,
-            undefined,
-            filter.searchString,
-            OrganisationsTyp.Schule,
-            ['SCHULTRAEGER_VERWALTEN'],
-            undefined,
-            undefined,
-            filter.zugehoerigZu,
-            undefined,
-          );
-
-        if (type === SchuleType.ASSIGNED) {
-          this.schulenFromTraeger = data.items;
-        } else {
-          this.schulenWithoutTraeger = data.items;
-        }
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'SCHULTRAEGER_ERROR');
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async assignSchuleToTraeger(
-      schultraegerId: string,
-      organisationIdBodyParams: OrganisationByIdBodyParams,
-    ): Promise<void> {
-      this.errorCode = '';
-      this.loading = true;
-      try {
-        await organisationApi.organisationControllerAddZugehoerigeOrganisation(schultraegerId, {
-          organisationId: organisationIdBodyParams.organisationId,
-        });
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'SCHULTRAEGER_ERROR');
-      } finally {
-        this.loading = false;
       }
     },
 
@@ -885,7 +766,6 @@ export const useOrganisationStore: StoreDefinition<
             filter?.systemrechte,
             filter?.excludeTyp,
             filter?.administriertVon,
-            filter?.zugehoerigZu,
             undefined,
           );
         organisationenFilter.filterResult = response.data.items;

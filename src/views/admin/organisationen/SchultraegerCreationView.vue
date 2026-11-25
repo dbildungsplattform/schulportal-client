@@ -67,7 +67,6 @@
       await organisationStore.createOrganisation(
         selectedSchultraegerform.value,
         selectedSchultraegerform.value,
-        undefined,
         selectedSchultraegername.value,
         undefined,
         undefined,

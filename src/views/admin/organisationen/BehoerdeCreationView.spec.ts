@@ -421,7 +421,7 @@ describe('BehoerdeCreationView', () => {
       selectedBehoerdenname: 'New Behoerde',
     });
     await flushPromises();
-    expect(organisationStore.createBehoerde).toHaveBeenCalledWith('2', '2', 'New Behoerde');
+    expect(organisationStore.createBehoerde).toHaveBeenCalledWith('2', 'New Behoerde');
     const next: Mock = vi.fn();
     storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, next);
     expect(next).toHaveBeenCalledOnce();

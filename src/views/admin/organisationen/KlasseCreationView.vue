@@ -122,7 +122,6 @@
     initialFormValues.selectedSchule = selectedSchule;
     await organisationStore.createOrganisation(
       selectedSchule,
-      selectedSchule,
       undefined,
       selectedKlassenname,
       undefined,

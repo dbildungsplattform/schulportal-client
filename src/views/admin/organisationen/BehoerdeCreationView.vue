@@ -74,11 +74,7 @@
 
   async function onSubmit(values: BehoerdeFormValues): Promise<void> {
     cachedValues.value = { ...values };
-    await organisationStore.createBehoerde(
-      values.selectedZustaendigkeitsbereich,
-      values.selectedZustaendigkeitsbereich,
-      values.selectedBehoerdenname,
-    );
+    await organisationStore.createBehoerde(values.selectedZustaendigkeitsbereich, values.selectedBehoerdenname);
     if (!organisationStore.errorCode) {
       isDirty.value = false;
       cachedValues.value = undefined;

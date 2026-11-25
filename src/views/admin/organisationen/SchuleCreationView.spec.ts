@@ -231,7 +231,6 @@ describe('SchuleCreationView', () => {
     expect(createOrganisationSpy).toHaveBeenCalledOnce();
     expect(createOrganisationSpy).toHaveBeenCalledWith(
       payload.selectedSchulform,
-      payload.selectedSchulform,
       payload.selectedDienststellennummer,
       payload.selectedSchulname,
       undefined,
@@ -378,9 +377,6 @@ describe('SchuleCreationView', () => {
   });
 
   describe('navigation interception', () => {
-    afterEach(() => {
-      vi.unmock('vue-router');
-    });
 
     test('triggers unsaved changes dialog if form is dirty', async () => {
       const expectedCallsToNext: number = 0;
@@ -408,15 +404,6 @@ describe('SchuleCreationView', () => {
 
     test('does not trigger unsaved changes dialog if form is not dirty', async () => {
       const expectedCallsToNext: number = 1;
-      vi.mock('vue-router', async (importOriginal: () => Promise<object>) => {
-        const mod: object = await importOriginal();
-        return {
-          ...mod,
-          onBeforeRouteLeave: vi.fn((actualCallback: OnBeforeRouteLeaveCallback) => {
-            storedBeforeRouteLeaveCallback = actualCallback;
-          }),
-        };
-      });
       wrapper = await mountComponent();
       const spy: Mock = vi.fn();
       storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, spy);

@@ -52,11 +52,14 @@
   };
 
   const onSubmit = async (params: SchuleDetailsForm): Promise<void> => {
-    // eslint-disable-next-line @typescript-eslint/typedef
-    const { selectedSchulform, selectedDienststellennummer, selectedSchulname, selectedEmailAdress } = params;
+    const {
+      selectedSchulform,
+      selectedDienststellennummer,
+      selectedSchulname,
+      selectedEmailAdress,
+    }: SchuleDetailsForm = params;
     cacheSubmittedValues(params);
     await organisationStore.createOrganisation(
-      selectedSchulform as string,
       selectedSchulform as string,
       selectedDienststellennummer,
       selectedSchulname as string,
