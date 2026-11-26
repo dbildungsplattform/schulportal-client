@@ -27,7 +27,6 @@
       key: 'name',
       align: 'start',
     },
-    { title: t('admin.schultraeger.assignedSchulen'), key: 'schuleDetails', align: 'start' },
   ];
 
   async function fetchSchultraeger(): Promise<void> {
@@ -126,14 +125,6 @@
               :title="item.name"
             >
               {{ item.name }}
-            </div>
-          </template>
-          <template #[`item.schuleDetails`]="{ item }">
-            <div
-              class="ellipsis-wrapper"
-              :title="item.schuleDetails"
-            >
-              {{ item.schuleDetails }}
             </div>
           </template>
         </ResultTable>
