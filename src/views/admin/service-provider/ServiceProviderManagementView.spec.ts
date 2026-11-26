@@ -112,11 +112,14 @@ describe('ServiceProviderManagementView', () => {
 
   describe('kategorie column', () => {
     it('renders the translated new kategorien truncated with the full name as hover text', async () => {
+      const serviceProviders: ManageableServiceProviderSimpleListEntryResponse[] = NEW_KATEGORIEN.map(
+        ({ kategorie }: { kategorie: ServiceProviderKategorie }) =>
+          DoFactory.getManageableServiceProviderSimpleListEntryResponse({ kategorie }),
+      );
+
       const { wrapper }: ViewSetupResult = await setup({
         serviceProviderState: {
-          manageableServiceProviders: NEW_KATEGORIEN.map(({ kategorie }: { kategorie: ServiceProviderKategorie }) =>
-            DoFactory.getManageableServiceProviderSimpleListEntryResponse({ kategorie }),
-          ),
+          manageableServiceProviders: serviceProviders,
         },
       });
 
