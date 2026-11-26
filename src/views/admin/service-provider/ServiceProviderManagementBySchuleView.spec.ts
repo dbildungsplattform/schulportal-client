@@ -96,12 +96,14 @@ describe('ServiceProviderManagementBySchuleView', () => {
   });
 
   it('renders the translated new kategorien truncated with the full name as hover text', async () => {
+    const serviceProviders: ManageableServiceProviderListEntry[] = NEW_KATEGORIEN.map(
+      ({ kategorie }: { kategorie: ServiceProviderKategorie }) =>
+        DoFactory.getManageableServiceProviderListEntryResponse({ kategorie }),
+    );
+
     const { wrapper }: SetupResult = await setup({
       serviceProviderState: {
-        manageableServiceProvidersForOrganisation: NEW_KATEGORIEN.map(
-          ({ kategorie }: { kategorie: ServiceProviderKategorie }) =>
-            DoFactory.getManageableServiceProviderListEntryResponse({ kategorie }),
-        ),
+        manageableServiceProvidersForOrganisation: serviceProviders,
       },
     });
 
