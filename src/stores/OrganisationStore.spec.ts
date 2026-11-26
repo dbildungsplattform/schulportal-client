@@ -612,17 +612,11 @@ describe('OrganisationStore', () => {
     it('should accept filter for typ Traeger', async () => {
       const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const traeger: OrganisationResponse = DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Traeger });
-      const schule: OrganisationResponse = DoFactory.getOrganisationResponse({
-        typ: OrganisationsTyp.Schule,
-      });
       const mockResponse: OrganisationResponse[] = [traeger];
 
       mockadapter
         .onGet('/api/organisationen?offset=0&limit=30&typ=TRAEGER')
         .replyOnce(200, pagedResponse(mockResponse, 42));
-      mockadapter
-        .onGet(`/api/organisationen?limit=30&typ=SCHULE&systemrechte=SCHULTRAEGER_VERWALTEN&zugehoerigZu=${traeger.id}`)
-        .replyOnce(200, pagedResponse([schule]));
 
       const getAllOrganisationenPromise: Promise<void> = organisationStore.getAllOrganisationen({
         offset: 0,
