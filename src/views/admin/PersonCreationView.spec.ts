@@ -1,10 +1,9 @@
 import {
+  DbiamCreatePersonWithPersonenkontexteBodyParams,
   OrganisationResponseLegacy,
-  PersonenkontexteUpdateResponse,
-  type RolleResponse,
   type DBiamPersonResponse,
   type PersonLandesbediensteterSearchResponse,
-  DbiamCreatePersonWithPersonenkontexteBodyParams,
+  type RolleResponse,
 } from '@/api-client/generated';
 import routes from '@/router/routes';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
@@ -20,8 +19,8 @@ import {
   RollenMerkmal,
   useRolleStore,
   type RolleStore,
-  type TranslatedRolleWithAttrs,
   type RolleWithServiceProvidersResponse,
+  type TranslatedRolleWithAttrs,
 } from '@/stores/RolleStore';
 import type { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
 import { enableAutoUnmount, flushPromises, mount, VueWrapper } from '@vue/test-utils';
@@ -102,9 +101,6 @@ rolleStore.allRollen = [
   }),
   DoFactory.getRolleWithServiceProviders(),
 ] as RolleWithServiceProvidersResponse[];
-
-const mockLandesbediensteteCommitResponse: PersonenkontexteUpdateResponse =
-  DoFactory.getPersonenkontextUpdateResponse();
 
 type OnBeforeRouteLeaveCallback = (
   _to: RouteLocationNormalized,
@@ -1014,40 +1010,6 @@ describe('PersonCreationView', () => {
 
       // Form is resetting after submit so orga should be undefined
       expect(organisationSelect.vm.$data).toStrictEqual({});
-
-      personenkontextStore.landesbediensteteCommitResponse = DoFactory.getPersonenkontextUpdateResponse({
-        dBiamPersonenkontextResponses: [
-          DoFactory.getDBiamPersonenkontextResponse({
-            personId: landesbediensteter.id,
-            organisationId,
-            rolleId: rolle.value,
-          }),
-        ],
-      });
-
-      await nextTick();
-      expect(wrapper.find('[data-testid="state-employee-success-text"]').isVisible()).toBe(true);
-      expect(wrapper.find('[data-testid="added-state-employee-rolle"]').text()).toBe(rolle.title);
-    });
-
-    test('it renders success template for added Landesbediensteter and navigates back to person management', async () => {
-      wrapper?.unmount();
-      await router.push({ name: 'add-person-to-own-schule' });
-      await router.isReady();
-
-      wrapper = await mountComponent();
-
-      await nextTick();
-      personenkontextStore.landesbediensteteCommitResponse = mockLandesbediensteteCommitResponse;
-      await nextTick();
-
-      expect(wrapper.find('[data-testid="state-employee-success-text"]').isVisible()).toBe(true);
-
-      expect(wrapper.find('[data-testid="search-another-state-employee-button"]').isVisible()).toBe(true);
-
-      await wrapper.find('[data-testid="search-another-state-employee-button"]').trigger('click');
-
-      expect(wrapper.find('[data-testid="state-employee-success-text"]').exists()).toBe(false);
     });
 
     describe('rollen refresh loop', () => {

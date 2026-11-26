@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import KlasseDelete from '@/components/admin/klassen/KlasseDelete.vue';
-  import ResultTable, { type TableRow, type Headers } from '@/components/admin/ResultTable.vue';
+  import ResultTable, { type Headers, type TableRow } from '@/components/admin/ResultTable.vue';
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import KlassenFilter from '@/components/filter/KlassenFilter.vue';
@@ -301,7 +301,7 @@
             <SchulenFilter
               ref="schule-select"
               :systemrechte-for-search="[RollenSystemRecht.KlassenVerwalten]"
-              parentId="klassen-management"
+              storeKey="klassen-management"
               :multiple="false"
               :hide-details="true"
               :highlight-selection="true"

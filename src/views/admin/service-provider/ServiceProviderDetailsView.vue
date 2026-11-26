@@ -6,7 +6,7 @@
   import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
-  import type { SelectedSchulen } from '@/types';
+  import { useRollenAutocomplete, type UseRollenAutocompleteReturn } from '@/composables/useRollenAutocomplete';
   import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
   import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
   import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
@@ -22,7 +22,7 @@
     type ManageableServiceProviderDetail,
     type ServiceProviderStore,
   } from '@/stores/ServiceProviderStore';
-  import { useRollenAutocomplete, type UseRollenAutocompleteReturn } from '@/composables/useRollenAutocomplete';
+  import type { SelectedSchulen } from '@/types';
   import { getLogoPath } from '@/utils/logosConfig';
   import {
     formatServiceProviderAnbietenMerkmale,
@@ -505,7 +505,7 @@
                             :multiple="true"
                             includeAll
                             highlightSelection
-                            parentId="service-provider-management-by-schule"
+                            storeKey="service-provider-management-by-schule"
                             ref="schulenFilter"
                             :systemrechteForSearch="[RollenSystemRecht.AngeboteVerwalten]"
                             :selectedSchulen="selectedOrganisationen"

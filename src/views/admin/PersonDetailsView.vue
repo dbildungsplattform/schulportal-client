@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ServiceProviderSystem, type LockUserBodyParams } from '@/api-client/generated';
+  import { LockUserBodyParams, ServiceProviderSystem } from '@/api-client/generated';
   import SpshTooltip from '@/components/admin/SpshTooltip.vue';
   import PasswordReset from '@/components/admin/personen/PasswordReset.vue';
   import PersonDelete from '@/components/admin/personen/PersonDelete.vue';
