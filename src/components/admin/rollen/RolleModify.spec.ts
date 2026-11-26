@@ -88,12 +88,12 @@ beforeEach(async () => {
   await nextTick();
 });
 personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-  organisations: [organisation],
+  organisations: [],
   canCommit: true,
 });
 
 describe('RolleModify', () => {
-  test('renders form and triggers submit', async () => {
+  test('submits the selected organisation and role without workflow organisation data', async () => {
     bulkOperationStore.bulkModifyPersonenRolle = vi.fn().mockResolvedValue(undefined);
     const bulkModifyPersonenRolleSpy: MockInstance = vi.spyOn(bulkOperationStore, 'bulkModifyPersonenRolle');
     // Set organisation value
@@ -137,6 +137,13 @@ describe('RolleModify', () => {
 
     // Wait for all promises to resolve
     await vi.waitFor(() => expect(bulkModifyPersonenRolleSpy).toHaveBeenCalledTimes(1));
+    expect(bulkModifyPersonenRolleSpy).toHaveBeenCalledWith(
+      [person.id],
+      organisation.id,
+      rolle.id,
+      expect.stringMatching(/^2099-08-12/),
+      undefined,
+    );
   });
 
   test('shows error dialog if bulk operation has errors', async () => {

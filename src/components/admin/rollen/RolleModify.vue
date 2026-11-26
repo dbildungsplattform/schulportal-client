@@ -199,7 +199,6 @@
       personIDs,
       selectedOrganisation.value!.id,
       selectedRolle.value!.value,
-      personenkontextStore.workflowStepResponse?.organisations || [],
       formattedBefristung,
       selectedKlasseForRadio.value,
     );

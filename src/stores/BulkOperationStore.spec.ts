@@ -404,8 +404,6 @@ describe('BulkOperationStore', () => {
       const personIds: string[] = ['1', '2'];
       const selectedRolleId: string = 'rolle-456';
 
-      const workflowStepResponseOrganisations: Organisation[] = [orga];
-
       const mockUpdateResponse: PersonenkontexteUpdateResponse = {
         dBiamPersonenkontextResponses: [
           {
@@ -430,7 +428,6 @@ describe('BulkOperationStore', () => {
         personIds,
         orga.id,
         selectedRolleId,
-        workflowStepResponseOrganisations,
       );
 
       expect(bulkOperationStore.currentOperation?.isRunning).toBe(true);
@@ -443,44 +440,21 @@ describe('BulkOperationStore', () => {
       expect(mockAdapter.history['put']?.length).toBe(2);
     });
 
-    it('should return early if organisation is not found', async () => {
-      const personIds: string[] = ['1', '2'];
-      const selectedOrganisationId: string = 'non-existing-org';
-      const selectedRolleId: string = 'rolle-456';
-
-      const workflowStepResponseOrganisations: Organisation[] = [orga];
-
-      const modifyPromise: Promise<void> = bulkOperationStore.bulkModifyPersonenRolle(
-        personIds,
-        selectedOrganisationId,
-        selectedRolleId,
-        workflowStepResponseOrganisations,
-      );
-
-      await modifyPromise;
-
-      expect(bulkOperationStore.currentOperation?.progress).toBe(0);
-      expect(bulkOperationStore.currentOperation?.complete).toBe(false);
-      expect(mockAdapter.history['put']?.length).toBe(0);
-    });
-
     it('should update successfully with default values for baseZuordnung', async () => {
       const personIds: string[] = ['1', '2'];
       const selectedOrganisationId: string = 'org-123';
       const selectedRolleId: string = 'rolle-456';
 
-      const workflowStepResponseOrganisations: Organisation[] = [
-        DoFactory.getOrganisation({
-          id: 'org-123',
-          name: 'Test Schule',
-          kennung: null,
-          administriertVon: null,
-        }),
-      ];
+      const organisation: Organisation = DoFactory.getOrganisation({
+        id: selectedOrganisationId,
+        name: 'Test Schule',
+        kennung: null,
+        administriertVon: null,
+      });
 
       const mockPersonResponse: DBiamPersonenuebersichtResponse = DoFactory.getDBiamPersonenuebersichtResponse(
         { personId: '2' },
-        { organisation: workflowStepResponseOrganisations[0] },
+        { organisation },
       );
 
       const mockUpdateResponse: PersonenkontexteUpdateResponse = {
@@ -495,13 +469,7 @@ describe('BulkOperationStore', () => {
 
       mockAdapter
         .onGet('/api/dbiam/personenuebersicht/1')
-        .replyOnce(
-          200,
-          DoFactory.getDBiamPersonenuebersichtResponse(
-            { personId: '1' },
-            { organisation: workflowStepResponseOrganisations[0] },
-          ),
-        );
+        .replyOnce(200, DoFactory.getDBiamPersonenuebersichtResponse({ personId: '1' }, { organisation }));
       mockAdapter.onGet('/api/dbiam/personenuebersicht/2').replyOnce(200, mockPersonResponse);
 
       mockAdapter.onPut('/api/personenkontext-workflow/1').replyOnce(200, mockUpdateResponse);
@@ -511,7 +479,6 @@ describe('BulkOperationStore', () => {
         personIds,
         selectedOrganisationId,
         selectedRolleId,
-        workflowStepResponseOrganisations,
       );
       expect(bulkOperationStore.currentOperation?.isRunning).toBe(true);
 
@@ -530,7 +497,6 @@ describe('BulkOperationStore', () => {
       const befristung: string = faker.date.future().toISOString();
 
       const selectedOrganisation: Organisation = DoFactory.getOrganisationResponse({ id: selectedOrganisationId });
-      const workflowStepResponseOrganisations: Organisation[] = [selectedOrganisation];
 
       const mockBefristungen: (string | null)[] = [
         null,
@@ -602,7 +568,6 @@ describe('BulkOperationStore', () => {
         personIds,
         selectedOrganisationId,
         selectedRolleId,
-        workflowStepResponseOrganisations,
         befristung,
       );
 
@@ -661,10 +626,6 @@ describe('BulkOperationStore', () => {
       const personId: string = faker.string.uuid();
       const existingRolleId: string = faker.string.uuid();
 
-      const workflowStepResponseOrganisations: Organisation[] = [
-        DoFactory.getOrganisationResponse({ id: selectedOrganisationId }),
-      ];
-
       const existingZuordnungA: DBiamPersonenzuordnungResponse = DoFactory.getDBiamPersonenzuordnungResponse({
         rolleId: existingRolleId,
         editable: true,
@@ -704,7 +665,6 @@ describe('BulkOperationStore', () => {
         [personId],
         selectedOrganisationId,
         selectedRolleId,
-        workflowStepResponseOrganisations,
         undefined,
         selectedKlasseId,
       );
@@ -726,10 +686,6 @@ describe('BulkOperationStore', () => {
       const selectedRolleId: string = faker.string.uuid();
       const personId: string = faker.string.uuid();
       const existingKlasseId: string = faker.string.uuid();
-
-      const workflowStepResponseOrganisations: Organisation[] = [
-        DoFactory.getOrganisationResponse({ id: selectedOrganisationId }),
-      ];
 
       const existingZuordnung: DBiamPersonenzuordnungResponse = DoFactory.getDBiamPersonenzuordnungResponse(
         {
@@ -781,14 +737,7 @@ describe('BulkOperationStore', () => {
       mockAdapter.onGet(`/api/dbiam/personenuebersicht/${personId}`).replyOnce(200, mockPersonResponse);
       mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(200, mockUpdateResponse);
 
-      await bulkOperationStore.bulkModifyPersonenRolle(
-        [personId],
-        selectedOrganisationId,
-        selectedRolleId,
-        workflowStepResponseOrganisations,
-        undefined,
-        undefined,
-      );
+      await bulkOperationStore.bulkModifyPersonenRolle([personId], selectedOrganisationId, selectedRolleId);
 
       const data: object = JSON.parse(mockAdapter.history['put']?.[0]?.data as string) as object;
 
@@ -810,10 +759,6 @@ describe('BulkOperationStore', () => {
       const personId: string = faker.string.uuid();
       const existingKlasseIdA: string = faker.string.uuid();
       const existingKlasseIdB: string = faker.string.uuid();
-
-      const workflowStepResponseOrganisations: Organisation[] = [
-        DoFactory.getOrganisationResponse({ id: selectedOrganisationId }),
-      ];
 
       const existingZuordnungA: DBiamPersonenzuordnungResponse = DoFactory.getDBiamPersonenzuordnungResponse(
         {
@@ -893,14 +838,7 @@ describe('BulkOperationStore', () => {
       mockAdapter.onGet(`/api/dbiam/personenuebersicht/${personId}`).replyOnce(200, mockPersonResponse);
       mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(200, mockUpdateResponse);
 
-      await bulkOperationStore.bulkModifyPersonenRolle(
-        [personId],
-        selectedOrganisationId,
-        selectedRolleId,
-        workflowStepResponseOrganisations,
-        undefined,
-        undefined,
-      );
+      await bulkOperationStore.bulkModifyPersonenRolle([personId], selectedOrganisationId, selectedRolleId);
 
       const data: object = JSON.parse(mockAdapter.history['put']?.[0]?.data as string) as object;
 
@@ -926,15 +864,6 @@ describe('BulkOperationStore', () => {
       const personIds: string[] = ['1', '2'];
       const selectedOrganisationId: string = 'org-123';
       const selectedRolleId: string = 'rolle-456';
-
-      const workflowStepResponseOrganisations: Organisation[] = [
-        {
-          id: 'org-123',
-          name: 'Test Schule',
-          kennung: 'SCH123',
-          administriertVon: 'adminId',
-        } as Organisation,
-      ];
 
       mockAdapter.onGet('/api/dbiam/personenuebersicht/1').replyOnce(500, { i18nKey: 'mockGetError' });
       mockAdapter.onGet('/api/dbiam/personenuebersicht/2').replyOnce(
@@ -967,7 +896,6 @@ describe('BulkOperationStore', () => {
         personIds,
         selectedOrganisationId,
         selectedRolleId,
-        workflowStepResponseOrganisations,
       );
 
       await modifyPromise;
@@ -984,10 +912,6 @@ describe('BulkOperationStore', () => {
       const selectedOrganisationId: string = faker.string.uuid();
       const selectedRolleId: string = faker.string.uuid();
       const differentOrganisationId: string = faker.string.uuid();
-
-      const workflowStepResponseOrganisations: Organisation[] = [
-        DoFactory.getOrganisationResponse({ id: selectedOrganisationId }),
-      ];
 
       // Person has zuordnung for a DIFFERENT organisation, not the selected one
       const mockPersonResponse: DBiamPersonenuebersichtResponse = DoFactory.getDBiamPersonenuebersichtResponse({
@@ -1012,12 +936,7 @@ describe('BulkOperationStore', () => {
 
       mockAdapter.onGet(`/api/dbiam/personenuebersicht/${personId}`).replyOnce(200, mockPersonResponse);
 
-      await bulkOperationStore.bulkModifyPersonenRolle(
-        [personId],
-        selectedOrganisationId,
-        selectedRolleId,
-        workflowStepResponseOrganisations,
-      );
+      await bulkOperationStore.bulkModifyPersonenRolle([personId], selectedOrganisationId, selectedRolleId);
 
       expect(bulkOperationStore.currentOperation?.errors.size).toBe(1);
       expect(bulkOperationStore.currentOperation?.errors.get(personId)).toBe(
@@ -1531,7 +1450,7 @@ describe('BulkOperationStore', () => {
 
       mockAdapter.onGet(`/api/dbiam/personenuebersicht/${personId}`).replyOnce(200, { data: null });
 
-      await bulkOperationStore.bulkModifyPersonenRolle([personId], mockSchule.id, faker.string.uuid(), [mockSchule]);
+      await bulkOperationStore.bulkModifyPersonenRolle([personId], mockSchule.id, faker.string.uuid());
 
       expect(bulkOperationStore.currentOperation?.errors.size).toBe(1);
       expect(bulkOperationStore.currentOperation?.errors.get(personId)).toBe('UNSPECIFIED_ERROR');

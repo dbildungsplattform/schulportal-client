@@ -16,14 +16,12 @@ import {
   buildKlassenZuordnungen,
   calculateEarliestBefristung,
   combineZuordnungen,
-  findOrganisationById,
   hasEditableZuordnungsLeft,
   hasZuordnungForOrganisation,
   mapToInternalZuordnungen,
 } from '@/utils/bulkOperations';
 import { getResponseErrorCode } from '@/utils/errorHandlers';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
-import type { Organisation } from './OrganisationStore';
 import {
   mapZuordnungToPersonenkontextUpdate,
   OperationContext,
@@ -83,7 +81,6 @@ type BulkOperationActions = {
     personIDs: string[],
     selectedOrganisationId: string,
     selectedRolleId: string,
-    workflowStepResponseOrganisations: Organisation[],
     befristung?: string,
     selectedKlasseId?: string,
   ): Promise<void>;
@@ -191,19 +188,9 @@ export const useBulkOperationStore: StoreDefinition<
       personIDs: string[],
       selectedOrganisationId: string,
       selectedRolleId: string,
-      workflowStepResponseOrganisations: Organisation[],
       befristung?: string,
       selectedKlasseId?: string,
     ): Promise<void> {
-      const selectedOrganisation: Organisation | undefined = findOrganisationById(
-        workflowStepResponseOrganisations,
-        selectedOrganisationId,
-      );
-
-      if (!selectedOrganisation) {
-        return;
-      }
-
       await this.processPersonOperation(
         OperationType.MODIFY_ROLLE,
         personIDs,
@@ -213,17 +200,17 @@ export const useBulkOperationStore: StoreDefinition<
             const uebersicht: PersonenUebersicht = PersonenUebersicht.fromResponse(uebersichtResponse);
             const currentZuordnungen: InternalZuordnung[] = mapToInternalZuordnungen(uebersicht.zuordnungen);
 
-            if (!hasZuordnungForOrganisation(currentZuordnungen, selectedOrganisation.id)) {
+            if (!hasZuordnungForOrganisation(currentZuordnungen, selectedOrganisationId)) {
               this.currentOperation?.errors.set(personId, 'PERSON_HAS_NO_ZUORDNUNG_FOR_ORGANISATION');
               return;
             }
 
             // Build base organisation zuordnung
             const orgaZuordnung: InternalZuordnung = {
-              organisationId: selectedOrganisation.id,
+              organisationId: selectedOrganisationId,
               rolleId: selectedRolleId,
               ...(befristung && {
-                befristung: calculateEarliestBefristung(befristung, currentZuordnungen, selectedOrganisation.id),
+                befristung: calculateEarliestBefristung(befristung, currentZuordnungen, selectedOrganisationId),
               }),
             };
 
@@ -232,7 +219,7 @@ export const useBulkOperationStore: StoreDefinition<
               selectedKlasseId,
               selectedRolleId,
               currentZuordnungen,
-              selectedOrganisation.id,
+              selectedOrganisationId,
               orgaZuordnung.befristung,
             );
 
