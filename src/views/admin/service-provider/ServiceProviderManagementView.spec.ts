@@ -35,12 +35,12 @@ type SetupResult = {
 };
 
 const NEW_KATEGORIEN: ReadonlyArray<{ kategorie: ServiceProviderKategorie; label: string }> = [
-  { kategorie: ServiceProviderKategorie.UnterrichtUndLernen, label: 'Unterricht und Lernen' },
   { kategorie: ServiceProviderKategorie.KommunikationUndZusammenarbeit, label: 'Kommunikation und Zusammenarbeit' },
+  { kategorie: ServiceProviderKategorie.UnterrichtUndLernen, label: 'Unterricht und Lernen' },
   { kategorie: ServiceProviderKategorie.SchulorganisationUndVerwaltung, label: 'Schulorganisation und -verwaltung' },
   { kategorie: ServiceProviderKategorie.FortbildungUndQualifizierung, label: 'Fortbildung und Qualifizierung' },
   { kategorie: ServiceProviderKategorie.InformationenUndPortale, label: 'Informationen und Portale' },
-  { kategorie: ServiceProviderKategorie.HilfeUndUnterstuetzung, label: 'Hilfe & Unterstützung' },
+  { kategorie: ServiceProviderKategorie.HilfeUndUnterstuetzung, label: 'Hilfe und Unterstützung' },
 ];
 
 enableAutoUnmount(afterEach);

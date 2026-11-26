@@ -12,8 +12,8 @@ import {
 import { ServiceProviderKategorie, type ServiceProviderIdNameResponse } from './ServiceProviderStore';
 
 const NEW_KATEGORIEN: ReadonlyArray<ServiceProviderKategorie> = [
-  ServiceProviderKategorie.UnterrichtUndLernen,
   ServiceProviderKategorie.KommunikationUndZusammenarbeit,
+  ServiceProviderKategorie.UnterrichtUndLernen,
   ServiceProviderKategorie.SchulorganisationUndVerwaltung,
   ServiceProviderKategorie.FortbildungUndQualifizierung,
   ServiceProviderKategorie.InformationenUndPortale,

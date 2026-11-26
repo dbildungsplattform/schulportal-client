@@ -353,7 +353,7 @@ describe('StartView', () => {
     await nextTick();
 
     expect(wrapper.find('[data-testid="service-provider-card-8"]').exists()).toBe(true);
-    expect(wrapper.text()).toContain('Hilfe & Unterstützung');
+    expect(wrapper.text()).toContain('Hilfe und Unterstützung');
   });
 
   test('it renders category titles for all categories when providers exist', async () => {
