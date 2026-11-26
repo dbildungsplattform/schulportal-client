@@ -2,16 +2,17 @@
   import { computed, ref, watchEffect, type ComputedRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
 
-  import SpshAlert from '@/components/alert/SpshAlert.vue';
-  import VidisInfoDialog from '@/components/admin/service-provider/VidisInfoDialog.vue';
-  import VidisSyncDialog from '@/components/admin/service-provider/VidisSyncDialog.vue';
   import type { RollenerweiterungForManageableServiceProviderResponse } from '@/api-client/generated';
   import ResultTable, { type Headers, type TableRow } from '@/components/admin/ResultTable.vue';
   import ServiceProviderDelete from '@/components/admin/service-provider/ServiceProviderDelete.vue';
+  import VidisInfoDialog from '@/components/admin/service-provider/VidisInfoDialog.vue';
+  import VidisSyncDialog from '@/components/admin/service-provider/VidisSyncDialog.vue';
+  import SpshTooltip from '@/components/admin/SpshTooltip.vue';
+  import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
   import SchulenFilter from '@/components/filter/SchulenFilter.vue';
-  import type { SelectedSchulen } from '@/types';
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
+  import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
   import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
   import { RollenSystemRecht } from '@/stores/RolleStore';
   import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
@@ -20,11 +21,10 @@
     type ManageableServiceProviderListEntry,
     type ServiceProviderStore,
   } from '@/stores/ServiceProviderStore';
+  import type { SelectedSchulen } from '@/types';
   import { getDisplayNameForOrg } from '@/utils/formatting';
   import { SortOrder } from '@/utils/sorting';
   import { onBeforeRouteLeave, useRouter, type Router } from 'vue-router';
-  import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
-  import SpshTooltip from '@/components/admin/SpshTooltip.vue';
 
   type ServiceProviderRow = {
     id: string;
@@ -261,7 +261,7 @@
             :multiple="false"
             includeAll
             highlightSelection
-            parentId="service-provider-management-by-schule"
+            storeKey="service-provider-management-by-schule"
             ref="schulenFilter"
             :systemrechteForSearch="[RollenSystemRecht.RollenErweitern]"
             :selectedSchulen="selectedOrganisation ?? undefined"

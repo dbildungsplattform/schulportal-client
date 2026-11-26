@@ -164,7 +164,7 @@
       >
         <SchulenFilter
           ref="schulenFilter"
-          parentId="klasse-form"
+          storeKey="klasse-form"
           :selectedSchulen="selectedOrganisation ?? undefined"
           :multiple="false"
           :readonly="props.editMode"

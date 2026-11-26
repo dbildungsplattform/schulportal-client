@@ -9,7 +9,6 @@
   import {
     CreationType,
     KlassenOption,
-    LandesbediensteterWorkflowFilter,
     OperationContext,
     RolleDialogMode,
     usePersonenkontextStore,
@@ -81,10 +80,22 @@
   };
 
   const props: Props = defineProps<Props>();
+  const requestedWithSystemrecht: ComputedRef<RollenSystemRecht> = computed((): RollenSystemRecht => {
+    switch (props.createType) {
+      case CreationType.Limited:
+        return RollenSystemRecht.EingeschraenktNeueBenutzerErstellen;
+      case CreationType.AddPersonToOwnSchule:
+        return props.operationContext === OperationContext.PERSON_BEARBEITEN
+          ? RollenSystemRecht.PersonenVerwalten
+          : RollenSystemRecht.LandesbediensteteSuchenUndHinzufuegen;
+      default:
+        return RollenSystemRecht.PersonenVerwalten;
+    }
+  });
   const {
     autoselectedSchule,
   }: { hasAutoselectedSchule: ComputedRef<boolean>; autoselectedSchule: ComputedRef<Organisation | null> } =
-    useAutoselectedSchule([RollenSystemRecht.PersonenVerwalten]);
+    useAutoselectedSchule([requestedWithSystemrecht.value]);
 
   type Emits = {
     (e: 'update:befristung', value: string | undefined): void;
@@ -161,18 +172,6 @@
     return filter;
   });
 
-  const useLandesbediensteteWorkflow: ComputedRef<boolean> = computed((): boolean => {
-    return props.createType === CreationType.AddPersonToOwnSchule;
-  });
-
-  const requestedWithSystemrecht: ComputedRef<RollenSystemRecht | undefined> = computed(
-    (): RollenSystemRecht | undefined => {
-      return props.createType === CreationType.Limited
-        ? RollenSystemRecht.EingeschraenktNeueBenutzerErstellen
-        : undefined;
-    },
-  );
-
   function hasSelectedLernRolle(selection: SelectedRollen): boolean {
     if (!selection) {
       return false;
@@ -185,17 +184,8 @@
     }
   }
 
-  async function handleWorkflowStep(filter: WorkflowFilter | LandesbediensteterWorkflowFilter): Promise<void> {
-    const useLandesbediensteteWorkflows: boolean = props.createType === CreationType.AddPersonToOwnSchule;
-
-    if (useLandesbediensteteWorkflows) {
-      await personenkontextStore.processWorkflowStepLandesbedienstete(filter);
-    } else {
-      await personenkontextStore.processWorkflowStep({
-        operationContext: props.operationContext,
-        ...filter,
-      });
-    }
+  async function handleWorkflowStep(filter: WorkflowFilter): Promise<void> {
+    await personenkontextStore.processWorkflowStep(filter);
 
     canCommit.value = personenkontextStore.workflowStepResponse?.canCommit ?? false;
   }
@@ -303,6 +293,7 @@
     () => (props.allowMultipleRollen ? selectedRollen.value : selectedRolle.value),
     async (newValue: SelectedRollen, oldValue: SelectedRollen) => {
       const filter: WorkflowFilter = {
+        operationContext: props.operationContext,
         personId: props.personId,
         organisationId: selectedOrganisation.value?.id,
         limit: 25,
@@ -398,15 +389,12 @@
     >
       <SchulenFilter
         ref="schulenFilter"
-        parentId="personenkontext-create"
+        storeKey="personenkontext-create"
         :selectedSchulen="selectedOrganisation ?? undefined"
         :multiple="false"
         :systemrechteForSearch="[requestedWithSystemrecht].filter((v): v is RollenSystemRecht => v !== undefined)"
         :selectedSchuleProps="selectedOrganisationProps"
-        :useWorkflowEndpoints="true"
-        :useLandesbediensteteWorkflow="useLandesbediensteteWorkflow"
-        :operationContext="props.operationContext"
-        :isRolleUnassignForm="rolleDialogMode === RolleDialogMode.UNASSIGN"
+        :readonly="rolleDialogMode === RolleDialogMode.UNASSIGN"
         :includeAll="true"
         :placeholderText="$t('admin.organisation.selectOrganisation')"
         :personId="props.personId"
