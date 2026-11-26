@@ -10,73 +10,18 @@ import {
 } from '@/stores/ServiceProviderStore';
 import { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
 import { faker } from '@faker-js/faker';
-import { DOMWrapper, VueWrapper, flushPromises, mount } from '@vue/test-utils';
+import { DOMWrapper, VueWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { expect, test, type Mock } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import StartView from './StartView.vue';
 
-let wrapper: VueWrapper | null = null;
-let authStore: AuthStore;
-let serviceProviderStore: ServiceProviderStore;
-let personStore: PersonStore;
-let personInfoStore: PersonInfoStore;
-let meldungStore: MeldungStore;
-
-const mockProviders: Array<StartPageServiceProvider> = [
-  DoFactory.getStartPageServiceProvider({
-    id: '2',
-    name: 'Spongebob Squarepants',
-    target: 'URL',
-    url: 'https://de.wikipedia.org/wiki/SpongeBob_Schwammkopf',
-    kategorie: 'EMAIL',
-    hasLogo: false,
-    requires2fa: false,
-  }),
-  DoFactory.getStartPageServiceProvider({
-    id: '3',
-    name: 'Not Squarepants',
-    target: 'URL',
-    url: 'https://de.wikipedia.org/wiki/SpongeBob_Schwammkopf',
-    kategorie: 'EMAIL',
-    hasLogo: false,
-    requires2fa: false,
-  }),
-  DoFactory.getStartPageServiceProvider({
-    id: '1',
-    name: 'Schulportal-Administration',
-    target: 'SCHULPORTAL_ADMINISTRATION',
-    url: '',
-    kategorie: 'VERWALTUNG',
-    hasLogo: false,
-    requires2fa: false,
-  }),
-];
-
-const mockPerson: PersonInfoResponse = DoFactory.getPersonInfoResponse();
-mockPerson.person.personalnummer = null;
-
-const mockPersonenUebersicht: PersonenUebersicht = new PersonenUebersicht(
-  '1234',
-  'Samuel',
-  'Vimes',
-  'samuelvimes',
-  '2021-09-01T12:00:00Z',
-  [
-    DoFactory.getZuordnung({
-      typ: OrganisationsTyp.Schule,
-      merkmale: [RollenMerkmal.KopersPflicht],
-      befristung: faker.date.soon().toISOString(),
-      rollenArt: RollenArt.Lehr,
-    }),
-    DoFactory.getZuordnung({
-      typ: OrganisationsTyp.Schule,
-      merkmale: [RollenMerkmal.KopersPflicht],
-      befristung: faker.date.soon().toISOString(),
-      rollenArt: RollenArt.Lehr,
-    }),
-  ],
-);
+interface StartViewComponent {
+  filterSortProviders: (
+    providers: StartPageServiceProvider[],
+    kategorie: ServiceProviderKategorie,
+  ) => StartPageServiceProvider[];
+}
 
 const locationMock: Mock = vi.fn(() => ({
   pathname: 'test',
@@ -85,19 +30,85 @@ const locationMock: Mock = vi.fn(() => ({
 
 vi.stubGlobal('location', locationMock);
 
-beforeEach(() => {
+enableAutoUnmount(afterEach);
+
+function getMockProviders(): Array<StartPageServiceProvider> {
+  return [
+    DoFactory.getStartPageServiceProvider({
+      id: '2',
+      name: 'Spongebob Squarepants',
+      target: 'URL',
+      url: 'https://de.wikipedia.org/wiki/SpongeBob_Schwammkopf',
+      kategorie: 'EMAIL',
+      hasLogo: false,
+      requires2fa: false,
+    }),
+    DoFactory.getStartPageServiceProvider({
+      id: '3',
+      name: 'Not Squarepants',
+      target: 'URL',
+      url: 'https://de.wikipedia.org/wiki/SpongeBob_Schwammkopf',
+      kategorie: 'EMAIL',
+      hasLogo: false,
+      requires2fa: false,
+    }),
+    DoFactory.getStartPageServiceProvider({
+      id: '1',
+      name: 'Schulportal-Administration',
+      target: 'SCHULPORTAL_ADMINISTRATION',
+      url: '',
+      kategorie: 'VERWALTUNG',
+      hasLogo: false,
+      requires2fa: false,
+    }),
+  ];
+}
+
+function setup(): {
+  wrapper: VueWrapper<InstanceType<typeof StartView>>;
+  authStore: AuthStore;
+  serviceProviderStore: ServiceProviderStore;
+  mockProviders: Array<StartPageServiceProvider>;
+} {
   document.body.innerHTML = `
     <div>
       <div id="app"></div>
     </div>
   `;
 
-  authStore = useAuthStore();
-  serviceProviderStore = useServiceProviderStore();
+  const mockProviders: Array<StartPageServiceProvider> = getMockProviders();
+
+  const mockPerson: PersonInfoResponse = DoFactory.getPersonInfoResponse();
+  mockPerson.person.personalnummer = null;
+
+  const mockPersonenUebersicht: PersonenUebersicht = new PersonenUebersicht(
+    '1234',
+    'Samuel',
+    'Vimes',
+    'samuelvimes',
+    '2021-09-01T12:00:00Z',
+    [
+      DoFactory.getZuordnung({
+        typ: OrganisationsTyp.Schule,
+        merkmale: [RollenMerkmal.KopersPflicht],
+        befristung: faker.date.soon().toISOString(),
+        rollenArt: RollenArt.Lehr,
+      }),
+      DoFactory.getZuordnung({
+        typ: OrganisationsTyp.Schule,
+        merkmale: [RollenMerkmal.KopersPflicht],
+        befristung: faker.date.soon().toISOString(),
+        rollenArt: RollenArt.Lehr,
+      }),
+    ],
+  );
+
+  const authStore: AuthStore = useAuthStore();
+  const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
   serviceProviderStore.getServiceProvidersByPersonId = vi.fn(() => Promise.resolve());
-  personStore = usePersonStore();
-  personInfoStore = usePersonInfoStore();
-  meldungStore = useMeldungStore();
+  const personStore: PersonStore = usePersonStore();
+  const personInfoStore: PersonInfoStore = usePersonInfoStore();
+  const meldungStore: MeldungStore = useMeldungStore();
   serviceProviderStore.assignedServiceProviders = mockProviders;
 
   authStore.hasPersonenverwaltungPermission = false;
@@ -127,7 +138,7 @@ beforeEach(() => {
     status: MeldungStatus.VEROEFFENTLICHT,
   };
 
-  wrapper = mount(StartView, {
+  const wrapper: VueWrapper<InstanceType<typeof StartView>> = mount(StartView, {
     attachTo: document.getElementById('app') || '',
     global: {
       components: {
@@ -140,107 +151,107 @@ beforeEach(() => {
       },
     },
   });
-});
 
-afterEach(() => {
-  wrapper?.unmount();
-});
+  return { wrapper, authStore, serviceProviderStore, mockProviders };
+}
 
 describe('StartView', () => {
   test('it renders the start cards headline', () => {
-    expect(wrapper?.find('[data-testid="start-card-headline"]').isVisible()).toBe(true);
+    const { wrapper }: ReturnType<typeof setup> = setup();
+    expect(wrapper.find('[data-testid="start-card-headline"]').isVisible()).toBe(true);
   });
 
   test('it navigates to person management', async () => {
+    const { wrapper, authStore }: ReturnType<typeof setup> = setup();
     authStore.hasPersonenverwaltungPermission = true;
     await nextTick();
 
-    const adminCard: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+    const adminCard: ReturnType<VueWrapper['findComponent']> = wrapper.findComponent(
       '[data-testid="service-provider-card-1"]',
     );
 
-    expect(adminCard?.isVisible()).toBe(true);
-    expect(adminCard?.attributes('href')).toEqual('/admin/personen');
+    expect(adminCard.isVisible()).toBe(true);
+    expect(adminCard.attributes('href')).toEqual('/admin/personen');
   });
 
   test('it navigates to schule management', async () => {
+    const { wrapper, authStore }: ReturnType<typeof setup> = setup();
     authStore.hasSchulverwaltungPermission = true;
     await nextTick();
 
-    const adminCard: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+    const adminCard: ReturnType<VueWrapper['findComponent']> = wrapper.findComponent(
       '[data-testid="service-provider-card-1"]',
     );
 
-    expect(adminCard?.isVisible()).toBe(true);
-    expect(adminCard?.attributes('href')).toEqual('/admin/schulen');
+    expect(adminCard.isVisible()).toBe(true);
+    expect(adminCard.attributes('href')).toEqual('/admin/schulen');
   });
 
   test('it navigates to rolle management', async () => {
+    const { wrapper, authStore }: ReturnType<typeof setup> = setup();
     authStore.hasRollenverwaltungPermission = true;
     await nextTick();
 
-    const adminCard: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+    const adminCard: ReturnType<VueWrapper['findComponent']> = wrapper.findComponent(
       '[data-testid="service-provider-card-1"]',
     );
 
-    expect(adminCard?.isVisible()).toBe(true);
-    expect(adminCard?.attributes('href')).toEqual('/admin/rollen');
+    expect(adminCard.isVisible()).toBe(true);
+    expect(adminCard.attributes('href')).toEqual('/admin/rollen');
   });
 
   test('it navigates to klasse management', async () => {
+    const { wrapper, authStore }: ReturnType<typeof setup> = setup();
     authStore.hasKlassenverwaltungPermission = true;
     await nextTick();
 
-    const adminCard: ReturnType<VueWrapper['findComponent']> | undefined = wrapper?.findComponent(
+    const adminCard: ReturnType<VueWrapper['findComponent']> = wrapper.findComponent(
       '[data-testid="service-provider-card-1"]',
     );
 
-    expect(adminCard?.isVisible()).toBe(true);
-    expect(adminCard?.attributes('href')).toEqual('/admin/klassen');
+    expect(adminCard.isVisible()).toBe(true);
+    expect(adminCard.attributes('href')).toEqual('/admin/klassen');
   });
 
   test('it displays correct banner color', async () => {
+    const { wrapper }: ReturnType<typeof setup> = setup();
     await flushPromises();
     await nextTick();
 
-    const banner: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="KOPERS-banner"]');
+    const banner: DOMWrapper<Element> = wrapper.find('[data-testid="KOPERS-banner"]');
 
-    expect(banner?.classes()).toContain('bg-errorLight');
+    expect(banner.classes()).toContain('bg-errorLight');
   });
 
   test('it dismisses the banner', async () => {
+    const { wrapper }: ReturnType<typeof setup> = setup();
     await flushPromises();
     await nextTick();
-    const banner: VueWrapper | undefined = wrapper?.findComponent({ ref: 'spsh-banner' });
+    const banner: VueWrapper = wrapper.findComponent({ ref: 'spsh-banner' });
 
-    expect(banner?.find('[data-testid="banner-close-icon"]').isVisible()).toBe(true);
-    banner?.find('[data-testid="banner-close-icon"]').trigger('click');
-    await nextTick();
-    expect(banner?.emitted('dismissBanner')).toBeTruthy();
+    expect(banner.find('[data-testid="banner-close-icon"]').isVisible()).toBe(true);
+    await banner.find('[data-testid="banner-close-icon"]').trigger('click');
+    expect(banner.emitted('dismissBanner')).toBeTruthy();
   });
 
   test('it renders a hinweis banner', async () => {
-    await nextTick();
+    const { wrapper }: ReturnType<typeof setup> = setup();
+    await flushPromises();
     await nextTick();
 
-    const banner: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="hinweis-banner"]');
+    const banner: DOMWrapper<Element> = wrapper.find('[data-testid="hinweis-banner"]');
 
-    expect(banner?.isVisible()).toBe(true);
+    expect(banner.isVisible()).toBe(true);
   });
 
   test('filterSortProviders sorts service providers alphabetically', () => {
-    serviceProviderStore.assignedServiceProviders = mockProviders;
+    const { wrapper, mockProviders }: ReturnType<typeof setup> = setup();
+    const vm: unknown = wrapper.vm;
 
-    interface StartViewComponent {
-      filterSortProviders: (
-        providers: StartPageServiceProvider[],
-        kategorie: ServiceProviderKategorie,
-      ) => StartPageServiceProvider[];
-    }
-
-    const filteredSortProviders: StartPageServiceProvider[] = (
-      wrapper?.vm as unknown as StartViewComponent
-    ).filterSortProviders(mockProviders, ServiceProviderKategorie.Email);
+    const filteredSortProviders: StartPageServiceProvider[] = (vm as StartViewComponent).filterSortProviders(
+      mockProviders,
+      ServiceProviderKategorie.Email,
+    );
 
     expect(filteredSortProviders.map((p: StartPageServiceProvider) => p.name)).toEqual([
       'Not Squarepants',
@@ -249,6 +260,7 @@ describe('StartView', () => {
   });
 
   test('filterSortProviders filters out service providers with target NONE', () => {
+    const { wrapper, mockProviders }: ReturnType<typeof setup> = setup();
     const providersWithNone: StartPageServiceProvider[] = [
       ...mockProviders,
       DoFactory.getStartPageServiceProvider({
@@ -261,17 +273,12 @@ describe('StartView', () => {
         requires2fa: false,
       }),
     ];
+    const vm: unknown = wrapper.vm;
 
-    interface StartViewComponent {
-      filterSortProviders: (
-        providers: StartPageServiceProvider[],
-        kategorie: ServiceProviderKategorie,
-      ) => StartPageServiceProvider[];
-    }
-
-    const filteredSortProviders: StartPageServiceProvider[] = (
-      wrapper?.vm as unknown as StartViewComponent
-    ).filterSortProviders(providersWithNone, ServiceProviderKategorie.Email);
+    const filteredSortProviders: StartPageServiceProvider[] = (vm as StartViewComponent).filterSortProviders(
+      providersWithNone,
+      ServiceProviderKategorie.Email,
+    );
 
     expect(filteredSortProviders.map((p: StartPageServiceProvider) => p.name)).toEqual([
       'Not Squarepants',
@@ -280,6 +287,7 @@ describe('StartView', () => {
   });
 
   test('it does not render tiles for service providers with target NONE', async () => {
+    const { wrapper, serviceProviderStore, mockProviders }: ReturnType<typeof setup> = setup();
     serviceProviderStore.assignedServiceProviders = [
       ...mockProviders,
       DoFactory.getStartPageServiceProvider({
@@ -294,11 +302,12 @@ describe('StartView', () => {
     ];
     await nextTick();
 
-    expect(wrapper?.find('[data-testid="service-provider-card-99"]').exists()).toBe(false);
-    expect(wrapper?.find('[data-testid="service-provider-card-2"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="service-provider-card-99"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="service-provider-card-2"]').exists()).toBe(true);
   });
 
   test('it renders category title for class service providers when providers exist', async () => {
+    const { wrapper, serviceProviderStore }: ReturnType<typeof setup> = setup();
     serviceProviderStore.assignedServiceProviders = [
       DoFactory.getStartPageServiceProvider({
         id: '4',
@@ -312,22 +321,43 @@ describe('StartView', () => {
     ];
     await nextTick();
 
-    const categoryTitle: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="all-service-provider-title"]');
-    expect(categoryTitle?.isVisible()).toBe(true);
+    const categoryTitle: DOMWrapper<Element> = wrapper.find('[data-testid="all-service-provider-title"]');
+    expect(categoryTitle.isVisible()).toBe(true);
   });
 
   test('it renders empty category title for class service providers when no providers exist', async () => {
+    const { wrapper, serviceProviderStore, mockProviders }: ReturnType<typeof setup> = setup();
     serviceProviderStore.assignedServiceProviders = mockProviders.filter(
       (p: StartPageServiceProvider) => p.kategorie !== 'UNTERRICHT',
     );
     await nextTick();
 
     // Category title should still render but be empty for UNTERRICHT
-    const card: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="start-card-headline"]');
-    expect(card?.isVisible()).toBe(true);
+    const card: DOMWrapper<Element> = wrapper.find('[data-testid="start-card-headline"]');
+    expect(card.isVisible()).toBe(true);
+  });
+
+  test('it renders service providers of the new kategorien with their translated category title', async () => {
+    const { wrapper, serviceProviderStore }: ReturnType<typeof setup> = setup();
+    serviceProviderStore.assignedServiceProviders = [
+      DoFactory.getStartPageServiceProvider({
+        id: '8',
+        name: 'Helpdesk',
+        target: 'URL',
+        url: 'https://helpdesk.example.com',
+        kategorie: ServiceProviderKategorie.HilfeUndUnterstuetzung,
+        hasLogo: false,
+        requires2fa: false,
+      }),
+    ];
+    await nextTick();
+
+    expect(wrapper.find('[data-testid="service-provider-card-8"]').exists()).toBe(true);
+    expect(wrapper.text()).toContain('Hilfe und Unterstützung');
   });
 
   test('it renders category titles for all categories when providers exist', async () => {
+    const { wrapper, serviceProviderStore, mockProviders }: ReturnType<typeof setup> = setup();
     serviceProviderStore.assignedServiceProviders = [
       ...mockProviders,
       DoFactory.getStartPageServiceProvider({
@@ -360,7 +390,7 @@ describe('StartView', () => {
     ];
     await nextTick();
 
-    const headline: DOMWrapper<Element> | undefined = wrapper?.find('[data-testid="all-service-provider-title"]');
-    expect(headline?.isVisible()).toBe(true);
+    const headline: DOMWrapper<Element> = wrapper.find('[data-testid="all-service-provider-title"]');
+    expect(headline.isVisible()).toBe(true);
   });
 });

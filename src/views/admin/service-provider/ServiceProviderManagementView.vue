@@ -302,6 +302,14 @@
           navigateToServiceProviderDetails(event, item as TableRow<ServiceProviderRow>)
       "
     >
+      <template v-slot:[`item.kategorie`]="{ item }">
+        <div
+          class="line-clamp-2"
+          :title="item.kategorie"
+        >
+          {{ item.kategorie }}
+        </div>
+      </template>
       <template v-slot:[`item.rollen`]="{ item }">
         <div
           class="ellipsis-wrapper"

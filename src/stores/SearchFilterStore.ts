@@ -14,6 +14,12 @@ export const DEFAULT_SERVICE_PROVIDER_KATEGORIEN: ReadonlyArray<ServiceProviderK
   ServiceProviderKategorie.Unterricht,
   ServiceProviderKategorie.Verwaltung,
   ServiceProviderKategorie.Hinweise,
+  ServiceProviderKategorie.KommunikationUndZusammenarbeit,
+  ServiceProviderKategorie.UnterrichtUndLernen,
+  ServiceProviderKategorie.SchulorganisationUndVerwaltung,
+  ServiceProviderKategorie.FortbildungUndQualifizierung,
+  ServiceProviderKategorie.InformationenUndPortale,
+  ServiceProviderKategorie.HilfeUndUnterstuetzung,
 ];
 
 type SearchFilterState = {

@@ -51,25 +51,18 @@
       .sort((a: StartPageServiceProvider, b: StartPageServiceProvider) => a.name.localeCompare(b.name));
   }
 
-  // Filter service providers by category "EMAIL"
-  const emailServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Email),
-  );
-  // Filter service providers by category "UNTERRICHT"
-  const classServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Unterricht),
-  );
-  // Filter service providers by category "VERWALTUNG"
-  const administrationServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Verwaltung),
-  );
-  // Filter service providers by category "SCHULISCH"
-  const schulischServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Schulisch),
-  );
-  // Filter service providers by category "HINWEISE"
-  const hintsServiceProviders: ComputedRef<StartPageServiceProvider[]> = computed(() =>
-    filterSortProviders(serviceProviderStore.assignedServiceProviders, ServiceProviderKategorie.Hinweise),
+  type StartPageCategory = {
+    kategorie: ServiceProviderKategorie;
+    serviceProviders: StartPageServiceProvider[];
+  };
+
+  const startPageCategories: ComputedRef<StartPageCategory[]> = computed(() =>
+    Object.values(ServiceProviderKategorie).map(
+      (kategorie: ServiceProviderKategorie): StartPageCategory => ({
+        kategorie,
+        serviceProviders: filterSortProviders(serviceProviderStore.assignedServiceProviders, kategorie),
+      }),
+    ),
   );
 
   function getHasToken(): boolean {
@@ -283,54 +276,11 @@
     </template>
     <!-- Template to be displayed in case of no error nor loading -->
     <template v-else>
-      <!-- Categorie 1: Work Email -->
       <ServiceProviderCategory
-        :category-title="
-          emailServiceProviders.length > 0
-            ? t(`angebot.mappingFrontBackEnd.kategorien.${emailServiceProviders[0]?.kategorie}`)
-            : ''
-        "
-        :service-providers="emailServiceProviders"
-        :has-token="getHasToken()"
-      />
-      <!-- Categorie 2: Class -->
-      <ServiceProviderCategory
-        :category-title="
-          classServiceProviders.length > 0
-            ? t(`angebot.mappingFrontBackEnd.kategorien.${classServiceProviders[0]?.kategorie}`)
-            : ''
-        "
-        :service-providers="classServiceProviders"
-        :has-token="getHasToken()"
-      />
-      <!-- Categorie 3: Administration -->
-      <ServiceProviderCategory
-        :category-title="
-          administrationServiceProviders.length > 0
-            ? t(`angebot.mappingFrontBackEnd.kategorien.${administrationServiceProviders[0]?.kategorie}`)
-            : ''
-        "
-        :service-providers="administrationServiceProviders"
-        :has-token="getHasToken()"
-      />
-      <!-- Categorie 4: Schulisch -->
-      <ServiceProviderCategory
-        :category-title="
-          schulischServiceProviders.length > 0
-            ? t(`angebot.mappingFrontBackEnd.kategorien.${schulischServiceProviders[0]?.kategorie}`)
-            : ''
-        "
-        :service-providers="schulischServiceProviders"
-        :has-token="getHasToken()"
-      />
-      <!-- Categorie 5: Hints -->
-      <ServiceProviderCategory
-        :category-title="
-          hintsServiceProviders.length > 0
-            ? t(`angebot.mappingFrontBackEnd.kategorien.${hintsServiceProviders[0]?.kategorie}`)
-            : ''
-        "
-        :service-providers="hintsServiceProviders"
+        v-for="category in startPageCategories"
+        :key="category.kategorie"
+        :category-title="t(`angebot.mappingFrontBackEnd.kategorien.${category.kategorie}`)"
+        :service-providers="category.serviceProviders"
         :has-token="getHasToken()"
       />
     </template>

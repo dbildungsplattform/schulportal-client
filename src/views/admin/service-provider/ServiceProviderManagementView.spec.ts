@@ -1,6 +1,6 @@
+import type { ManageableServiceProviderSimpleListEntryResponse } from '@/api-client/generated';
 import SearchField from '@/components/admin/SearchField.vue';
 import VidisInfoDialog from '@/components/admin/service-provider/VidisInfoDialog.vue';
-import type { ManageableServiceProviderSimpleListEntryResponse } from '@/api-client/generated';
 import routes from '@/router/routes';
 import {
   DEFAULT_SERVICE_PROVIDER_KATEGORIEN,
@@ -13,19 +13,65 @@ import {
   type ManageableServiceProviderSimpleListEntry,
   type ServiceProviderStore,
 } from '@/stores/ServiceProviderStore';
-import { flushPromises, mount, VueWrapper, type DOMWrapper } from '@vue/test-utils';
+import { enableAutoUnmount, flushPromises, mount, VueWrapper, type DOMWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import type { Mock, MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
 import ServiceProviderManagementView from './ServiceProviderManagementView.vue';
 
-let router: Router;
-let serviceProviderStore: ServiceProviderStore;
-let searchFilterStore: SearchFilterStore;
+type ManagementViewWrapper = VueWrapper<InstanceType<typeof ServiceProviderManagementView>>;
 
-function mountComponent(): VueWrapper<InstanceType<typeof ServiceProviderManagementView>> {
-  return mount(ServiceProviderManagementView, {
+type ViewSetupOptions = {
+  serviceProviderState?: Partial<ServiceProviderStore['$state']>;
+  searchFilterState?: Partial<SearchFilterStore['$state']>;
+};
+
+type ViewSetupResult = {
+  wrapper: ManagementViewWrapper;
+  router: Router;
+  serviceProviderStore: ServiceProviderStore;
+  searchFilterStore: SearchFilterStore;
+};
+
+const NEW_KATEGORIEN: ReadonlyArray<{ kategorie: ServiceProviderKategorie; label: string }> = [
+  { kategorie: ServiceProviderKategorie.KommunikationUndZusammenarbeit, label: 'Kommunikation und Zusammenarbeit' },
+  { kategorie: ServiceProviderKategorie.UnterrichtUndLernen, label: 'Unterricht und Lernen' },
+  { kategorie: ServiceProviderKategorie.SchulorganisationUndVerwaltung, label: 'Schulorganisation und -verwaltung' },
+  { kategorie: ServiceProviderKategorie.FortbildungUndQualifizierung, label: 'Fortbildung und Qualifizierung' },
+  { kategorie: ServiceProviderKategorie.InformationenUndPortale, label: 'Informationen und Portale' },
+  { kategorie: ServiceProviderKategorie.HilfeUndUnterstuetzung, label: 'Hilfe und Unterstützung' },
+];
+
+enableAutoUnmount(afterEach);
+
+async function setup(options: ViewSetupOptions = {}): Promise<ViewSetupResult> {
+  document.body.innerHTML = `
+    <div>
+      <div id="app"></div>
+    </div>
+  `;
+
+  const router: Router = createRouter({
+    history: createWebHistory(),
+    routes,
+  });
+  router.push('/');
+  await router.isReady();
+
+  const serviceProviderStore: ServiceProviderStore = useServiceProviderStore();
+  serviceProviderStore.$reset();
+  serviceProviderStore.manageableServiceProviders = [
+    DoFactory.getManageableServiceProviderSimpleListEntryResponse({ hasSomeVerwaltenPermission: true }),
+    DoFactory.getManageableServiceProviderSimpleListEntryResponse({ hasSomeVerwaltenPermission: false }),
+  ];
+  serviceProviderStore.$patch(options.serviceProviderState ?? {});
+
+  const searchFilterStore: SearchFilterStore = useSearchFilterStore();
+  searchFilterStore.$reset();
+  searchFilterStore.$patch(options.searchFilterState ?? {});
+
+  const wrapper: ManagementViewWrapper = mount(ServiceProviderManagementView, {
     attachTo: document.getElementById('app') || '',
     global: {
       components: {
@@ -34,52 +80,28 @@ function mountComponent(): VueWrapper<InstanceType<typeof ServiceProviderManagem
       plugins: [router],
     },
   });
+
+  return { wrapper, router, serviceProviderStore, searchFilterStore };
 }
 
-beforeEach(async (): Promise<void> => {
-  document.body.innerHTML = `
-    <div>
-      <div id="app"></div>
-    </div>
-  `;
-
-  router = createRouter({
-    history: createWebHistory(),
-    routes,
-  });
-
-  router.push('/');
-  await router.isReady();
-
-  serviceProviderStore = useServiceProviderStore();
-  serviceProviderStore.manageableServiceProviders = [
-    DoFactory.getManageableServiceProviderSimpleListEntryResponse({ hasSomeVerwaltenPermission: true }),
-    DoFactory.getManageableServiceProviderSimpleListEntryResponse({ hasSomeVerwaltenPermission: false }),
-  ];
-  serviceProviderStore.errorCode = '';
-
-  searchFilterStore = useSearchFilterStore();
-  searchFilterStore.$reset();
-});
-
-function getKategorienSelect(wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>>): VueWrapper {
+function getKategorienSelect(wrapper: ManagementViewWrapper): VueWrapper {
   return wrapper.findComponent('[data-testid="kategorien-select"]') as VueWrapper;
 }
 
 describe('ServiceProviderManagementView', () => {
-  it('should render', () => {
-    const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+  it('should render', async () => {
+    const { wrapper }: ViewSetupResult = await setup();
     expect(wrapper.exists()).toBe(true);
   });
 
-  it('renders table with active kategorie filter', () => {
-    const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+  it('renders table with active kategorie filter', async () => {
+    const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
     const tableRows: DOMWrapper<Element>[] = wrapper.findAll('.v-data-table__tr');
     expect(tableRows.length).toBe(serviceProviderStore.manageableServiceProviders.length);
   });
 
   it('routes to service provider details page', async () => {
-    const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+    const { wrapper, router }: ViewSetupResult = await setup();
     const push: MockInstance = vi.spyOn(router, 'push');
 
     await wrapper.find('.v-data-table__tr').trigger('click');
@@ -88,14 +110,49 @@ describe('ServiceProviderManagementView', () => {
     expect(push).toHaveBeenCalledTimes(1);
   });
 
+  describe('kategorie column', () => {
+    it('renders the translated new kategorien truncated with the full name as hover text', async () => {
+      const serviceProviders: ManageableServiceProviderSimpleListEntryResponse[] = NEW_KATEGORIEN.map(
+        ({ kategorie }: { kategorie: ServiceProviderKategorie }) =>
+          DoFactory.getManageableServiceProviderSimpleListEntryResponse({ kategorie }),
+      );
+
+      const { wrapper }: ViewSetupResult = await setup({
+        serviceProviderState: {
+          manageableServiceProviders: serviceProviders,
+        },
+      });
+
+      const titles: Array<string | undefined> = wrapper
+        .findAll('.v-data-table__tr .line-clamp-2')
+        .map((cell: DOMWrapper<Element>) => cell.attributes('title'));
+      expect(titles).toEqual(expect.arrayContaining(NEW_KATEGORIEN.map(({ label }: { label: string }) => label)));
+    });
+  });
+
   describe('kategorie filter', () => {
-    it('disables the reset filter button by default', () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+    it('disables the reset filter button by default', async () => {
+      const { wrapper }: ViewSetupResult = await setup();
       expect(wrapper.find('[data-testid="reset-filter-button"]').attributes('disabled')).toBeDefined();
     });
 
+    it('loads the new kategorien as part of the default kategorie selection', async () => {
+      const { serviceProviderStore }: ViewSetupResult = await setup();
+      await flushPromises();
+      const reloadSpy: Mock<ServiceProviderStore['getManageableServiceProviders']> = vi.spyOn(
+        serviceProviderStore,
+        'getManageableServiceProviders',
+      );
+
+      expect(reloadSpy.mock.lastCall?.[0].kategorien).toEqual(
+        expect.arrayContaining(
+          NEW_KATEGORIEN.map(({ kategorie }: { kategorie: ServiceProviderKategorie }) => kategorie),
+        ),
+      );
+    });
+
     it('reloads data with the selected kategorien and persists the filter in the search filter store', async () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+      const { wrapper, serviceProviderStore, searchFilterStore }: ViewSetupResult = await setup();
       const reloadSpy: Mock<ServiceProviderStore['getManageableServiceProviders']> = vi
         .spyOn(serviceProviderStore, 'getManageableServiceProviders')
         .mockResolvedValue();
@@ -115,15 +172,15 @@ describe('ServiceProviderManagementView', () => {
 
     const defaultKategorien: readonly ServiceProviderKategorie[] = DEFAULT_SERVICE_PROVIDER_KATEGORIEN;
 
-    it('selects the default kategorien by default', () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+    it('selects the default kategorien by default', async () => {
+      const { wrapper }: ViewSetupResult = await setup();
       expect((wrapper.vm as unknown as { selectedKategorien: ServiceProviderKategorie[] }).selectedKategorien).toEqual(
         defaultKategorien,
       );
     });
 
     it('resets the kategorie filter and reloads data with the default kategorien selected', async () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+      const { wrapper, serviceProviderStore, searchFilterStore }: ViewSetupResult = await setup();
       getKategorienSelect(wrapper).vm.$emit('update:model-value', [ServiceProviderKategorie.Email]);
       await flushPromises();
 
@@ -144,7 +201,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('clears the selection when the clear (X) icon is used', async () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+      const { wrapper }: ViewSetupResult = await setup();
 
       getKategorienSelect(wrapper).vm.$emit('update:model-value', []);
       await flushPromises();
@@ -156,7 +213,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('renders a chip for a single selected kategorie and a count label for multiple selections', async () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+      const { wrapper }: ViewSetupResult = await setup();
 
       getKategorienSelect(wrapper).vm.$emit('update:model-value', [ServiceProviderKategorie.Email]);
       await nextTick();
@@ -175,9 +232,9 @@ describe('ServiceProviderManagementView', () => {
 
   describe('search filter', () => {
     it('initializes the search field with the persisted filter from the store', async () => {
-      searchFilterStore.searchStringForServiceProvider = 'persisted-suche';
-
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+      const { wrapper }: ViewSetupResult = await setup({
+        searchFilterState: { searchStringForServiceProvider: 'persisted-suche' },
+      });
       await flushPromises();
 
       const searchField: VueWrapper<InstanceType<typeof SearchField>> = wrapper.findComponent(SearchField);
@@ -188,8 +245,9 @@ describe('ServiceProviderManagementView', () => {
 
     describe('when a search filter is applied', () => {
       it('resets the page to the first page', async () => {
-        searchFilterStore.serviceProviderPage = 3;
-        const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+        const { wrapper, serviceProviderStore, searchFilterStore }: ViewSetupResult = await setup({
+          searchFilterState: { serviceProviderPage: 3 },
+        });
 
         const reloadSpy: Mock<ServiceProviderStore['getManageableServiceProviders']> = vi
           .spyOn(serviceProviderStore, 'getManageableServiceProviders')
@@ -209,7 +267,7 @@ describe('ServiceProviderManagementView', () => {
       });
 
       it('persists the applied search filter in the store and reloads data with it', async () => {
-        const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+        const { wrapper, serviceProviderStore, searchFilterStore }: ViewSetupResult = await setup();
         searchFilterStore.searchStringForServiceProvider = 'meine-suche';
 
         const reloadSpy: Mock<ServiceProviderStore['getManageableServiceProviders']> = vi
@@ -229,7 +287,7 @@ describe('ServiceProviderManagementView', () => {
       });
 
       it('enables the reset filter button', async () => {
-        const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+        const { wrapper }: ViewSetupResult = await setup();
         expect(wrapper.find('[data-testid="reset-filter-button"]').attributes('disabled')).toBeDefined();
 
         (wrapper.findComponent(SearchField) as VueWrapper).vm.$emit('onApplySearchFilter', 'meine-suche');
@@ -239,7 +297,7 @@ describe('ServiceProviderManagementView', () => {
       });
 
       it('clears the search filter and search field when resetting', async () => {
-        const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+        const { wrapper, searchFilterStore }: ViewSetupResult = await setup();
         const searchField: VueWrapper = wrapper.findComponent(SearchField) as VueWrapper;
         (searchField.vm as unknown as { searchFilter: string }).searchFilter = 'meine-suche';
 
@@ -258,8 +316,8 @@ describe('ServiceProviderManagementView', () => {
   });
 
   describe('ServiceProviderDelete', () => {
-    it('renders ServiceProviderDelete button for each row', () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+    it('renders ServiceProviderDelete button for each row', async () => {
+      const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
       // Find all delete icons (activators)
       const deleteIcons: DOMWrapper<Element>[] = wrapper.findAll(
         '[data-testid="open-service-provider-delete-dialog-icon"]',
@@ -272,7 +330,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('opens and confirms delete dialog, calls store method', async () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+      const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
       // Find first delete icon and click it
       const deleteIcon: DOMWrapper<Element> = wrapper.find('[data-testid="open-service-provider-delete-dialog-icon"]');
       await deleteIcon.trigger('click');
@@ -296,7 +354,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('opens vidis info dialog with provider name and closes it on ok click', async () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+      const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
       const vidisProvider: ManageableServiceProviderSimpleListEntryResponse =
         DoFactory.getManageableServiceProviderSimpleListEntryResponse({
           hasSomeVerwaltenPermission: true,
@@ -338,7 +396,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('clears the cached service provider once the vidis info dialog finishes closing', async () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+      const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
       const vidisProvider: ManageableServiceProviderSimpleListEntryResponse =
         DoFactory.getManageableServiceProviderSimpleListEntryResponse({
           hasSomeVerwaltenPermission: true,
@@ -363,7 +421,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('closes the delete dialog and removes provider if successful', async () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+      const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
 
       const remainingProvider: ManageableServiceProviderSimpleListEntry =
         serviceProviderStore.manageableServiceProviders[1]!;
@@ -396,7 +454,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('renders SpshAlert when errorCode is set', async () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+      const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
       serviceProviderStore.errorCode = 'UNSPECIFIED_ERROR';
       await nextTick();
       const alert: DOMWrapper<Element> = wrapper.find('[data-testid="service-provider-management-error-alert"]');
@@ -404,7 +462,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('clears error and reloads data when alert button is clicked', async () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+      const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
       serviceProviderStore.errorCode = 'UNSPECIFIED_ERROR';
       await nextTick();
       const reloadSpy: Mock<ServiceProviderStore['getManageableServiceProviders']> = vi
@@ -422,7 +480,7 @@ describe('ServiceProviderManagementView', () => {
 
   describe('pagination', () => {
     it('updates the search filter store when the page size changes', async () => {
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+      const { wrapper, searchFilterStore }: ViewSetupResult = await setup();
       const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' });
       resultTable.vm.$emit('onItemsPerPageUpdate', 50);
       await nextTick();
@@ -431,8 +489,9 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('updates the search filter store when the page changes', async () => {
-      serviceProviderStore.totalManageableServiceProviders = 100;
-      const wrapper: VueWrapper<InstanceType<typeof ServiceProviderManagementView>> = mountComponent();
+      const { wrapper, searchFilterStore }: ViewSetupResult = await setup({
+        serviceProviderState: { totalManageableServiceProviders: 100 },
+      });
       const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' });
       resultTable.vm.$emit('onPageUpdate', 2);
       await nextTick();
