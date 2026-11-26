@@ -1,6 +1,6 @@
 import { useAuthStore, type AuthStore, type UserInfo } from '@/stores/AuthStore';
 import { OrganisationsTyp } from '@/stores/OrganisationStore';
-import { type DbiamUpdatePersonenkontexteBodyParams } from '@/stores/PersonenkontextStore';
+import { type PersonenzuordnungenBearbeitenBodyParams } from '@/api-client/generated';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import { RollenArt } from '@/stores/RolleStore';
 import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
@@ -76,14 +76,14 @@ describe('useZuordnungDeletion', () => {
     authStore.currentUser = DoFactory.getUserinfoResponse({ personId: DoFactory.getPerson().id });
     const deletion: ZuordnungDeletion = useZuordnungDeletion({ personId, isEditActive, mode, state });
 
-    const putUrl = (): string => `/api/personenkontext-workflow/${personId.value}`;
+    const putUrl = (): string => `/api/personenkontexte/person/${personId.value}`;
     const setSelection = (...selected: ZuordnungWithKlasse[]): void => {
       state.selectedZuordnungen.value = selected;
     };
     const getPersistedOrganisationIds = (): string[] => {
-      const body: DbiamUpdatePersonenkontexteBodyParams = JSON.parse(
+      const body: PersonenzuordnungenBearbeitenBodyParams = JSON.parse(
         String(mockAdapter.history['put']?.[0]?.data),
-      ) as DbiamUpdatePersonenkontexteBodyParams;
+      ) as PersonenzuordnungenBearbeitenBodyParams;
       return body.personenkontexte.map((kontext: { organisationId: string }) => kontext.organisationId);
     };
 

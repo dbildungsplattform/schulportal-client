@@ -394,9 +394,7 @@ export class DoFactory {
   public static getPersonenkontextWorkflowResponse(
     props?: Partial<PersonenkontextWorkflowResponse>,
   ): PersonenkontextWorkflowResponse {
-    const organisation: OrganisationResponseLegacy = this.getOrganisationenResponseLegacy();
     return {
-      organisations: [organisation],
       selectedOrganisation: null,
       selectedRollen: null,
       canCommit: false,

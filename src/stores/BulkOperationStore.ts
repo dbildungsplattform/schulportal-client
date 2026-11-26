@@ -6,10 +6,10 @@ import {
   RollenArt,
   type DbiamPersonenuebersichtApiInterface,
   type DBiamPersonenuebersichtResponse,
-  type DbiamUpdatePersonenkontexteBodyParams,
   type PersonenApiInterface,
   type PersonenkontextApiInterface,
   type PersonenkontexteUpdateResponse,
+  type PersonenzuordnungenBearbeitenBodyParams,
 } from '@/api-client/generated';
 import axiosApiInstance from '@/services/ApiService';
 import {
@@ -22,11 +22,7 @@ import {
 } from '@/utils/bulkOperations';
 import { getResponseErrorCode } from '@/utils/errorHandlers';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
-import {
-  mapZuordnungToPersonenkontextUpdate,
-  OperationContext,
-  type PersonenkontextUpdate,
-} from './PersonenkontextStore';
+import { mapZuordnungToPersonenkontextUpdate, type PersonenkontextUpdate } from './PersonenkontextStore';
 import { OperationType, type CurrentOperation, type InternalZuordnung } from './types/bulkOperationTypes';
 import { PersonenUebersicht } from './types/PersonenUebersicht';
 import { Zuordnung } from './types/Zuordnung';
@@ -46,25 +42,21 @@ async function getPersonenuebersichtById(personId: string): Promise<DBiamPersone
 }
 
 async function updatePersonenkontexte(
-  updatedPersonenkontexte: PersonenkontextUpdate[] | undefined,
+  personenkontexte: PersonenkontextUpdate[],
   personId: string,
   cachedUebersicht: DBiamPersonenuebersichtResponse,
 ): Promise<PersonenkontexteUpdateResponse> {
   const uebersicht: DBiamPersonenuebersichtResponse = cachedUebersicht;
 
-  const updateParams: DbiamUpdatePersonenkontexteBodyParams = {
+  const updateParams: PersonenzuordnungenBearbeitenBodyParams = {
     lastModified: uebersicht.lastModifiedZuordnungen ?? undefined,
     count: uebersicht.zuordnungen.length ?? 0,
-    operationContext: OperationContext.PERSON_BEARBEITEN,
-    personenkontexte:
-      updatedPersonenkontexte?.map((personenkontextUpdate: PersonenkontextUpdate) => ({
-        personId: personId,
-        ...personenkontextUpdate,
-      })) ?? [],
+    personenkontexte,
   };
 
   const { data }: { data: PersonenkontexteUpdateResponse } =
-    await personenKontextApi.dbiamPersonenkontextWorkflowControllerCommit(personId, updateParams);
+    await personenKontextApi.personenkontextControllerBearbeitePersonenzuordnungen(personId, updateParams);
+
   return data;
 }
 type BulkOperationState = {

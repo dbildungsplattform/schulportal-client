@@ -84,7 +84,6 @@ const mockRolleForPersonenkontextCreation: TranslatedRolleWithAttrs = {
 };
 
 const mockWorkflowStepResponse: PersonenkontextWorkflowResponse = DoFactory.getPersonenkontextWorkflowResponse({
-  organisations: [workflowOrganisation],
   canCommit: true,
 });
 
@@ -294,7 +293,7 @@ describe('PersonCreationView', () => {
         ],
       });
       personStore.allLandesbedienstetePersonen = [];
-      personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({ organisations: [] });
+      personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse();
       wrapper?.unmount();
       await router.push({ name: routeName });
       const view: AutoselectedSchuleSetup['view'] = await mountComponent();
@@ -519,7 +518,6 @@ describe('PersonCreationView', () => {
       });
       const organisation: Organisation = DoFactory.getSchule({ id: ORGANISATION_ID, kennung: '1234567' });
       personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-        organisations: [],
         canCommit: true,
       });
       const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
@@ -1080,11 +1078,6 @@ describe('PersonCreationView', () => {
       wrapper = await mountComponent();
       await nextTick();
       personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-        organisations: [
-          DoFactory.getOrganisationResponse({
-            id: organisationId,
-          }),
-        ],
         canCommit: true,
       });
 
@@ -1160,7 +1153,6 @@ describe('PersonCreationView', () => {
         personStore.personenuebersicht = buildPersonenuebersicht();
         rolleStore.rollenForPersonenkontextCreation = [lehrRolle];
         personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-          organisations: [DoFactory.getOrganisationResponse({ id: ORGANISATION_ID })],
           canCommit: true,
         });
 

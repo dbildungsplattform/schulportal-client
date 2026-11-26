@@ -88,7 +88,6 @@ beforeEach(async () => {
   await nextTick();
 });
 personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-  organisations: [],
   canCommit: true,
 });
 

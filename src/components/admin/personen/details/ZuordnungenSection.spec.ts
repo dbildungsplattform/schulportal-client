@@ -101,7 +101,6 @@ describe('ZuordnungenSection', () => {
     personStore.currentPerson = { person };
     personStore.personenuebersicht = DoFactory.getPersonenUebersicht(person, [schulZuordnung, klassenZuordnung]);
     personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-      organisations: [DoFactory.getOrganisationenResponseLegacy({ id: schule.id, name: schule.name })],
       canCommit: true,
     });
     rolleStore.rollenForPersonenkontextCreation = rollen;
@@ -294,7 +293,7 @@ describe('ZuordnungenSection', () => {
 
   test('it displays the school of the selected Zuordnung when the workflow returns no organisations', async () => {
     const { personenkontextStore, schule, startEditingWithSelection }: ZuordnungenSectionSetup = await setup();
-    personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({ organisations: [] });
+    personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse();
     const wrapper: ZuordnungenSectionWrapper = await startEditingWithSelection();
 
     await wrapper.get('[data-testid="klasse-change-button"]').trigger('click');

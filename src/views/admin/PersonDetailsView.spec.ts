@@ -194,7 +194,6 @@ describe('PersonDetailsView', () => {
     ];
 
     personenkontextStore.workflowStepResponse = {
-      organisations: [mockOrganisation],
       selectedOrganisation: 'string',
       selectedRollen: ['string'],
       canCommit: true,

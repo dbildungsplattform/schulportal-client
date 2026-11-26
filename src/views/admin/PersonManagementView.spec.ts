@@ -117,26 +117,6 @@ beforeEach(async () => {
   ];
 
   personenkontextStore.workflowStepResponse = {
-    organisations: [
-      {
-        id: '9876',
-        administriertVon: 'string',
-        kennung: 'string',
-        name: 'orga',
-        namensergaenzung: 'string',
-        kuerzel: 'string',
-        typ: 'ROOT',
-      },
-      {
-        id: '1134',
-        administriertVon: 'string',
-        kennung: 'string',
-        name: 'orga1',
-        namensergaenzung: 'string',
-        kuerzel: 'string',
-        typ: 'ROOT',
-      },
-    ],
     selectedOrganisation: null,
     selectedRollen: null,
     canCommit: true,

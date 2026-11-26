@@ -332,7 +332,7 @@ describe('useZuordnungChangeBefristung', () => {
       });
       state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
       mockAdapter
-        .onPut(`/api/personenkontext-workflow/${personId}`)
+        .onPut(`/api/personenkontexte/person/${personId}`)
         .replyOnce(200, DoFactory.getPersonenkontextUpdateResponse());
       const composable: ZuordnungChangeBefristung = createComposable();
       composable.triggerChangeBefristung();
@@ -363,7 +363,7 @@ describe('useZuordnungChangeBefristung', () => {
         useRealPinia: true,
       });
       state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
-      mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(500, { i18nKey: 'SOME_ERROR' });
+      mockAdapter.onPut(`/api/personenkontexte/person/${personId}`).replyOnce(500, { i18nKey: 'SOME_ERROR' });
       const composable: ZuordnungChangeBefristung = createComposable();
 
       await composable.confirmChangeBefristung();
