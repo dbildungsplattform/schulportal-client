@@ -111,6 +111,11 @@
   const selectedOrganisation: Ref<Organisation | undefined> = defineModel<Organisation | undefined>(
     'selectedOrganisation',
   );
+  const isOrganisationAutoselected: ComputedRef<boolean> = computed(
+    (): boolean => !!autoselectedSchule.value && selectedOrganisation.value?.id === autoselectedSchule.value.id,
+  );
+  defineExpose({ isOrganisationAutoselected });
+
   const selectedRolle: Ref<TranslatedRolleWithAttrs | undefined> =
     defineModel<TranslatedRolleWithAttrs>('selectedRolle');
   const selectedRollen: Ref<TranslatedRolleWithAttrs[] | undefined> =

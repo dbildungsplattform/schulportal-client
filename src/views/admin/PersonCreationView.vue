@@ -6,7 +6,6 @@
   import FormRow from '@/components/form/FormRow.vue';
   import FormWrapper from '@/components/form/FormWrapper.vue';
   import PasswordOutput from '@/components/form/PasswordOutput.vue';
-  import { useOrganisationen } from '@/composables/useOrganisationen';
   import type { Organisation } from '@/stores/OrganisationStore';
   import {
     type DBiamPersonenkontextResponse,
@@ -31,7 +30,18 @@
   import { isKopersRolle, isLernRolle } from '@/utils/validationPersonenkontext';
   import { toTypedSchema } from '@vee-validate/yup';
   import { type BaseFieldProps, type FormContext, type TypedSchema, useForm } from 'vee-validate';
-  import { computed, type ComputedRef, onMounted, onUnmounted, ref, type Ref, watch, watchEffect } from 'vue';
+  import {
+    computed,
+    type ComputedRef,
+    onMounted,
+    onUnmounted,
+    ref,
+    type Ref,
+    type ShallowRef,
+    useTemplateRef,
+    watch,
+    watchEffect,
+  } from 'vue';
   import { type Composer, useI18n } from 'vue-i18n';
   import {
     type NavigationGuardNext,
@@ -53,6 +63,12 @@
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
   const rolleStore: RolleStore = useRolleStore();
   const { t }: Composer = useI18n({ useScope: 'global' });
+
+  type PersonenkontextCreateExposed = {
+    isOrganisationAutoselected: boolean;
+  };
+  const personenkontextCreate: Readonly<ShallowRef<PersonenkontextCreateExposed | null>> =
+    useTemplateRef<PersonenkontextCreateExposed>('personenkontext-create');
 
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
   let blockedNext: () => void = () => {
@@ -323,8 +339,6 @@
   setupWatchers();
   setupRolleWatcher();
 
-  const organisationen: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
-
   // Extract the created Klassenzuordnungen from the response after submission
   const klasseZuordnungFromCreatedKontext: ComputedRef<DBiamPersonenkontextResponse[]> = computed(() => {
     if (!personenkontextStore.createdPersonWithKontext) {
@@ -422,7 +436,7 @@
 
   function isFormDirty(): boolean {
     return (
-      (organisationen.value?.length !== 1 && formContext.isFieldDirty('selectedOrganisation')) ||
+      (!personenkontextCreate.value?.isOrganisationAutoselected && formContext.isFieldDirty('selectedOrganisation')) ||
       formContext.isFieldDirty('selectedRollen') ||
       formContext.isFieldDirty('selectedKlasse') ||
       formContext.isFieldDirty('selectedKopersNr') ||

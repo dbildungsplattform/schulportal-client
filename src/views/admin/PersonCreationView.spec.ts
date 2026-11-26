@@ -2,10 +2,13 @@ import {
   DbiamCreatePersonWithPersonenkontexteBodyParams,
   OrganisationResponseLegacy,
   type DBiamPersonResponse,
+  type OrganisationResponse,
   type PersonLandesbediensteterSearchResponse,
   type RolleResponse,
+  RollenSystemRechtEnum,
 } from '@/api-client/generated';
 import routes from '@/router/routes';
+import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
 import {
   CreationType,
@@ -261,6 +264,7 @@ beforeEach(async () => {
   await router.isReady();
 
   rolleStore.rollenForPersonenkontextCreation = [mockRolleForPersonenkontextCreation];
+  useAuthStore().currentUser = null;
   wrapper = await mountComponent();
   personStore.errorCode = '';
   personenkontextStore.errorCode = '';
@@ -269,6 +273,104 @@ beforeEach(async () => {
 });
 
 describe('PersonCreationView', () => {
+  describe('organisation selection and navigation', () => {
+    type AutoselectedSchuleSetup = {
+      view: Awaited<ReturnType<typeof mountComponent>>;
+      schule: OrganisationResponse;
+    };
+
+    const setupAutoselectedSchule = async (
+      routeName: string,
+      systemrecht: RollenSystemRechtEnum,
+    ): Promise<AutoselectedSchuleSetup> => {
+      const authStore: AuthStore = useAuthStore();
+      const schule: OrganisationResponse = DoFactory.getOrganisationResponse();
+      authStore.currentUser = DoFactory.getUserinfoResponse({
+        personenkontexte: [
+          DoFactory.getPersonenkontextRolleFieldsResponse({
+            organisation: schule,
+            rolle: DoFactory.getRollenSystemRechtServiceProviderIDResponse({ systemrechte: [systemrecht] }),
+          }),
+        ],
+      });
+      personStore.allLandesbedienstetePersonen = [];
+      personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({ organisations: [] });
+      wrapper?.unmount();
+      await router.push({ name: routeName });
+      const view: AutoselectedSchuleSetup['view'] = await mountComponent();
+      await flushPromises();
+      return { view, schule };
+    };
+
+    describe('create-person with an autoselected Schule', () => {
+      const setup = (): Promise<AutoselectedSchuleSetup> =>
+        setupAutoselectedSchule('create-person', RollenSystemRechtEnum.PersonenVerwalten);
+
+      test('should allow leaving when only the Schule was autoselected', async (): Promise<void> => {
+        const { view, schule }: AutoselectedSchuleSetup = await setup();
+        expect(view.getComponent({ ref: 'personenkontext-create' }).props('selectedOrganisation')).toEqual(schule);
+
+        const next: Mock = vi.fn();
+        storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, next);
+        expect(next).toHaveBeenCalledOnce();
+      });
+    });
+
+    describe('create-person-limited with an autoselected Schule', () => {
+      const setup = (): Promise<AutoselectedSchuleSetup> =>
+        setupAutoselectedSchule('create-person-limited', RollenSystemRechtEnum.EingeschraenktNeueBenutzerErstellen);
+
+      test('should allow leaving when only the Schule was autoselected', async (): Promise<void> => {
+        const { view, schule }: AutoselectedSchuleSetup = await setup();
+        expect(view.getComponent({ ref: 'personenkontext-create' }).props('selectedOrganisation')).toEqual(schule);
+
+        const next: Mock = vi.fn();
+        storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, next);
+        expect(next).toHaveBeenCalledOnce();
+      });
+    });
+
+    describe('add-person-to-own-schule with an autoselected Schule', () => {
+      const setup = (): Promise<AutoselectedSchuleSetup> =>
+        setupAutoselectedSchule(
+          'add-person-to-own-schule',
+          RollenSystemRechtEnum.LandesbediensteteSuchenUndHinzufuegen,
+        );
+
+      test('should allow leaving when only the Schule was autoselected', async (): Promise<void> => {
+        const { view, schule }: AutoselectedSchuleSetup = await setup();
+        expect(view.getComponent({ ref: 'personenkontext-create' }).props('selectedOrganisation')).toEqual(schule);
+
+        const next: Mock = vi.fn();
+        storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, next);
+        expect(next).toHaveBeenCalledOnce();
+      });
+    });
+
+    describe('manual Organisation selection', () => {
+      const setup = async (): Promise<void> => {
+        const organisation: Organisation = DoFactory.getSchule({ id: ORGANISATION_ID });
+        await wrapper!
+          .getComponent({ ref: 'personenkontext-create' })
+          .getComponent({ ref: 'schulenFilter' })
+          .getComponent({ ref: 'personenkontext-create-organisation-select' })
+          .setValue(organisation);
+        await flushPromises();
+      };
+
+      test('should warn when the only change is a manual Organisation selection', async (): Promise<void> => {
+        await setup();
+
+        const next: Mock = vi.fn();
+        storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, next);
+        await nextTick();
+
+        expect(next).not.toHaveBeenCalled();
+        expect(document.querySelector('[data-testid="confirm-unsaved-changes-button"]')).not.toBeNull();
+      });
+    });
+  });
+
   describe(`${CreationType.Full}`, () => {
     test('it renders the person creation form and its child components', () => {
       expect(wrapper).toBeTruthy();
@@ -778,7 +880,6 @@ describe('PersonCreationView', () => {
       });
 
       test('it does not trigger if form is not dirty', async () => {
-        // autoselected orgnisation doesnt count as dirty
         const expectedCallsToNext: number = 1;
         wrapper = await mountComponent();
         const spy: Mock = vi.fn();
