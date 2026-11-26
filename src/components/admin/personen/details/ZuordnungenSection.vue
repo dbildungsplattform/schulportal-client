@@ -5,12 +5,11 @@
   import KopersInput from '@/components/admin/personen/KopersInput.vue';
   import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
   import ZuordnungConfirmationDialog from '@/components/admin/personen/details/ZuordnungConfirmationDialog.vue';
-  import ZuordnungenEditOverview from '@/components/admin/personen/details/ZuordnungenEditOverview.vue';
-  import ZuordnungenReadOnlyView from '@/components/admin/personen/details/ZuordnungenReadOnlyView.vue';
   import ZuordnungFormActions from '@/components/admin/personen/details/ZuordnungFormActions.vue';
   import ZuordnungInfoDialog from '@/components/admin/personen/details/ZuordnungInfoDialog.vue';
+  import ZuordnungenEditOverview from '@/components/admin/personen/details/ZuordnungenEditOverview.vue';
+  import ZuordnungenReadOnlyView from '@/components/admin/personen/details/ZuordnungenReadOnlyView.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
-  import { useOrganisationen } from '@/composables/useOrganisationen';
   import {
     useZuordnungChangeBefristung,
     type ZuordnungChangeBefristung,
@@ -27,14 +26,20 @@
     useZuordnungenWorkingState,
     type ZuordnungenWorkingStateResult,
   } from '@/composables/useZuordnungenWorkingState';
-  import { OrganisationsTyp, useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
+  import {
+    OrganisationsTyp,
+    useOrganisationStore,
+    type Organisation,
+    type OrganisationStore,
+  } from '@/stores/OrganisationStore';
   import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
   import { OperationContext, usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
   import { RollenMerkmal } from '@/stores/RolleStore';
   import type { Zuordnung } from '@/stores/types/Zuordnung';
   import type { TranslatedObject } from '@/types';
   import { getNextSchuljahresende } from '@/utils/date';
-  import { computed, onBeforeMount, toRef, watch, watchEffect, type ComputedRef, type ModelRef, type Ref } from 'vue';
+  import { getDisplayNameForOrg } from '@/utils/formatting';
+  import { computed, toRef, watch, watchEffect, type ComputedRef, type ModelRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
   import { useDisplay } from 'vuetify';
 
@@ -56,7 +61,7 @@
   const organisationStore: OrganisationStore = useOrganisationStore();
 
   const personId: Readonly<Ref<string>> = toRef(props, 'personId');
-  const workingState: ZuordnungenWorkingStateResult = useZuordnungenWorkingState({ personId });
+  const workingState: ZuordnungenWorkingStateResult = useZuordnungenWorkingState();
   const {
     selectedZuordnungen,
     zuordnungenWithPendingChanges,
@@ -64,8 +69,6 @@
     editableZuordnungen,
     canChangeKlasse,
   }: ZuordnungenWorkingStateResult = workingState;
-
-  const organisationen: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
 
   const hasKlassenZuordnung: ComputedRef<boolean> = computed(
     () =>
@@ -165,6 +168,12 @@
     state: workingState,
   });
 
+  const schulenForKlassenwechsel: ComputedRef<TranslatedObject[]> = computed((): TranslatedObject[] => {
+    const schule: Organisation | undefined = selectedZuordnungen.value[0]?.getOrganisation();
+
+    return schule ? [{ value: schule.id, title: getDisplayNameForOrg(schule) }] : [];
+  });
+
   const {
     changeBefristungFormContext,
     isChangeBefristungActive,
@@ -244,14 +253,6 @@
     } else {
       isFormDirty.value = false;
     }
-  });
-
-  onBeforeMount(async () => {
-    await personenkontextStore.processWorkflowStep({
-      personId: props.personId,
-      operationContext: OperationContext.PERSON_BEARBEITEN,
-      limit: 25,
-    });
   });
 
   defineExpose({ navigateToZuordnungForm });
@@ -387,7 +388,7 @@
               v-model:selected-new-klasse="selectedNewKlasse"
               :is-edit-active="isEditActive"
               :readonly="true"
-              :schulen="organisationen"
+              :schulen="schulenForKlassenwechsel"
               :selected-schule-props="selectedSchuleProps"
               :selected-new-klasse-props="selectedNewKlasseProps"
               :on-submit="onSubmitChangeKlasse"

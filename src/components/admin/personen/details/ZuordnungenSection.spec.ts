@@ -17,8 +17,8 @@ import type { Zuordnung } from '@/stores/types/Zuordnung';
 import { enableAutoUnmount, flushPromises, mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { nextTick } from 'vue';
-import { VDialog } from 'vuetify/components';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
+import { VDialog } from 'vuetify/components';
 import ZuordnungenSection from './ZuordnungenSection.vue';
 
 // The logic of the operations is tested in the specs of the composables, this spec only tests how the section wires them
@@ -173,16 +173,12 @@ describe('ZuordnungenSection', () => {
   };
 
   describe('view and edit mode', () => {
-    test('it renders the Zuordnungen with their Klasse and loads the workflow step', async () => {
-      const { mountComponent, personenkontextStore, person, schule, oldKlasse }: ZuordnungenSectionSetup =
-        await setup();
+    test('it renders the Zuordnungen with their Klasse without loading the workflow step', async () => {
+      const { mountComponent, schule, oldKlasse }: ZuordnungenSectionSetup = await setup();
       const wrapper: ZuordnungenSectionWrapper = mountComponent();
       await flushPromises();
 
       expect(wrapper.find(`[data-testid="person-zuordnung-${schule.id}"]`).text()).toContain(oldKlasse.name);
-      expect(personenkontextStore.processWorkflowStep).toHaveBeenCalledWith(
-        expect.objectContaining({ personId: person.id }),
-      );
     });
 
     test('it starts editing when the edit button is clicked', async () => {
@@ -296,6 +292,17 @@ describe('ZuordnungenSection', () => {
     });
   });
 
+  test('it displays the school of the selected Zuordnung when the workflow returns no organisations', async () => {
+    const { personenkontextStore, schule, startEditingWithSelection }: ZuordnungenSectionSetup = await setup();
+    personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({ organisations: [] });
+    const wrapper: ZuordnungenSectionWrapper = await startEditingWithSelection();
+
+    await wrapper.get('[data-testid="klasse-change-button"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="schule-select"]').text()).toContain(`${schule.kennung} (${schule.name})`);
+  });
+
   describe('dirty state', () => {
     test('it is not dirty while editing is inactive', async () => {
       const { mountComponent, isFormDirty }: ZuordnungenSectionSetup = await setup();
@@ -372,8 +379,6 @@ describe('ZuordnungenSection', () => {
         await openZuordnungCreationForm();
       const submitButton: DOMWrapper<Element> = sectionWrapper.find('[data-testid="zuordnung-creation-submit-button"]');
 
-      personenkontextCreate.vm.$emit('update:canCommit', false);
-      await nextTick();
       expect(submitButton.attributes('disabled')).toBeDefined();
       personenkontextCreate.vm.$emit('update:canCommit', true);
       await nextTick();
@@ -422,6 +427,7 @@ describe('ZuordnungenSection', () => {
       await sectionWrapper.get('[data-testid="zuordnung-changes-save-button"]').trigger('click');
       await flushPromises();
 
+      vi.mocked(personenkontextStore.processWorkflowStep).mockClear();
       getVm(sectionWrapper).navigateToZuordnungForm();
       await flushPromises();
 
@@ -430,6 +436,9 @@ describe('ZuordnungenSection', () => {
       expect(reopenedCreate.findComponent({ name: 'KlassenFilter' }).props()).toHaveProperty(
         'selectedKlassen',
         newKlasse,
+      );
+      expect(personenkontextStore.processWorkflowStep).toHaveBeenLastCalledWith(
+        expect.objectContaining({ organisationId: schule.id, rollenIds: [rollen[1]!.value] }),
       );
     });
 

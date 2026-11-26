@@ -91,7 +91,7 @@ describe('useZuordnungCreation', () => {
     const tMock: ReturnType<typeof vi.fn<(key: string, params?: Record<string, unknown>) => string>> = vi.fn(
       (key: string) => key,
     );
-    const state: ZuordnungenWorkingStateResult = scope.run(() => useZuordnungenWorkingState({ personId }))!;
+    const state: ZuordnungenWorkingStateResult = scope.run(() => useZuordnungenWorkingState())!;
     const createCreation = (): ZuordnungCreation =>
       scope.run(() => {
         return useZuordnungCreation({

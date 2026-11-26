@@ -1,6 +1,5 @@
-import { OperationContext, usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
-import { RollenArt } from '@/stores/RolleStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
+import { RollenArt } from '@/stores/RolleStore';
 import type { Zuordnung } from '@/stores/types/Zuordnung';
 import {
   cloneZuordnungen,
@@ -21,9 +20,8 @@ export type ZuordnungenWorkingStateResult = ZuordnungenWorkingState & {
 };
 
 // The Zuordnungen of the person with the pending changes of the edit flow and the selection of them
-export function useZuordnungenWorkingState(params: { personId: Readonly<Ref<string>> }): ZuordnungenWorkingStateResult {
+export function useZuordnungenWorkingState(): ZuordnungenWorkingStateResult {
   const personStore: PersonStore = usePersonStore();
-  const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
 
   const zuordnungenWithPendingChanges: Ref<ZuordnungWithKlasse[] | undefined> = ref<ZuordnungWithKlasse[] | undefined>(
     undefined,
@@ -32,16 +30,18 @@ export function useZuordnungenWorkingState(params: { personId: Readonly<Ref<stri
   const newZuordnung: Ref<ZuordnungWithKlasse | undefined> = ref<ZuordnungWithKlasse | undefined>(undefined);
   const zuordnungenToBePersisted: Ref<Zuordnung[]> = ref<Zuordnung[]>([]);
   const originalZuordnungen: Ref<ZuordnungWithKlasse[] | undefined> = ref(undefined);
-  // Check if the button to change the Klasse should be active or not. Activate only if there is 1 selected Zuordnung and if it is of type LERN.
-  const isLernRolleForChangeKlasseResult: Ref<boolean> = ref(false);
 
   const editableZuordnungen: ComputedRef<ZuordnungWithKlasse[]> = computed(
     () => zuordnungenWithPendingChanges.value?.filter((zuordnung: Zuordnung) => zuordnung.editable) ?? [],
   );
 
   const canChangeKlasse: ComputedRef<boolean> = computed(() => {
+    const selected: Zuordnung | undefined = selectedZuordnungen.value[0];
     const hasOneSelectedZuordnung: boolean = selectedZuordnungen.value.length === 1;
-    return !!selectedZuordnungen.value[0]?.rolleId && isLernRolleForChangeKlasseResult.value && hasOneSelectedZuordnung;
+    const hasLernRolle: boolean = selected?.rollenArt === RollenArt.Lern;
+    const hasRolleID: boolean = !!selected?.rolleId;
+
+    return hasOneSelectedZuordnung && hasRolleID && hasLernRolle;
   });
 
   watch(
@@ -50,24 +50,6 @@ export function useZuordnungenWorkingState(params: { personId: Readonly<Ref<stri
       zuordnungenWithPendingChanges.value = computeZuordnungenWithKlasse(newValue);
     },
     { immediate: true },
-  );
-
-  watch(
-    () => selectedZuordnungen.value[0], // Watch the first selected Zuordnung
-    (newValue: Zuordnung | undefined) => {
-      if (newValue) {
-        personenkontextStore.processWorkflowStep({
-          personId: params.personId.value,
-          operationContext: OperationContext.PERSON_BEARBEITEN,
-          organisationId: newValue.sskId,
-          rollenIds: [newValue.rolleId],
-          limit: 25,
-        });
-      }
-
-      isLernRolleForChangeKlasseResult.value = newValue?.rollenArt === RollenArt.Lern;
-    },
-    { immediate: true }, // Run on initialization if there's already a selected Zuordnung
   );
 
   const startEditing = (): void => {

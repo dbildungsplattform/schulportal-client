@@ -367,10 +367,22 @@
     { immediate: true },
   );
 
-  // If the submission of the form goes wrong and the user needs to correct something, we need to ensure that the canCommit value is updated
   onMounted(() => {
-    emits('update:canCommit', personenkontextStore.workflowStepResponse?.canCommit ?? false);
     emits('update:selectedKlassenOption', localKlassenOption.value!);
+
+    const organisationId: string | undefined = selectedOrganisation.value?.id;
+    const rollenIds: string[] | undefined = props.allowMultipleRollen
+      ? selectedRollen.value?.map((rolle: TranslatedRolleWithAttrs) => rolle.value)
+      : selectedRolle.value && [selectedRolle.value.value];
+    if (organisationId && rollenIds?.length) {
+      void handleWorkflowStep({
+        operationContext: props.operationContext,
+        personId: props.personId,
+        organisationId,
+        rollenIds,
+        limit: 25,
+      });
+    }
   });
 </script>
 
