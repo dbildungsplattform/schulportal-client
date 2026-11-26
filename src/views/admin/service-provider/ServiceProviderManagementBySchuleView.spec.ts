@@ -18,7 +18,7 @@ import ServiceProviderManagementBySchuleView from './ServiceProviderManagementBy
 
 type BySchuleViewWrapper = VueWrapper<InstanceType<typeof ServiceProviderManagementBySchuleView>>;
 
-type SetupOptions = {
+type BySchuleViewSetupOptions = {
   serviceProviderState?: Partial<ServiceProviderStore['$state']>;
   searchFilterState?: Partial<SearchFilterStore['$state']>;
   authState?: Partial<AuthStore['$state']>;
@@ -46,7 +46,7 @@ const NEW_KATEGORIEN: ReadonlyArray<{ kategorie: ServiceProviderKategorie; label
 
 enableAutoUnmount(afterEach);
 
-async function setup(options: SetupOptions = {}): Promise<SetupResult> {
+async function setup(options: BySchuleViewSetupOptions = {}): Promise<SetupResult> {
   document.body.innerHTML = `
     <div>
       <div id="app"></div>
