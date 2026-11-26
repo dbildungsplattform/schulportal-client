@@ -1,6 +1,6 @@
+import type { ManageableServiceProviderSimpleListEntryResponse } from '@/api-client/generated';
 import SearchField from '@/components/admin/SearchField.vue';
 import VidisInfoDialog from '@/components/admin/service-provider/VidisInfoDialog.vue';
-import type { ManageableServiceProviderSimpleListEntryResponse } from '@/api-client/generated';
 import routes from '@/router/routes';
 import {
   DEFAULT_SERVICE_PROVIDER_KATEGORIEN,
@@ -13,7 +13,7 @@ import {
   type ManageableServiceProviderSimpleListEntry,
   type ServiceProviderStore,
 } from '@/stores/ServiceProviderStore';
-import { flushPromises, mount, VueWrapper, enableAutoUnmount, type DOMWrapper } from '@vue/test-utils';
+import { enableAutoUnmount, flushPromises, mount, VueWrapper, type DOMWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import type { Mock, MockInstance } from 'vitest';
 import { nextTick, type Component } from 'vue';
@@ -22,12 +22,12 @@ import ServiceProviderManagementView from './ServiceProviderManagementView.vue';
 
 type ManagementViewWrapper = VueWrapper<InstanceType<typeof ServiceProviderManagementView>>;
 
-type SetupOptions = {
+type ViewSetupOptions = {
   serviceProviderState?: Partial<ServiceProviderStore['$state']>;
   searchFilterState?: Partial<SearchFilterStore['$state']>;
 };
 
-type SetupResult = {
+type ViewSetupResult = {
   wrapper: ManagementViewWrapper;
   router: Router;
   serviceProviderStore: ServiceProviderStore;
@@ -45,7 +45,7 @@ const NEW_KATEGORIEN: ReadonlyArray<{ kategorie: ServiceProviderKategorie; label
 
 enableAutoUnmount(afterEach);
 
-async function setup(options: SetupOptions = {}): Promise<SetupResult> {
+async function setup(options: ViewSetupOptions = {}): Promise<ViewSetupResult> {
   document.body.innerHTML = `
     <div>
       <div id="app"></div>
@@ -90,18 +90,18 @@ function getKategorienSelect(wrapper: ManagementViewWrapper): VueWrapper {
 
 describe('ServiceProviderManagementView', () => {
   it('should render', async () => {
-    const { wrapper }: SetupResult = await setup();
+    const { wrapper }: ViewSetupResult = await setup();
     expect(wrapper.exists()).toBe(true);
   });
 
   it('renders table with active kategorie filter', async () => {
-    const { wrapper, serviceProviderStore }: SetupResult = await setup();
+    const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
     const tableRows: DOMWrapper<Element>[] = wrapper.findAll('.v-data-table__tr');
     expect(tableRows.length).toBe(serviceProviderStore.manageableServiceProviders.length);
   });
 
   it('routes to service provider details page', async () => {
-    const { wrapper, router }: SetupResult = await setup();
+    const { wrapper, router }: ViewSetupResult = await setup();
     const push: MockInstance = vi.spyOn(router, 'push');
 
     await wrapper.find('.v-data-table__tr').trigger('click');
@@ -112,7 +112,7 @@ describe('ServiceProviderManagementView', () => {
 
   describe('kategorie column', () => {
     it('renders the translated new kategorien truncated with the full name as hover text', async () => {
-      const { wrapper }: SetupResult = await setup({
+      const { wrapper }: ViewSetupResult = await setup({
         serviceProviderState: {
           manageableServiceProviders: NEW_KATEGORIEN.map(({ kategorie }: { kategorie: ServiceProviderKategorie }) =>
             DoFactory.getManageableServiceProviderSimpleListEntryResponse({ kategorie }),
@@ -129,12 +129,12 @@ describe('ServiceProviderManagementView', () => {
 
   describe('kategorie filter', () => {
     it('disables the reset filter button by default', async () => {
-      const { wrapper }: SetupResult = await setup();
+      const { wrapper }: ViewSetupResult = await setup();
       expect(wrapper.find('[data-testid="reset-filter-button"]').attributes('disabled')).toBeDefined();
     });
 
     it('loads the new kategorien as part of the default kategorie selection', async () => {
-      const { serviceProviderStore }: SetupResult = await setup();
+      const { serviceProviderStore }: ViewSetupResult = await setup();
       await flushPromises();
       const reloadSpy: Mock<ServiceProviderStore['getManageableServiceProviders']> = vi.spyOn(
         serviceProviderStore,
@@ -149,7 +149,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('reloads data with the selected kategorien and persists the filter in the search filter store', async () => {
-      const { wrapper, serviceProviderStore, searchFilterStore }: SetupResult = await setup();
+      const { wrapper, serviceProviderStore, searchFilterStore }: ViewSetupResult = await setup();
       const reloadSpy: Mock<ServiceProviderStore['getManageableServiceProviders']> = vi
         .spyOn(serviceProviderStore, 'getManageableServiceProviders')
         .mockResolvedValue();
@@ -170,14 +170,14 @@ describe('ServiceProviderManagementView', () => {
     const defaultKategorien: readonly ServiceProviderKategorie[] = DEFAULT_SERVICE_PROVIDER_KATEGORIEN;
 
     it('selects the default kategorien by default', async () => {
-      const { wrapper }: SetupResult = await setup();
+      const { wrapper }: ViewSetupResult = await setup();
       expect((wrapper.vm as unknown as { selectedKategorien: ServiceProviderKategorie[] }).selectedKategorien).toEqual(
         defaultKategorien,
       );
     });
 
     it('resets the kategorie filter and reloads data with the default kategorien selected', async () => {
-      const { wrapper, serviceProviderStore, searchFilterStore }: SetupResult = await setup();
+      const { wrapper, serviceProviderStore, searchFilterStore }: ViewSetupResult = await setup();
       getKategorienSelect(wrapper).vm.$emit('update:model-value', [ServiceProviderKategorie.Email]);
       await flushPromises();
 
@@ -198,7 +198,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('clears the selection when the clear (X) icon is used', async () => {
-      const { wrapper }: SetupResult = await setup();
+      const { wrapper }: ViewSetupResult = await setup();
 
       getKategorienSelect(wrapper).vm.$emit('update:model-value', []);
       await flushPromises();
@@ -210,7 +210,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('renders a chip for a single selected kategorie and a count label for multiple selections', async () => {
-      const { wrapper }: SetupResult = await setup();
+      const { wrapper }: ViewSetupResult = await setup();
 
       getKategorienSelect(wrapper).vm.$emit('update:model-value', [ServiceProviderKategorie.Email]);
       await nextTick();
@@ -229,7 +229,7 @@ describe('ServiceProviderManagementView', () => {
 
   describe('search filter', () => {
     it('initializes the search field with the persisted filter from the store', async () => {
-      const { wrapper }: SetupResult = await setup({
+      const { wrapper }: ViewSetupResult = await setup({
         searchFilterState: { searchStringForServiceProvider: 'persisted-suche' },
       });
       await flushPromises();
@@ -242,7 +242,7 @@ describe('ServiceProviderManagementView', () => {
 
     describe('when a search filter is applied', () => {
       it('resets the page to the first page', async () => {
-        const { wrapper, serviceProviderStore, searchFilterStore }: SetupResult = await setup({
+        const { wrapper, serviceProviderStore, searchFilterStore }: ViewSetupResult = await setup({
           searchFilterState: { serviceProviderPage: 3 },
         });
 
@@ -264,7 +264,7 @@ describe('ServiceProviderManagementView', () => {
       });
 
       it('persists the applied search filter in the store and reloads data with it', async () => {
-        const { wrapper, serviceProviderStore, searchFilterStore }: SetupResult = await setup();
+        const { wrapper, serviceProviderStore, searchFilterStore }: ViewSetupResult = await setup();
         searchFilterStore.searchStringForServiceProvider = 'meine-suche';
 
         const reloadSpy: Mock<ServiceProviderStore['getManageableServiceProviders']> = vi
@@ -284,7 +284,7 @@ describe('ServiceProviderManagementView', () => {
       });
 
       it('enables the reset filter button', async () => {
-        const { wrapper }: SetupResult = await setup();
+        const { wrapper }: ViewSetupResult = await setup();
         expect(wrapper.find('[data-testid="reset-filter-button"]').attributes('disabled')).toBeDefined();
 
         (wrapper.findComponent(SearchField) as VueWrapper).vm.$emit('onApplySearchFilter', 'meine-suche');
@@ -294,7 +294,7 @@ describe('ServiceProviderManagementView', () => {
       });
 
       it('clears the search filter and search field when resetting', async () => {
-        const { wrapper, searchFilterStore }: SetupResult = await setup();
+        const { wrapper, searchFilterStore }: ViewSetupResult = await setup();
         const searchField: VueWrapper = wrapper.findComponent(SearchField) as VueWrapper;
         (searchField.vm as unknown as { searchFilter: string }).searchFilter = 'meine-suche';
 
@@ -314,7 +314,7 @@ describe('ServiceProviderManagementView', () => {
 
   describe('ServiceProviderDelete', () => {
     it('renders ServiceProviderDelete button for each row', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setup();
+      const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
       // Find all delete icons (activators)
       const deleteIcons: DOMWrapper<Element>[] = wrapper.findAll(
         '[data-testid="open-service-provider-delete-dialog-icon"]',
@@ -327,7 +327,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('opens and confirms delete dialog, calls store method', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setup();
+      const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
       // Find first delete icon and click it
       const deleteIcon: DOMWrapper<Element> = wrapper.find('[data-testid="open-service-provider-delete-dialog-icon"]');
       await deleteIcon.trigger('click');
@@ -351,7 +351,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('opens vidis info dialog with provider name and closes it on ok click', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setup();
+      const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
       const vidisProvider: ManageableServiceProviderSimpleListEntryResponse =
         DoFactory.getManageableServiceProviderSimpleListEntryResponse({
           hasSomeVerwaltenPermission: true,
@@ -393,7 +393,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('clears the cached service provider once the vidis info dialog finishes closing', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setup();
+      const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
       const vidisProvider: ManageableServiceProviderSimpleListEntryResponse =
         DoFactory.getManageableServiceProviderSimpleListEntryResponse({
           hasSomeVerwaltenPermission: true,
@@ -418,7 +418,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('closes the delete dialog and removes provider if successful', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setup();
+      const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
 
       const remainingProvider: ManageableServiceProviderSimpleListEntry =
         serviceProviderStore.manageableServiceProviders[1]!;
@@ -451,7 +451,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('renders SpshAlert when errorCode is set', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setup();
+      const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
       serviceProviderStore.errorCode = 'UNSPECIFIED_ERROR';
       await nextTick();
       const alert: DOMWrapper<Element> = wrapper.find('[data-testid="service-provider-management-error-alert"]');
@@ -459,7 +459,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('clears error and reloads data when alert button is clicked', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setup();
+      const { wrapper, serviceProviderStore }: ViewSetupResult = await setup();
       serviceProviderStore.errorCode = 'UNSPECIFIED_ERROR';
       await nextTick();
       const reloadSpy: Mock<ServiceProviderStore['getManageableServiceProviders']> = vi
@@ -477,7 +477,7 @@ describe('ServiceProviderManagementView', () => {
 
   describe('pagination', () => {
     it('updates the search filter store when the page size changes', async () => {
-      const { wrapper, searchFilterStore }: SetupResult = await setup();
+      const { wrapper, searchFilterStore }: ViewSetupResult = await setup();
       const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' });
       resultTable.vm.$emit('onItemsPerPageUpdate', 50);
       await nextTick();
@@ -486,7 +486,7 @@ describe('ServiceProviderManagementView', () => {
     });
 
     it('updates the search filter store when the page changes', async () => {
-      const { wrapper, searchFilterStore }: SetupResult = await setup({
+      const { wrapper, searchFilterStore }: ViewSetupResult = await setup({
         serviceProviderState: { totalManageableServiceProviders: 100 },
       });
       const resultTable: VueWrapper = wrapper.findComponent({ name: 'ResultTable' });

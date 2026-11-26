@@ -24,7 +24,7 @@ type BySchuleViewSetupOptions = {
   authState?: Partial<AuthStore['$state']>;
 };
 
-type SetupResult = {
+type BySchuleViewSetupResult = {
   wrapper: BySchuleViewWrapper;
   router: Router;
   authStore: AuthStore;
@@ -46,7 +46,7 @@ const NEW_KATEGORIEN: ReadonlyArray<{ kategorie: ServiceProviderKategorie; label
 
 enableAutoUnmount(afterEach);
 
-async function setup(options: BySchuleViewSetupOptions = {}): Promise<SetupResult> {
+async function setup(options: BySchuleViewSetupOptions = {}): Promise<BySchuleViewSetupResult> {
   document.body.innerHTML = `
     <div>
       <div id="app"></div>
@@ -91,7 +91,7 @@ async function setup(options: BySchuleViewSetupOptions = {}): Promise<SetupResul
 
 describe('ServiceProviderManagementBySchuleView', () => {
   it('should render', async () => {
-    const { wrapper }: SetupResult = await setup();
+    const { wrapper }: BySchuleViewSetupResult = await setup();
     expect(wrapper.exists()).toBe(true);
   });
 
@@ -101,7 +101,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
         DoFactory.getManageableServiceProviderListEntryResponse({ kategorie }),
     );
 
-    const { wrapper }: SetupResult = await setup({
+    const { wrapper }: BySchuleViewSetupResult = await setup({
       serviceProviderState: {
         manageableServiceProvidersForOrganisation: serviceProviders,
       },
@@ -114,7 +114,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
   });
 
   it('it sets and resets filters', async () => {
-    const { wrapper, serviceProviderStore }: SetupResult = await setup();
+    const { wrapper, serviceProviderStore }: BySchuleViewSetupResult = await setup();
 
     const schule: Organisation = DoFactory.getSchule();
 
@@ -138,7 +138,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
 
   it('should set selectedOrganisationId from searchFilterStore on mount', async () => {
     const schuleId: string = 'test-schule-id';
-    const { wrapper }: SetupResult = await setup({
+    const { wrapper }: BySchuleViewSetupResult = await setup({
       searchFilterState: { selectedSchuleForSchulischeServiceProvider: DoFactory.getSchule({ id: schuleId }) },
     });
     await nextTick();
@@ -150,7 +150,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
   });
 
   it('should not set selectedOrganisationId when searchFilterStore value is null on mount', async () => {
-    const { wrapper }: SetupResult = await setup({
+    const { wrapper }: BySchuleViewSetupResult = await setup({
       searchFilterState: { selectedSchuleForSchulischeServiceProvider: null },
     });
     await nextTick();
@@ -162,7 +162,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
   });
 
   test('it routes to Service Provider details page', async () => {
-    const { wrapper, router }: SetupResult = await setup();
+    const { wrapper, router }: BySchuleViewSetupResult = await setup();
     const push: MockInstance = vi.spyOn(router, 'push');
     await nextTick();
 
@@ -183,7 +183,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
 
   describe('ServiceProviderDelete', () => {
     it('renders ServiceProviderDelete button for each row', async (): Promise<void> => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setup();
+      const { wrapper, serviceProviderStore }: BySchuleViewSetupResult = await setup();
       // Find all delete icons (activators)
       const deleteIcons: DOMWrapper<Element>[] = wrapper.findAll(
         '[data-testid="open-service-provider-delete-dialog-icon"]',
@@ -196,7 +196,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('opens and confirms delete dialog, calls store method', async (): Promise<void> => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setup();
+      const { wrapper, serviceProviderStore }: BySchuleViewSetupResult = await setup();
       // Find first delete icon and click it
       const deleteIcon: DOMWrapper<Element> = wrapper.find('[data-testid="open-service-provider-delete-dialog-icon"]');
       await deleteIcon.trigger('click');
@@ -220,7 +220,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('opens vidis info dialog with provider name and closes it on ok click', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setup();
+      const { wrapper, serviceProviderStore }: BySchuleViewSetupResult = await setup();
       const vidisProvider: ManageableServiceProviderListEntry = DoFactory.getManageableServiceProviderListEntryResponse(
         {
           hasSomeVerwaltenPermission: true,
@@ -264,7 +264,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
 
     describe('onCloseDeleteDialog', () => {
       it('removes provider and reloads list if successful', async () => {
-        const { wrapper, serviceProviderStore }: SetupResult = await setup();
+        const { wrapper, serviceProviderStore }: BySchuleViewSetupResult = await setup();
         const schuleAutocomplete: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
         schuleAutocomplete.vm.$emit('update:selectedSchulen', DoFactory.getSchule({ id: 'some-id' }));
 
@@ -304,7 +304,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('renders SpshAlert when errorCode is set', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setup();
+      const { wrapper, serviceProviderStore }: BySchuleViewSetupResult = await setup();
       serviceProviderStore.errorCode = 'UNSPECIFIED_ERROR';
       await nextTick();
       const alert: DOMWrapper<Element> = wrapper.find(
@@ -314,7 +314,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('clears error and reloads data when alert button is clicked', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setup();
+      const { wrapper, serviceProviderStore }: BySchuleViewSetupResult = await setup();
       const schuleAutocomplete: VueWrapper = wrapper.findComponent({ name: 'SchulenFilter' });
       schuleAutocomplete.vm.$emit('update:selectedSchulen', DoFactory.getSchule({ id: 'some-id' }));
 
@@ -338,7 +338,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
   describe('VidisSyncDialog', () => {
     const orgId: string = 'test-schule-id';
 
-    function setupWithVidisPermission(): Promise<SetupResult> {
+    function setupWithVidisPermission(): Promise<BySchuleViewSetupResult> {
       return setup({ authState: { hasVidisPermission: true } });
     }
 
@@ -350,30 +350,30 @@ describe('ServiceProviderManagementBySchuleView', () => {
     }
 
     it('does not render the sync button when the user lacks vidis permission', async () => {
-      const { wrapper }: SetupResult = await setup({ authState: { hasVidisPermission: false } });
+      const { wrapper }: BySchuleViewSetupResult = await setup({ authState: { hasVidisPermission: false } });
       expect(wrapper.find('[data-testid="open-vidis-sync-dialog-button"]').exists()).toBe(false);
     });
 
     it('renders the sync button when the user has vidis permission', async () => {
-      const { wrapper }: SetupResult = await setupWithVidisPermission();
+      const { wrapper }: BySchuleViewSetupResult = await setupWithVidisPermission();
       expect(wrapper.find('[data-testid="open-vidis-sync-dialog-button"]').exists()).toBe(true);
     });
 
     it('disables the sync button when no Schule is selected', async () => {
-      const { wrapper }: SetupResult = await setupWithVidisPermission();
+      const { wrapper }: BySchuleViewSetupResult = await setupWithVidisPermission();
       const btn: DOMWrapper<Element> = wrapper.find('[data-testid="open-vidis-sync-dialog-button"]');
       expect(btn.attributes('disabled')).toBeDefined();
     });
 
     it('enables the sync button once a Schule is selected', async () => {
-      const { wrapper }: SetupResult = await setupWithVidisPermission();
+      const { wrapper }: BySchuleViewSetupResult = await setupWithVidisPermission();
       await selectSchule(wrapper);
       const btn: DOMWrapper<Element> = wrapper.find('[data-testid="open-vidis-sync-dialog-button"]');
       expect(btn.attributes('disabled')).toBeUndefined();
     });
 
     it('opens the VidisSyncDialog when the button is clicked', async () => {
-      const { wrapper }: SetupResult = await setupWithVidisPermission();
+      const { wrapper }: BySchuleViewSetupResult = await setupWithVidisPermission();
       await selectSchule(wrapper);
 
       await wrapper.find('[data-testid="open-vidis-sync-dialog-button"]').trigger('click');
@@ -384,7 +384,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('calls syncServiceProvidersForSchule with the selected organisation id', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setupWithVidisPermission();
+      const { wrapper, serviceProviderStore }: BySchuleViewSetupResult = await setupWithVidisPermission();
       await selectSchule(wrapper);
 
       const syncSpy: Mock<ServiceProviderStore['syncServiceProvidersForSchule']> = vi
@@ -405,7 +405,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('reloads the service provider list after a successful sync', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setupWithVidisPermission();
+      const { wrapper, serviceProviderStore }: BySchuleViewSetupResult = await setupWithVidisPermission();
       await selectSchule(wrapper);
 
       vi.spyOn(serviceProviderStore, 'syncServiceProvidersForSchule').mockResolvedValue();
@@ -426,7 +426,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('does not reload the list when sync fails', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setupWithVidisPermission();
+      const { wrapper, serviceProviderStore }: BySchuleViewSetupResult = await setupWithVidisPermission();
 
       const reloadSpy: Mock<ServiceProviderStore['getManageableServiceProvidersForOrganisation']> = vi
         .spyOn(serviceProviderStore, 'getManageableServiceProvidersForOrganisation')
@@ -454,7 +454,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('does not show SpshAlert when errorCode is VIDIS_API_ERROR', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setupWithVidisPermission();
+      const { wrapper, serviceProviderStore }: BySchuleViewSetupResult = await setupWithVidisPermission();
       serviceProviderStore.errorCode = 'VIDIS_API_ERROR';
       await nextTick();
 
@@ -462,7 +462,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('keeps the table visible when errorCode is VIDIS_API_ERROR', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setupWithVidisPermission();
+      const { wrapper, serviceProviderStore }: BySchuleViewSetupResult = await setupWithVidisPermission();
       serviceProviderStore.errorCode = 'VIDIS_API_ERROR';
       await nextTick();
 
@@ -470,7 +470,7 @@ describe('ServiceProviderManagementBySchuleView', () => {
     });
 
     it('clears errorCode when the sync dialog is closed', async () => {
-      const { wrapper, serviceProviderStore }: SetupResult = await setupWithVidisPermission();
+      const { wrapper, serviceProviderStore }: BySchuleViewSetupResult = await setupWithVidisPermission();
       serviceProviderStore.errorCode = 'VIDIS_API_ERROR';
       await nextTick();
 
