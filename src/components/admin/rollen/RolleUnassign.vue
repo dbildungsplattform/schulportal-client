@@ -5,12 +5,7 @@
   import { type BulkErrorList, useBulkErrors } from '@/composables/useBulkErrors';
   import { type BulkOperationStore, useBulkOperationStore } from '@/stores/BulkOperationStore';
   import { type Organisation } from '@/stores/OrganisationStore';
-  import {
-    OperationContext,
-    type PersonenkontextStore,
-    RolleDialogMode,
-    usePersonenkontextStore,
-  } from '@/stores/PersonenkontextStore';
+  import { OperationContext, RolleDialogMode } from '@/stores/PersonenkontextStore';
   import {
     RollenArt,
     type RolleResponse,
@@ -21,7 +16,7 @@
   import type { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
   import { toTypedSchema } from '@vee-validate/yup';
   import { type BaseFieldProps, type FormContext, type TypedSchema, useForm } from 'vee-validate';
-  import { computed, type ComputedRef, ref, type Ref, watch } from 'vue';
+  import { computed, type ComputedRef, ref, type Ref } from 'vue';
   import { type Composer, useI18n } from 'vue-i18n';
   import { useDisplay } from 'vuetify';
   import { mixed, object } from 'yup';
@@ -30,7 +25,6 @@
   const { mdAndDown }: { mdAndDown: Ref<boolean> } = useDisplay();
 
   const bulkOperationStore: BulkOperationStore = useBulkOperationStore();
-  const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
 
   type Props = {
     isDialogVisible: boolean;
@@ -119,19 +113,6 @@
         showErrorDialog.value = true;
       }
     },
-  );
-
-  watch(
-    () => props.selectedOrganisationFromFilter.id,
-    async (newValue: string) => {
-      await personenkontextStore.processWorkflowStep({
-        operationContext: OperationContext.PERSON_BEARBEITEN,
-        organisationId: newValue,
-        rollenIds: props.selectedRolleFromFilter ? [props.selectedRolleFromFilter.id] : [],
-        limit: 25,
-      });
-    },
-    { immediate: true },
   );
 </script>
 
