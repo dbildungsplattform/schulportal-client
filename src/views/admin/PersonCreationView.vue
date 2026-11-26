@@ -26,6 +26,7 @@
   import { type TranslatedObject } from '@/types.d';
   import { type BefristungUtilsType, isBefristungspflichtRolle, useBefristungUtils } from '@/utils/befristung';
   import { formatDateToISO, getNextSchuljahresende, isValidDate, notInPast } from '@/utils/date';
+  import { getDisplayNameForOrg } from '@/utils/formatting';
   import { DDMMYYYY, DIN_91379A, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
   import { isKopersRolle, isLernRolle } from '@/utils/validationPersonenkontext';
   import { toTypedSchema } from '@vee-validate/yup';
@@ -352,17 +353,13 @@
     );
   });
 
-  // We extract the first Organisation since all of the Kontexte have the same one
-  const translatedOrganisationsname: ComputedRef<string> = computed(() => {
-    if (!schuleZuordnungFromCreatedKontext.value.length) {
+  const translatedOrganisationsname: ComputedRef<string> = computed((): string => {
+    const organisation: Organisation | undefined = selectedOrgaCache.value;
+    if (!organisation || !schuleZuordnungFromCreatedKontext.value.length) {
       return '';
     }
 
-    const organisationId: string | undefined = schuleZuordnungFromCreatedKontext.value[0]?.organisationId;
-
-    return (
-      organisationen.value?.find((organisation: TranslatedObject) => organisation.value === organisationId)?.title || ''
-    );
+    return getDisplayNameForOrg(organisation);
   });
 
   // Extract all the Rollennamen

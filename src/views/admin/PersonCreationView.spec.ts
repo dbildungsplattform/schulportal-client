@@ -410,16 +410,21 @@ describe('PersonCreationView', () => {
       expect(personenkontextStore.createdPersonWithKontext).toBe(null);
     });
 
-    test('should retain Rolle attributes for validation and Befristung after search results change', async () => {
+    test('should retain the selected Organisation and Rolle after search results change', async () => {
       const rolle: TranslatedRolleWithAttrs = DoFactory.getTranslatedRolleWithAttrs({
         rollenart: RollenArt.Lern,
         merkmale: [RollenMerkmal.KopersPflicht, RollenMerkmal.BefristungPflicht],
+      });
+      const organisation: Organisation = DoFactory.getSchule({ id: ORGANISATION_ID, kennung: '1234567' });
+      personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
+        organisations: [],
+        canCommit: true,
       });
       const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
       await personenkontextCreate
         .findComponent({ ref: 'schulenFilter' })
         .findComponent({ ref: 'personenkontext-create-organisation-select' })
-        .setValue(DoFactory.getOrganisation({ id: ORGANISATION_ID }));
+        .setValue(organisation);
       await personenkontextCreate.findComponent({ ref: 'rollen-select' }).setValue([rolle]);
       await flushPromises();
 
@@ -487,6 +492,7 @@ describe('PersonCreationView', () => {
       await vi.waitFor((): void => expect(createPersonSpy).toHaveBeenCalledOnce());
       expect(wrapper!.find('[data-testid="person-success-text"]').isVisible()).toBe(true);
       expect(wrapper!.get('[data-testid="created-person-rolle"]').text()).toBe(rolle.title);
+      expect(wrapper!.get('[data-testid="created-person-organisation"]').text()).toBe(`1234567 (${organisation.name})`);
     });
 
     test('it fills form and triggers submit', async () => {
@@ -956,11 +962,12 @@ describe('PersonCreationView', () => {
   });
 
   describe(`${CreationType.AddPersonToOwnSchule}`, () => {
-    test('it retains the selected Rolle in the Landesbediensteter success template after search results change', async () => {
+    test('should retain the selected Organisation and Rolle in the Landesbediensteter success template', async () => {
       const landesbediensteter: PersonLandesbediensteterSearchResponse =
         DoFactory.getPersonLandesbediensteterSearchResponse();
       const mockLandesbedienstetePersonen: PersonLandesbediensteterSearchResponse[] = [landesbediensteter];
       const organisationId: string = ORGANISATION_ID;
+      const organisation: Organisation = DoFactory.getSchule({ id: organisationId, kennung: null });
       const rolle: TranslatedRolleWithAttrs = { ...mockRolleForPersonenkontextCreation, rollenart: 'LEHR' };
 
       personStore.allLandesbedienstetePersonen = mockLandesbedienstetePersonen;
@@ -984,7 +991,7 @@ describe('PersonCreationView', () => {
         .findComponent({ ref: 'personenkontext-create' })
         .findComponent({ ref: 'schulenFilter' })
         .findComponent({ ref: 'personenkontext-create-organisation-select' });
-      await organisationSelect.setValue(DoFactory.getSchule({ id: organisationId }));
+      await organisationSelect.setValue(organisation);
       await nextTick();
 
       const rollenSelect: VueWrapper | undefined = wrapper
@@ -1005,11 +1012,22 @@ describe('PersonCreationView', () => {
       );
       await nextTick();
 
+      vi.mocked(personenkontextStore.zuordnenLandesbedienstete).mockImplementationOnce((): Promise<void> => {
+        personenkontextStore.updatedPersonenkontexte = DoFactory.getPersonenkontextUpdateResponse({
+          dBiamPersonenkontextResponses: [
+            DoFactory.getDBiamPersonenkontextResponse({
+              personId: landesbediensteter.id,
+              organisationId,
+              rolleId: rolle.value,
+            }),
+          ],
+        });
+        return Promise.resolve();
+      });
       confirmButton.dispatchEvent(new Event('click'));
       await flushPromises();
 
-      // Form is resetting after submit so orga should be undefined
-      expect(organisationSelect.vm.$data).toStrictEqual({});
+      expect(wrapper.get('[data-testid="added-state-employee-organisation"]').text()).toBe(organisation.name);
     });
 
     describe('rollen refresh loop', () => {
