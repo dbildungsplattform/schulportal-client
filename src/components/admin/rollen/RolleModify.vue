@@ -6,6 +6,7 @@
   import { type BulkOperationStore, useBulkOperationStore } from '@/stores/BulkOperationStore';
   import { Organisation } from '@/stores/OrganisationStore';
   import {
+    CreationType,
     KlassenOption,
     OperationContext,
     type PersonenkontextStore,
@@ -245,6 +246,7 @@
               v-model:selected-rolle="selectedRolle"
               v-model:selected-klassen-option="selectedKlassenOption"
               :operation-context="OperationContext.PERSON_BEARBEITEN"
+              :create-type="CreationType.AddPersonToOwnSchule"
               :show-headline="false"
               :rollen="rollen"
               :selected-organisation-props="selectedOrganisationProps"

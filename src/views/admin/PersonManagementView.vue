@@ -632,7 +632,7 @@
             :multiple="true"
             includeAll
             highlightSelection
-            parentId="person-management"
+            storeKey="person-management"
             ref="schulenFilter"
             :systemrechteForSearch="[RollenSystemRecht.PersonenVerwalten]"
             :selectedSchulen="selectedOrganisationen"

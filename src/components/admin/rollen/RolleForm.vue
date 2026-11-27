@@ -86,7 +86,7 @@
           :selectedSchulen="selectedOrganisation ?? undefined"
           :error="selectedAdministrationsebeneProps?.error"
           ref="schulenFilter"
-          parentId="rolle-form"
+          storeKey="rolle-form"
           :placeholderText="$t('admin.administrationsebene.assignAdministrationsebene')"
           :selectedSchuleProps="selectedAdministrationsebeneProps"
           :systemrechteForSearch="[RollenSystemRecht.RollenVerwalten]"

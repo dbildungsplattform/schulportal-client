@@ -24,7 +24,11 @@ import {
 import { getResponseErrorCode } from '@/utils/errorHandlers';
 import { defineStore, type Store, type StoreDefinition } from 'pinia';
 import type { Organisation } from './OrganisationStore';
-import { mapZuordnungToPersonenkontextUpdate, type PersonenkontextUpdate } from './PersonenkontextStore';
+import {
+  mapZuordnungToPersonenkontextUpdate,
+  OperationContext,
+  type PersonenkontextUpdate,
+} from './PersonenkontextStore';
 import { OperationType, type CurrentOperation, type InternalZuordnung } from './types/bulkOperationTypes';
 import { PersonenUebersicht } from './types/PersonenUebersicht';
 import { Zuordnung } from './types/Zuordnung';
@@ -53,6 +57,7 @@ async function updatePersonenkontexte(
   const updateParams: DbiamUpdatePersonenkontexteBodyParams = {
     lastModified: uebersicht.lastModifiedZuordnungen ?? undefined,
     count: uebersicht.zuordnungen.length ?? 0,
+    operationContext: OperationContext.PERSON_BEARBEITEN,
     personenkontexte:
       updatedPersonenkontexte?.map((personenkontextUpdate: PersonenkontextUpdate) => ({
         personId: personId,

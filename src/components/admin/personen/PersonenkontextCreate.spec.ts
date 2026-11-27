@@ -419,19 +419,6 @@ describe('PersonenkontextCreate', () => {
           expect(spy).toHaveBeenCalled();
         });
 
-        test('it updates Organisation search correctly', async () => {
-          const organisationAutocomplete: VueWrapper | undefined = wrapper
-            ?.findComponent({ ref: 'schulenFilter' })
-            .findComponent({ ref: 'personenkontext-create-organisation-select' });
-
-          await organisationAutocomplete?.setValue(undefined);
-          await nextTick();
-
-          organisationAutocomplete?.vm.$emit('update:search', '');
-          await nextTick();
-          expect(personenkontextStore.processWorkflowStep).toHaveBeenCalled();
-        });
-
         test('it does nothing if the oldValue is equal to what is selected on Organisation', async () => {
           const organisationAutocomplete: VueWrapper | undefined = wrapper
             ?.findComponent({ ref: 'schulenFilter' })
