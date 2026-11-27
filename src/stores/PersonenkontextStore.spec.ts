@@ -194,7 +194,7 @@ describe('PersonenkontextStore', () => {
       });
     });
 
-    describe('without a Personenuebersicht or updates', () => {
+    describe('without a Personenuebersicht and with an empty update list', () => {
       it('should commit an empty context list without a modification timestamp', async () => {
         personStore.personenuebersicht = null;
         const mockResponse: PersonenkontexteUpdateResponse = DoFactory.getPersonenkontextUpdateResponse({
@@ -202,7 +202,7 @@ describe('PersonenkontextStore', () => {
         });
         mockadapter.onPut(`/api/personenkontexte/person/${mockPersonId}`).replyOnce(200, mockResponse);
 
-        const promise: Promise<void> = personenkontextStore.updatePersonenkontexte(undefined, mockPersonId);
+        const promise: Promise<void> = personenkontextStore.updatePersonenkontexte([], mockPersonId);
         expect(personenkontextStore.loading).toBe(true);
         await promise;
 
@@ -339,7 +339,7 @@ describe('PersonenkontextStore', () => {
       });
     });
 
-    describe('without a Personenuebersicht or updates', () => {
+    describe('without a Personenuebersicht and with an empty update list', () => {
       it('should commit an empty context list without a modification timestamp', async () => {
         personStore.personenuebersicht = null;
         const mockResponse: PersonenkontexteUpdateResponse = DoFactory.getPersonenkontextUpdateResponse({
@@ -349,7 +349,7 @@ describe('PersonenkontextStore', () => {
           .onPost(`/api/personenkontexte/person/${mockPersonId}/landesbedienstetenzuordnungen`)
           .replyOnce(200, mockResponse);
 
-        const promise: Promise<void> = personenkontextStore.zuordnenLandesbedienstete(undefined, mockPersonId);
+        const promise: Promise<void> = personenkontextStore.zuordnenLandesbedienstete([], mockPersonId);
         expect(personenkontextStore.loading).toBe(true);
         await promise;
 

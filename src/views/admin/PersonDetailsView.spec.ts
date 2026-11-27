@@ -910,38 +910,26 @@ describe('PersonDetailsView', () => {
   });
 
   test('it submits the form to lock the user', async () => {
-    const { personStore, wrapper, mockPersonenuebersicht }: PersonDetailsSetup = await setup();
-    if (personStore.currentPerson) {
-      personStore.currentPerson.person.isLocked = false;
-      personStore.currentPerson.person.userLock = [];
-    }
-    const openLockDialogButton: DOMWrapper<Element> | undefined = wrapper?.find(
-      '[data-testid="open-lock-dialog-button"]',
-    );
-    openLockDialogButton?.trigger('click');
-    await nextTick();
+    const { personStore, wrapper, mockPerson, mockCurrentUser }: PersonDetailsSetup = await setup();
+    await wrapper.get('[data-testid="open-lock-dialog-button"]').trigger('click');
 
     expect(document.querySelector('[data-testid="lock-user-info-text"]')).not.toBeNull();
+    expect(
+      document.querySelector<HTMLInputElement>('[data-testid="unbefristet-radio-button"] input[type="radio"]')
+        ?.checked,
+    ).toBe(true);
 
-    const unbefristetRadioButton: HTMLElement = document.querySelector(
-      '[data-testid="unbefristet-radio-button"] input[type="radio"]',
-    ) as HTMLElement;
-
-    expect(unbefristetRadioButton).not.toBeNull();
-    unbefristetRadioButton.click();
-    unbefristetRadioButton.dispatchEvent(new Event('click'));
-
-    const lockUserButton: HTMLElement = document.querySelector('[data-testid="lock-user-button"]') as HTMLElement;
-
-    expect(lockUserButton).not.toBeNull();
-    lockUserButton.click();
-    lockUserButton.dispatchEvent(new Event('click'));
-    await nextTick();
-    await flushPromises();
+    const lockUserButton: HTMLButtonElement | null = document.querySelector('[data-testid="lock-user-button"]');
+    expect(lockUserButton?.disabled).toBe(false);
+    lockUserButton?.click();
     await flushPromises();
 
-    expect(personStore.lockPerson).toHaveBeenCalled();
-    // reset personenuebersicht
-    personStore.personenuebersicht = mockPersonenuebersicht;
+    await vi.waitFor((): void => {
+      expect(personStore.lockPerson).toHaveBeenCalledExactlyOnceWith(mockPerson.person.id, {
+        lock: true,
+        locked_by: mockCurrentUser.personenkontexte?.[0]?.organisation.id,
+        locked_until: undefined,
+      });
+    });
   });
 });
