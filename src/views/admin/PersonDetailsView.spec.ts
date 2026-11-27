@@ -856,7 +856,9 @@ describe('PersonDetailsView', () => {
       role: TranslatedRolleWithAttrs;
     };
 
-    const setupRejectedSave = async (errorCode: string = 'PERSONENKONTEXTE_UPDATE_ERROR'): Promise<RejectedSaveSetup> => {
+    const setupRejectedSave = async (
+      errorCode: string = 'PERSONENKONTEXTE_UPDATE_ERROR',
+    ): Promise<RejectedSaveSetup> => {
       const { wrapper, personenkontextStore, router }: PersonDetailsSetup = await setup();
       const school: Organisation = DoFactory.getSchule();
       const role: TranslatedRolleWithAttrs = {
