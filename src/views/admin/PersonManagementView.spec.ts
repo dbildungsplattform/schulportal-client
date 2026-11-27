@@ -11,7 +11,6 @@ import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
-import { usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
 import { RollenSystemRecht, RolleStore, TranslatedRolleWithAttrs, useRolleStore } from '@/stores/RolleStore.js';
 import { PersonStatusFilter, SearchFilterStore, useSearchFilterStore } from '@/stores/SearchFilterStore.js';
 import type { Person } from '@/stores/types/Person';
@@ -41,7 +40,6 @@ let router: Router;
 
 let organisationStore: OrganisationStore;
 let personStore: PersonStore;
-let personenkontextStore: PersonenkontextStore;
 let rolleStore: RolleStore;
 let searchFilterStore: SearchFilterStore;
 let authStore: AuthStore;
@@ -78,7 +76,6 @@ beforeEach(async () => {
 
   organisationStore = useOrganisationStore();
   personStore = usePersonStore();
-  personenkontextStore = usePersonenkontextStore();
   rolleStore = useRolleStore();
   searchFilterStore = useSearchFilterStore();
   authStore = useAuthStore();
@@ -93,7 +90,6 @@ beforeEach(async () => {
   personStore.getAllPersons = vi.fn();
   organisationStore.getAllOrganisationen = vi.fn();
   rolleStore.getRollenForPersonAdministration = vi.fn();
-  personenkontextStore.processWorkflowStep = vi.fn();
 
   personStore.allUebersichten = new Map();
   for (let index: number = 0; index < 5; index++) {
@@ -115,32 +111,6 @@ beforeEach(async () => {
       systemrechte: [],
     }),
   ];
-
-  personenkontextStore.workflowStepResponse = {
-    organisations: [
-      {
-        id: '9876',
-        administriertVon: 'string',
-        kennung: 'string',
-        name: 'orga',
-        namensergaenzung: 'string',
-        kuerzel: 'string',
-        typ: 'ROOT',
-      },
-      {
-        id: '1134',
-        administriertVon: 'string',
-        kennung: 'string',
-        name: 'orga1',
-        namensergaenzung: 'string',
-        kuerzel: 'string',
-        typ: 'ROOT',
-      },
-    ],
-    selectedOrganisation: null,
-    selectedRollen: null,
-    canCommit: true,
-  };
 
   organisationStore.klassenFilters.set('personen-management', {
     total: 42,

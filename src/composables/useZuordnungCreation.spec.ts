@@ -91,7 +91,7 @@ describe('useZuordnungCreation', () => {
     const tMock: ReturnType<typeof vi.fn<(key: string, params?: Record<string, unknown>) => string>> = vi.fn(
       (key: string) => key,
     );
-    const state: ZuordnungenWorkingStateResult = scope.run(() => useZuordnungenWorkingState({ personId }))!;
+    const state: ZuordnungenWorkingStateResult = scope.run(() => useZuordnungenWorkingState())!;
     const createCreation = (): ZuordnungCreation =>
       scope.run(() => {
         return useZuordnungCreation({
@@ -110,7 +110,7 @@ describe('useZuordnungCreation', () => {
       await flushPromises();
     };
     const mockCommit = (status: number, data: unknown): void => {
-      mockAdapter.onPut(new RegExp(`^/api/personenkontext-workflow/${personId.value}`)).replyOnce(status, data);
+      mockAdapter.onPut(new RegExp(`^/api/personenkontexte/person/${personId.value}`)).replyOnce(status, data);
     };
     const prepareAddition = async (organisation: Organisation = DoFactory.getSchule()): Promise<void> => {
       await selectRolle(lehrRolle, organisation);
@@ -326,7 +326,7 @@ describe('useZuordnungCreation', () => {
       creation.confirmDialogAddition();
 
       expect(creation.createZuordnungConfirmationDialogVisible.value).toBe(false);
-      expect(creation.hasNoKopersNr.value).toBe(false);
+      expect(creation.hasNoKopersNr.value).toBe(true);
       expect(state.newZuordnung.value).toMatchObject({
         sskId: otherSchule.id,
         rolleId: lehrRolle.value,
@@ -431,8 +431,8 @@ describe('useZuordnungCreation', () => {
       expect(mockAdapter.history['put'][0]!.url).toContain('personalnummer=1234567');
       expect(JSON.parse(mockAdapter.history['put'][0]!.data as string)).toMatchObject({
         personenkontexte: [
-          { personId: personId.value, organisationId: existingZuordnung.sskId, rolleId: existingZuordnung.rolleId },
-          { personId: personId.value, organisationId: newOrganisation.id, rolleId: lehrRolle.value },
+          { organisationId: existingZuordnung.sskId, rolleId: existingZuordnung.rolleId },
+          { organisationId: newOrganisation.id, rolleId: lehrRolle.value },
         ],
       });
       expect(personenkontextStore.errorCode).toBe('');

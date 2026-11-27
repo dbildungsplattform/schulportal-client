@@ -2265,68 +2265,6 @@
         "tags": ["provider"]
       }
     },
-    "/api/personenkontext-workflow/step": {
-      "get": {
-        "operationId": "DbiamPersonenkontextWorkflowController_processStep",
-        "parameters": [
-          {
-            "name": "operationContext",
-            "required": true,
-            "in": "query",
-            "description": "The context in which this request happens. Affects permission checks.",
-            "schema": { "$ref": "#/components/schemas/OperationContext" }
-          },
-          {
-            "name": "personId",
-            "required": false,
-            "in": "query",
-            "description": "ID of the person to be modified",
-            "schema": { "nullable": true, "type": "string" }
-          },
-          {
-            "name": "organisationId",
-            "required": false,
-            "in": "query",
-            "description": "ID of the organisation where the Personenkontexte should be created",
-            "schema": { "nullable": true, "type": "string" }
-          },
-          {
-            "name": "rollenIds",
-            "required": false,
-            "in": "query",
-            "description": "IDs of the selected rollen.",
-            "schema": { "type": "array", "items": { "type": "string" } }
-          },
-          {
-            "name": "organisationName",
-            "required": false,
-            "in": "query",
-            "description": "Organisation/SSK name used to filter for schulstrukturknoten in personenkontext.",
-            "schema": { "nullable": true, "type": "string" }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "The limit for the returned organisations.",
-            "schema": { "nullable": false, "type": "number" }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Initialize or process data from the person creation form.\n                      Valid combinations:\n                      - Both organisationId and rollenIds are undefined: Fetch all possible organisations.\n                      - Both organisationId and rollenIds are provided: Check if the Rollen can be committed for the organisation.",
-            "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/PersonenkontextWorkflowResponse" } }
-            }
-          },
-          "401": { "description": "Not authorized to get available data for personenkontext." },
-          "403": { "description": "Insufficient permission to get data for personenkontext." },
-          "500": { "description": "Internal server error while getting data for personenkontext." }
-        },
-        "security": [{ "oauth2": ["openid"] }, { "bearer": [] }],
-        "tags": ["personenkontext"]
-      }
-    },
     "/api/personenkontext-workflow/{personId}": {
       "put": {
         "operationId": "DbiamPersonenkontextWorkflowController_commit",
@@ -4533,26 +4471,6 @@
             }
           }
         }
-      },
-      "OperationContext": { "type": "string", "enum": ["PERSON_ANLEGEN", "PERSON_BEARBEITEN"] },
-      "PersonenkontextWorkflowResponse": {
-        "type": "object",
-        "properties": {
-          "organisations": {
-            "description": "List of available organisations.",
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/OrganisationResponseLegacy" }
-          },
-          "selectedOrganisation": { "type": "string", "description": "Selected organisation.", "nullable": true },
-          "selectedRollen": {
-            "description": "Selected rollen.",
-            "nullable": true,
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "canCommit": { "type": "boolean", "description": "Indicates whether the commit action can be performed." }
-        },
-        "required": ["organisations", "selectedOrganisation", "selectedRollen", "canCommit"]
       },
       "DbiamPersonenkontextBodyParams": {
         "type": "object",

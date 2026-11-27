@@ -17,8 +17,8 @@ import type { Zuordnung } from '@/stores/types/Zuordnung';
 import { enableAutoUnmount, flushPromises, mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { nextTick } from 'vue';
-import { VDialog } from 'vuetify/components';
 import { createRouter, createWebHistory, type Router } from 'vue-router';
+import { VDialog } from 'vuetify/components';
 import ZuordnungenSection from './ZuordnungenSection.vue';
 
 // The logic of the operations is tested in the specs of the composables, this spec only tests how the section wires them
@@ -100,10 +100,6 @@ describe('ZuordnungenSection', () => {
 
     personStore.currentPerson = { person };
     personStore.personenuebersicht = DoFactory.getPersonenUebersicht(person, [schulZuordnung, klassenZuordnung]);
-    personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-      organisations: [DoFactory.getOrganisationenResponseLegacy({ id: schule.id, name: schule.name })],
-      canCommit: true,
-    });
     rolleStore.rollenForPersonenkontextCreation = rollen;
 
     const router: Router = createRouter({ history: createWebHistory(), routes });
@@ -173,16 +169,12 @@ describe('ZuordnungenSection', () => {
   };
 
   describe('view and edit mode', () => {
-    test('it renders the Zuordnungen with their Klasse and loads the workflow step', async () => {
-      const { mountComponent, personenkontextStore, person, schule, oldKlasse }: ZuordnungenSectionSetup =
-        await setup();
+    test('it renders the Zuordnungen with their Klasse without loading the workflow step', async () => {
+      const { mountComponent, schule, oldKlasse }: ZuordnungenSectionSetup = await setup();
       const wrapper: ZuordnungenSectionWrapper = mountComponent();
       await flushPromises();
 
       expect(wrapper.find(`[data-testid="person-zuordnung-${schule.id}"]`).text()).toContain(oldKlasse.name);
-      expect(personenkontextStore.processWorkflowStep).toHaveBeenCalledWith(
-        expect.objectContaining({ personId: person.id }),
-      );
     });
 
     test('it starts editing when the edit button is clicked', async () => {
@@ -296,6 +288,16 @@ describe('ZuordnungenSection', () => {
     });
   });
 
+  test('it displays the school of the selected Zuordnung when changing its class', async () => {
+    const { schule, startEditingWithSelection }: ZuordnungenSectionSetup = await setup();
+    const wrapper: ZuordnungenSectionWrapper = await startEditingWithSelection();
+
+    await wrapper.get('[data-testid="klasse-change-button"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="schule-select"]').text()).toContain(`${schule.kennung} (${schule.name})`);
+  });
+
   describe('dirty state', () => {
     test('it is not dirty while editing is inactive', async () => {
       const { mountComponent, isFormDirty }: ZuordnungenSectionSetup = await setup();
@@ -366,18 +368,30 @@ describe('ZuordnungenSection', () => {
       expect(personenkontextCreate.props()).toHaveProperty('selectedRolle', undefined);
     });
 
-    test('it forwards the events of PersonenkontextCreate to the creation form', async () => {
-      const { openZuordnungCreationForm, isFormDirty, oldKlasse }: ZuordnungenSectionSetup = await setup();
+    test('enables submission only after the required Zuordnung fields are valid', async () => {
+      const { openZuordnungCreationForm, schule, oldKlasse, rollen }: ZuordnungenSectionSetup = await setup();
       const { sectionWrapper, creationWrapper: personenkontextCreate }: ZuordnungCreationFormSetup =
         await openZuordnungCreationForm();
       const submitButton: DOMWrapper<Element> = sectionWrapper.find('[data-testid="zuordnung-creation-submit-button"]');
 
-      personenkontextCreate.vm.$emit('update:canCommit', false);
-      await nextTick();
       expect(submitButton.attributes('disabled')).toBeDefined();
-      personenkontextCreate.vm.$emit('update:canCommit', true);
-      await nextTick();
-      expect(submitButton.attributes('disabled')).toBeUndefined();
+      personenkontextCreate.vm.$emit('update:selectedOrganisation', schule);
+      await flushPromises();
+      personenkontextCreate.vm.$emit('update:selectedRolle', rollen[1]);
+      await flushPromises();
+      personenkontextCreate.vm.$emit('update:selectedKlasse', undefined);
+      await flushPromises();
+      expect(submitButton.attributes('disabled')).toBeDefined();
+
+      personenkontextCreate.vm.$emit('update:selectedKlasse', oldKlasse);
+      personenkontextCreate.vm.$emit('update:befristung', '31.07.2099');
+      await vi.waitFor((): void => expect(submitButton.attributes('disabled')).toBeUndefined());
+    });
+
+    test('it forwards the events of PersonenkontextCreate to the creation form', async () => {
+      const { openZuordnungCreationForm, isFormDirty, oldKlasse }: ZuordnungenSectionSetup = await setup();
+      const { sectionWrapper, creationWrapper: personenkontextCreate }: ZuordnungCreationFormSetup =
+        await openZuordnungCreationForm();
 
       expect(isFormDirty(sectionWrapper)).toBe(false);
       personenkontextCreate.vm.$emit('update:selectedKlasse', oldKlasse);

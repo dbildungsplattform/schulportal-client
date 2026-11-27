@@ -1,18 +1,6 @@
 import type { InternalZuordnung } from '@/stores/types/bulkOperationTypes';
-import type { Organisation } from '@/stores/OrganisationStore';
 import type { Zuordnung } from '@/stores/types/Zuordnung';
 import { isBefore, parseISO } from 'date-fns';
-
-/**
- * Finds an organisation by its ID.
- *
- * @param organisations - Array of organisations to search
- * @param id - Organisation ID to find
- * @returns The matching organisation or undefined if not found
- */
-export function findOrganisationById(organisations: Organisation[], id: string): Organisation | undefined {
-  return organisations.find((org: Organisation) => org.id === id);
-}
 
 /**
  * Checks if a person has any zuordnung for the given organisation.

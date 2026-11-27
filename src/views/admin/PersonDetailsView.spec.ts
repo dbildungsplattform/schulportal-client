@@ -8,10 +8,21 @@ import { EmailAddressStatus, ServiceProviderSystem, type OrganisationResponse } 
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore, type PersonenkontextRolleFields, type UserInfo } from '@/stores/AuthStore';
 import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
-import { OrganisationsTyp, useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
+import {
+  OrganisationsTyp,
+  useOrganisationStore,
+  type Organisation,
+  type OrganisationStore,
+} from '@/stores/OrganisationStore';
 import { usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
 import { usePersonStore, type Personendatensatz, type PersonStore } from '@/stores/PersonStore';
-import { RollenArt, RollenMerkmal, useRolleStore, type RolleStore } from '@/stores/RolleStore';
+import {
+  RollenArt,
+  RollenMerkmal,
+  useRolleStore,
+  type RolleStore,
+  type TranslatedRolleWithAttrs,
+} from '@/stores/RolleStore';
 import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
 import {
   useTwoFactorAuthentificationStore,
@@ -192,13 +203,6 @@ describe('PersonDetailsView', () => {
         rollenart: RollenArt.Lern,
       },
     ];
-
-    personenkontextStore.workflowStepResponse = {
-      organisations: [mockOrganisation],
-      selectedOrganisation: 'string',
-      selectedRollen: ['string'],
-      canCommit: true,
-    };
 
     organisationStore.getParentOrganisationsByIds = (_organisationIds: string[]): Promise<void> => {
       return Promise.resolve();
@@ -846,39 +850,101 @@ describe('PersonDetailsView', () => {
     expect(personenkontextStore.errorCode).toBe('');
   });
 
+  describe('adding a regular Zuordnung', () => {
+    type RejectedSaveSetup = Pick<PersonDetailsSetup, 'wrapper' | 'personenkontextStore' | 'router'> & {
+      school: Organisation;
+      role: TranslatedRolleWithAttrs;
+    };
+
+    const setupRejectedSave = async (
+      errorCode: string = 'PERSONENKONTEXTE_UPDATE_ERROR',
+    ): Promise<RejectedSaveSetup> => {
+      const { wrapper, personenkontextStore, router }: PersonDetailsSetup = await setup();
+      const school: Organisation = DoFactory.getSchule();
+      const role: TranslatedRolleWithAttrs = {
+        value: 'new-role',
+        title: 'Lehrkraft',
+        rollenart: RollenArt.Lehr,
+        merkmale: [],
+      };
+      await wrapper.get('[data-testid="zuordnung-edit-button"]').trigger('click');
+      await wrapper.get('[data-testid="zuordnung-create-button"]').trigger('click');
+      const selector: VueWrapper = wrapper.findComponent({ name: 'PersonenkontextCreate' });
+      selector.vm.$emit('update:selectedOrganisation', school);
+      await flushPromises();
+      selector.vm.$emit('update:selectedRolle', role);
+      await wrapper.get('[data-testid="zuordnung-creation-form"]').trigger('submit');
+      await flushPromises();
+      const confirmButton: HTMLElement = await vi.waitFor((): HTMLElement => {
+        const button: HTMLElement | null = document.querySelector('[data-testid="confirm-zuordnung-dialog-addition"]');
+        if (!button) {
+          throw new Error('Missing Zuordnung confirmation');
+        }
+        return button;
+      });
+      confirmButton.click();
+      await flushPromises();
+
+      vi.mocked(personenkontextStore.updatePersonenkontexte).mockImplementationOnce((): Promise<void> => {
+        personenkontextStore.errorCode = errorCode;
+        return Promise.resolve();
+      });
+      await wrapper.get('[data-testid="zuordnung-changes-save-button"]').trigger('click');
+      await flushPromises();
+      return { wrapper, personenkontextStore, router, school, role };
+    };
+
+    test('returns to the retained form after a save is rejected', async () => {
+      const { wrapper, personenkontextStore, school, role }: RejectedSaveSetup = await setupRejectedSave();
+      const alertButton: Omit<DOMWrapper<Element>, 'exists'> = wrapper
+        .findComponent({ ref: 'personenkontext-store-error-alert' })
+        .get('[data-testid="spsh-alert-button"]');
+      expect(alertButton.text()).toBe('Zurück zur Eingabe');
+
+      await alertButton.trigger('click');
+      await flushPromises();
+
+      const selector: VueWrapper = wrapper.findComponent({ name: 'PersonenkontextCreate' });
+      expect(personenkontextStore.errorCode).toBe('');
+      expect(selector.props()).toHaveProperty('selectedOrganisation', school);
+      expect(selector.props()).toHaveProperty('selectedRolle', role);
+    });
+
+    test('refreshes the assignment snapshot when the save is rejected due to a count mismatch', async () => {
+      const { wrapper, router }: RejectedSaveSetup = await setupRejectedSave('COUNT_MISMATCHING');
+      const reload: MockInstance = vi.spyOn(router, 'go').mockReturnValue(undefined);
+      const alertButton: Omit<DOMWrapper<Element>, 'exists'> = wrapper
+        .findComponent({ ref: 'personenkontext-store-error-alert' })
+        .get('[data-testid="spsh-alert-button"]');
+      expect(alertButton.text()).toBe('Daten aktualisieren');
+
+      await alertButton.trigger('click');
+      await flushPromises();
+
+      expect(reload).toHaveBeenCalledExactlyOnceWith(0);
+    });
+  });
+
   test('it submits the form to lock the user', async () => {
-    const { personStore, wrapper, mockPersonenuebersicht }: PersonDetailsSetup = await setup();
-    if (personStore.currentPerson) {
-      personStore.currentPerson.person.isLocked = false;
-      personStore.currentPerson.person.userLock = [];
-    }
-    const openLockDialogButton: DOMWrapper<Element> | undefined = wrapper?.find(
-      '[data-testid="open-lock-dialog-button"]',
-    );
-    openLockDialogButton?.trigger('click');
-    await nextTick();
+    const { personStore, wrapper, mockPerson, mockCurrentUser }: PersonDetailsSetup = await setup();
+    await wrapper.get('[data-testid="open-lock-dialog-button"]').trigger('click');
 
     expect(document.querySelector('[data-testid="lock-user-info-text"]')).not.toBeNull();
+    expect(
+      document.querySelector<HTMLInputElement>('[data-testid="unbefristet-radio-button"] input[type="radio"]')?.checked,
+    ).toBe(true);
 
-    const unbefristetRadioButton: HTMLElement = document.querySelector(
-      '[data-testid="unbefristet-radio-button"] input[type="radio"]',
-    ) as HTMLElement;
-
-    expect(unbefristetRadioButton).not.toBeNull();
-    unbefristetRadioButton.click();
-    unbefristetRadioButton.dispatchEvent(new Event('click'));
-
-    const lockUserButton: HTMLElement = document.querySelector('[data-testid="lock-user-button"]') as HTMLElement;
-
-    expect(lockUserButton).not.toBeNull();
-    lockUserButton.click();
-    lockUserButton.dispatchEvent(new Event('click'));
-    await nextTick();
-    await flushPromises();
+    const lockUserButton: HTMLButtonElement | null = document.querySelector('[data-testid="lock-user-button"]');
+    expect(lockUserButton?.disabled).toBe(false);
+    lockUserButton?.click();
     await flushPromises();
 
-    expect(personStore.lockPerson).toHaveBeenCalled();
-    // reset personenuebersicht
-    personStore.personenuebersicht = mockPersonenuebersicht;
+    await vi.waitFor((): void => {
+      expect(personStore.lockPerson).toHaveBeenCalledExactlyOnceWith(mockPerson.person.id, {
+        lock: true,
+        locked_by: mockCurrentUser.personenkontexte?.[0]?.organisation.id,
+        locked_until: undefined,
+      });
+    });
   });
 });

@@ -6,7 +6,6 @@
   import FormRow from '@/components/form/FormRow.vue';
   import FormWrapper from '@/components/form/FormWrapper.vue';
   import PasswordOutput from '@/components/form/PasswordOutput.vue';
-  import { useOrganisationen } from '@/composables/useOrganisationen';
   import type { Organisation } from '@/stores/OrganisationStore';
   import {
     type DBiamPersonenkontextResponse,
@@ -26,11 +25,23 @@
   import { type TranslatedObject } from '@/types.d';
   import { type BefristungUtilsType, isBefristungspflichtRolle, useBefristungUtils } from '@/utils/befristung';
   import { formatDateToISO, getNextSchuljahresende, isValidDate, notInPast } from '@/utils/date';
+  import { getDisplayNameForOrg } from '@/utils/formatting';
   import { DDMMYYYY, DIN_91379A, NO_LEADING_TRAILING_SPACES } from '@/utils/validation';
   import { isKopersRolle, isLernRolle } from '@/utils/validationPersonenkontext';
   import { toTypedSchema } from '@vee-validate/yup';
   import { type BaseFieldProps, type FormContext, type TypedSchema, useForm } from 'vee-validate';
-  import { computed, type ComputedRef, onMounted, onUnmounted, ref, type Ref, watch, watchEffect } from 'vue';
+  import {
+    computed,
+    type ComputedRef,
+    onMounted,
+    onUnmounted,
+    ref,
+    type Ref,
+    type ShallowRef,
+    useTemplateRef,
+    watch,
+    watchEffect,
+  } from 'vue';
   import { type Composer, useI18n } from 'vue-i18n';
   import {
     type NavigationGuardNext,
@@ -51,14 +62,20 @@
   const personStore: PersonStore = usePersonStore();
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
   const rolleStore: RolleStore = useRolleStore();
-  const { t }: Composer = useI18n({ useScope: 'global' });
+  const i18n: Composer = useI18n({ useScope: 'global' });
+  const { t }: Composer = i18n;
+
+  type PersonenkontextCreateExposed = {
+    isOrganisationAutoselected: boolean;
+  };
+  const personenkontextCreate: Readonly<ShallowRef<PersonenkontextCreateExposed | null>> =
+    useTemplateRef<PersonenkontextCreateExposed>('personenkontext-create');
 
   const showUnsavedChangesDialog: Ref<boolean> = ref(false);
   let blockedNext: () => void = () => {
     /* empty */
   };
 
-  const canCommit: Ref<boolean> = ref(false);
   const hasNoKopersNr: Ref<boolean | undefined> = ref(false);
   const showNoKopersNrConfirmationDialog: Ref<boolean> = ref(false);
   const showAddPersonConfirmationDialog: Ref<boolean> = ref(false);
@@ -322,8 +339,6 @@
   setupWatchers();
   setupRolleWatcher();
 
-  const organisationen: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
-
   // Extract the created Klassenzuordnungen from the response after submission
   const klasseZuordnungFromCreatedKontext: ComputedRef<DBiamPersonenkontextResponse[]> = computed(() => {
     if (!personenkontextStore.createdPersonWithKontext) {
@@ -352,17 +367,13 @@
     );
   });
 
-  // We extract the first Organisation since all of the Kontexte have the same one
-  const translatedOrganisationsname: ComputedRef<string> = computed(() => {
-    if (!schuleZuordnungFromCreatedKontext.value.length) {
+  const translatedOrganisationsname: ComputedRef<string> = computed((): string => {
+    const organisation: Organisation | undefined = selectedOrgaCache.value;
+    if (!organisation || !schuleZuordnungFromCreatedKontext.value.length) {
       return '';
     }
 
-    const organisationId: string | undefined = schuleZuordnungFromCreatedKontext.value[0]?.organisationId;
-
-    return (
-      organisationen.value?.find((organisation: TranslatedObject) => organisation.value === organisationId)?.title || ''
-    );
+    return getDisplayNameForOrg(organisation);
   });
 
   // Extract all the Rollennamen
@@ -398,17 +409,34 @@
     return utcDate.toLocaleDateString('de-DE');
   });
 
+  const saveFailed: ComputedRef<boolean> = computed(
+    (): boolean =>
+      !!personenkontextStore.errorCode && personenkontextStore.errorCode !== 'REQUIRED_STEP_UP_LEVEL_NOT_MET',
+  );
+  const saveErrorText: ComputedRef<string> = computed((): string => {
+    const key: string = `admin.personenkontext.errors.${personenkontextStore.errorCode}`;
+    return t(i18n.te(key) ? key : 'admin.person.creationErrorText');
+  });
+  const saveErrorTitle: ComputedRef<string> = computed((): string => {
+    const key: string = `admin.personenkontext.title.${personenkontextStore.errorCode}`;
+    const fallback: string =
+      createType.value === CreationType.AddPersonToOwnSchule
+        ? 'admin.person.assignmentErrorTitle'
+        : 'admin.person.creationErrorTitle';
+    return t(i18n.te(key) ? key : fallback);
+  });
   const hasError: ComputedRef<boolean> = computed(
-    (): boolean => !!personenkontextStore.errorCode || !!rolleStore.errorCode || !!personStore.errorCode,
+    (): boolean =>
+      (!!personenkontextStore.errorCode && !saveFailed.value) || !!rolleStore.errorCode || !!personStore.errorCode,
   );
   const errorText: ComputedRef<string> = computed((): string => {
-    if (personenkontextStore.errorCode) {
+    if (personenkontextStore.errorCode && !saveFailed.value) {
       return t(`admin.personenkontext.errors.${personenkontextStore.errorCode}`);
     }
     return rolleStore.errorCode ? t(`admin.rolle.errors.${rolleStore.errorCode}`) : '';
   });
   const errorTitle: ComputedRef<string> = computed((): string => {
-    if (personenkontextStore.errorCode) {
+    if (personenkontextStore.errorCode && !saveFailed.value) {
       return t(`admin.personenkontext.title.${personenkontextStore.errorCode}`);
     }
     if (rolleStore.errorCode) {
@@ -425,7 +453,7 @@
 
   function isFormDirty(): boolean {
     return (
-      (organisationen.value?.length !== 1 && formContext.isFieldDirty('selectedOrganisation')) ||
+      (!personenkontextCreate.value?.isOrganisationAutoselected && formContext.isFieldDirty('selectedOrganisation')) ||
       formContext.isFieldDirty('selectedRollen') ||
       formContext.isFieldDirty('selectedKlasse') ||
       formContext.isFieldDirty('selectedKopersNr') ||
@@ -475,6 +503,8 @@
   }
 
   async function createPerson(): Promise<void> {
+    personenkontextStore.errorCode = '';
+
     const befristungDate: string | undefined = selectedBefristung.value
       ? selectedBefristung.value
       : calculatedBefristung.value;
@@ -513,12 +543,11 @@
     selectedOrgaCache.value = selectedOrganisation.value;
     selectedRolleCache.value = selectedRollen.value?.map((rolle: TranslatedRolleWithAttrs) => rolle.value);
     await personenkontextStore.createPersonWithKontexte(bodyParams);
+    if (personenkontextStore.errorCode) {
+      return;
+    }
     formContext.resetForm();
     hasNoKopersNr.value = false;
-    // Reset canCommit to false after creating the personto avoid issues when going back to the form
-    if (personenkontextStore.workflowStepResponse) {
-      personenkontextStore.workflowStepResponse.canCommit = false;
-    }
   }
 
   async function addPersonToOwnSchule(): Promise<void> {
@@ -550,16 +579,20 @@
     selectedRolleCache.value = selectedRollen.value?.map((rolle: TranslatedRolleWithAttrs) => rolle.value);
 
     await personenkontextStore.zuordnenLandesbedienstete(newKontexte, personId, existingPerson.personalnummer);
-    formContext.resetForm();
+    if (!personenkontextStore.errorCode) {
+      formContext.resetForm();
+    }
   }
 
   const onSubmit: (e?: Event) => Promise<Promise<void> | undefined> = formContext.handleSubmit(async () => {
     if (createType.value === CreationType.AddPersonToOwnSchule) {
       const existingPerson: PersonLandesbediensteterSearchResponse | undefined =
         personStore.allLandesbedienstetePersonen?.[0];
-      const username: string | undefined = existingPerson?.username;
+      if (!existingPerson) {
+        return;
+      }
       addPersonConfirmationText.value = t('admin.person.stateEmployeeSearch.addPersonConfirmationMessage', {
-        benutzername: `${username}`,
+        benutzername: existingPerson.username,
         rollenname: selectedRollen.value
           ?.map((rolle: TranslatedRolleWithAttrs) => rolle.title)
           .filter(Boolean)
@@ -624,6 +657,14 @@
     }
     return personStore.allLandesbedienstetePersonen?.[0]?.id;
   });
+  const canSubmitForm: ComputedRef<boolean> = computed(
+    (): boolean =>
+      formContext.meta.value.valid &&
+      formContext.meta.value.dirty &&
+      !formContext.isSubmitting.value &&
+      (!isOwnSchule.value ||
+        (!!existingPersonId.value && !!selectedOrganisation.value && !!selectedRollen.value?.length)),
+  );
   const showKopersInput: ComputedRef<boolean> = computed(
     (): boolean =>
       !!selectedOrganisation.value &&
@@ -652,6 +693,7 @@
     if (newValue) {
       showNoKopersNrConfirmationDialog.value = true;
     }
+    void formContext.validate({ mode: 'validated-only' });
   });
 
   watch(showKopersInput, (newShowKopersInput: boolean): void => {
@@ -762,7 +804,7 @@
       >
         <FormWrapper
           id="person-creation-form"
-          :can-commit="canCommit"
+          :can-commit="canSubmitForm"
           :confirm-unsaved-changes-action="handleConfirmUnsavedChanges"
           :create-button-label="createButtonLabel"
           :discard-button-label="discardButtonLabel"
@@ -785,6 +827,13 @@
           />
 
           <template v-if="!hasError">
+            <SpshAlert
+              :model-value="saveFailed"
+              type="error"
+              data-test-id-prefix="person-creation-save-error"
+              :text="saveErrorText"
+              :title="saveErrorTitle"
+            />
             <!-- If AddPersonToOwnSchule: Persönliche Info first -->
             <template v-if="createType === CreationType.AddPersonToOwnSchule">
               <v-row>
@@ -876,7 +925,6 @@
                   rolle: sectionNumberRolle,
                   befristung: sectionNumberBefristung,
                 }"
-                @update:canCommit="canCommit = $event"
                 @update:befristung="handleBefristungUpdate($event)"
                 @update:calculated-befristung-option="handleBefristungOptionUpdate($event)"
                 @update:selectedKlasse="handleSelectedKlasse"
@@ -911,7 +959,6 @@
                   befristung: selectedBefristung,
                   befristungOption: selectedBefristungOption,
                 }"
-                @update:can-commit="canCommit = $event"
                 @update:befristung="handleBefristungUpdate($event)"
                 @update:calculated-befristung-option="handleBefristungOptionUpdate($event)"
                 @update:selectedKlasse="handleSelectedKlasse"

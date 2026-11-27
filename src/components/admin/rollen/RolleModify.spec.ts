@@ -1,11 +1,11 @@
 import type { OrganisationResponseLegacy, RolleResponse } from '@/api-client/generated';
 import routes from '@/router/routes';
 import { useBulkOperationStore, type BulkOperationStore } from '@/stores/BulkOperationStore';
-import { usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
+import type { Organisation } from '@/stores/OrganisationStore';
 import { RollenArt, RollenMerkmal } from '@/stores/RolleStore';
 import type { Person } from '@/stores/types/Person';
 import { PersonWithZuordnungen } from '@/stores/types/PersonWithZuordnungen';
-import { DOMWrapper, VueWrapper, flushPromises, mount } from '@vue/test-utils';
+import { DOMWrapper, VueWrapper, enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { DoFactory } from 'test/DoFactory';
 import { test, type MockInstance } from 'vitest';
 import { nextTick } from 'vue';
@@ -14,7 +14,6 @@ import RolleModify from './RolleModify.vue';
 
 let wrapper: VueWrapper | null = null;
 let router: Router;
-const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
 const bulkOperationStore: BulkOperationStore = useBulkOperationStore();
 const person: Person = DoFactory.getPerson({ id: 'test' });
 
@@ -36,7 +35,10 @@ const kopersRolle: RolleResponse = DoFactory.getRolleResponse({
   rollenart: RollenArt.Lern,
 });
 
+enableAutoUnmount(afterEach);
+
 beforeEach(async () => {
+  bulkOperationStore.$reset();
   // Create a container for the app and append it to the document body
   const appContainer: HTMLDivElement = document.createElement('div');
   appContainer.id = 'app';
@@ -87,13 +89,9 @@ beforeEach(async () => {
 
   await nextTick();
 });
-personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-  organisations: [organisation],
-  canCommit: true,
-});
 
 describe('RolleModify', () => {
-  test('renders form and triggers submit', async () => {
+  test('submits the selected organisation and role once the form is valid', async () => {
     bulkOperationStore.bulkModifyPersonenRolle = vi.fn().mockResolvedValue(undefined);
     const bulkModifyPersonenRolleSpy: MockInstance = vi.spyOn(bulkOperationStore, 'bulkModifyPersonenRolle');
     // Set organisation value
@@ -127,16 +125,19 @@ describe('RolleModify', () => {
     await befristungInput?.setValue('12.08.2099');
     await nextTick();
 
-    const formElement: Element | null = document.querySelector('[data-testid="rolle-assign-form"]');
-    expect(formElement).not.toBeNull();
-
-    if (formElement) {
-      // Dispatch a submit event directly on the form element
-      formElement.dispatchEvent(new Event('submit'));
-    }
+    const submitButton: HTMLButtonElement | null = document.querySelector('[data-testid="rolle-modify-submit-button"]');
+    await vi.waitFor(() => expect(submitButton?.disabled).toBe(false));
+    submitButton?.click();
 
     // Wait for all promises to resolve
     await vi.waitFor(() => expect(bulkModifyPersonenRolleSpy).toHaveBeenCalledTimes(1));
+    expect(bulkModifyPersonenRolleSpy).toHaveBeenCalledWith(
+      [person.id],
+      organisation.id,
+      rolle.id,
+      new Date(2099, 7, 13).toISOString(),
+      undefined,
+    );
   });
 
   test('shows error dialog if bulk operation has errors', async () => {
@@ -283,6 +284,37 @@ describe('RolleModify', () => {
 
     const errorDialog: VueWrapper | undefined = wrapper?.findComponent({ name: 'PersonBulkError' });
     expect(errorDialog?.exists()).toBe(true);
+  });
+
+  describe('assigning a learner role', () => {
+    const setupLearnerSelection = async (): Promise<Organisation> => {
+      const school: Organisation = DoFactory.getSchule({ id: organisation.id });
+      const selection: VueWrapper | undefined = wrapper?.findComponent({ ref: 'personenkontext-create' });
+      selection?.vm.$emit('update:selectedOrganisation', school);
+      await flushPromises();
+      selection?.vm.$emit(
+        'update:selectedRolle',
+        DoFactory.getTranslatedRolleWithAttrs({ value: rolleLern.id, rollenart: RollenArt.Lern }),
+      );
+      await flushPromises();
+      return school;
+    };
+
+    test('requires a class only when changing the class', async () => {
+      const school: Organisation = await setupLearnerSelection();
+      const selection: VueWrapper | undefined = wrapper?.findComponent({ ref: 'personenkontext-create' });
+      const submitButton: HTMLButtonElement | null = document.querySelector(
+        '[data-testid="rolle-modify-submit-button"]',
+      );
+      await vi.waitFor(() => expect(submitButton?.disabled).toBe(false));
+
+      await selection?.get('[data-testid="select-new-klasse-radio-button"] input[type="radio"]').trigger('click');
+      await vi.waitFor(() => expect(submitButton?.disabled).toBe(true));
+
+      const klasseFilter: VueWrapper | undefined = selection?.findComponent({ name: 'KlassenFilter' });
+      klasseFilter?.vm.$emit('update:selectedKlassen', DoFactory.getKlasse(school));
+      await vi.waitFor(() => expect(submitButton?.disabled).toBe(false));
+    });
   });
 
   it('handles klassen option changes', async () => {

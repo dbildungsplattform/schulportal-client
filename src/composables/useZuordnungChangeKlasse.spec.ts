@@ -206,7 +206,7 @@ describe('useZuordnungChangeKlasse', () => {
         setup();
       state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
       mockAdapter
-        .onPut(`/api/personenkontext-workflow/${personId}`)
+        .onPut(`/api/personenkontexte/person/${personId}`)
         .replyOnce(200, DoFactory.getPersonenkontextUpdateResponse());
       const composable: ZuordnungChangeKlasse = createComposable();
       composable.triggerChangeKlasse();
@@ -230,7 +230,7 @@ describe('useZuordnungChangeKlasse', () => {
       const { mockAdapter, personId, createComposable, state, selectedZuordnung, otherZuordnung }: ChangeKlasseSetup =
         setup();
       state.zuordnungenToBePersisted.value = [selectedZuordnung, otherZuordnung];
-      mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(500, { i18nKey: 'SOME_ERROR' });
+      mockAdapter.onPut(`/api/personenkontexte/person/${personId}`).replyOnce(500, { i18nKey: 'SOME_ERROR' });
       const composable: ZuordnungChangeKlasse = createComposable();
 
       await composable.confirmChangeKlasse();

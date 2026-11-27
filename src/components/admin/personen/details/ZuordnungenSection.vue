@@ -5,12 +5,11 @@
   import KopersInput from '@/components/admin/personen/KopersInput.vue';
   import PersonenkontextCreate from '@/components/admin/personen/PersonenkontextCreate.vue';
   import ZuordnungConfirmationDialog from '@/components/admin/personen/details/ZuordnungConfirmationDialog.vue';
-  import ZuordnungenEditOverview from '@/components/admin/personen/details/ZuordnungenEditOverview.vue';
-  import ZuordnungenReadOnlyView from '@/components/admin/personen/details/ZuordnungenReadOnlyView.vue';
   import ZuordnungFormActions from '@/components/admin/personen/details/ZuordnungFormActions.vue';
   import ZuordnungInfoDialog from '@/components/admin/personen/details/ZuordnungInfoDialog.vue';
+  import ZuordnungenEditOverview from '@/components/admin/personen/details/ZuordnungenEditOverview.vue';
+  import ZuordnungenReadOnlyView from '@/components/admin/personen/details/ZuordnungenReadOnlyView.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
-  import { useOrganisationen } from '@/composables/useOrganisationen';
   import {
     useZuordnungChangeBefristung,
     type ZuordnungChangeBefristung,
@@ -27,14 +26,20 @@
     useZuordnungenWorkingState,
     type ZuordnungenWorkingStateResult,
   } from '@/composables/useZuordnungenWorkingState';
-  import { OrganisationsTyp, useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
+  import {
+    OrganisationsTyp,
+    useOrganisationStore,
+    type Organisation,
+    type OrganisationStore,
+  } from '@/stores/OrganisationStore';
   import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
   import { OperationContext, usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
   import { RollenMerkmal } from '@/stores/RolleStore';
   import type { Zuordnung } from '@/stores/types/Zuordnung';
   import type { TranslatedObject } from '@/types';
   import { getNextSchuljahresende } from '@/utils/date';
-  import { computed, onBeforeMount, toRef, watch, watchEffect, type ComputedRef, type ModelRef, type Ref } from 'vue';
+  import { getDisplayNameForOrg } from '@/utils/formatting';
+  import { computed, toRef, watch, watchEffect, type ComputedRef, type ModelRef, type Ref } from 'vue';
   import { useI18n, type Composer } from 'vue-i18n';
   import { useDisplay } from 'vuetify';
 
@@ -56,7 +61,7 @@
   const organisationStore: OrganisationStore = useOrganisationStore();
 
   const personId: Readonly<Ref<string>> = toRef(props, 'personId');
-  const workingState: ZuordnungenWorkingStateResult = useZuordnungenWorkingState({ personId });
+  const workingState: ZuordnungenWorkingStateResult = useZuordnungenWorkingState();
   const {
     selectedZuordnungen,
     zuordnungenWithPendingChanges,
@@ -64,8 +69,6 @@
     editableZuordnungen,
     canChangeKlasse,
   }: ZuordnungenWorkingStateResult = workingState;
-
-  const organisationen: ComputedRef<TranslatedObject[] | undefined> = useOrganisationen();
 
   const hasKlassenZuordnung: ComputedRef<boolean> = computed(
     () =>
@@ -88,7 +91,7 @@
     showNoKopersNrConfirmationDialog,
     hasNoKopersNr,
     hasKopersNummer,
-    canCommit,
+    canSubmitCreationForm,
     filteredRollen,
     existingRollenArt,
     isZuordnungCreationFormDirty,
@@ -163,6 +166,12 @@
     isEditActive,
     mode: editMode.forOperation('changeKlasse'),
     state: workingState,
+  });
+
+  const schulenForKlassenwechsel: ComputedRef<TranslatedObject[]> = computed((): TranslatedObject[] => {
+    const schule: Organisation | undefined = selectedZuordnungen.value[0]?.getOrganisation();
+
+    return schule ? [{ value: schule.id, title: getDisplayNameForOrg(schule) }] : [];
   });
 
   const {
@@ -246,15 +255,8 @@
     }
   });
 
-  onBeforeMount(async () => {
-    await personenkontextStore.processWorkflowStep({
-      personId: props.personId,
-      operationContext: OperationContext.PERSON_BEARBEITEN,
-      limit: 25,
-    });
-  });
-
-  defineExpose({ navigateToZuordnungForm });
+  const isCreationReviewActive: ComputedRef<boolean> = computed(() => pendingOperation.value === 'creation');
+  defineExpose({ isCreationReviewActive, navigateToZuordnungForm });
 </script>
 
 <template>
@@ -331,7 +333,6 @@
                 befristung: selectedBefristung,
                 befristungOption: selectedBefristungOption,
               }"
-              @update:can-commit="canCommit = $event"
               @update:befristung="handleBefristungUpdate($event)"
               @update:calculated-befristung-option="handleBefristungOptionUpdate($event)"
               @update:selected-klasse="handleKlasseUpdate"
@@ -356,7 +357,7 @@
           >
             <v-btn
               :block="mdAndDown"
-              :disabled="!canCommit || personenkontextStore.loading"
+              :disabled="!canSubmitCreationForm || personenkontextStore.loading"
               class="primary"
               data-testid="zuordnung-creation-submit-button"
               type="submit"
@@ -387,7 +388,7 @@
               v-model:selected-new-klasse="selectedNewKlasse"
               :is-edit-active="isEditActive"
               :readonly="true"
-              :schulen="organisationen"
+              :schulen="schulenForKlassenwechsel"
               :selected-schule-props="selectedSchuleProps"
               :selected-new-klasse-props="selectedNewKlasseProps"
               :on-submit="onSubmitChangeKlasse"

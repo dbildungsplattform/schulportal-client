@@ -2,17 +2,15 @@ import {
   DbiamCreatePersonWithPersonenkontexteBodyParams,
   OrganisationResponseLegacy,
   type DBiamPersonResponse,
+  type OrganisationResponse,
   type PersonLandesbediensteterSearchResponse,
   type RolleResponse,
+  RollenSystemRechtEnum,
 } from '@/api-client/generated';
 import routes from '@/router/routes';
+import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
-import {
-  CreationType,
-  usePersonenkontextStore,
-  type PersonenkontextStore,
-  type PersonenkontextWorkflowResponse,
-} from '@/stores/PersonenkontextStore';
+import { CreationType, usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import {
   RollenArt,
@@ -79,11 +77,6 @@ const mockRolleForPersonenkontextCreation: TranslatedRolleWithAttrs = {
   merkmale: mockRolleResponseForPersonenkontextCreation.merkmale,
   rollenart: mockRolleResponseForPersonenkontextCreation.rollenart,
 };
-
-const mockWorkflowStepResponse: PersonenkontextWorkflowResponse = DoFactory.getPersonenkontextWorkflowResponse({
-  organisations: [workflowOrganisation],
-  canCommit: true,
-});
 
 organisationStore.allOrganisationen = [
   DoFactory.getOrganisationenResponseLegacy({
@@ -261,14 +254,230 @@ beforeEach(async () => {
   await router.isReady();
 
   rolleStore.rollenForPersonenkontextCreation = [mockRolleForPersonenkontextCreation];
+  useAuthStore().currentUser = null;
   wrapper = await mountComponent();
   personStore.errorCode = '';
   personenkontextStore.errorCode = '';
   personenkontextStore.createdPersonWithKontext = null;
-  personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
 });
 
 describe('PersonCreationView', () => {
+  describe('form validation and rejected saves', () => {
+    type FormSetup = {
+      view: Awaited<ReturnType<typeof mountComponent>>;
+      organisation: Organisation;
+      rolle: TranslatedRolleWithAttrs;
+      submitButton: HTMLButtonElement;
+      zuordnung: VueWrapper;
+    };
+
+    async function setupCreationForm(): Promise<FormSetup> {
+      const rolle: TranslatedRolleWithAttrs = DoFactory.getTranslatedRolleWithAttrs({
+        rollenart: RollenArt.Lehr,
+        merkmale: [],
+      });
+      rolleStore.rollenForPersonenkontextCreation = [rolle];
+      const view: Awaited<ReturnType<typeof mountComponent>> = await mountComponent();
+      return {
+        view,
+        organisation: DoFactory.getSchule(),
+        rolle,
+        submitButton: view.get<HTMLButtonElement>('button[data-testid="person-creation-form-submit-button"]').element,
+        zuordnung: view.findComponent({ ref: 'personenkontext-create' }),
+      };
+    }
+
+    async function selectZuordnung({ zuordnung, organisation, rolle }: FormSetup): Promise<void> {
+      await zuordnung
+        .findComponent({ ref: 'schulenFilter' })
+        .findComponent({ ref: 'personenkontext-create-organisation-select' })
+        .setValue(organisation);
+      await zuordnung.findComponent({ ref: 'rollen-select' }).setValue([rolle]);
+      await flushPromises();
+    }
+
+    type SaveSetup = { vorname: VueWrapper; familienname: VueWrapper; createPerson: MockInstance };
+
+    async function setupRejectedSave(view: FormSetup['view']): Promise<SaveSetup> {
+      const vorname: VueWrapper = view.findComponent({ ref: 'vorname-input' });
+      const familienname: VueWrapper = view.findComponent({ ref: 'familienname-input' });
+      await vorname.setValue('Randy');
+      await familienname.setValue('Cena');
+
+      const createPerson: MockInstance = vi.mocked(personenkontextStore.createPersonWithKontexte);
+      createPerson.mockClear();
+      createPerson.mockImplementationOnce((): Promise<void> => {
+        personenkontextStore.errorCode = 'PERSONALNUMMER_NICHT_EINDEUTIG';
+        return Promise.resolve();
+      });
+      return { vorname, familienname, createPerson };
+    }
+
+    describe('regular person creation', () => {
+      async function setupRegularPersonCreation(): Promise<FormSetup> {
+        wrapper?.unmount();
+        await router.push({ name: 'create-person' });
+        return setupCreationForm();
+      }
+
+      it('enables saving only for valid input and retains it after a rejected save', async () => {
+        const setup: FormSetup = await setupRegularPersonCreation();
+        const { view, submitButton, organisation, rolle, zuordnung }: FormSetup = setup;
+        wrapper = view;
+        expect(submitButton.disabled).toBe(true);
+
+        await selectZuordnung(setup);
+        await vi.waitFor((): void => expect(submitButton.disabled).toBe(true));
+
+        const { vorname, familienname, createPerson }: SaveSetup = await setupRejectedSave(view);
+        await vi.waitFor((): void => expect(submitButton.disabled).toBe(false));
+
+        await wrapper.get('[data-testid="person-creation-form"]').trigger('submit');
+        await vi.waitFor((): void => expect(createPerson).toHaveBeenCalledOnce());
+        expect(wrapper.get('[data-testid="person-creation-save-error-alert-text"]').text()).toBe(
+          'Die eingegebene KoPers.-Nr. ist bereits vergeben. Bitte korrigieren Sie Ihre Eingabe.',
+        );
+        expect(wrapper.get('[data-testid="person-creation-save-error-alert-title"]').text()).toBe(
+          'KoPers.-Nr. nicht eindeutig',
+        );
+        expect(vorname.props()).toHaveProperty('modelValue', 'Randy');
+        expect(familienname.props()).toHaveProperty('modelValue', 'Cena');
+        expect(zuordnung.props()).toHaveProperty('selectedOrganisation', organisation);
+        expect(zuordnung.props()).toHaveProperty('selectedRollen', [rolle]);
+        await vi.waitFor((): void => expect(submitButton.disabled).toBe(false));
+      });
+    });
+
+    describe('limited person creation', () => {
+      async function setupLimitedPersonCreation(): Promise<FormSetup> {
+        wrapper?.unmount();
+        await router.push({ name: 'create-person-limited' });
+        return setupCreationForm();
+      }
+
+      it('enables saving only for valid input and retains it after a rejected save', async () => {
+        const setup: FormSetup = await setupLimitedPersonCreation();
+        const { view, submitButton, organisation, rolle, zuordnung }: FormSetup = setup;
+        wrapper = view;
+        expect(submitButton.disabled).toBe(true);
+
+        await selectZuordnung(setup);
+        await vi.waitFor((): void => expect(submitButton.disabled).toBe(true));
+
+        const { vorname, familienname, createPerson }: SaveSetup = await setupRejectedSave(view);
+        await vi.waitFor((): void => expect(submitButton.disabled).toBe(false));
+
+        await wrapper.get('[data-testid="person-creation-form"]').trigger('submit');
+        await vi.waitFor((): void => expect(createPerson).toHaveBeenCalledOnce());
+        expect(wrapper.get('[data-testid="person-creation-save-error-alert-text"]').text()).toBe(
+          'Die eingegebene KoPers.-Nr. ist bereits vergeben. Bitte korrigieren Sie Ihre Eingabe.',
+        );
+        expect(vorname.props()).toHaveProperty('modelValue', 'Randy');
+        expect(familienname.props()).toHaveProperty('modelValue', 'Cena');
+        expect(zuordnung.props()).toHaveProperty('selectedOrganisation', organisation);
+        expect(zuordnung.props()).toHaveProperty('selectedRollen', [rolle]);
+        await vi.waitFor((): void => expect(submitButton.disabled).toBe(false));
+      });
+    });
+  });
+
+  describe('organisation selection and navigation', () => {
+    type AutoselectedSchuleSetup = {
+      view: Awaited<ReturnType<typeof mountComponent>>;
+      schule: OrganisationResponse;
+    };
+
+    const setupAutoselectedSchule = async (
+      routeName: string,
+      systemrecht: RollenSystemRechtEnum,
+    ): Promise<AutoselectedSchuleSetup> => {
+      const authStore: AuthStore = useAuthStore();
+      const schule: OrganisationResponse = DoFactory.getOrganisationResponse();
+      authStore.currentUser = DoFactory.getUserinfoResponse({
+        personenkontexte: [
+          DoFactory.getPersonenkontextRolleFieldsResponse({
+            organisation: schule,
+            rolle: DoFactory.getRollenSystemRechtServiceProviderIDResponse({ systemrechte: [systemrecht] }),
+          }),
+        ],
+      });
+      personStore.allLandesbedienstetePersonen = [];
+      wrapper?.unmount();
+      await router.push({ name: routeName });
+      const view: AutoselectedSchuleSetup['view'] = await mountComponent();
+      await flushPromises();
+      return { view, schule };
+    };
+
+    describe('create-person with an autoselected Schule', () => {
+      const setup = (): Promise<AutoselectedSchuleSetup> =>
+        setupAutoselectedSchule('create-person', RollenSystemRechtEnum.PersonenVerwalten);
+
+      test('should allow leaving when only the Schule was autoselected', async (): Promise<void> => {
+        const { view, schule }: AutoselectedSchuleSetup = await setup();
+        expect(view.getComponent({ ref: 'personenkontext-create' }).props('selectedOrganisation')).toEqual(schule);
+
+        const next: Mock = vi.fn();
+        storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, next);
+        expect(next).toHaveBeenCalledOnce();
+      });
+    });
+
+    describe('create-person-limited with an autoselected Schule', () => {
+      const setup = (): Promise<AutoselectedSchuleSetup> =>
+        setupAutoselectedSchule('create-person-limited', RollenSystemRechtEnum.EingeschraenktNeueBenutzerErstellen);
+
+      test('should allow leaving when only the Schule was autoselected', async (): Promise<void> => {
+        const { view, schule }: AutoselectedSchuleSetup = await setup();
+        expect(view.getComponent({ ref: 'personenkontext-create' }).props('selectedOrganisation')).toEqual(schule);
+
+        const next: Mock = vi.fn();
+        storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, next);
+        expect(next).toHaveBeenCalledOnce();
+      });
+    });
+
+    describe('add-person-to-own-schule with an autoselected Schule', () => {
+      const setup = (): Promise<AutoselectedSchuleSetup> =>
+        setupAutoselectedSchule(
+          'add-person-to-own-schule',
+          RollenSystemRechtEnum.LandesbediensteteSuchenUndHinzufuegen,
+        );
+
+      test('should allow leaving when only the Schule was autoselected', async (): Promise<void> => {
+        const { view, schule }: AutoselectedSchuleSetup = await setup();
+        expect(view.getComponent({ ref: 'personenkontext-create' }).props('selectedOrganisation')).toEqual(schule);
+
+        const next: Mock = vi.fn();
+        storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, next);
+        expect(next).toHaveBeenCalledOnce();
+      });
+    });
+
+    describe('manual Organisation selection', () => {
+      const setup = async (): Promise<void> => {
+        const organisation: Organisation = DoFactory.getSchule({ id: ORGANISATION_ID });
+        await wrapper!
+          .getComponent({ ref: 'personenkontext-create' })
+          .getComponent({ ref: 'schulenFilter' })
+          .getComponent({ ref: 'personenkontext-create-organisation-select' })
+          .setValue(organisation);
+        await flushPromises();
+      };
+
+      test('should warn when the only change is a manual Organisation selection', async (): Promise<void> => {
+        await setup();
+
+        const next: Mock = vi.fn();
+        storedBeforeRouteLeaveCallback({} as RouteLocationNormalized, {} as RouteLocationNormalized, next);
+        await nextTick();
+
+        expect(next).not.toHaveBeenCalled();
+        expect(document.querySelector('[data-testid="confirm-unsaved-changes-button"]')).not.toBeNull();
+      });
+    });
+  });
+
   describe(`${CreationType.Full}`, () => {
     test('it renders the person creation form and its child components', () => {
       expect(wrapper).toBeTruthy();
@@ -410,16 +619,17 @@ describe('PersonCreationView', () => {
       expect(personenkontextStore.createdPersonWithKontext).toBe(null);
     });
 
-    test('should retain Rolle attributes for validation and Befristung after search results change', async () => {
+    test('should retain the selected Organisation and Rolle after search results change', async () => {
       const rolle: TranslatedRolleWithAttrs = DoFactory.getTranslatedRolleWithAttrs({
         rollenart: RollenArt.Lern,
         merkmale: [RollenMerkmal.KopersPflicht, RollenMerkmal.BefristungPflicht],
       });
+      const organisation: Organisation = DoFactory.getSchule({ id: ORGANISATION_ID, kennung: '1234567' });
       const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
       await personenkontextCreate
         .findComponent({ ref: 'schulenFilter' })
         .findComponent({ ref: 'personenkontext-create-organisation-select' })
-        .setValue(DoFactory.getOrganisation({ id: ORGANISATION_ID }));
+        .setValue(organisation);
       await personenkontextCreate.findComponent({ ref: 'rollen-select' }).setValue([rolle]);
       await flushPromises();
 
@@ -487,11 +697,10 @@ describe('PersonCreationView', () => {
       await vi.waitFor((): void => expect(createPersonSpy).toHaveBeenCalledOnce());
       expect(wrapper!.find('[data-testid="person-success-text"]').isVisible()).toBe(true);
       expect(wrapper!.get('[data-testid="created-person-rolle"]').text()).toBe(rolle.title);
+      expect(wrapper!.get('[data-testid="created-person-organisation"]').text()).toBe(`1234567 (${organisation.name})`);
     });
 
     test('it fills form and triggers submit', async () => {
-      personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
-
       const organisationSelect: VueWrapper | undefined = wrapper
         ?.findComponent({ ref: 'personenkontext-create' })
         .findComponent({ ref: 'schulenFilter' })
@@ -541,8 +750,6 @@ describe('PersonCreationView', () => {
     });
 
     test('it fills form, triggers submit and then show success template', async () => {
-      personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
-
       const organisationSelect: VueWrapper | undefined = wrapper
         ?.findComponent({ ref: 'personenkontext-create' })
         .findComponent({ ref: 'schulenFilter' })
@@ -597,7 +804,6 @@ describe('PersonCreationView', () => {
     });
 
     test('it retains the selected Klasse in the request and success screen after search results change', async () => {
-      personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
       const klasse: Organisation = DoFactory.getKlasse(undefined, { name: '9a' });
 
       const spy: Mock = vi.spyOn(personenkontextStore, 'createPersonWithKontexte').mockImplementationOnce(async () => {
@@ -656,8 +862,6 @@ describe('PersonCreationView', () => {
     });
 
     test('it fills form for role with Koperspflicht, then clears Kopersnummer when role is removed', async () => {
-      personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
-
       const organisationSelect: VueWrapper | undefined = wrapper
         ?.findComponent({ ref: 'personenkontext-create' })
         .findComponent({ ref: 'schulenFilter' })
@@ -772,7 +976,6 @@ describe('PersonCreationView', () => {
       });
 
       test('it does not trigger if form is not dirty', async () => {
-        // autoselected orgnisation doesnt count as dirty
         const expectedCallsToNext: number = 1;
         wrapper = await mountComponent();
         const spy: Mock = vi.fn();
@@ -956,11 +1159,12 @@ describe('PersonCreationView', () => {
   });
 
   describe(`${CreationType.AddPersonToOwnSchule}`, () => {
-    test('it retains the selected Rolle in the Landesbediensteter success template after search results change', async () => {
+    test('should retain the Zuordnung after a rejected save and allow a retry', async () => {
       const landesbediensteter: PersonLandesbediensteterSearchResponse =
-        DoFactory.getPersonLandesbediensteterSearchResponse();
+        DoFactory.getPersonLandesbediensteterSearchResponse({ vorname: 'Randy', familienname: 'Cena' });
       const mockLandesbedienstetePersonen: PersonLandesbediensteterSearchResponse[] = [landesbediensteter];
       const organisationId: string = ORGANISATION_ID;
+      const organisation: Organisation = DoFactory.getSchule({ id: organisationId, kennung: null });
       const rolle: TranslatedRolleWithAttrs = { ...mockRolleForPersonenkontextCreation, rollenart: 'LEHR' };
 
       personStore.allLandesbedienstetePersonen = mockLandesbedienstetePersonen;
@@ -970,21 +1174,16 @@ describe('PersonCreationView', () => {
       await router.isReady();
 
       wrapper = await mountComponent();
-      await nextTick();
-      personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-        organisations: [
-          DoFactory.getOrganisationResponse({
-            id: organisationId,
-          }),
-        ],
-        canCommit: true,
-      });
+      const submitButton: HTMLButtonElement = wrapper.get<HTMLButtonElement>(
+        'button[data-testid="person-creation-form-submit-button"]',
+      ).element;
+      expect(submitButton.disabled).toBe(true);
 
       const organisationSelect: VueWrapper | undefined = wrapper
         .findComponent({ ref: 'personenkontext-create' })
         .findComponent({ ref: 'schulenFilter' })
         .findComponent({ ref: 'personenkontext-create-organisation-select' });
-      await organisationSelect.setValue(DoFactory.getSchule({ id: organisationId }));
+      await organisationSelect.setValue(organisation);
       await nextTick();
 
       const rollenSelect: VueWrapper | undefined = wrapper
@@ -995,21 +1194,55 @@ describe('PersonCreationView', () => {
 
       rolleStore.rollenForPersonenkontextCreation = [];
       await flushPromises();
+      await vi.waitFor((): void => expect(submitButton.disabled).toBe(false));
 
-      await wrapper.find('[data-testid="person-creation-form-submit-button"]').trigger('click');
-      await nextTick();
+      await wrapper.get('[data-testid="person-creation-form"]').trigger('submit');
       await flushPromises();
 
       const confirmButton: Element = await vi.waitUntil(() =>
         document.querySelector('[data-testid="confirm-add-person-button"]'),
       );
-      await nextTick();
-
+      vi.mocked(personenkontextStore.zuordnenLandesbedienstete).mockImplementationOnce((): Promise<void> => {
+        personenkontextStore.errorCode = 'PERSONENKONTEXTE_UPDATE_ERROR';
+        return Promise.resolve();
+      });
       confirmButton.dispatchEvent(new Event('click'));
       await flushPromises();
 
-      // Form is resetting after submit so orga should be undefined
-      expect(organisationSelect.vm.$data).toStrictEqual({});
+      expect(wrapper.get('[data-testid="person-creation-save-error-alert-text"]').text()).toBe(
+        'Die Zuordnung konnte nicht aktualisiert werden. Bitte versuchen Sie es später erneut.',
+      );
+      expect(wrapper.get('[data-testid="person-creation-save-error-alert-title"]').text()).toBe('Geänderte Daten');
+      expect(wrapper.findComponent({ ref: 'personenkontext-create' }).props()).toHaveProperty(
+        'selectedOrganisation',
+        organisation,
+      );
+      expect(wrapper.findComponent({ ref: 'personenkontext-create' }).props()).toHaveProperty('selectedRollen', [
+        rolle,
+      ]);
+      await vi.waitFor((): void => expect(submitButton.disabled).toBe(false));
+
+      await wrapper.get('[data-testid="person-creation-form"]').trigger('submit');
+      const retryButton: Element = await vi.waitUntil(() =>
+        document.querySelector('[data-testid="confirm-add-person-button"]'),
+      );
+      vi.mocked(personenkontextStore.zuordnenLandesbedienstete).mockImplementationOnce((): Promise<void> => {
+        personenkontextStore.errorCode = '';
+        personenkontextStore.updatedPersonenkontexte = DoFactory.getPersonenkontextUpdateResponse({
+          dBiamPersonenkontextResponses: [
+            DoFactory.getDBiamPersonenkontextResponse({
+              personId: landesbediensteter.id,
+              organisationId,
+              rolleId: rolle.value,
+            }),
+          ],
+        });
+        return Promise.resolve();
+      });
+      retryButton.dispatchEvent(new Event('click'));
+      await flushPromises();
+
+      expect(wrapper.get('[data-testid="added-state-employee-organisation"]').text()).toBe(organisation.name);
     });
 
     describe('rollen refresh loop', () => {
@@ -1040,10 +1273,6 @@ describe('PersonCreationView', () => {
         personStore.allLandesbedienstetePersonen = [landesbediensteter];
         personStore.personenuebersicht = buildPersonenuebersicht();
         rolleStore.rollenForPersonenkontextCreation = [lehrRolle];
-        personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-          organisations: [DoFactory.getOrganisationResponse({ id: ORGANISATION_ID })],
-          canCommit: true,
-        });
 
         wrapper?.unmount();
         await router.push({ name: 'add-person-to-own-schule' });

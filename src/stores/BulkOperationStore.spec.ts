@@ -1,9 +1,9 @@
 import type {
-  DbiamPersonenkontextBodyParams,
+  PersonenzuordnungBodyParams,
   DBiamPersonenkontextResponse,
   DBiamPersonenuebersichtResponse,
   DBiamPersonenzuordnungResponse,
-  DbiamUpdatePersonenkontexteBodyParams,
+  PersonenzuordnungenBearbeitenBodyParams,
   PersonenkontexteUpdateResponse,
 } from '@/api-client/generated';
 import axiosApiInstance from '@/services/ApiService';
@@ -67,7 +67,7 @@ describe('BulkOperationStore', () => {
       };
 
       mockAdapter.onGet('/api/dbiam/personenuebersicht/1').replyOnce(200, mockPersonResponse);
-      mockAdapter.onPut('/api/personenkontext-workflow/1').replyOnce(200, mockUpdateResponse);
+      mockAdapter.onPut('/api/personenkontexte/person/1').replyOnce(200, mockUpdateResponse);
 
       const unassign: Promise<void> = bulkOperationStore.bulkUnassignPersonenFromOrg('1234', [mockPersonId]);
       expect(bulkOperationStore.currentOperation?.progress).toBe(0);
@@ -106,7 +106,7 @@ describe('BulkOperationStore', () => {
       };
 
       mockAdapter.onGet(`/api/dbiam/personenuebersicht/${person.personId}`).replyOnce(200, mockPersonResponse);
-      mockAdapter.onPut(`/api/personenkontext-workflow/${person.personId}`).replyOnce(200, mockUpdateResponse);
+      mockAdapter.onPut(`/api/personenkontexte/person/${person.personId}`).replyOnce(200, mockUpdateResponse);
 
       const unassign: Promise<void> = bulkOperationStore.bulkUnassignPersonenFromOrg(mockSchule.id, [mockPersonId]);
 
@@ -122,7 +122,6 @@ describe('BulkOperationStore', () => {
               organisationId: remaining.sskId,
               rolleId: remaining.rolleId,
               befristung: remaining.befristung,
-              personId: mockPersonId,
             },
           ],
         }),
@@ -172,7 +171,7 @@ describe('BulkOperationStore', () => {
         ],
       };
       mockAdapter.onGet('/api/dbiam/personenuebersicht/1').replyOnce(200, mockPersonResponse);
-      mockAdapter.onPut('/api/personenkontext-workflow/1').replyOnce(500, { i18nKey: 'mockServerError' });
+      mockAdapter.onPut('/api/personenkontexte/person/1').replyOnce(500, { i18nKey: 'mockServerError' });
 
       await bulkOperationStore.bulkUnassignPersonenFromOrg('1234', [mockPersonId]);
 
@@ -404,8 +403,6 @@ describe('BulkOperationStore', () => {
       const personIds: string[] = ['1', '2'];
       const selectedRolleId: string = 'rolle-456';
 
-      const workflowStepResponseOrganisations: Organisation[] = [orga];
-
       const mockUpdateResponse: PersonenkontexteUpdateResponse = {
         dBiamPersonenkontextResponses: [
           {
@@ -423,14 +420,13 @@ describe('BulkOperationStore', () => {
         .onGet('/api/dbiam/personenuebersicht/2')
         .replyOnce(200, DoFactory.getDBiamPersonenuebersichtResponse({ personId: '2' }, { organisation: orga }));
 
-      mockAdapter.onPut('/api/personenkontext-workflow/1').replyOnce(200, mockUpdateResponse);
-      mockAdapter.onPut('/api/personenkontext-workflow/2').replyOnce(200, mockUpdateResponse);
+      mockAdapter.onPut('/api/personenkontexte/person/1').replyOnce(200, mockUpdateResponse);
+      mockAdapter.onPut('/api/personenkontexte/person/2').replyOnce(200, mockUpdateResponse);
 
       const modifyPromise: Promise<void> = bulkOperationStore.bulkModifyPersonenRolle(
         personIds,
         orga.id,
         selectedRolleId,
-        workflowStepResponseOrganisations,
       );
 
       expect(bulkOperationStore.currentOperation?.isRunning).toBe(true);
@@ -443,44 +439,21 @@ describe('BulkOperationStore', () => {
       expect(mockAdapter.history['put']?.length).toBe(2);
     });
 
-    it('should return early if organisation is not found', async () => {
-      const personIds: string[] = ['1', '2'];
-      const selectedOrganisationId: string = 'non-existing-org';
-      const selectedRolleId: string = 'rolle-456';
-
-      const workflowStepResponseOrganisations: Organisation[] = [orga];
-
-      const modifyPromise: Promise<void> = bulkOperationStore.bulkModifyPersonenRolle(
-        personIds,
-        selectedOrganisationId,
-        selectedRolleId,
-        workflowStepResponseOrganisations,
-      );
-
-      await modifyPromise;
-
-      expect(bulkOperationStore.currentOperation?.progress).toBe(0);
-      expect(bulkOperationStore.currentOperation?.complete).toBe(false);
-      expect(mockAdapter.history['put']?.length).toBe(0);
-    });
-
     it('should update successfully with default values for baseZuordnung', async () => {
       const personIds: string[] = ['1', '2'];
       const selectedOrganisationId: string = 'org-123';
       const selectedRolleId: string = 'rolle-456';
 
-      const workflowStepResponseOrganisations: Organisation[] = [
-        DoFactory.getOrganisation({
-          id: 'org-123',
-          name: 'Test Schule',
-          kennung: null,
-          administriertVon: null,
-        }),
-      ];
+      const organisation: Organisation = DoFactory.getOrganisation({
+        id: selectedOrganisationId,
+        name: 'Test Schule',
+        kennung: null,
+        administriertVon: null,
+      });
 
       const mockPersonResponse: DBiamPersonenuebersichtResponse = DoFactory.getDBiamPersonenuebersichtResponse(
         { personId: '2' },
-        { organisation: workflowStepResponseOrganisations[0] },
+        { organisation },
       );
 
       const mockUpdateResponse: PersonenkontexteUpdateResponse = {
@@ -495,23 +468,16 @@ describe('BulkOperationStore', () => {
 
       mockAdapter
         .onGet('/api/dbiam/personenuebersicht/1')
-        .replyOnce(
-          200,
-          DoFactory.getDBiamPersonenuebersichtResponse(
-            { personId: '1' },
-            { organisation: workflowStepResponseOrganisations[0] },
-          ),
-        );
+        .replyOnce(200, DoFactory.getDBiamPersonenuebersichtResponse({ personId: '1' }, { organisation }));
       mockAdapter.onGet('/api/dbiam/personenuebersicht/2').replyOnce(200, mockPersonResponse);
 
-      mockAdapter.onPut('/api/personenkontext-workflow/1').replyOnce(200, mockUpdateResponse);
-      mockAdapter.onPut('/api/personenkontext-workflow/2').replyOnce(200, mockUpdateResponse);
+      mockAdapter.onPut('/api/personenkontexte/person/1').replyOnce(200, mockUpdateResponse);
+      mockAdapter.onPut('/api/personenkontexte/person/2').replyOnce(200, mockUpdateResponse);
 
       const modifyPromise: Promise<void> = bulkOperationStore.bulkModifyPersonenRolle(
         personIds,
         selectedOrganisationId,
         selectedRolleId,
-        workflowStepResponseOrganisations,
       );
       expect(bulkOperationStore.currentOperation?.isRunning).toBe(true);
 
@@ -530,7 +496,6 @@ describe('BulkOperationStore', () => {
       const befristung: string = faker.date.future().toISOString();
 
       const selectedOrganisation: Organisation = DoFactory.getOrganisationResponse({ id: selectedOrganisationId });
-      const workflowStepResponseOrganisations: Organisation[] = [selectedOrganisation];
 
       const mockBefristungen: (string | null)[] = [
         null,
@@ -594,7 +559,7 @@ describe('BulkOperationStore', () => {
       });
       mockUpdateResponses.forEach((response: PersonenkontexteUpdateResponse) => {
         mockAdapter
-          .onPut(`/api/personenkontext-workflow/${response.dBiamPersonenkontextResponses[0]!.personId}`)
+          .onPut(`/api/personenkontexte/person/${response.dBiamPersonenkontextResponses[0]!.personId}`)
           .replyOnce(200, response);
       });
 
@@ -602,7 +567,6 @@ describe('BulkOperationStore', () => {
         personIds,
         selectedOrganisationId,
         selectedRolleId,
-        workflowStepResponseOrganisations,
         befristung,
       );
 
@@ -617,7 +581,6 @@ describe('BulkOperationStore', () => {
       expect(bulkOperationStore.currentOperation?.errors).toEqual(new Map());
 
       mockPersonResponses.forEach((response: DBiamPersonenuebersichtResponse, index: number) => {
-        const personId: string = response.personId;
         const correctBefristung: string =
           response.zuordnungen[0]!.befristung && isBefore(response.zuordnungen[0]!.befristung, befristung)
             ? response.zuordnungen[0]!.befristung
@@ -646,9 +609,8 @@ describe('BulkOperationStore', () => {
                 befristung: correctBefristung,
                 organisationId: selectedOrganisationId,
                 rolleId: selectedRolleId,
-                personId,
               },
-            ]) as Array<DbiamPersonenkontextBodyParams>,
+            ]) as Array<PersonenzuordnungBodyParams>,
           }),
         );
       });
@@ -660,10 +622,6 @@ describe('BulkOperationStore', () => {
       const selectedKlasseId: string = faker.string.uuid();
       const personId: string = faker.string.uuid();
       const existingRolleId: string = faker.string.uuid();
-
-      const workflowStepResponseOrganisations: Organisation[] = [
-        DoFactory.getOrganisationResponse({ id: selectedOrganisationId }),
-      ];
 
       const existingZuordnungA: DBiamPersonenzuordnungResponse = DoFactory.getDBiamPersonenzuordnungResponse({
         rolleId: existingRolleId,
@@ -698,24 +656,23 @@ describe('BulkOperationStore', () => {
       });
 
       mockAdapter.onGet(`/api/dbiam/personenuebersicht/${personId}`).replyOnce(200, mockPersonResponse);
-      mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(200, mockUpdateResponse);
+      mockAdapter.onPut(`/api/personenkontexte/person/${personId}`).replyOnce(200, mockUpdateResponse);
 
       await bulkOperationStore.bulkModifyPersonenRolle(
         [personId],
         selectedOrganisationId,
         selectedRolleId,
-        workflowStepResponseOrganisations,
         undefined,
         selectedKlasseId,
       );
       const data: object = JSON.parse(mockAdapter.history['put']?.[0]?.data as string) as object;
       expect(data).toEqual(
-        expect.objectContaining<Partial<DbiamUpdatePersonenkontexteBodyParams>>({
-          personenkontexte: expect.arrayContaining<DbiamPersonenkontextBodyParams>([
-            { personId, organisationId: selectedOrganisationId, rolleId: existingRolleId, befristung: undefined },
-            { personId, organisationId: selectedOrganisationId, rolleId: selectedRolleId, befristung: undefined },
-            { personId, organisationId: selectedKlasseId, rolleId: selectedRolleId, befristung: undefined },
-          ]) as Array<DbiamPersonenkontextBodyParams>,
+        expect.objectContaining<Partial<PersonenzuordnungenBearbeitenBodyParams>>({
+          personenkontexte: expect.arrayContaining<PersonenzuordnungBodyParams>([
+            { organisationId: selectedOrganisationId, rolleId: existingRolleId, befristung: undefined },
+            { organisationId: selectedOrganisationId, rolleId: selectedRolleId, befristung: undefined },
+            { organisationId: selectedKlasseId, rolleId: selectedRolleId, befristung: undefined },
+          ]) as Array<PersonenzuordnungBodyParams>,
         }),
       );
     });
@@ -726,10 +683,6 @@ describe('BulkOperationStore', () => {
       const selectedRolleId: string = faker.string.uuid();
       const personId: string = faker.string.uuid();
       const existingKlasseId: string = faker.string.uuid();
-
-      const workflowStepResponseOrganisations: Organisation[] = [
-        DoFactory.getOrganisationResponse({ id: selectedOrganisationId }),
-      ];
 
       const existingZuordnung: DBiamPersonenzuordnungResponse = DoFactory.getDBiamPersonenzuordnungResponse(
         {
@@ -779,26 +732,19 @@ describe('BulkOperationStore', () => {
       });
 
       mockAdapter.onGet(`/api/dbiam/personenuebersicht/${personId}`).replyOnce(200, mockPersonResponse);
-      mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(200, mockUpdateResponse);
+      mockAdapter.onPut(`/api/personenkontexte/person/${personId}`).replyOnce(200, mockUpdateResponse);
 
-      await bulkOperationStore.bulkModifyPersonenRolle(
-        [personId],
-        selectedOrganisationId,
-        selectedRolleId,
-        workflowStepResponseOrganisations,
-        undefined,
-        undefined,
-      );
+      await bulkOperationStore.bulkModifyPersonenRolle([personId], selectedOrganisationId, selectedRolleId);
 
       const data: object = JSON.parse(mockAdapter.history['put']?.[0]?.data as string) as object;
 
       expect(data).toEqual(
-        expect.objectContaining<Partial<DbiamUpdatePersonenkontexteBodyParams>>({
-          personenkontexte: expect.arrayContaining<DbiamPersonenkontextBodyParams>([
-            { personId, organisationId: existingKlasseId, rolleId: existingRolleId, befristung: undefined },
-            { personId, organisationId: existingKlasseId, rolleId: selectedRolleId, befristung: undefined },
-            { personId, organisationId: selectedOrganisationId, rolleId: selectedRolleId, befristung: undefined },
-          ]) as Array<DbiamPersonenkontextBodyParams>,
+        expect.objectContaining<Partial<PersonenzuordnungenBearbeitenBodyParams>>({
+          personenkontexte: expect.arrayContaining<PersonenzuordnungBodyParams>([
+            { organisationId: existingKlasseId, rolleId: existingRolleId, befristung: undefined },
+            { organisationId: existingKlasseId, rolleId: selectedRolleId, befristung: undefined },
+            { organisationId: selectedOrganisationId, rolleId: selectedRolleId, befristung: undefined },
+          ]) as Array<PersonenzuordnungBodyParams>,
         }),
       );
     });
@@ -810,10 +756,6 @@ describe('BulkOperationStore', () => {
       const personId: string = faker.string.uuid();
       const existingKlasseIdA: string = faker.string.uuid();
       const existingKlasseIdB: string = faker.string.uuid();
-
-      const workflowStepResponseOrganisations: Organisation[] = [
-        DoFactory.getOrganisationResponse({ id: selectedOrganisationId }),
-      ];
 
       const existingZuordnungA: DBiamPersonenzuordnungResponse = DoFactory.getDBiamPersonenzuordnungResponse(
         {
@@ -891,33 +833,26 @@ describe('BulkOperationStore', () => {
       });
 
       mockAdapter.onGet(`/api/dbiam/personenuebersicht/${personId}`).replyOnce(200, mockPersonResponse);
-      mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(200, mockUpdateResponse);
+      mockAdapter.onPut(`/api/personenkontexte/person/${personId}`).replyOnce(200, mockUpdateResponse);
 
-      await bulkOperationStore.bulkModifyPersonenRolle(
-        [personId],
-        selectedOrganisationId,
-        selectedRolleId,
-        workflowStepResponseOrganisations,
-        undefined,
-        undefined,
-      );
+      await bulkOperationStore.bulkModifyPersonenRolle([personId], selectedOrganisationId, selectedRolleId);
 
       const data: object = JSON.parse(mockAdapter.history['put']?.[0]?.data as string) as object;
 
       expect(data).toEqual(
-        expect.objectContaining<Partial<DbiamUpdatePersonenkontexteBodyParams>>({
-          personenkontexte: expect.arrayContaining<DbiamPersonenkontextBodyParams>([
-            { personId, organisationId: existingKlasseIdA, rolleId: selectedRolleId, befristung: undefined },
-            { personId, organisationId: selectedOrganisationId, rolleId: selectedRolleId, befristung: undefined },
-            { personId, organisationId: existingKlasseIdB, rolleId: differentRolleId, befristung: undefined },
-          ]) as Array<DbiamPersonenkontextBodyParams>,
+        expect.objectContaining<Partial<PersonenzuordnungenBearbeitenBodyParams>>({
+          personenkontexte: expect.arrayContaining<PersonenzuordnungBodyParams>([
+            { organisationId: existingKlasseIdA, rolleId: selectedRolleId, befristung: undefined },
+            { organisationId: selectedOrganisationId, rolleId: selectedRolleId, befristung: undefined },
+            { organisationId: existingKlasseIdB, rolleId: differentRolleId, befristung: undefined },
+          ]) as Array<PersonenzuordnungBodyParams>,
         }),
       );
       expect(data).not.toEqual(
-        expect.objectContaining<Partial<DbiamUpdatePersonenkontexteBodyParams>>({
-          personenkontexte: expect.arrayContaining<DbiamPersonenkontextBodyParams>([
-            { personId, organisationId: existingKlasseIdB, rolleId: selectedRolleId, befristung: undefined },
-          ]) as Array<DbiamPersonenkontextBodyParams>,
+        expect.objectContaining<Partial<PersonenzuordnungenBearbeitenBodyParams>>({
+          personenkontexte: expect.arrayContaining<PersonenzuordnungBodyParams>([
+            { organisationId: existingKlasseIdB, rolleId: selectedRolleId, befristung: undefined },
+          ]) as Array<PersonenzuordnungBodyParams>,
         }),
       );
     });
@@ -926,15 +861,6 @@ describe('BulkOperationStore', () => {
       const personIds: string[] = ['1', '2'];
       const selectedOrganisationId: string = 'org-123';
       const selectedRolleId: string = 'rolle-456';
-
-      const workflowStepResponseOrganisations: Organisation[] = [
-        {
-          id: 'org-123',
-          name: 'Test Schule',
-          kennung: 'SCH123',
-          administriertVon: 'adminId',
-        } as Organisation,
-      ];
 
       mockAdapter.onGet('/api/dbiam/personenuebersicht/1').replyOnce(500, { i18nKey: 'mockGetError' });
       mockAdapter.onGet('/api/dbiam/personenuebersicht/2').replyOnce(
@@ -961,13 +887,12 @@ describe('BulkOperationStore', () => {
         }),
       );
 
-      mockAdapter.onPut('/api/personenkontext-workflow/2').replyOnce(500, { i18nKey: 'mockPutError' });
+      mockAdapter.onPut('/api/personenkontexte/person/2').replyOnce(500, { i18nKey: 'mockPutError' });
 
       const modifyPromise: Promise<void> = bulkOperationStore.bulkModifyPersonenRolle(
         personIds,
         selectedOrganisationId,
         selectedRolleId,
-        workflowStepResponseOrganisations,
       );
 
       await modifyPromise;
@@ -984,10 +909,6 @@ describe('BulkOperationStore', () => {
       const selectedOrganisationId: string = faker.string.uuid();
       const selectedRolleId: string = faker.string.uuid();
       const differentOrganisationId: string = faker.string.uuid();
-
-      const workflowStepResponseOrganisations: Organisation[] = [
-        DoFactory.getOrganisationResponse({ id: selectedOrganisationId }),
-      ];
 
       // Person has zuordnung for a DIFFERENT organisation, not the selected one
       const mockPersonResponse: DBiamPersonenuebersichtResponse = DoFactory.getDBiamPersonenuebersichtResponse({
@@ -1012,12 +933,7 @@ describe('BulkOperationStore', () => {
 
       mockAdapter.onGet(`/api/dbiam/personenuebersicht/${personId}`).replyOnce(200, mockPersonResponse);
 
-      await bulkOperationStore.bulkModifyPersonenRolle(
-        [personId],
-        selectedOrganisationId,
-        selectedRolleId,
-        workflowStepResponseOrganisations,
-      );
+      await bulkOperationStore.bulkModifyPersonenRolle([personId], selectedOrganisationId, selectedRolleId);
 
       expect(bulkOperationStore.currentOperation?.errors.size).toBe(1);
       expect(bulkOperationStore.currentOperation?.errors.get(personId)).toBe(
@@ -1115,7 +1031,7 @@ describe('BulkOperationStore', () => {
       };
 
       mockAdapter.onGet(`/api/dbiam/personenuebersicht/${personId}`).replyOnce(200, mockPersonResponse);
-      mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(200, mockUpdateResponse);
+      mockAdapter.onPut(`/api/personenkontexte/person/${personId}`).replyOnce(200, mockUpdateResponse);
 
       const unassignPromise: Promise<void> = bulkOperationStore.bulkUnassignPersonenFromRolle(
         organisationId,
@@ -1199,7 +1115,7 @@ describe('BulkOperationStore', () => {
       };
 
       mockAdapter.onGet(`/api/dbiam/personenuebersicht/${personId}`).replyOnce(200, mockPersonResponse);
-      mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(200, mockUpdateResponse);
+      mockAdapter.onPut(`/api/personenkontexte/person/${personId}`).replyOnce(200, mockUpdateResponse);
 
       const unassignPromise: Promise<void> = bulkOperationStore.bulkUnassignPersonenFromRolle(
         organisationId,
@@ -1293,12 +1209,12 @@ describe('BulkOperationStore', () => {
       expect(bulkOperationStore.currentOperation?.successMessage).toBeUndefined();
     });
 
-    it('should handle errors from personenkontext-workflow endpoint', async () => {
+    it('should handle errors from assignment endpoint', async () => {
       const rolleId: string = faker.string.uuid();
       const anotherRolleId: string = faker.string.uuid();
       const mockPersonId: string = faker.string.uuid();
 
-      // Mock successful GET but error in personenkontext-workflow (PUT) call
+      // Mock successful GET but error in assignment (PUT) call
       const mockKontexte: Map<string, DBiamPersonenuebersichtResponse> = new Map();
       mockKontexte.set(
         mockPersonId,
@@ -1321,7 +1237,7 @@ describe('BulkOperationStore', () => {
       );
 
       mockAdapter.onGet(`/api/dbiam/personenuebersicht/${mockPersonId}`).replyOnce(200, mockKontexte.get(mockPersonId));
-      mockAdapter.onPut(`/api/personenkontext-workflow/${mockPersonId}`).replyOnce(500, { i18nKey: 'mockPutError' });
+      mockAdapter.onPut(`/api/personenkontexte/person/${mockPersonId}`).replyOnce(500, { i18nKey: 'mockPutError' });
 
       const unassignPromise: Promise<void> = bulkOperationStore.bulkUnassignPersonenFromRolle(
         mockSchule.id,
@@ -1429,7 +1345,7 @@ describe('BulkOperationStore', () => {
         .onGet(`/api/dbiam/personenuebersicht/${personId}`)
         .replyOnce(200, DoFactory.getDBiamPersonenuebersichtResponse({ personId }));
       mockAdapter
-        .onPut(`/api/personenkontext-workflow/${personId}`)
+        .onPut(`/api/personenkontexte/person/${personId}`)
         .replyOnce(200, DoFactory.getPersonenkontextUpdateResponse());
 
       expect(bulkOperationStore.currentOperation?.isRunning).toBe(true);
@@ -1496,7 +1412,7 @@ describe('BulkOperationStore', () => {
         mockAdapter.onGet(`/api/dbiam/personenuebersicht/${personId}`).replyOnce(200, mockKontexte.get(personId));
       });
       mockPersonIds.forEach((personId: string) => {
-        mockAdapter.onPut(`/api/personenkontext-workflow/${personId}`).replyOnce(200, []);
+        mockAdapter.onPut(`/api/personenkontexte/person/${personId}`).replyOnce(200, []);
       });
 
       await bulkOperationStore.bulkChangeKlasse(mockPersonIds, mockSchule.id, klassenId);
@@ -1509,7 +1425,7 @@ describe('BulkOperationStore', () => {
       mockAdapter
         .onGet(`/api/dbiam/personenuebersicht/${personIds[1]}`)
         .replyOnce(200, DoFactory.getDBiamPersonenuebersichtResponse({ personId: personIds[1] }));
-      mockAdapter.onPut(`/api/personenkontext-workflow/${personIds[1]}`).replyOnce(500, { i18nKey: 'putError' });
+      mockAdapter.onPut(`/api/personenkontexte/person/${personIds[1]}`).replyOnce(500, { i18nKey: 'putError' });
 
       const bulkChangeKlassePromise: Promise<void> = bulkOperationStore.bulkChangeKlasse(
         personIds,
@@ -1531,7 +1447,7 @@ describe('BulkOperationStore', () => {
 
       mockAdapter.onGet(`/api/dbiam/personenuebersicht/${personId}`).replyOnce(200, { data: null });
 
-      await bulkOperationStore.bulkModifyPersonenRolle([personId], mockSchule.id, faker.string.uuid(), [mockSchule]);
+      await bulkOperationStore.bulkModifyPersonenRolle([personId], mockSchule.id, faker.string.uuid());
 
       expect(bulkOperationStore.currentOperation?.errors.size).toBe(1);
       expect(bulkOperationStore.currentOperation?.errors.get(personId)).toBe('UNSPECIFIED_ERROR');

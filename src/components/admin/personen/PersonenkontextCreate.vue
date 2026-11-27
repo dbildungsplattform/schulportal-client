@@ -6,15 +6,7 @@
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
   import { useDebouncedSearch } from '@/composables/useDebouncedSearch';
   import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
-  import {
-    CreationType,
-    KlassenOption,
-    OperationContext,
-    RolleDialogMode,
-    usePersonenkontextStore,
-    type PersonenkontextStore,
-    type WorkflowFilter,
-  } from '@/stores/PersonenkontextStore';
+  import { CreationType, KlassenOption, OperationContext, RolleDialogMode } from '@/stores/PersonenkontextStore';
   import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
   import {
     RollenArt,
@@ -34,11 +26,8 @@
 
   useI18n({ useScope: 'global' });
 
-  const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
   const personStore: PersonStore = usePersonStore();
   const rolleStore: RolleStore = useRolleStore();
-
-  const canCommit: Ref<boolean> = ref(false);
 
   const debouncedSearchInputRolle: Ref<string> = ref('');
   const debouncedSearchInputRollen: Ref<string> = ref('');
@@ -103,7 +92,6 @@
     (event: 'update:selectedKlasse', value: Organisation | undefined): void;
     (event: 'update:selectedKlasseForRadio', value: Organisation | undefined): void;
     (event: 'update:selectedKlassenOption', value: string | null): void;
-    (event: 'update:canCommit', value: boolean): void;
     (event: 'fieldReset', field: 'selectedOrganisation' | 'selectedRolle' | 'selectedKlasse' | 'selectedRollen'): void;
   };
   const emits: Emits = defineEmits<Emits>();
@@ -111,6 +99,11 @@
   const selectedOrganisation: Ref<Organisation | undefined> = defineModel<Organisation | undefined>(
     'selectedOrganisation',
   );
+  const isOrganisationAutoselected: ComputedRef<boolean> = computed(
+    (): boolean => !!autoselectedSchule.value && selectedOrganisation.value?.id === autoselectedSchule.value.id,
+  );
+  defineExpose({ isOrganisationAutoselected });
+
   const selectedRolle: Ref<TranslatedRolleWithAttrs | undefined> =
     defineModel<TranslatedRolleWithAttrs>('selectedRolle');
   const selectedRollen: Ref<TranslatedRolleWithAttrs[] | undefined> =
@@ -182,12 +175,6 @@
     } else {
       return selection.rollenart === RollenArt.Lern;
     }
-  }
-
-  async function handleWorkflowStep(filter: WorkflowFilter): Promise<void> {
-    await personenkontextStore.processWorkflowStep(filter);
-
-    canCommit.value = personenkontextStore.workflowStepResponse?.canCommit ?? false;
   }
 
   const handleFocusChange = (focused: boolean): void => {
@@ -291,36 +278,15 @@
 
   watch(
     () => (props.allowMultipleRollen ? selectedRollen.value : selectedRolle.value),
-    async (newValue: SelectedRollen, oldValue: SelectedRollen) => {
-      const filter: WorkflowFilter = {
-        operationContext: props.operationContext,
-        personId: props.personId,
-        organisationId: selectedOrganisation.value?.id,
-        limit: 25,
-      };
-
+    (newValue: SelectedRollen): void => {
       if (props.allowMultipleRollen) {
-        const newRollen: TranslatedRolleWithAttrs[] | undefined = Array.isArray(newValue) ? newValue : undefined;
-
-        if (newRollen && newRollen.length > 0) {
-          filter.rollenIds = newRollen.map((rolle: TranslatedRolleWithAttrs) => rolle.value);
-        } else {
+        if (!Array.isArray(newValue) || !newValue.length) {
           selectedKlasse.value = undefined;
           emits('fieldReset', 'selectedKlasse');
           emits('fieldReset', 'selectedRollen');
-          canCommit.value = false;
         }
-        await handleWorkflowStep(filter);
       } else {
-        const newRolle: TranslatedRolleWithAttrs | undefined = Array.isArray(newValue) ? undefined : newValue;
-
-        if (newRolle && newRolle !== oldValue) {
-          filter.rollenIds = [newRolle.value];
-          await handleWorkflowStep(filter);
-        }
-
-        if (!newRolle) {
-          canCommit.value = false;
+        if (!newValue || Array.isArray(newValue)) {
           selectedKlasse.value = undefined;
           emits('fieldReset', 'selectedKlasse');
         }
@@ -354,17 +320,7 @@
     { immediate: true },
   );
 
-  watch(
-    canCommit,
-    (newValue: boolean) => {
-      emits('update:canCommit', newValue);
-    },
-    { immediate: true },
-  );
-
-  // If the submission of the form goes wrong and the user needs to correct something, we need to ensure that the canCommit value is updated
   onMounted(() => {
-    emits('update:canCommit', personenkontextStore.workflowStepResponse?.canCommit ?? false);
     emits('update:selectedKlassenOption', localKlassenOption.value!);
   });
 </script>

@@ -81,9 +81,11 @@ export function useZuordnungDeletion(params: {
       state.selectedZuordnungen.value,
     );
 
-    const zuordnungenUpdate: PersonenkontextUpdate[] | undefined = combinedZuordnungen?.map(
-      mapZuordnungToPersonenkontextUpdate,
-    );
+    if (combinedZuordnungen === undefined) {
+      return;
+    }
+
+    const zuordnungenUpdate: PersonenkontextUpdate[] = combinedZuordnungen.map(mapZuordnungToPersonenkontextUpdate);
 
     // Update the personenkontexte with the filtered list
     await personenkontextStore.updatePersonenkontexte(zuordnungenUpdate, personId.value);
@@ -91,12 +93,10 @@ export function useZuordnungDeletion(params: {
     state.selectedZuordnungen.value = [];
 
     // Filter out Zuordnungen with editable === false
-    const editableZuordnungen: Zuordnung[] | undefined = combinedZuordnungen?.filter(
-      (zuordnung: Zuordnung) => zuordnung.editable,
-    );
+    const editableZuordnungen: Zuordnung[] = combinedZuordnungen.filter((zuordnung: Zuordnung) => zuordnung.editable);
 
     deleteSuccessDialogVisible.value = !personenkontextStore.errorCode;
-    navigateToPersonTableOnClose.value = !editableZuordnungen || editableZuordnungen.length === 0;
+    navigateToPersonTableOnClose.value = editableZuordnungen.length === 0;
   };
 
   const closeDeleteSuccessDialog = (): void => {

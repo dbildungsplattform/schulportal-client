@@ -47,7 +47,6 @@
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
   const bulkOperationStore: BulkOperationStore = useBulkOperationStore();
 
-  const canCommit: Ref<boolean> = ref(false);
   const showModifyRolleDialog: Ref<boolean> = ref(props.isDialogVisible);
   const showErrorDialog: Ref<boolean, boolean> = ref(false);
   const calculatedBefristung: Ref<string | undefined> = ref('');
@@ -70,14 +69,18 @@
     selectedBefristungOption: string;
   };
 
+  function needsNewKlasse(rolle: TranslatedRolleWithAttrs | undefined, option: string | undefined): boolean {
+    return rolle?.rollenart === RollenArt.Lern && option === KlassenOption.SELECT_NEW_KLASSE;
+  }
+
   const validationSchema = (): TypedSchema<ZuordnungCreationForm> => {
     return toTypedSchema(
       object({
         selectedRolle: mixed<TranslatedRolleWithAttrs>().required(t('admin.rolle.rules.rolle.required')),
         selectedOrganisation: mixed<Organisation>().required(t('admin.organisation.rules.organisation.required')),
         selectedKlassenOption: string(),
-        selectedKlasseForRadio: string().when('selectedKlassenOption', {
-          is: (selectedKlassenOption: string) => selectedKlassenOption === KlassenOption.SELECT_NEW_KLASSE.toString(),
+        selectedKlasseForRadio: string().when(['selectedRolle', 'selectedKlassenOption'], {
+          is: needsNewKlasse,
           then: (schema: StringSchema) => schema.required(t('admin.klasse.rules.klasse.required')),
           otherwise: (schema: StringSchema) => schema.notRequired(),
         }),
@@ -118,6 +121,21 @@
     Ref<string | undefined>,
     Ref<BaseFieldProps & { error: boolean; 'error-messages': Array<string> }>,
   ] = formContext.defineField('selectedKlasseForRadio', getVuetifyConfig);
+
+  const requiresNewKlasse: ComputedRef<boolean> = computed(() =>
+    needsNewKlasse(selectedRolle.value, selectedKlassenOption.value),
+  );
+
+  const canSubmit: ComputedRef<boolean> = computed(
+    (): boolean =>
+      !!selectedOrganisation.value &&
+      !!selectedRolle.value &&
+      (!requiresNewKlasse.value || !!selectedKlasseForRadio.value) &&
+      formContext.meta.value.valid &&
+      !formContext.meta.value.pending &&
+      !formContext.isSubmitting.value &&
+      !bulkOperationStore.currentOperation?.isRunning,
+  );
 
   const selectedRollen: ComputedRef<TranslatedRolleWithAttrs[]> = computed(() => {
     return selectedRolle.value ? [selectedRolle.value] : [];
@@ -199,9 +217,8 @@
       personIDs,
       selectedOrganisation.value!.id,
       selectedRolle.value!.value,
-      personenkontextStore.workflowStepResponse?.organisations || [],
       formattedBefristung,
-      selectedKlasseForRadio.value,
+      requiresNewKlasse.value ? selectedKlasseForRadio.value : undefined,
     );
 
     if (bulkOperationStore.currentOperation?.errors && bulkOperationStore.currentOperation.errors.size > 0) {
@@ -263,7 +280,6 @@
                 befristung: selectedBefristung,
                 befristungOption: selectedBefristungOption,
               }"
-              @update:can-commit="canCommit = $event"
               @update:befristung="handleBefristungUpdate($event)"
               @update:calculated-befristung-option="handleBefristungOptionUpdate($event)"
               @update:selectedKlasseForRadio="handleKlasseForRadio($event)"
@@ -383,7 +399,7 @@
                 :block="mdAndDown"
                 type="submit"
                 class="primary"
-                :disabled="!canCommit || bulkOperationStore.currentOperation.isRunning"
+                :disabled="!canSubmit"
                 data-testid="rolle-modify-submit-button"
               >
                 {{ t('admin.rolle.assignRolle') }}

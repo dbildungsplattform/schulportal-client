@@ -1,12 +1,6 @@
 import { RollenArt, RollenMerkmal } from '@/api-client/generated';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
-import {
-  CreationType,
-  OperationContext,
-  RolleDialogMode,
-  usePersonenkontextStore,
-  type PersonenkontextStore,
-} from '@/stores/PersonenkontextStore';
+import { CreationType, OperationContext, RolleDialogMode } from '@/stores/PersonenkontextStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import { useRolleStore, type RolleStore, type TranslatedRolleWithAttrs } from '@/stores/RolleStore';
 import { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
@@ -48,7 +42,6 @@ interface MountComponentProps {
 }
 
 let wrapper: VueWrapper | null = null;
-let personenkontextStore: PersonenkontextStore;
 let organisationStore: OrganisationStore;
 let rolleStore: RolleStore;
 const personStore: PersonStore = usePersonStore();
@@ -140,35 +133,8 @@ beforeEach(() => {
       <div id="app"></div>
     </div>
   `;
-  personenkontextStore = usePersonenkontextStore();
   organisationStore = useOrganisationStore();
   rolleStore = useRolleStore();
-
-  personenkontextStore.workflowStepResponse = {
-    organisations: [
-      {
-        id: '1133',
-        administriertVon: 'string',
-        kennung: 'string',
-        name: 'orga',
-        namensergaenzung: 'string',
-        kuerzel: 'string',
-        typ: 'ROOT',
-      },
-      {
-        id: '1134',
-        administriertVon: 'string',
-        kennung: 'string',
-        name: 'orga1',
-        namensergaenzung: 'string',
-        kuerzel: 'string',
-        typ: 'ROOT',
-      },
-    ],
-    selectedOrganisation: null,
-    selectedRollen: null,
-    canCommit: true,
-  };
 
   const mockPersonenuebersicht: PersonenUebersicht = new PersonenUebersicht(
     '1',
@@ -225,6 +191,7 @@ describe('PersonenkontextCreate', () => {
       const result: TranslatedRolleWithAttrs = DoFactory.getTranslatedRolleWithAttrs();
       wrapper = mountComponent({
         allowMultipleRollen,
+        operationContext: OperationContext.PERSON_BEARBEITEN,
         selectedOrganisation: DoFactory.getOrganisation({ id: '1133' }),
         rollen: [selected],
       });
@@ -238,9 +205,6 @@ describe('PersonenkontextCreate', () => {
       expect(wrapper.emitted(allowMultipleRollen ? 'update:selectedRollen' : 'update:selectedRolle')?.at(-1)).toEqual([
         allowMultipleRollen ? [selected] : selected,
       ]);
-      expect(personenkontextStore.processWorkflowStep).toHaveBeenLastCalledWith(
-        expect.objectContaining({ rollenIds: [selected.value] }),
-      );
 
       await wrapper.setProps({ rollen: [result] });
       await flushPromises();
@@ -466,7 +430,7 @@ describe('PersonenkontextCreate', () => {
           expect(rolleAutocomplete?.text()).toEqual('Lern');
         });
 
-        test('it sends a request if the newValue is empty and the selectedRolle is not defined', async () => {
+        test('should clear the displayed role after deselection', async () => {
           const organisationAutocomplete: VueWrapper | undefined = wrapper
             ?.findComponent({ ref: 'schulenFilter' })
             .findComponent({ ref: 'personenkontext-create-organisation-select' });
@@ -492,13 +456,6 @@ describe('PersonenkontextCreate', () => {
           await nextTick();
 
           expect(rolleAutocomplete?.text()).toEqual('');
-          expect(personenkontextStore.processWorkflowStep).toHaveBeenCalledWith({
-            operationContext,
-            organisationId: '1133',
-            personId: undefined,
-            rollenIds: ['54321'],
-            limit: 25,
-          });
         });
 
         test('it sends a request if the newValue is empty and the selected Organisation is not defined', async () => {
