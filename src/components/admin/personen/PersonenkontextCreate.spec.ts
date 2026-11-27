@@ -205,6 +205,7 @@ describe('PersonenkontextCreate', () => {
       const result: TranslatedRolleWithAttrs = DoFactory.getTranslatedRolleWithAttrs();
       wrapper = mountComponent({
         allowMultipleRollen,
+        operationContext: OperationContext.PERSON_BEARBEITEN,
         selectedOrganisation: DoFactory.getOrganisation({ id: '1133' }),
         rollen: [selected],
       });
@@ -218,9 +219,6 @@ describe('PersonenkontextCreate', () => {
       expect(wrapper.emitted(allowMultipleRollen ? 'update:selectedRollen' : 'update:selectedRolle')?.at(-1)).toEqual([
         allowMultipleRollen ? [selected] : selected,
       ]);
-      expect(personenkontextStore.processWorkflowStep).toHaveBeenLastCalledWith(
-        expect.objectContaining({ rollenIds: [selected.value] }),
-      );
 
       await wrapper.setProps({ rollen: [result] });
       await flushPromises();
@@ -446,7 +444,7 @@ describe('PersonenkontextCreate', () => {
           expect(rolleAutocomplete?.text()).toEqual('Lern');
         });
 
-        test('it sends a request if the newValue is empty and the selectedRolle is not defined', async () => {
+        test('should clear the displayed role after deselection', async () => {
           const organisationAutocomplete: VueWrapper | undefined = wrapper
             ?.findComponent({ ref: 'schulenFilter' })
             .findComponent({ ref: 'personenkontext-create-organisation-select' });
@@ -472,13 +470,6 @@ describe('PersonenkontextCreate', () => {
           await nextTick();
 
           expect(rolleAutocomplete?.text()).toEqual('');
-          expect(personenkontextStore.processWorkflowStep).toHaveBeenCalledWith({
-            operationContext,
-            organisationId: '1133',
-            personId: undefined,
-            rollenIds: ['54321'],
-            limit: 25,
-          });
         });
 
         test('it sends a request if the newValue is empty and the selected Organisation is not defined', async () => {

@@ -75,7 +75,6 @@
     /* empty */
   };
 
-  const canCommit: Ref<boolean> = ref(false);
   const hasNoKopersNr: Ref<boolean | undefined> = ref(false);
   const showNoKopersNrConfirmationDialog: Ref<boolean> = ref(false);
   const showAddPersonConfirmationDialog: Ref<boolean> = ref(false);
@@ -409,17 +408,22 @@
     return utcDate.toLocaleDateString('de-DE');
   });
 
+  const saveFailed: ComputedRef<boolean> = computed(
+    (): boolean =>
+      !!personenkontextStore.errorCode && personenkontextStore.errorCode !== 'REQUIRED_STEP_UP_LEVEL_NOT_MET',
+  );
   const hasError: ComputedRef<boolean> = computed(
-    (): boolean => !!personenkontextStore.errorCode || !!rolleStore.errorCode || !!personStore.errorCode,
+    (): boolean =>
+      (!!personenkontextStore.errorCode && !saveFailed.value) || !!rolleStore.errorCode || !!personStore.errorCode,
   );
   const errorText: ComputedRef<string> = computed((): string => {
-    if (personenkontextStore.errorCode) {
+    if (personenkontextStore.errorCode && !saveFailed.value) {
       return t(`admin.personenkontext.errors.${personenkontextStore.errorCode}`);
     }
     return rolleStore.errorCode ? t(`admin.rolle.errors.${rolleStore.errorCode}`) : '';
   });
   const errorTitle: ComputedRef<string> = computed((): string => {
-    if (personenkontextStore.errorCode) {
+    if (personenkontextStore.errorCode && !saveFailed.value) {
       return t(`admin.personenkontext.title.${personenkontextStore.errorCode}`);
     }
     if (rolleStore.errorCode) {
@@ -486,6 +490,8 @@
   }
 
   async function createPerson(): Promise<void> {
+    personenkontextStore.errorCode = '';
+
     const befristungDate: string | undefined = selectedBefristung.value
       ? selectedBefristung.value
       : calculatedBefristung.value;
@@ -524,12 +530,11 @@
     selectedOrgaCache.value = selectedOrganisation.value;
     selectedRolleCache.value = selectedRollen.value?.map((rolle: TranslatedRolleWithAttrs) => rolle.value);
     await personenkontextStore.createPersonWithKontexte(bodyParams);
+    if (personenkontextStore.errorCode) {
+      return;
+    }
     formContext.resetForm();
     hasNoKopersNr.value = false;
-    // Reset canCommit to false after creating the personto avoid issues when going back to the form
-    if (personenkontextStore.workflowStepResponse) {
-      personenkontextStore.workflowStepResponse.canCommit = false;
-    }
   }
 
   async function addPersonToOwnSchule(): Promise<void> {
@@ -561,16 +566,20 @@
     selectedRolleCache.value = selectedRollen.value?.map((rolle: TranslatedRolleWithAttrs) => rolle.value);
 
     await personenkontextStore.zuordnenLandesbedienstete(newKontexte, personId, existingPerson.personalnummer);
-    formContext.resetForm();
+    if (!personenkontextStore.errorCode) {
+      formContext.resetForm();
+    }
   }
 
   const onSubmit: (e?: Event) => Promise<Promise<void> | undefined> = formContext.handleSubmit(async () => {
     if (createType.value === CreationType.AddPersonToOwnSchule) {
       const existingPerson: PersonLandesbediensteterSearchResponse | undefined =
         personStore.allLandesbedienstetePersonen?.[0];
-      const username: string | undefined = existingPerson?.username;
+      if (!existingPerson) {
+        return;
+      }
       addPersonConfirmationText.value = t('admin.person.stateEmployeeSearch.addPersonConfirmationMessage', {
-        benutzername: `${username}`,
+        benutzername: existingPerson.username,
         rollenname: selectedRollen.value
           ?.map((rolle: TranslatedRolleWithAttrs) => rolle.title)
           .filter(Boolean)
@@ -635,6 +644,14 @@
     }
     return personStore.allLandesbedienstetePersonen?.[0]?.id;
   });
+  const canSubmitForm: ComputedRef<boolean> = computed(
+    (): boolean =>
+      formContext.meta.value.valid &&
+      formContext.meta.value.dirty &&
+      !formContext.isSubmitting.value &&
+      (!isOwnSchule.value ||
+        (!!existingPersonId.value && !!selectedOrganisation.value && !!selectedRollen.value?.length)),
+  );
   const showKopersInput: ComputedRef<boolean> = computed(
     (): boolean =>
       !!selectedOrganisation.value &&
@@ -663,6 +680,7 @@
     if (newValue) {
       showNoKopersNrConfirmationDialog.value = true;
     }
+    void formContext.validate({ mode: 'validated-only' });
   });
 
   watch(showKopersInput, (newShowKopersInput: boolean): void => {
@@ -773,7 +791,7 @@
       >
         <FormWrapper
           id="person-creation-form"
-          :can-commit="canCommit"
+          :can-commit="canSubmitForm"
           :confirm-unsaved-changes-action="handleConfirmUnsavedChanges"
           :create-button-label="createButtonLabel"
           :discard-button-label="discardButtonLabel"
@@ -796,6 +814,13 @@
           />
 
           <template v-if="!hasError">
+            <SpshAlert
+              :model-value="saveFailed"
+              type="error"
+              data-test-id-prefix="person-creation-save-error"
+              :text="$t('admin.person.creationErrorText')"
+              :title="$t(isOwnSchule ? 'admin.person.assignmentErrorTitle' : 'admin.person.creationErrorTitle')"
+            />
             <!-- If AddPersonToOwnSchule: Persönliche Info first -->
             <template v-if="createType === CreationType.AddPersonToOwnSchule">
               <v-row>
@@ -887,7 +912,6 @@
                   rolle: sectionNumberRolle,
                   befristung: sectionNumberBefristung,
                 }"
-                @update:canCommit="canCommit = $event"
                 @update:befristung="handleBefristungUpdate($event)"
                 @update:calculated-befristung-option="handleBefristungOptionUpdate($event)"
                 @update:selectedKlasse="handleSelectedKlasse"
@@ -922,7 +946,6 @@
                   befristung: selectedBefristung,
                   befristungOption: selectedBefristungOption,
                 }"
-                @update:can-commit="canCommit = $event"
                 @update:befristung="handleBefristungUpdate($event)"
                 @update:calculated-befristung-option="handleBefristungOptionUpdate($event)"
                 @update:selectedKlasse="handleSelectedKlasse"

@@ -272,6 +272,123 @@ beforeEach(async () => {
 });
 
 describe('PersonCreationView', () => {
+  describe('form validation and rejected saves', () => {
+    type FormSetup = {
+      view: Awaited<ReturnType<typeof mountComponent>>;
+      organisation: Organisation;
+      rolle: TranslatedRolleWithAttrs;
+      submitButton: HTMLButtonElement;
+      zuordnung: VueWrapper;
+    };
+
+    async function setupCreationForm(): Promise<FormSetup> {
+      const rolle: TranslatedRolleWithAttrs = DoFactory.getTranslatedRolleWithAttrs({
+        rollenart: RollenArt.Lehr,
+        merkmale: [],
+      });
+      personenkontextStore.workflowStepResponse = null;
+      rolleStore.rollenForPersonenkontextCreation = [rolle];
+      const view: Awaited<ReturnType<typeof mountComponent>> = await mountComponent();
+      return {
+        view,
+        organisation: DoFactory.getSchule(),
+        rolle,
+        submitButton: view.get<HTMLButtonElement>('button[data-testid="person-creation-form-submit-button"]').element,
+        zuordnung: view.findComponent({ ref: 'personenkontext-create' }),
+      };
+    }
+
+    async function selectZuordnung({ zuordnung, organisation, rolle }: FormSetup): Promise<void> {
+      await zuordnung
+        .findComponent({ ref: 'schulenFilter' })
+        .findComponent({ ref: 'personenkontext-create-organisation-select' })
+        .setValue(organisation);
+      await zuordnung.findComponent({ ref: 'rollen-select' }).setValue([rolle]);
+      await flushPromises();
+    }
+
+    type SaveSetup = { vorname: VueWrapper; familienname: VueWrapper; createPerson: MockInstance };
+
+    async function setupRejectedSave(view: FormSetup['view']): Promise<SaveSetup> {
+      const vorname: VueWrapper = view.findComponent({ ref: 'vorname-input' });
+      const familienname: VueWrapper = view.findComponent({ ref: 'familienname-input' });
+      await vorname.setValue('Randy');
+      await familienname.setValue('Cena');
+
+      const createPerson: MockInstance = vi.mocked(personenkontextStore.createPersonWithKontexte);
+      createPerson.mockClear();
+      createPerson.mockImplementationOnce((): Promise<void> => {
+        personenkontextStore.errorCode = 'UNSPECIFIED_ERROR';
+        return Promise.resolve();
+      });
+      return { vorname, familienname, createPerson };
+    }
+
+    describe('regular person creation', () => {
+      async function setupRegularPersonCreation(): Promise<FormSetup> {
+        wrapper?.unmount();
+        await router.push({ name: 'create-person' });
+        return setupCreationForm();
+      }
+
+      it('enables saving only for valid input and retains it after a rejected save', async () => {
+        const setup: FormSetup = await setupRegularPersonCreation();
+        const { view, submitButton, organisation, rolle, zuordnung }: FormSetup = setup;
+        wrapper = view;
+        expect(submitButton.disabled).toBe(true);
+
+        await selectZuordnung(setup);
+        await vi.waitFor((): void => expect(submitButton.disabled).toBe(true));
+
+        const { vorname, familienname, createPerson }: SaveSetup = await setupRejectedSave(view);
+        await vi.waitFor((): void => expect(submitButton.disabled).toBe(false));
+
+        await wrapper.get('[data-testid="person-creation-form"]').trigger('submit');
+        await vi.waitFor((): void => expect(createPerson).toHaveBeenCalledOnce());
+        expect(wrapper.get('[data-testid="person-creation-save-error-alert-text"]').text()).toBe(
+          'Die Änderungen konnten nicht gespeichert werden.',
+        );
+        expect(vorname.props()).toHaveProperty('modelValue', 'Randy');
+        expect(familienname.props()).toHaveProperty('modelValue', 'Cena');
+        expect(zuordnung.props()).toHaveProperty('selectedOrganisation', organisation);
+        expect(zuordnung.props()).toHaveProperty('selectedRollen', [rolle]);
+        await vi.waitFor((): void => expect(submitButton.disabled).toBe(false));
+      });
+    });
+
+    describe('limited person creation', () => {
+      async function setupLimitedPersonCreation(): Promise<FormSetup> {
+        wrapper?.unmount();
+        await router.push({ name: 'create-person-limited' });
+        return setupCreationForm();
+      }
+
+      it('enables saving only for valid input and retains it after a rejected save', async () => {
+        const setup: FormSetup = await setupLimitedPersonCreation();
+        const { view, submitButton, organisation, rolle, zuordnung }: FormSetup = setup;
+        wrapper = view;
+        expect(submitButton.disabled).toBe(true);
+
+        await selectZuordnung(setup);
+        await vi.waitFor((): void => expect(submitButton.disabled).toBe(true));
+
+        const { vorname, familienname, createPerson }: SaveSetup = await setupRejectedSave(view);
+        await vi.waitFor((): void => expect(submitButton.disabled).toBe(false));
+
+        await wrapper.get('[data-testid="person-creation-form"]').trigger('submit');
+        await vi.waitFor((): void => expect(createPerson).toHaveBeenCalledOnce());
+        expect(wrapper.get('[data-testid="person-creation-save-error-alert-text"]').text()).toBe(
+          'Die Änderungen konnten nicht gespeichert werden.',
+        );
+        expect(vorname.props()).toHaveProperty('modelValue', 'Randy');
+        expect(familienname.props()).toHaveProperty('modelValue', 'Cena');
+        expect(zuordnung.props()).toHaveProperty('selectedOrganisation', organisation);
+        expect(zuordnung.props()).toHaveProperty('selectedRollen', [rolle]);
+        await vi.waitFor((): void => expect(submitButton.disabled).toBe(false));
+      });
+    });
+  });
+
   describe('organisation selection and navigation', () => {
     type AutoselectedSchuleSetup = {
       view: Awaited<ReturnType<typeof mountComponent>>;
@@ -1061,9 +1178,9 @@ describe('PersonCreationView', () => {
   });
 
   describe(`${CreationType.AddPersonToOwnSchule}`, () => {
-    test('should retain the selected Organisation and Rolle in the Landesbediensteter success template', async () => {
+    test('should retain the Zuordnung after a rejected save and allow a retry', async () => {
       const landesbediensteter: PersonLandesbediensteterSearchResponse =
-        DoFactory.getPersonLandesbediensteterSearchResponse();
+        DoFactory.getPersonLandesbediensteterSearchResponse({ vorname: 'Randy', familienname: 'Cena' });
       const mockLandesbedienstetePersonen: PersonLandesbediensteterSearchResponse[] = [landesbediensteter];
       const organisationId: string = ORGANISATION_ID;
       const organisation: Organisation = DoFactory.getSchule({ id: organisationId, kennung: null });
@@ -1075,11 +1192,12 @@ describe('PersonCreationView', () => {
       await router.push({ name: 'add-person-to-own-schule' });
       await router.isReady();
 
+      personenkontextStore.workflowStepResponse = null;
       wrapper = await mountComponent();
-      await nextTick();
-      personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-        canCommit: true,
-      });
+      const submitButton: HTMLButtonElement = wrapper.get<HTMLButtonElement>(
+        'button[data-testid="person-creation-form-submit-button"]',
+      ).element;
+      expect(submitButton.disabled).toBe(true);
 
       const organisationSelect: VueWrapper | undefined = wrapper
         .findComponent({ ref: 'personenkontext-create' })
@@ -1096,17 +1214,39 @@ describe('PersonCreationView', () => {
 
       rolleStore.rollenForPersonenkontextCreation = [];
       await flushPromises();
+      await vi.waitFor((): void => expect(submitButton.disabled).toBe(false));
 
-      await wrapper.find('[data-testid="person-creation-form-submit-button"]').trigger('click');
-      await nextTick();
+      await wrapper.get('[data-testid="person-creation-form"]').trigger('submit');
       await flushPromises();
 
       const confirmButton: Element = await vi.waitUntil(() =>
         document.querySelector('[data-testid="confirm-add-person-button"]'),
       );
-      await nextTick();
-
       vi.mocked(personenkontextStore.zuordnenLandesbedienstete).mockImplementationOnce((): Promise<void> => {
+        personenkontextStore.errorCode = 'PERSONENKONTEXTE_UPDATE_ERROR';
+        return Promise.resolve();
+      });
+      confirmButton.dispatchEvent(new Event('click'));
+      await flushPromises();
+
+      expect(wrapper.get('[data-testid="person-creation-save-error-alert-text"]').text()).toBe(
+        'Die Änderungen konnten nicht gespeichert werden.',
+      );
+      expect(wrapper.findComponent({ ref: 'personenkontext-create' }).props()).toHaveProperty(
+        'selectedOrganisation',
+        organisation,
+      );
+      expect(wrapper.findComponent({ ref: 'personenkontext-create' }).props()).toHaveProperty('selectedRollen', [
+        rolle,
+      ]);
+      await vi.waitFor((): void => expect(submitButton.disabled).toBe(false));
+
+      await wrapper.get('[data-testid="person-creation-form"]').trigger('submit');
+      const retryButton: Element = await vi.waitUntil(() =>
+        document.querySelector('[data-testid="confirm-add-person-button"]'),
+      );
+      vi.mocked(personenkontextStore.zuordnenLandesbedienstete).mockImplementationOnce((): Promise<void> => {
+        personenkontextStore.errorCode = '';
         personenkontextStore.updatedPersonenkontexte = DoFactory.getPersonenkontextUpdateResponse({
           dBiamPersonenkontextResponses: [
             DoFactory.getDBiamPersonenkontextResponse({
@@ -1118,7 +1258,7 @@ describe('PersonCreationView', () => {
         });
         return Promise.resolve();
       });
-      confirmButton.dispatchEvent(new Event('click'));
+      retryButton.dispatchEvent(new Event('click'));
       await flushPromises();
 
       expect(wrapper.get('[data-testid="added-state-employee-organisation"]').text()).toBe(organisation.name);

@@ -190,6 +190,13 @@
   }
 
   async function handleWorkflowStep(filter: WorkflowFilter): Promise<void> {
+    if (
+      filter.operationContext === OperationContext.PERSON_ANLEGEN ||
+      filter.operationContext === OperationContext.LANDESBEDIENSTETEN_KONTEXT_ERWEITERN
+    ) {
+      return;
+    }
+
     await personenkontextStore.processWorkflowStep(filter);
 
     canCommit.value = personenkontextStore.workflowStepResponse?.canCommit ?? false;
