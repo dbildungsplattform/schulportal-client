@@ -262,6 +262,7 @@
       case 'PERSONALNUMMER_NICHT_EINDEUTIG':
         return true;
       case '':
+      case 'COUNT_MISMATCHING':
       case 'NEWER_VERSION_OF_PERSONENKONTEXTE_AVAILABLE':
       case 'REQUIRED_STEP_UP_LEVEL_NOT_MET':
       case 'PERSON_NOT_FOUND':

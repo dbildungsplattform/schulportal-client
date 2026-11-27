@@ -851,13 +851,13 @@ describe('PersonDetailsView', () => {
   });
 
   describe('adding a regular Zuordnung', () => {
-    type RejectedSaveSetup = Pick<PersonDetailsSetup, 'wrapper' | 'personenkontextStore'> & {
+    type RejectedSaveSetup = Pick<PersonDetailsSetup, 'wrapper' | 'personenkontextStore' | 'router'> & {
       school: Organisation;
       role: TranslatedRolleWithAttrs;
     };
 
-    const setupRejectedSave = async (): Promise<RejectedSaveSetup> => {
-      const { wrapper, personenkontextStore }: PersonDetailsSetup = await setup();
+    const setupRejectedSave = async (errorCode: string = 'PERSONENKONTEXTE_UPDATE_ERROR'): Promise<RejectedSaveSetup> => {
+      const { wrapper, personenkontextStore, router }: PersonDetailsSetup = await setup();
       const school: Organisation = DoFactory.getSchule();
       const role: TranslatedRolleWithAttrs = {
         value: 'new-role',
@@ -884,12 +884,12 @@ describe('PersonDetailsView', () => {
       await flushPromises();
 
       vi.mocked(personenkontextStore.updatePersonenkontexte).mockImplementationOnce((): Promise<void> => {
-        personenkontextStore.errorCode = 'PERSONENKONTEXTE_UPDATE_ERROR';
+        personenkontextStore.errorCode = errorCode;
         return Promise.resolve();
       });
       await wrapper.get('[data-testid="zuordnung-changes-save-button"]').trigger('click');
       await flushPromises();
-      return { wrapper, personenkontextStore, school, role };
+      return { wrapper, personenkontextStore, router, school, role };
     };
 
     test('returns to the retained form after a save is rejected', async () => {
@@ -906,6 +906,20 @@ describe('PersonDetailsView', () => {
       expect(personenkontextStore.errorCode).toBe('');
       expect(selector.props()).toHaveProperty('selectedOrganisation', school);
       expect(selector.props()).toHaveProperty('selectedRolle', role);
+    });
+
+    test('refreshes the assignment snapshot when the save is rejected due to a count mismatch', async () => {
+      const { wrapper, router }: RejectedSaveSetup = await setupRejectedSave('COUNT_MISMATCHING');
+      const reload: MockInstance = vi.spyOn(router, 'go').mockImplementation((): void => {});
+      const alertButton: Omit<DOMWrapper<Element>, 'exists'> = wrapper
+        .findComponent({ ref: 'personenkontext-store-error-alert' })
+        .get('[data-testid="spsh-alert-button"]');
+      expect(alertButton.text()).toBe('Daten aktualisieren');
+
+      await alertButton.trigger('click');
+      await flushPromises();
+
+      expect(reload).toHaveBeenCalledExactlyOnceWith(0);
     });
   });
 
