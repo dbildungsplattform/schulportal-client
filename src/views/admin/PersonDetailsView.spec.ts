@@ -915,8 +915,7 @@ describe('PersonDetailsView', () => {
 
     expect(document.querySelector('[data-testid="lock-user-info-text"]')).not.toBeNull();
     expect(
-      document.querySelector<HTMLInputElement>('[data-testid="unbefristet-radio-button"] input[type="radio"]')
-        ?.checked,
+      document.querySelector<HTMLInputElement>('[data-testid="unbefristet-radio-button"] input[type="radio"]')?.checked,
     ).toBe(true);
 
     const lockUserButton: HTMLButtonElement | null = document.querySelector('[data-testid="lock-user-button"]');
