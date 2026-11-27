@@ -29,11 +29,7 @@ import {
   TraegerschaftTyp,
   type UserinfoResponse,
 } from '@/api-client/generated';
-import {
-  PersonenkontextWorkflowResponse,
-  ServiceProviderMerkmal,
-  ServiceProviderSystem,
-} from '@/api-client/generated/api';
+import { ServiceProviderMerkmal, ServiceProviderSystem } from '@/api-client/generated/api';
 import type { Organisation } from '@/stores/OrganisationStore';
 import { type Personendatensatz } from '@/stores/PersonStore';
 import type {
@@ -387,17 +383,6 @@ export class DoFactory {
       title: rolle.name,
       rollenart: rolle.rollenart,
       merkmale: rolle.merkmale,
-      ...props,
-    };
-  }
-
-  public static getPersonenkontextWorkflowResponse(
-    props?: Partial<PersonenkontextWorkflowResponse>,
-  ): PersonenkontextWorkflowResponse {
-    return {
-      selectedOrganisation: null,
-      selectedRollen: null,
-      canCommit: false,
       ...props,
     };
   }

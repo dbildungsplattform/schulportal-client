@@ -204,12 +204,6 @@ describe('PersonDetailsView', () => {
       },
     ];
 
-    personenkontextStore.workflowStepResponse = {
-      selectedOrganisation: 'string',
-      selectedRollen: ['string'],
-      canCommit: true,
-    };
-
     organisationStore.getParentOrganisationsByIds = (_organisationIds: string[]): Promise<void> => {
       return Promise.resolve();
     };

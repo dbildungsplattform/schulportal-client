@@ -288,9 +288,8 @@ describe('ZuordnungenSection', () => {
     });
   });
 
-  test('it displays the school of the selected Zuordnung when the workflow returns no organisations', async () => {
-    const { personenkontextStore, schule, startEditingWithSelection }: ZuordnungenSectionSetup = await setup();
-    personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse();
+  test('it displays the school of the selected Zuordnung when changing its class', async () => {
+    const { schule, startEditingWithSelection }: ZuordnungenSectionSetup = await setup();
     const wrapper: ZuordnungenSectionWrapper = await startEditingWithSelection();
 
     await wrapper.get('[data-testid="klasse-change-button"]').trigger('click');

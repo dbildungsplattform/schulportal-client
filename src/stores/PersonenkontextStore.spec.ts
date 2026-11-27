@@ -6,13 +6,10 @@ import { DoFactory } from 'test/DoFactory';
 import type { Organisation } from './OrganisationStore';
 import {
   mapZuordnungToPersonenkontextUpdate,
-  OperationContext,
   usePersonenkontextStore,
   type PersonenkontexteUpdateResponse,
   type PersonenkontextStore,
   type PersonenkontextUpdate,
-  type PersonenkontextWorkflowResponse,
-  type WorkflowFilter,
 } from './PersonenkontextStore';
 import { usePersonStore, type PersonendatensatzResponse, type PersonStore } from './PersonStore';
 import { PersonenUebersicht } from './types/PersonenUebersicht';
@@ -51,11 +48,8 @@ describe('PersonenkontextStore', () => {
   it('should initalize state correctly', () => {
     expect(personenkontextStore.errorCode).toEqual('');
     expect(personenkontextStore.loading).toBe(false);
-    expect(personenkontextStore.workflowStepResponse).toBeNull();
     expect(personenkontextStore.updatedPersonenkontexte).toBeNull();
     expect(personenkontextStore.createdPersonWithKontext).toBeNull();
-    expect(personenkontextStore.totalFilteredRollen).toBe(0);
-    expect(personenkontextStore.totalPaginatedRollen).toBe(0);
   });
 
   describe('mapZuordnungToPersonenkontextUpdate', () => {
@@ -81,120 +75,6 @@ describe('PersonenkontextStore', () => {
           rolleId: zuordnung.rolleId,
           befristung: undefined,
         });
-      });
-    });
-  });
-
-  describe('processWorkflowStep', () => {
-    const getUrl = (filter: WorkflowFilter): string => {
-      const { operationContext, organisationId, rollenIds, organisationName, limit }: WorkflowFilter = filter;
-      let url: string = `/api/personenkontext-workflow/step?operationContext=${operationContext}`;
-      if (organisationId) {
-        url += `&organisationId=${organisationId}`;
-      }
-      if (rollenIds) {
-        rollenIds.forEach((rolleId: string) => (url += `&rollenIds=${rolleId}`));
-      }
-      if (organisationName) {
-        url += `&organisationName=${organisationName}`;
-      }
-      if (limit) {
-        url += `&limit=${limit}`;
-      }
-      return url;
-    };
-
-    describe('when operationContext is PERSON_ANLEGEN', () => {
-      const operationContext: OperationContext = OperationContext.PERSON_ANLEGEN;
-      const mockResponse: PersonenkontextWorkflowResponse = DoFactory.getPersonenkontextWorkflowResponse();
-
-      it('should get step', async () => {
-        mockadapter.onGet(getUrl({ operationContext })).replyOnce(200, mockResponse);
-        const promise: Promise<void> = personenkontextStore.processWorkflowStep({ operationContext });
-        expect(personenkontextStore.loading).toBe(true);
-        await promise;
-        expect(personenkontextStore.workflowStepResponse).toEqual(mockResponse);
-        expect(personenkontextStore.loading).toBe(false);
-      });
-
-      it('should get step with parameters', async () => {
-        mockadapter
-          .onGet(getUrl({ operationContext, organisationId: '1', rollenIds: ['1'] }))
-          .replyOnce(200, mockResponse);
-        const promise: Promise<void> = personenkontextStore.processWorkflowStep({
-          operationContext,
-          organisationId: '1',
-          rollenIds: ['1'],
-        });
-        expect(personenkontextStore.loading).toBe(true);
-        await promise;
-        expect(personenkontextStore.workflowStepResponse).toEqual(mockResponse);
-        expect(personenkontextStore.loading).toBe(false);
-      });
-
-      it('should handle string error', async () => {
-        mockadapter.onGet(getUrl({ operationContext })).replyOnce(500, 'some error');
-        const promise: Promise<void> = personenkontextStore.processWorkflowStep({ operationContext });
-        expect(personenkontextStore.loading).toBe(true);
-        await promise;
-        expect(personenkontextStore.errorCode).toEqual('UNSPECIFIED_ERROR');
-        expect(personenkontextStore.loading).toBe(false);
-      });
-
-      it('should handle error code', async () => {
-        mockadapter.onGet(getUrl({ operationContext })).replyOnce(500, { code: 'some mock server error' });
-        const promise: Promise<void> = personenkontextStore.processWorkflowStep({ operationContext });
-        expect(personenkontextStore.loading).toBe(true);
-        await promise;
-        expect(personenkontextStore.errorCode).toEqual('some mock server error');
-        expect(personenkontextStore.loading).toBe(false);
-      });
-    });
-
-    describe('when operationContext is PERSON_BEARBEITEN', () => {
-      const operationContext: OperationContext = OperationContext.PERSON_BEARBEITEN;
-      const mockResponse: PersonenkontextWorkflowResponse = DoFactory.getPersonenkontextWorkflowResponse();
-
-      it('should get step', async () => {
-        mockadapter.onGet(getUrl({ operationContext })).replyOnce(200, mockResponse);
-        const promise: Promise<void> = personenkontextStore.processWorkflowStep({ operationContext });
-        expect(personenkontextStore.loading).toBe(true);
-        await promise;
-        expect(personenkontextStore.workflowStepResponse).toEqual(mockResponse);
-        expect(personenkontextStore.loading).toBe(false);
-      });
-
-      it('should get step with parameters', async () => {
-        mockadapter
-          .onGet(getUrl({ operationContext, organisationId: '1', rollenIds: ['1'] }))
-          .replyOnce(200, mockResponse);
-        const promise: Promise<void> = personenkontextStore.processWorkflowStep({
-          operationContext,
-          organisationId: '1',
-          rollenIds: ['1'],
-        });
-        expect(personenkontextStore.loading).toBe(true);
-        await promise;
-        expect(personenkontextStore.workflowStepResponse).toEqual(mockResponse);
-        expect(personenkontextStore.loading).toBe(false);
-      });
-
-      it('should handle string error', async () => {
-        mockadapter.onGet(getUrl({ operationContext })).replyOnce(500, 'some error');
-        const promise: Promise<void> = personenkontextStore.processWorkflowStep({ operationContext });
-        expect(personenkontextStore.loading).toBe(true);
-        await promise;
-        expect(personenkontextStore.errorCode).toEqual('UNSPECIFIED_ERROR');
-        expect(personenkontextStore.loading).toBe(false);
-      });
-
-      it('should handle error code', async () => {
-        mockadapter.onGet(getUrl({ operationContext })).replyOnce(500, { code: 'some mock server error' });
-        const promise: Promise<void> = personenkontextStore.processWorkflowStep({ operationContext });
-        expect(personenkontextStore.loading).toBe(true);
-        await promise;
-        expect(personenkontextStore.errorCode).toEqual('some mock server error');
-        expect(personenkontextStore.loading).toBe(false);
       });
     });
   });

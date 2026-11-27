@@ -10,12 +10,7 @@ import {
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore } from '@/stores/AuthStore';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
-import {
-  CreationType,
-  usePersonenkontextStore,
-  type PersonenkontextStore,
-  type PersonenkontextWorkflowResponse,
-} from '@/stores/PersonenkontextStore';
+import { CreationType, usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import {
   RollenArt,
@@ -82,10 +77,6 @@ const mockRolleForPersonenkontextCreation: TranslatedRolleWithAttrs = {
   merkmale: mockRolleResponseForPersonenkontextCreation.merkmale,
   rollenart: mockRolleResponseForPersonenkontextCreation.rollenart,
 };
-
-const mockWorkflowStepResponse: PersonenkontextWorkflowResponse = DoFactory.getPersonenkontextWorkflowResponse({
-  canCommit: true,
-});
 
 organisationStore.allOrganisationen = [
   DoFactory.getOrganisationenResponseLegacy({
@@ -268,7 +259,6 @@ beforeEach(async () => {
   personStore.errorCode = '';
   personenkontextStore.errorCode = '';
   personenkontextStore.createdPersonWithKontext = null;
-  personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
 });
 
 describe('PersonCreationView', () => {
@@ -286,7 +276,6 @@ describe('PersonCreationView', () => {
         rollenart: RollenArt.Lehr,
         merkmale: [],
       });
-      personenkontextStore.workflowStepResponse = null;
       rolleStore.rollenForPersonenkontextCreation = [rolle];
       const view: Awaited<ReturnType<typeof mountComponent>> = await mountComponent();
       return {
@@ -410,7 +399,6 @@ describe('PersonCreationView', () => {
         ],
       });
       personStore.allLandesbedienstetePersonen = [];
-      personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse();
       wrapper?.unmount();
       await router.push({ name: routeName });
       const view: AutoselectedSchuleSetup['view'] = await mountComponent();
@@ -634,9 +622,6 @@ describe('PersonCreationView', () => {
         merkmale: [RollenMerkmal.KopersPflicht, RollenMerkmal.BefristungPflicht],
       });
       const organisation: Organisation = DoFactory.getSchule({ id: ORGANISATION_ID, kennung: '1234567' });
-      personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-        canCommit: true,
-      });
       const personenkontextCreate: VueWrapper = wrapper!.findComponent({ ref: 'personenkontext-create' });
       await personenkontextCreate
         .findComponent({ ref: 'schulenFilter' })
@@ -713,8 +698,6 @@ describe('PersonCreationView', () => {
     });
 
     test('it fills form and triggers submit', async () => {
-      personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
-
       const organisationSelect: VueWrapper | undefined = wrapper
         ?.findComponent({ ref: 'personenkontext-create' })
         .findComponent({ ref: 'schulenFilter' })
@@ -764,8 +747,6 @@ describe('PersonCreationView', () => {
     });
 
     test('it fills form, triggers submit and then show success template', async () => {
-      personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
-
       const organisationSelect: VueWrapper | undefined = wrapper
         ?.findComponent({ ref: 'personenkontext-create' })
         .findComponent({ ref: 'schulenFilter' })
@@ -820,7 +801,6 @@ describe('PersonCreationView', () => {
     });
 
     test('it retains the selected Klasse in the request and success screen after search results change', async () => {
-      personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
       const klasse: Organisation = DoFactory.getKlasse(undefined, { name: '9a' });
 
       const spy: Mock = vi.spyOn(personenkontextStore, 'createPersonWithKontexte').mockImplementationOnce(async () => {
@@ -879,8 +859,6 @@ describe('PersonCreationView', () => {
     });
 
     test('it fills form for role with Koperspflicht, then clears Kopersnummer when role is removed', async () => {
-      personenkontextStore.workflowStepResponse = mockWorkflowStepResponse;
-
       const organisationSelect: VueWrapper | undefined = wrapper
         ?.findComponent({ ref: 'personenkontext-create' })
         .findComponent({ ref: 'schulenFilter' })
@@ -1192,7 +1170,6 @@ describe('PersonCreationView', () => {
       await router.push({ name: 'add-person-to-own-schule' });
       await router.isReady();
 
-      personenkontextStore.workflowStepResponse = null;
       wrapper = await mountComponent();
       const submitButton: HTMLButtonElement = wrapper.get<HTMLButtonElement>(
         'button[data-testid="person-creation-form-submit-button"]',
@@ -1292,9 +1269,6 @@ describe('PersonCreationView', () => {
         personStore.allLandesbedienstetePersonen = [landesbediensteter];
         personStore.personenuebersicht = buildPersonenuebersicht();
         rolleStore.rollenForPersonenkontextCreation = [lehrRolle];
-        personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-          canCommit: true,
-        });
 
         wrapper?.unmount();
         await router.push({ name: 'add-person-to-own-schule' });

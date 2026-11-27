@@ -9,7 +9,6 @@ import {
   type DBiamPersonResponse,
   type PersonenkontextApiInterface,
   type PersonenkontexteUpdateResponse,
-  type PersonenkontextWorkflowResponse,
   type PersonenzuordnungBodyParams,
   type PersonenzuordnungenBearbeitenBodyParams,
   type RolleResponse,
@@ -54,23 +53,6 @@ export enum RolleDialogMode {
 
 export type PersonenkontextUpdate = PersonenzuordnungBodyParams;
 
-export type WorkflowFilter = {
-  operationContext: OperationContext;
-  personId?: string;
-  organisationId?: string;
-  rollenIds?: string[];
-  organisationName?: string;
-  limit?: number;
-};
-
-export type LandesbediensteterWorkflowFilter = {
-  organisationId?: string;
-  rollenIds?: string[];
-  rolleName?: string;
-  organisationName?: string;
-  limit?: number;
-};
-
 export function mapZuordnungToPersonenkontextUpdate(
   zuordnung: Pick<Zuordnung, 'sskId' | 'rolleId' | 'befristung'>,
 ): PersonenkontextUpdate {
@@ -94,17 +76,13 @@ function buildUpdateParams(personenkontexte: PersonenkontextUpdate[]): Personenz
 
 type PersonenkontextState = {
   updatedPersonenkontexte: PersonenkontexteUpdateResponse | null;
-  workflowStepResponse: PersonenkontextWorkflowResponse | null;
   createdPersonWithKontext: DBiamPersonResponse | null;
   errorCode: string;
   loading: boolean;
-  totalFilteredRollen: number;
-  totalPaginatedRollen: number;
 };
 
 type PersonenkontextGetters = object;
 type PersonenkontextActions = {
-  processWorkflowStep: (filter: WorkflowFilter) => Promise<void>;
   updatePersonenkontexte: (
     personenkontexte: PersonenkontextUpdate[],
     personId: string,
@@ -122,7 +100,6 @@ export type {
   DbiamCreatePersonenkontextBodyParams,
   DBiamPersonenkontextResponse,
   PersonenkontexteUpdateResponse,
-  PersonenkontextWorkflowResponse,
   RolleResponse,
   SystemRechtResponse,
 };
@@ -150,34 +127,13 @@ export const usePersonenkontextStore: StoreDefinition<
 > = defineStore('personenkontextStore', {
   state: (): PersonenkontextState => {
     return {
-      workflowStepResponse: null,
       updatedPersonenkontexte: null,
       createdPersonWithKontext: null,
       errorCode: '',
       loading: false,
-      totalFilteredRollen: 0,
-      totalPaginatedRollen: 0,
     };
   },
   actions: {
-    async processWorkflowStep(filter: WorkflowFilter): Promise<void> {
-      this.loading = true;
-      try {
-        const { data }: { data: PersonenkontextWorkflowResponse } =
-          await personenKontextApi.dbiamPersonenkontextWorkflowControllerProcessStep(
-            filter.operationContext,
-            filter.personId,
-            filter.organisationId,
-            filter.rollenIds,
-          );
-        this.workflowStepResponse = data;
-      } catch (error: unknown) {
-        this.errorCode = getResponseErrorCode(error, 'UNSPECIFIED_ERROR');
-      } finally {
-        this.loading = false;
-      }
-    },
-
     async zuordnenLandesbedienstete(
       updatedPersonenkontexte: PersonenkontextUpdate[],
       personId: string,
