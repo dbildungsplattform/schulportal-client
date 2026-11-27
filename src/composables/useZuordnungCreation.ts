@@ -47,11 +47,11 @@ export type ZuordnungCreation = Omit<PersonenkontextFieldDefinitions, 'selectedK
   showNoKopersNrConfirmationDialog: Ref<boolean>;
   hasNoKopersNr: Ref<boolean | undefined>;
   hasKopersNummer: ComputedRef<boolean>;
-  canCommit: Ref<boolean>;
+  canSubmitCreationForm: ComputedRef<boolean>;
   filteredRollen: ComputedRef<TranslatedRolleWithAttrs[]>;
   existingRollenArt: ComputedRef<RollenArt | undefined>;
   isZuordnungCreationFormDirty: ComputedRef<boolean>;
-  resetCreationForm: FormContext<ZuordnungCreationForm, ZuordnungCreationForm>['resetForm'];
+  resetCreationForm: () => void;
   handleBefristungUpdate: BefristungUtilsType['handleBefristungUpdate'];
   handleBefristungOptionUpdate: BefristungUtilsType['handleBefristungOptionUpdate'];
   handleKlasseUpdate: (newSelection: Organisation | undefined) => void;
@@ -87,7 +87,6 @@ export function useZuordnungCreation(params: {
   const createZuordnungConfirmationDialogVisible: Ref<boolean> = ref(false);
   const createZuordnungConfirmationDialogMessage: Ref<string> = ref('');
   const showNoKopersNrConfirmationDialog: Ref<boolean> = ref(false);
-  const canCommit: Ref<boolean> = ref(false);
   const hasNoKopersNr: Ref<boolean | undefined> = ref(false);
 
   const hasKopersNummer: ComputedRef<boolean> = computed(() => {
@@ -115,6 +114,15 @@ export function useZuordnungCreation(params: {
     selectedKopersNrProps,
   }: PersonenkontextFieldDefinitions = getPersonenkontextFieldDefinitions(formContext);
   const selectedKlasse: Ref<Organisation | undefined> = ref();
+  const canSubmitCreationForm: ComputedRef<boolean> = computed(
+    (): boolean =>
+      !!selectedOrganisation.value &&
+      !!selectedRolle.value &&
+      (selectedRolle.value.rollenart !== RollenArt.Lern || !!selectedKlasseId.value) &&
+      formContext.meta.value.valid &&
+      !formContext.meta.value.pending &&
+      !formContext.isSubmitting.value,
+  );
 
   watch(selectedKlasseId, (klasseId: string | undefined): void => {
     if (!klasseId) {
@@ -142,6 +150,7 @@ export function useZuordnungCreation(params: {
     if (newValue) {
       showNoKopersNrConfirmationDialog.value = true;
     }
+    void formContext.validate({ mode: 'validated-only' });
   });
 
   watchEffect(async () => {
@@ -223,7 +232,6 @@ export function useZuordnungCreation(params: {
 
   const confirmDialogAddition = (): void => {
     createZuordnungConfirmationDialogVisible.value = false;
-    hasNoKopersNr.value = false;
 
     const befristungDate: string | undefined = selectedBefristung.value
       ? selectedBefristung.value
@@ -253,6 +261,11 @@ export function useZuordnungCreation(params: {
     createZuordnungConfirmationDialogVisible.value = false;
   };
 
+  const resetCreationForm = (): void => {
+    hasNoKopersNr.value = false;
+    formContext.resetForm();
+  };
+
   // This will send the updated list of Zuordnungen to the Backend on TOP of the new added one through the form.
   async function confirmAddition(): Promise<void> {
     await personenkontextStore.updatePersonenkontexte(
@@ -263,7 +276,7 @@ export function useZuordnungCreation(params: {
     createSuccessDialogVisible.value = !personenkontextStore.errorCode;
     // On failure the values are kept, so the user can correct them after navigating back to the form
     if (!personenkontextStore.errorCode) {
-      formContext.resetForm();
+      resetCreationForm();
     }
     personStore.getPersonById(personId.value);
   }
@@ -309,11 +322,11 @@ export function useZuordnungCreation(params: {
     showNoKopersNrConfirmationDialog,
     hasNoKopersNr,
     hasKopersNummer,
-    canCommit,
+    canSubmitCreationForm,
     filteredRollen,
     existingRollenArt,
     isZuordnungCreationFormDirty,
-    resetCreationForm: formContext.resetForm,
+    resetCreationForm,
     selectedRolle,
     selectedRolleProps,
     selectedOrganisation,

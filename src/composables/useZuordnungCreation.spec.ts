@@ -326,7 +326,7 @@ describe('useZuordnungCreation', () => {
       creation.confirmDialogAddition();
 
       expect(creation.createZuordnungConfirmationDialogVisible.value).toBe(false);
-      expect(creation.hasNoKopersNr.value).toBe(false);
+      expect(creation.hasNoKopersNr.value).toBe(true);
       expect(state.newZuordnung.value).toMatchObject({
         sskId: otherSchule.id,
         rolleId: lehrRolle.value,

@@ -91,7 +91,7 @@
     showNoKopersNrConfirmationDialog,
     hasNoKopersNr,
     hasKopersNummer,
-    canCommit,
+    canSubmitCreationForm,
     filteredRollen,
     existingRollenArt,
     isZuordnungCreationFormDirty,
@@ -255,7 +255,8 @@
     }
   });
 
-  defineExpose({ navigateToZuordnungForm });
+  const isCreationReviewActive: ComputedRef<boolean> = computed(() => pendingOperation.value === 'creation');
+  defineExpose({ isCreationReviewActive, navigateToZuordnungForm });
 </script>
 
 <template>
@@ -316,6 +317,7 @@
               :person-id="props.personId"
               :rollenart-for-person="existingRollenArt"
               :operation-context="OperationContext.PERSON_BEARBEITEN"
+              skip-workflow-prevalidation
               :allow-multiple-rollen="false"
               :show-headline="false"
               :rollen="filteredRollen"
@@ -332,7 +334,6 @@
                 befristung: selectedBefristung,
                 befristungOption: selectedBefristungOption,
               }"
-              @update:can-commit="canCommit = $event"
               @update:befristung="handleBefristungUpdate($event)"
               @update:calculated-befristung-option="handleBefristungOptionUpdate($event)"
               @update:selected-klasse="handleKlasseUpdate"
@@ -357,7 +358,7 @@
           >
             <v-btn
               :block="mdAndDown"
-              :disabled="!canCommit || personenkontextStore.loading"
+              :disabled="!canSubmitCreationForm || personenkontextStore.loading"
               class="primary"
               data-testid="zuordnung-creation-submit-button"
               type="submit"

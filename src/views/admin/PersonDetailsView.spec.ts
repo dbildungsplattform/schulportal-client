@@ -8,10 +8,21 @@ import { EmailAddressStatus, ServiceProviderSystem, type OrganisationResponse } 
 import routes from '@/router/routes';
 import { useAuthStore, type AuthStore, type PersonenkontextRolleFields, type UserInfo } from '@/stores/AuthStore';
 import { useConfigStore, type ConfigStore } from '@/stores/ConfigStore';
-import { OrganisationsTyp, useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
+import {
+  OrganisationsTyp,
+  useOrganisationStore,
+  type Organisation,
+  type OrganisationStore,
+} from '@/stores/OrganisationStore';
 import { usePersonenkontextStore, type PersonenkontextStore } from '@/stores/PersonenkontextStore';
 import { usePersonStore, type Personendatensatz, type PersonStore } from '@/stores/PersonStore';
-import { RollenArt, RollenMerkmal, useRolleStore, type RolleStore } from '@/stores/RolleStore';
+import {
+  RollenArt,
+  RollenMerkmal,
+  useRolleStore,
+  type RolleStore,
+  type TranslatedRolleWithAttrs,
+} from '@/stores/RolleStore';
 import { useServiceProviderStore, type ServiceProviderStore } from '@/stores/ServiceProviderStore';
 import {
   useTwoFactorAuthentificationStore,
@@ -843,6 +854,65 @@ describe('PersonDetailsView', () => {
 
     expect(wrapper?.find('[data-testid="zuordnung-creation-form"]').exists()).toBe(true);
     expect(personenkontextStore.errorCode).toBe('');
+  });
+
+  describe('adding a regular Zuordnung', () => {
+    type RejectedSaveSetup = Pick<PersonDetailsSetup, 'wrapper' | 'personenkontextStore'> & {
+      school: Organisation;
+      role: TranslatedRolleWithAttrs;
+    };
+
+    const setupRejectedSave = async (): Promise<RejectedSaveSetup> => {
+      const { wrapper, personenkontextStore }: PersonDetailsSetup = await setup();
+      const school: Organisation = DoFactory.getSchule();
+      const role: TranslatedRolleWithAttrs = {
+        value: 'new-role',
+        title: 'Lehrkraft',
+        rollenart: RollenArt.Lehr,
+        merkmale: [],
+      };
+      await wrapper.get('[data-testid="zuordnung-edit-button"]').trigger('click');
+      await wrapper.get('[data-testid="zuordnung-create-button"]').trigger('click');
+      const selector: VueWrapper = wrapper.findComponent({ name: 'PersonenkontextCreate' });
+      selector.vm.$emit('update:selectedOrganisation', school);
+      await flushPromises();
+      selector.vm.$emit('update:selectedRolle', role);
+      await wrapper.get('[data-testid="zuordnung-creation-form"]').trigger('submit');
+      await flushPromises();
+      const confirmButton: HTMLElement = await vi.waitFor((): HTMLElement => {
+        const button: HTMLElement | null = document.querySelector('[data-testid="confirm-zuordnung-dialog-addition"]');
+        if (!button) {
+          throw new Error('Missing Zuordnung confirmation');
+        }
+        return button;
+      });
+      confirmButton.click();
+      await flushPromises();
+
+      vi.mocked(personenkontextStore.updatePersonenkontexte).mockImplementationOnce((): Promise<void> => {
+        personenkontextStore.errorCode = 'PERSONENKONTEXTE_UPDATE_ERROR';
+        return Promise.resolve();
+      });
+      await wrapper.get('[data-testid="zuordnung-changes-save-button"]').trigger('click');
+      await flushPromises();
+      return { wrapper, personenkontextStore, school, role };
+    };
+
+    test('returns to the retained form after a save is rejected', async () => {
+      const { wrapper, personenkontextStore, school, role }: RejectedSaveSetup = await setupRejectedSave();
+      const alertButton: Omit<DOMWrapper<Element>, 'exists'> = wrapper
+        .findComponent({ ref: 'personenkontext-store-error-alert' })
+        .get('[data-testid="spsh-alert-button"]');
+      expect(alertButton.text()).toBe('Zurück zur Eingabe');
+
+      await alertButton.trigger('click');
+      await flushPromises();
+
+      const selector: VueWrapper = wrapper.findComponent({ name: 'PersonenkontextCreate' });
+      expect(personenkontextStore.errorCode).toBe('');
+      expect(selector.props()).toHaveProperty('selectedOrganisation', school);
+      expect(selector.props()).toHaveProperty('selectedRolle', role);
+    });
   });
 
   test('it submits the form to lock the user', async () => {

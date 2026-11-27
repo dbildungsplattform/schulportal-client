@@ -59,6 +59,7 @@
     showHeadline: boolean;
     personId?: string;
     operationContext: OperationContext;
+    skipWorkflowPrevalidation?: boolean;
     selectedKlassenOption?: string | null;
     selectedKlasse?: Organisation;
     selectedKlasseForRadio?: Organisation;
@@ -191,6 +192,7 @@
 
   async function handleWorkflowStep(filter: WorkflowFilter): Promise<void> {
     if (
+      props.skipWorkflowPrevalidation ||
       filter.operationContext === OperationContext.PERSON_ANLEGEN ||
       filter.operationContext === OperationContext.LANDESBEDIENSTETEN_KONTEXT_ERWEITERN
     ) {

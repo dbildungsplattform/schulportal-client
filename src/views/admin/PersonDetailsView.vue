@@ -77,6 +77,7 @@
   const password: Ref<string> = ref('');
 
   type ZuordnungenSectionExposed = {
+    isCreationReviewActive: boolean;
     navigateToZuordnungForm: () => void;
   };
   const zuordnungenSection: Readonly<ShallowRef<ZuordnungenSectionExposed | null>> =
@@ -256,10 +257,25 @@
     personStore.getPersonById(currentPersonId);
   };
 
-  const alertButtonText: ComputedRef<string> = computed(() => {
+  const canReturnToZuordnungForm: ComputedRef<boolean> = computed(() => {
     switch (personenkontextStore.errorCode) {
       case 'PERSONALNUMMER_NICHT_EINDEUTIG':
-        return t('admin.person.backToInput');
+        return true;
+      case '':
+      case 'NEWER_VERSION_OF_PERSONENKONTEXTE_AVAILABLE':
+      case 'REQUIRED_STEP_UP_LEVEL_NOT_MET':
+      case 'PERSON_NOT_FOUND':
+        return false;
+      default:
+        return zuordnungenSection.value?.isCreationReviewActive === true;
+    }
+  });
+
+  const alertButtonText: ComputedRef<string> = computed(() => {
+    if (canReturnToZuordnungForm.value) {
+      return t('admin.person.backToInput');
+    }
+    switch (personenkontextStore.errorCode) {
       case 'PERSON_NOT_FOUND':
         return t('nav.backToList');
       default:
@@ -382,9 +398,10 @@
   });
 
   const alertButtonAction: ComputedRef<() => void> = computed(() => {
+    if (canReturnToZuordnungForm.value) {
+      return (): void => zuordnungenSection.value?.navigateToZuordnungForm();
+    }
     switch (personenkontextStore.errorCode) {
-      case 'PERSONALNUMMER_NICHT_EINDEUTIG':
-        return (): void => zuordnungenSection.value?.navigateToZuordnungForm();
       case 'PERSON_NOT_FOUND':
         return navigateToPersonTable;
       default:

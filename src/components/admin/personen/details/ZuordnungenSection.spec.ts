@@ -100,9 +100,6 @@ describe('ZuordnungenSection', () => {
 
     personStore.currentPerson = { person };
     personStore.personenuebersicht = DoFactory.getPersonenUebersicht(person, [schulZuordnung, klassenZuordnung]);
-    personenkontextStore.workflowStepResponse = DoFactory.getPersonenkontextWorkflowResponse({
-      canCommit: true,
-    });
     rolleStore.rollenForPersonenkontextCreation = rollen;
 
     const router: Router = createRouter({ history: createWebHistory(), routes });
@@ -372,16 +369,28 @@ describe('ZuordnungenSection', () => {
       expect(personenkontextCreate.props()).toHaveProperty('selectedRolle', undefined);
     });
 
-    test('it forwards the events of PersonenkontextCreate to the creation form', async () => {
-      const { openZuordnungCreationForm, isFormDirty, oldKlasse }: ZuordnungenSectionSetup = await setup();
+    test('enables submission only after the required Zuordnung fields are valid', async () => {
+      const { openZuordnungCreationForm, schule, oldKlasse, rollen }: ZuordnungenSectionSetup = await setup();
       const { sectionWrapper, creationWrapper: personenkontextCreate }: ZuordnungCreationFormSetup =
         await openZuordnungCreationForm();
       const submitButton: DOMWrapper<Element> = sectionWrapper.find('[data-testid="zuordnung-creation-submit-button"]');
 
       expect(submitButton.attributes('disabled')).toBeDefined();
-      personenkontextCreate.vm.$emit('update:canCommit', true);
-      await nextTick();
-      expect(submitButton.attributes('disabled')).toBeUndefined();
+      personenkontextCreate.vm.$emit('update:selectedOrganisation', schule);
+      await flushPromises();
+      personenkontextCreate.vm.$emit('update:selectedRolle', rollen[1]);
+      await flushPromises();
+      expect(submitButton.attributes('disabled')).toBeDefined();
+
+      personenkontextCreate.vm.$emit('update:selectedKlasse', oldKlasse);
+      personenkontextCreate.vm.$emit('update:befristung', '31.07.2099');
+      await vi.waitFor((): void => expect(submitButton.attributes('disabled')).toBeUndefined());
+    });
+
+    test('it forwards the events of PersonenkontextCreate to the creation form', async () => {
+      const { openZuordnungCreationForm, isFormDirty, oldKlasse }: ZuordnungenSectionSetup = await setup();
+      const { sectionWrapper, creationWrapper: personenkontextCreate }: ZuordnungCreationFormSetup =
+        await openZuordnungCreationForm();
 
       expect(isFormDirty(sectionWrapper)).toBe(false);
       personenkontextCreate.vm.$emit('update:selectedKlasse', oldKlasse);
@@ -426,7 +435,6 @@ describe('ZuordnungenSection', () => {
       await sectionWrapper.get('[data-testid="zuordnung-changes-save-button"]').trigger('click');
       await flushPromises();
 
-      vi.mocked(personenkontextStore.processWorkflowStep).mockClear();
       getVm(sectionWrapper).navigateToZuordnungForm();
       await flushPromises();
 
@@ -435,9 +443,6 @@ describe('ZuordnungenSection', () => {
       expect(reopenedCreate.findComponent({ name: 'KlassenFilter' }).props()).toHaveProperty(
         'selectedKlassen',
         newKlasse,
-      );
-      expect(personenkontextStore.processWorkflowStep).toHaveBeenLastCalledWith(
-        expect.objectContaining({ organisationId: schule.id, rollenIds: [rollen[1]!.value] }),
       );
     });
 
