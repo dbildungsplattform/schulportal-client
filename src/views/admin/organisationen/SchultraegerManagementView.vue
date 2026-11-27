@@ -1,17 +1,16 @@
 <script setup lang="ts">
-  import { onMounted, ref, type Ref } from 'vue';
-  import ResultTable, { type TableRow, type Headers } from '@/components/admin/ResultTable.vue';
+  import ResultTable, { type Headers, type TableRow } from '@/components/admin/ResultTable.vue';
+  import SpshAlert from '@/components/alert/SpshAlert.vue';
   import LayoutCard from '@/components/cards/LayoutCard.vue';
-  import { type Composer, useI18n } from 'vue-i18n';
   import {
     OrganisationsTyp,
     useOrganisationStore,
-    type Organisation,
     type OrganisationStore,
     type SchultraegerTableItem,
   } from '@/stores/OrganisationStore';
-  import { type SearchFilterStore, useSearchFilterStore } from '@/stores/SearchFilterStore';
-  import SpshAlert from '@/components/alert/SpshAlert.vue';
+  import { useSearchFilterStore, type SearchFilterStore } from '@/stores/SearchFilterStore';
+  import { onMounted } from 'vue';
+  import { useI18n, type Composer } from 'vue-i18n';
   import { onBeforeRouteLeave, useRouter, type Router } from 'vue-router';
 
   const organisationStore: OrganisationStore = useOrganisationStore();
@@ -28,10 +27,7 @@
       key: 'name',
       align: 'start',
     },
-    { title: t('admin.schultraeger.assignedSchulen'), key: 'schuleDetails', align: 'start' },
   ];
-
-  const allSchultraeger: Ref<Array<Organisation>> = ref([]);
 
   async function fetchSchultraeger(): Promise<void> {
     await organisationStore.getAllOrganisationen({
@@ -68,7 +64,6 @@
 
   onMounted(async () => {
     await fetchSchultraeger();
-    allSchultraeger.value = organisationStore.allSchultraeger;
   });
 
   onBeforeRouteLeave(() => {
@@ -130,14 +125,6 @@
               :title="item.name"
             >
               {{ item.name }}
-            </div>
-          </template>
-          <template #[`item.schuleDetails`]="{ item }">
-            <div
-              class="ellipsis-wrapper"
-              :title="item.schuleDetails"
-            >
-              {{ item.schuleDetails }}
             </div>
           </template>
         </ResultTable>

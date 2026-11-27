@@ -64,15 +64,11 @@
       (schultraeger: Organisation) => schultraeger.id === selectedSchultraegerform.value,
     )?.name;
     if (selectedSchultraegername.value && selectedSchultraegerform.value) {
-      await organisationStore.createOrganisation(
-        selectedSchultraegerform.value,
-        selectedSchultraegerform.value,
-        undefined,
-        selectedSchultraegername.value,
-        undefined,
-        undefined,
-        OrganisationsTyp.Traeger,
-      );
+      await organisationStore.createOrganisation({
+        administriertVon: selectedSchultraegerform.value,
+        name: selectedSchultraegername.value,
+        typ: OrganisationsTyp.Traeger,
+      });
       formContext.resetForm({
         values: {
           selectedSchultraegerform: initialSchultraegerformCache.value,

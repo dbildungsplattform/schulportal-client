@@ -217,7 +217,6 @@ export class DoFactory {
       // eslint-disable-next-line no-underscore-dangle
       traegerschaft: TraegerschaftTyp._01,
       administriertVon: faker.string.uuid(),
-      zugehoerigZu: faker.string.uuid(),
       kennung: faker.string.numeric(7),
       kuerzel: 'Schulkürzel',
       itslearningEnabled: true,

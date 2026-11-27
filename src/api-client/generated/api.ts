@@ -193,12 +193,6 @@ export interface CreateOrganisationBodyParams {
      */
     'administriertVon': string;
     /**
-     * 
-     * @type {string}
-     * @memberof CreateOrganisationBodyParams
-     */
-    'zugehoerigZu': string;
-    /**
      * Only allowed for SCHULE. Required when creating a SCHULE.
      * @type {string}
      * @memberof CreateOrganisationBodyParams
@@ -886,11 +880,8 @@ export const DbiamOrganisationErrorI18nKeyEnum = {
     KennungEnthaeltLeerzeichen: 'KENNUNG_ENTHAELT_LEERZEICHEN',
     EmailAdressOnOrganisationTyp: 'EMAIL_ADRESS_ON_ORGANISATION_TYP',
     NewerVersionOrganisation: 'NEWER_VERSION_ORGANISATION',
-    OrganisationWechseltTeilbaum: 'ORGANISATION_WECHSELT_TEILBAUM',
-    OrganisationZuweisungFehler: 'ORGANISATION_ZUWEISUNG_FEHLER',
     SchultraegerNameEindeutig: 'SCHULTRAEGER_NAME_EINDEUTIG',
     OrganisationHatKinder: 'ORGANISATION_HAT_KINDER',
-    OrganisationHatZugehoerige: 'ORGANISATION_HAT_ZUGEHOERIGE',
     OrganisationHatRollen: 'ORGANISATION_HAT_ROLLEN',
     OrganisationHatPersonenkontexte: 'ORGANISATION_HAT_PERSONENKONTEXTE',
     OrganisationHatAngebote: 'ORGANISATION_HAT_ANGEBOTE',
@@ -1938,19 +1929,6 @@ export type OperationContext = typeof OperationContext[keyof typeof OperationCon
 /**
  * 
  * @export
- * @interface OrganisationByIdBodyParams
- */
-export interface OrganisationByIdBodyParams {
-    /**
-     * The id of an organization
-     * @type {string}
-     * @memberof OrganisationByIdBodyParams
-     */
-    'organisationId': string;
-}
-/**
- * 
- * @export
  * @interface OrganisationByNameBodyParams
  */
 export interface OrganisationByNameBodyParams {
@@ -2060,12 +2038,6 @@ export interface OrganisationResponse {
      * @memberof OrganisationResponse
      */
     'administriertVon': string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganisationResponse
-     */
-    'zugehoerigZu': string | null;
     /**
      * 
      * @type {string}
@@ -4802,12 +4774,6 @@ export interface UpdateOrganisationBodyParams {
      * @memberof UpdateOrganisationBodyParams
      */
     'administriertVon': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UpdateOrganisationBodyParams
-     */
-    'zugehoerigZu': string;
     /**
      * Only allowed for SCHULE. Required when creating a SCHULE.
      * @type {string}
@@ -8436,53 +8402,6 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
     return {
         /**
          * 
-         * @param {string} organisationId The ID of the parent organisation to which another organisation will be added as a subordinate.
-         * @param {OrganisationByIdBodyParams} organisationByIdBodyParams The ID of the child organisation that will be assigned to the parent organisation.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        organisationControllerAddZugehoerigeOrganisation: async (organisationId: string, organisationByIdBodyParams: OrganisationByIdBodyParams, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'organisationId' is not null or undefined
-            assertParamExists('organisationControllerAddZugehoerigeOrganisation', 'organisationId', organisationId)
-            // verify required parameter 'organisationByIdBodyParams' is not null or undefined
-            assertParamExists('organisationControllerAddZugehoerigeOrganisation', 'organisationByIdBodyParams', organisationByIdBodyParams)
-            const localVarPath = `/api/organisationen/{organisationId}/zugehoerig`
-                .replace(`{${"organisationId"}}`, encodeURIComponent(String(organisationId)));
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearer required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-            // authentication oauth2 required
-            // oauth required
-            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
-
-
-    
-            localVarHeaderParameter['Content-Type'] = 'application/json';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(organisationByIdBodyParams, localVarRequestOptions, configuration)
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * 
          * @param {CreateOrganisationBodyParams} createOrganisationBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -8788,14 +8707,13 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
          * @param {Array<RollenSystemRechtEnum>} [systemrechte] 
          * @param {Array<OrganisationsTyp>} [excludeTyp] 
          * @param {Array<string>} [administriertVon] 
-         * @param {Array<string>} [zugehoerigZu] Liefert die Kind-Organisationen, die den angegebenen IDs zugehörig sind.
          * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
          * @param {'name' | 'kennung'} [sortField] Field to sort by.
          * @param {boolean} [getChildrenRecursively] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        organisationControllerFindOrganizations: async (offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        organisationControllerFindOrganizations: async (offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/api/organisationen`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -8850,10 +8768,6 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
 
             if (administriertVon) {
                 localVarQueryParameter['administriertVon'] = administriertVon;
-            }
-
-            if (zugehoerigZu) {
-                localVarQueryParameter['zugehoerigZu'] = zugehoerigZu;
             }
 
             if (sortOrder !== undefined) {
@@ -9120,47 +9034,6 @@ export const OrganisationenApiAxiosParamCreator = function (configuration?: Conf
             };
         },
         /**
-         * 
-         * @param {string} organisationId The id of an organization
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        organisationControllerGetZugehoerigeOrganisationen: async (organisationId: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'organisationId' is not null or undefined
-            assertParamExists('organisationControllerGetZugehoerigeOrganisationen', 'organisationId', organisationId)
-            const localVarPath = `/api/organisationen/{organisationId}/zugehoerig`
-                .replace(`{${"organisationId"}}`, encodeURIComponent(String(organisationId)));
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearer required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-            // authentication oauth2 required
-            // oauth required
-            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
          * Search organisations that may be linked to the requested organisation.
          * @summary 
          * @param {string} organisationId The id of an organization
@@ -9323,17 +9196,6 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
     return {
         /**
          * 
-         * @param {string} organisationId The ID of the parent organisation to which another organisation will be added as a subordinate.
-         * @param {OrganisationByIdBodyParams} organisationByIdBodyParams The ID of the child organisation that will be assigned to the parent organisation.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async organisationControllerAddZugehoerigeOrganisation(organisationId: string, organisationByIdBodyParams: OrganisationByIdBodyParams, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerAddZugehoerigeOrganisation(organisationId, organisationByIdBodyParams, options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-        /**
-         * 
          * @param {CreateOrganisationBodyParams} createOrganisationBodyParams 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -9416,15 +9278,14 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
          * @param {Array<RollenSystemRechtEnum>} [systemrechte] 
          * @param {Array<OrganisationsTyp>} [excludeTyp] 
          * @param {Array<string>} [administriertVon] 
-         * @param {Array<string>} [zugehoerigZu] Liefert die Kind-Organisationen, die den angegebenen IDs zugehörig sind.
          * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
          * @param {'name' | 'kennung'} [sortField] Field to sort by.
          * @param {boolean} [getChildrenRecursively] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<OrganisationControllerFindOrganizations200Response>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerFindOrganizations(offset, limit, kennung, name, searchString, typ, systemrechte, excludeTyp, administriertVon, zugehoerigZu, sortOrder, sortField, getChildrenRecursively, options);
+        async organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<OrganisationControllerFindOrganizations200Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerFindOrganizations(offset, limit, kennung, name, searchString, typ, systemrechte, excludeTyp, administriertVon, sortOrder, sortField, getChildrenRecursively, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -9485,16 +9346,6 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
-         * 
-         * @param {string} organisationId The id of an organization
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async organisationControllerGetZugehoerigeOrganisationen(organisationId: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<OrganisationControllerFindOrganizations200Response>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.organisationControllerGetZugehoerigeOrganisationen(organisationId, options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-        /**
          * Search organisations that may be linked to the requested organisation.
          * @summary 
          * @param {string} organisationId The id of an organization
@@ -9540,16 +9391,6 @@ export const OrganisationenApiFp = function(configuration?: Configuration) {
 export const OrganisationenApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
     const localVarFp = OrganisationenApiFp(configuration)
     return {
-        /**
-         * 
-         * @param {string} organisationId The ID of the parent organisation to which another organisation will be added as a subordinate.
-         * @param {OrganisationByIdBodyParams} organisationByIdBodyParams The ID of the child organisation that will be assigned to the parent organisation.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        organisationControllerAddZugehoerigeOrganisation(organisationId: string, organisationByIdBodyParams: OrganisationByIdBodyParams, options?: any): AxiosPromise<void> {
-            return localVarFp.organisationControllerAddZugehoerigeOrganisation(organisationId, organisationByIdBodyParams, options).then((request) => request(axios, basePath));
-        },
         /**
          * 
          * @param {CreateOrganisationBodyParams} createOrganisationBodyParams 
@@ -9627,15 +9468,14 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
          * @param {Array<RollenSystemRechtEnum>} [systemrechte] 
          * @param {Array<OrganisationsTyp>} [excludeTyp] 
          * @param {Array<string>} [administriertVon] 
-         * @param {Array<string>} [zugehoerigZu] Liefert die Kind-Organisationen, die den angegebenen IDs zugehörig sind.
          * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
          * @param {'name' | 'kennung'} [sortField] Field to sort by.
          * @param {boolean} [getChildrenRecursively] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: any): AxiosPromise<OrganisationControllerFindOrganizations200Response> {
-            return localVarFp.organisationControllerFindOrganizations(offset, limit, kennung, name, searchString, typ, systemrechte, excludeTyp, administriertVon, zugehoerigZu, sortOrder, sortField, getChildrenRecursively, options).then((request) => request(axios, basePath));
+        organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: any): AxiosPromise<OrganisationControllerFindOrganizations200Response> {
+            return localVarFp.organisationControllerFindOrganizations(offset, limit, kennung, name, searchString, typ, systemrechte, excludeTyp, administriertVon, sortOrder, sortField, getChildrenRecursively, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -9690,15 +9530,6 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
             return localVarFp.organisationControllerGetRootOrganisation(options).then((request) => request(axios, basePath));
         },
         /**
-         * 
-         * @param {string} organisationId The id of an organization
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        organisationControllerGetZugehoerigeOrganisationen(organisationId: string, options?: any): AxiosPromise<OrganisationControllerFindOrganizations200Response> {
-            return localVarFp.organisationControllerGetZugehoerigeOrganisationen(organisationId, options).then((request) => request(axios, basePath));
-        },
-        /**
          * Search organisations that may be linked to the requested organisation.
          * @summary 
          * @param {string} organisationId The id of an organization
@@ -9740,16 +9571,6 @@ export const OrganisationenApiFactory = function (configuration?: Configuration,
  * @interface OrganisationenApi
  */
 export interface OrganisationenApiInterface {
-    /**
-     * 
-     * @param {string} organisationId The ID of the parent organisation to which another organisation will be added as a subordinate.
-     * @param {OrganisationByIdBodyParams} organisationByIdBodyParams The ID of the child organisation that will be assigned to the parent organisation.
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof OrganisationenApiInterface
-     */
-    organisationControllerAddZugehoerigeOrganisation(organisationId: string, organisationByIdBodyParams: OrganisationByIdBodyParams, options?: AxiosRequestConfig): AxiosPromise<void>;
-
     /**
      * 
      * @param {CreateOrganisationBodyParams} createOrganisationBodyParams 
@@ -9827,7 +9648,6 @@ export interface OrganisationenApiInterface {
      * @param {Array<RollenSystemRechtEnum>} [systemrechte] 
      * @param {Array<OrganisationsTyp>} [excludeTyp] 
      * @param {Array<string>} [administriertVon] 
-     * @param {Array<string>} [zugehoerigZu] Liefert die Kind-Organisationen, die den angegebenen IDs zugehörig sind.
      * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
      * @param {'name' | 'kennung'} [sortField] Field to sort by.
      * @param {boolean} [getChildrenRecursively] 
@@ -9835,7 +9655,7 @@ export interface OrganisationenApiInterface {
      * @throws {RequiredError}
      * @memberof OrganisationenApiInterface
      */
-    organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig): AxiosPromise<OrganisationControllerFindOrganizations200Response>;
+    organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig): AxiosPromise<OrganisationControllerFindOrganizations200Response>;
 
     /**
      * 
@@ -9890,15 +9710,6 @@ export interface OrganisationenApiInterface {
     organisationControllerGetRootOrganisation(options?: AxiosRequestConfig): AxiosPromise<OrganisationResponse>;
 
     /**
-     * 
-     * @param {string} organisationId The id of an organization
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof OrganisationenApiInterface
-     */
-    organisationControllerGetZugehoerigeOrganisationen(organisationId: string, options?: AxiosRequestConfig): AxiosPromise<OrganisationControllerFindOrganizations200Response>;
-
-    /**
      * Search organisations that may be linked to the requested organisation.
      * @summary 
      * @param {string} organisationId The id of an organization
@@ -9940,18 +9751,6 @@ export interface OrganisationenApiInterface {
  * @extends {BaseAPI}
  */
 export class OrganisationenApi extends BaseAPI implements OrganisationenApiInterface {
-    /**
-     * 
-     * @param {string} organisationId The ID of the parent organisation to which another organisation will be added as a subordinate.
-     * @param {OrganisationByIdBodyParams} organisationByIdBodyParams The ID of the child organisation that will be assigned to the parent organisation.
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof OrganisationenApi
-     */
-    public organisationControllerAddZugehoerigeOrganisation(organisationId: string, organisationByIdBodyParams: OrganisationByIdBodyParams, options?: AxiosRequestConfig) {
-        return OrganisationenApiFp(this.configuration).organisationControllerAddZugehoerigeOrganisation(organisationId, organisationByIdBodyParams, options).then((request) => request(this.axios, this.basePath));
-    }
-
     /**
      * 
      * @param {CreateOrganisationBodyParams} createOrganisationBodyParams 
@@ -10043,7 +9842,6 @@ export class OrganisationenApi extends BaseAPI implements OrganisationenApiInter
      * @param {Array<RollenSystemRechtEnum>} [systemrechte] 
      * @param {Array<OrganisationsTyp>} [excludeTyp] 
      * @param {Array<string>} [administriertVon] 
-     * @param {Array<string>} [zugehoerigZu] Liefert die Kind-Organisationen, die den angegebenen IDs zugehörig sind.
      * @param {'asc' | 'desc'} [sortOrder] Order to sort by.
      * @param {'name' | 'kennung'} [sortField] Field to sort by.
      * @param {boolean} [getChildrenRecursively] 
@@ -10051,8 +9849,8 @@ export class OrganisationenApi extends BaseAPI implements OrganisationenApiInter
      * @throws {RequiredError}
      * @memberof OrganisationenApi
      */
-    public organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, zugehoerigZu?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig) {
-        return OrganisationenApiFp(this.configuration).organisationControllerFindOrganizations(offset, limit, kennung, name, searchString, typ, systemrechte, excludeTyp, administriertVon, zugehoerigZu, sortOrder, sortField, getChildrenRecursively, options).then((request) => request(this.axios, this.basePath));
+    public organisationControllerFindOrganizations(offset?: number, limit?: number, kennung?: string, name?: string, searchString?: string, typ?: OrganisationsTyp, systemrechte?: Array<RollenSystemRechtEnum>, excludeTyp?: Array<OrganisationsTyp>, administriertVon?: Array<string>, sortOrder?: 'asc' | 'desc', sortField?: 'name' | 'kennung', getChildrenRecursively?: boolean, options?: AxiosRequestConfig) {
+        return OrganisationenApiFp(this.configuration).organisationControllerFindOrganizations(offset, limit, kennung, name, searchString, typ, systemrechte, excludeTyp, administriertVon, sortOrder, sortField, getChildrenRecursively, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -10115,17 +9913,6 @@ export class OrganisationenApi extends BaseAPI implements OrganisationenApiInter
      */
     public organisationControllerGetRootOrganisation(options?: AxiosRequestConfig) {
         return OrganisationenApiFp(this.configuration).organisationControllerGetRootOrganisation(options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * 
-     * @param {string} organisationId The id of an organization
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof OrganisationenApi
-     */
-    public organisationControllerGetZugehoerigeOrganisationen(organisationId: string, options?: AxiosRequestConfig) {
-        return OrganisationenApiFp(this.configuration).organisationControllerGetZugehoerigeOrganisationen(organisationId, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

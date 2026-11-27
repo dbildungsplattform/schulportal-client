@@ -13,7 +13,6 @@ import { DoFactory } from 'test/DoFactory';
 import { watch, type WatchStopHandle } from 'vue';
 import {
   OrganisationsbeziehungsTyp,
-  SchuleType,
   useOrganisationStore,
   type AutoCompleteStore,
   type Organisation,
@@ -613,18 +612,11 @@ describe('OrganisationStore', () => {
     it('should accept filter for typ Traeger', async () => {
       const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       const traeger: OrganisationResponse = DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Traeger });
-      const schule: OrganisationResponse = DoFactory.getOrganisationResponse({
-        typ: OrganisationsTyp.Schule,
-        zugehoerigZu: traeger.id,
-      });
       const mockResponse: OrganisationResponse[] = [traeger];
 
       mockadapter
         .onGet('/api/organisationen?offset=0&limit=30&typ=TRAEGER')
         .replyOnce(200, pagedResponse(mockResponse, 42));
-      mockadapter
-        .onGet(`/api/organisationen?limit=30&typ=SCHULE&systemrechte=SCHULTRAEGER_VERWALTEN&zugehoerigZu=${traeger.id}`)
-        .replyOnce(200, pagedResponse([schule]));
 
       const getAllOrganisationenPromise: Promise<void> = organisationStore.getAllOrganisationen({
         offset: 0,
@@ -633,7 +625,7 @@ describe('OrganisationStore', () => {
       });
 
       await getAllOrganisationenPromise;
-      expect(organisationStore.allSchultraeger).toEqual([{ ...traeger, schuleDetails: schule.kennung }]);
+      expect(organisationStore.allSchultraeger).toEqual([traeger]);
       expect(organisationStore.totalSchultraeger).toBe(42);
       expect(organisationStore.errorCode).toBe('');
       expect(organisationStore.loading).toBe(false);
@@ -1061,17 +1053,9 @@ describe('OrganisationStore', () => {
     it('should throw error when traeger version is not found', async () => {
       const { organisationStore }: ReturnType<typeof setup> = setup();
       // Set currentOrganisation version to undefined to trigger the error
-      organisationStore.currentOrganisation = {
-        id: '2',
-        kennung: 'Org2',
-        name: 'Organisation 2',
-        namensergaenzung: 'Ergänzung',
-        kuerzel: 'O2',
-        typ: OrganisationsTyp.Traeger,
-        administriertVon: '1',
-        zugehoerigZu: '1',
+      organisationStore.currentOrganisation = DoFactory.getOrganisation({
         version: undefined,
-      };
+      });
 
       const updateOrganisationPromise: Promise<void> = organisationStore.updateOrganisationNameById(
         '1',
@@ -1104,7 +1088,6 @@ describe('OrganisationStore', () => {
             typ: OrganisationsTyp.Land,
             administriertVon: 'root',
             kennung: '1',
-            zugehoerigZu: null,
             namensergaenzung: null,
             kuerzel: '',
             traegerschaft: '01',
@@ -1178,7 +1161,6 @@ describe('OrganisationStore', () => {
         name: 'Updated Testschule',
         typ: OrganisationsTyp.Schule,
         administriertVon: 'schultraeger-1',
-        zugehoerigZu: 'schultraeger-1',
         emailAdress: 'updated@schule.de',
         version: 2,
       };
@@ -1227,7 +1209,6 @@ describe('OrganisationStore', () => {
           traegerschaft: '01',
           typ: OrganisationsTyp.Land,
           administriertVon: '1',
-          zugehoerigZu: '1',
           version: 1,
           itslearningEnabled: true,
           emailAdress: 'oeffentlich@example.com',
@@ -1241,7 +1222,6 @@ describe('OrganisationStore', () => {
           traegerschaft: '01',
           typ: OrganisationsTyp.Land,
           administriertVon: '1',
-          zugehoerigZu: '1',
           version: 1,
           itslearningEnabled: true,
           emailAdress: 'ersatz@example.com',
@@ -1347,196 +1327,6 @@ describe('OrganisationStore', () => {
     );
   });
 
-  describe('fetchSchuleDetailsForSchultraeger', () => {
-    const mockSchultraeger: Organisation[] = [
-      DoFactory.getOrganisation({ typ: OrganisationsTyp.Traeger }),
-      DoFactory.getOrganisation({ typ: OrganisationsTyp.Traeger }),
-    ];
-
-    const zugehoerigZuParams: string = mockSchultraeger.map((st: Organisation) => `zugehoerigZu=${st.id}`).join('&');
-
-    const url: string = `/api/organisationen?limit=30&typ=SCHULE&systemrechte=SCHULTRAEGER_VERWALTEN&${zugehoerigZuParams}`;
-
-    const setupSchultraeger = (): ReturnType<typeof setup> => {
-      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
-      organisationStore.allSchultraeger = [...mockSchultraeger];
-      return { organisationStore, mockadapter };
-    };
-
-    it('should fetch Schule details for Schulträger', async () => {
-      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setupSchultraeger();
-      const mockResponse: OrganisationResponse[] = [
-        DoFactory.getOrganisationResponse({ zugehoerigZu: mockSchultraeger[0]!.id }),
-        DoFactory.getOrganisationResponse({ zugehoerigZu: mockSchultraeger[0]!.id }),
-        DoFactory.getOrganisationResponse({ zugehoerigZu: null }),
-      ];
-      mockadapter.onGet(url).replyOnce(200, pagedResponse(mockResponse));
-
-      await organisationStore.fetchSchuleDetailsForSchultraeger();
-
-      expect(organisationStore.allSchultraeger[0]?.schuleDetails).toBe(
-        mockResponse
-          .filter((org: Organisation) => org.zugehoerigZu === mockSchultraeger[0]!.id)
-          .map((org: Organisation) => org.kennung)
-          .join(', ') || '---',
-      );
-
-      expect(organisationStore.loading).toBe(false);
-    });
-
-    it.each([
-      ['some mock server error', 'UNSPECIFIED_ERROR'],
-      [{ i18nKey: 'GET_ERROR' }, 'GET_ERROR'],
-    ])(
-      'should handle error response %p',
-      async (
-        response:
-          | string
-          | {
-              i18nKey: string;
-            },
-        expectedError: string,
-      ) => {
-        const { organisationStore, mockadapter }: ReturnType<typeof setup> = setupSchultraeger();
-        mockadapter.onGet(url).replyOnce(500, response);
-
-        await organisationStore.fetchSchuleDetailsForSchultraeger();
-
-        expect(organisationStore.errorCode).toBe(expectedError);
-        expect(organisationStore.loading).toBe(false);
-      },
-    );
-  });
-
-  describe('fetchSchulen', () => {
-    it('should load all schulen for a specific traeger ID (ASSIGNED)', async () => {
-      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
-      const mockResponse: OrganisationResponse[] = [
-        DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Schule, zugehoerigZu: '2' }),
-      ];
-
-      mockadapter
-        .onGet('/api/organisationen?searchString=&typ=SCHULE&systemrechte=SCHULTRAEGER_VERWALTEN&zugehoerigZu=2')
-        .replyOnce(200, pagedResponse(mockResponse));
-
-      await organisationStore.fetchSchulen(
-        {
-          searchString: '',
-          zugehoerigZu: ['2'],
-          offset: undefined,
-          limit: undefined,
-        },
-        SchuleType.ASSIGNED,
-      );
-
-      expect(organisationStore.schulenFromTraeger).toEqual(mockResponse);
-      expect(organisationStore.loading).toBe(false);
-      expect(organisationStore.errorCode).toBe('');
-    });
-
-    it('should handle a server error and set default error code', async () => {
-      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
-      mockadapter
-        .onGet('/api/organisationen?searchString=&typ=SCHULE&systemrechte=SCHULTRAEGER_VERWALTEN&zugehoerigZu=999')
-        .replyOnce(500, 'some mock server error');
-
-      await organisationStore.fetchSchulen(
-        {
-          searchString: '',
-          zugehoerigZu: ['999'],
-          offset: undefined,
-          limit: undefined,
-        },
-        SchuleType.ASSIGNED,
-      );
-
-      expect(organisationStore.schulenFromTraeger).toEqual([]);
-      expect(organisationStore.errorCode).toEqual('SCHULTRAEGER_ERROR');
-      expect(organisationStore.loading).toBe(false);
-    });
-
-    it('should handle API error responses containing a specific error code', async () => {
-      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
-      mockadapter
-        .onGet('/api/organisationen?searchString=&typ=SCHULE&systemrechte=SCHULTRAEGER_VERWALTEN&zugehoerigZu=999')
-        .replyOnce(500, { code: 'MOCK_ERROR_CODE' });
-
-      await organisationStore.fetchSchulen(
-        {
-          searchString: '',
-          zugehoerigZu: ['999'],
-          offset: undefined,
-          limit: undefined,
-        },
-        SchuleType.ASSIGNED,
-      );
-
-      expect(organisationStore.schulenFromTraeger).toEqual([]);
-      expect(organisationStore.errorCode).toEqual('MOCK_ERROR_CODE');
-      expect(organisationStore.loading).toBe(false);
-    });
-
-    it('should load unassigned schulen when called with SchuleType.UNASSIGNED', async () => {
-      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
-      const mockResponse: OrganisationResponse[] = [
-        DoFactory.getOrganisationResponse({ typ: OrganisationsTyp.Schule, zugehoerigZu: null }),
-      ];
-
-      mockadapter
-        .onGet('/api/organisationen?limit=50&searchString=&typ=SCHULE&systemrechte=SCHULTRAEGER_VERWALTEN')
-        .replyOnce(200, pagedResponse(mockResponse));
-
-      await organisationStore.fetchSchulen(
-        {
-          searchString: '',
-          zugehoerigZu: undefined,
-          offset: undefined,
-          limit: 50,
-        },
-        SchuleType.UNASSIGNED,
-      );
-
-      expect(organisationStore.schulenWithoutTraeger).toEqual(mockResponse);
-      expect(organisationStore.loading).toBe(false);
-      expect(organisationStore.errorCode).toBe('');
-    });
-  });
-
-  describe('assignSchuleToTraeger', () => {
-    it('should assign schule to traeger', async () => {
-      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
-      mockadapter.onPost('/api/organisationen/2/zugehoerig').replyOnce(201);
-      const assignSchuleToTraegerPromise: Promise<void> = organisationStore.assignSchuleToTraeger('2', {
-        organisationId: '11',
-      });
-      await assignSchuleToTraegerPromise;
-      expect(organisationStore.loading).toBe(false);
-    });
-
-    it('should handle string error', async () => {
-      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
-      mockadapter.onPost('/api/organisationen/999/zugehoerig').replyOnce(500, 'some mock server error');
-      const assignSchuleToTraegerPromise: Promise<void> = organisationStore.assignSchuleToTraeger('999', {
-        organisationId: '997979797',
-      });
-      await assignSchuleToTraegerPromise;
-      expect(organisationStore.errorCode).toEqual('SCHULTRAEGER_ERROR');
-      expect(organisationStore.loading).toBe(false);
-    });
-
-    it('should handle error code', async () => {
-      const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
-      mockadapter.onPost('/api/organisationen/999/zugehoerig').replyOnce(500, { code: 'some mock server error' });
-      const assignSchuleToTraegerPromise: Promise<void> = organisationStore.assignSchuleToTraeger('999', {
-        organisationId: '997979797',
-      });
-      expect(organisationStore.loading).toBe(true);
-      await assignSchuleToTraegerPromise;
-      expect(organisationStore.errorCode).toEqual('some mock server error');
-      expect(organisationStore.loading).toBe(false);
-    });
-  });
-
   describe('setItsLearningForSchule', () => {
     it('should successfully activate itslearning for an organisation', async () => {
       const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
@@ -1602,17 +1392,22 @@ describe('OrganisationStore', () => {
       ];
 
       mockadapter.onPost('/api/organisationen').replyOnce(200, mockResponse);
-      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation(
-        '1',
-        '1',
-        'Org1',
-        'Organisation 1',
-        'Ergänzung',
-        'Org1',
-        OrganisationsTyp.Schule,
-      );
+      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation({
+        administriertVon: '1',
+        kennung: 'Org1',
+        name: 'Organisation 1',
+        typ: OrganisationsTyp.Schule,
+        emailAdress: 'test@schule.de',
+      });
       expect(organisationStore.loading).toBe(true);
       await createOrganisationPromise;
+      expect(JSON.parse(mockadapter.history.post[0]!.data as string)).toEqual({
+        administriertVon: '1',
+        kennung: 'Org1',
+        name: 'Organisation 1',
+        typ: OrganisationsTyp.Schule,
+        emailAdress: 'test@schule.de',
+      });
       expect(organisationStore.createdSchule).toEqual(mockResponse);
       expect(organisationStore.loading).toBe(false);
     });
@@ -1632,15 +1427,11 @@ describe('OrganisationStore', () => {
       ];
 
       mockadapter.onPost('/api/organisationen').replyOnce(200, mockResponse);
-      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation(
-        '1',
-        '1',
-        'Org1',
-        'Organisation 1',
-        'Ergänzung',
-        '01',
-        OrganisationsTyp.Klasse,
-      );
+      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation({
+        administriertVon: '1',
+        name: 'Organisation 1',
+        typ: OrganisationsTyp.Klasse,
+      });
       expect(organisationStore.loading).toBe(true);
       await createOrganisationPromise;
       expect(organisationStore.createdKlasse).toEqual(mockResponse);
@@ -1662,15 +1453,11 @@ describe('OrganisationStore', () => {
       ];
 
       mockadapter.onPost('/api/organisationen').replyOnce(200, mockResponse);
-      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation(
-        '1',
-        '1',
-        'Org1',
-        'Organisation 1',
-        'Ergänzung',
-        'Org1',
-        OrganisationsTyp.Traeger,
-      );
+      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation({
+        administriertVon: '1',
+        name: 'Organisation 1',
+        typ: OrganisationsTyp.Traeger,
+      });
       expect(organisationStore.loading).toBe(true);
       await createOrganisationPromise;
       expect(organisationStore.createdSchultraeger).toEqual(mockResponse);
@@ -1682,15 +1469,11 @@ describe('OrganisationStore', () => {
       const response: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
       mockadapter.onPost('/api/organisationen').replyOnce(200, response);
 
-      await organisationStore.createOrganisation(
-        'admin-id',
-        'parent-id',
-        undefined,
-        response.name,
-        undefined,
-        undefined,
-        OrganisationsTyp.Behoerde,
-      );
+      await organisationStore.createOrganisation({
+        administriertVon: 'admin-id',
+        name: response.name,
+        typ: OrganisationsTyp.Behoerde,
+      });
 
       expect(organisationStore.createdKlasse).toBeNull();
       expect(organisationStore.createdSchule).toBeNull();
@@ -1701,15 +1484,12 @@ describe('OrganisationStore', () => {
     it('should handle string error', async () => {
       const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/organisationen').replyOnce(500, 'some mock server error');
-      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation(
-        '1',
-        '1',
-        'Org1',
-        'Organisation 1',
-        'Ergänzung',
-        'Org1',
-        OrganisationsTyp.Schule,
-      );
+      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation({
+        administriertVon: '1',
+        kennung: 'Org1',
+        name: 'Organisation 1',
+        typ: OrganisationsTyp.Schule,
+      });
       expect(organisationStore.loading).toBe(true);
       await createOrganisationPromise;
       expect(organisationStore.createdSchule).toEqual(null);
@@ -1720,15 +1500,12 @@ describe('OrganisationStore', () => {
     it('should handle error code', async () => {
       const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
       mockadapter.onPost('/api/organisationen').replyOnce(500, { i18nKey: 'SOME_MOCK_SERVER_ERROR' });
-      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation(
-        '1',
-        '1',
-        'Org1',
-        'Organisation 1',
-        'Ergänzung',
-        'Org1',
-        OrganisationsTyp.Schule,
-      );
+      const createOrganisationPromise: Promise<void> = organisationStore.createOrganisation({
+        administriertVon: '1',
+        kennung: 'Org1',
+        name: 'Organisation 1',
+        typ: OrganisationsTyp.Schule,
+      });
       expect(organisationStore.loading).toBe(true);
       await createOrganisationPromise;
       expect(organisationStore.createdSchule).toEqual(null);
@@ -1742,28 +1519,21 @@ describe('OrganisationStore', () => {
       it('should omit kennung from the request and update state', async () => {
         const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
         const administriertVon: string = DoFactory.getOrganisation().id;
-        const zugehoerigZu: string = DoFactory.getOrganisation().id;
         const mockResponse: Organisation = DoFactory.getOrganisation({
           typ: OrganisationsTyp.Behoerde,
           administriertVon,
-          zugehoerigZu,
           kennung: undefined,
         });
 
         mockadapter
           .onPost('/api/organisationen', {
             administriertVon,
-            zugehoerigZu,
             name: mockResponse.name,
             typ: OrganisationsTyp.Behoerde,
           })
           .replyOnce(201, mockResponse);
 
-        const promise: Promise<void> = organisationStore.createBehoerde(
-          administriertVon,
-          zugehoerigZu,
-          mockResponse.name,
-        );
+        const promise: Promise<void> = organisationStore.createBehoerde(administriertVon, mockResponse.name);
 
         expect(organisationStore.loading).toBe(true);
         expect(organisationStore.createdBehoerde).toBeNull();
@@ -1780,15 +1550,10 @@ describe('OrganisationStore', () => {
         const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
         const mockBehoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
         const administriertVon: string = DoFactory.getOrganisation().id;
-        const zugehoerigZu: string = DoFactory.getOrganisation().id;
 
         mockadapter.onPost('/api/organisationen').replyOnce(500, 'some mock server error');
 
-        const promise: Promise<void> = organisationStore.createBehoerde(
-          administriertVon,
-          zugehoerigZu,
-          mockBehoerde.name,
-        );
+        const promise: Promise<void> = organisationStore.createBehoerde(administriertVon, mockBehoerde.name);
 
         expect(organisationStore.loading).toBe(true);
         await promise;
@@ -1804,15 +1569,10 @@ describe('OrganisationStore', () => {
         const { organisationStore, mockadapter }: ReturnType<typeof setup> = setup();
         const mockBehoerde: Organisation = DoFactory.getOrganisation({ typ: OrganisationsTyp.Behoerde });
         const administriertVon: string = DoFactory.getOrganisation().id;
-        const zugehoerigZu: string = DoFactory.getOrganisation().id;
 
         mockadapter.onPost('/api/organisationen').replyOnce(500, { i18nKey: 'BEHOERDE_CREATE_ERROR' });
 
-        const promise: Promise<void> = organisationStore.createBehoerde(
-          administriertVon,
-          zugehoerigZu,
-          mockBehoerde.name,
-        );
+        const promise: Promise<void> = organisationStore.createBehoerde(administriertVon, mockBehoerde.name);
 
         expect(organisationStore.loading).toBe(true);
         await promise;
