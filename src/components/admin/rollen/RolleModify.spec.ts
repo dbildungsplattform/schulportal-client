@@ -135,7 +135,7 @@ describe('RolleModify', () => {
       [person.id],
       organisation.id,
       rolle.id,
-      expect.stringMatching(/^2099-08-12/),
+      new Date(2099, 7, 13).toISOString(),
       undefined,
     );
   });
