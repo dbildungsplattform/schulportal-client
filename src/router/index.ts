@@ -15,7 +15,7 @@ import {
   type RouteRecordRaw,
 } from 'vue-router';
 import routes from './routes';
-import { ServiceIdentifier } from './service-identifier.enum';
+import { SERVICE_NOT_AVAILABLE_2FA } from './service-identifier.enum';
 
 type Permission =
   | 'klassenverwaltung'
@@ -95,6 +95,9 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
     }
     const twoFactorAuthentificationStore: TwoFactorAuthentificationStore = useTwoFactorAuthentificationStore();
     await twoFactorAuthentificationStore.get2FAState(personId);
+    if (twoFactorAuthentificationStore.errorCode === PrivacyIdeaErrorEnum.PiUnavailableError) {
+      return { path: SERVICE_NOT_AVAILABLE_2FA };
+    }
     if (twoFactorAuthentificationStore.hasToken) {
       handleGoToPreviousPage();
       return false;
@@ -124,7 +127,7 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
     const twoFactorAuthentificationStore: TwoFactorAuthentificationStore = useTwoFactorAuthentificationStore();
     await twoFactorAuthentificationStore.get2FAState(personId);
     if (twoFactorAuthentificationStore.errorCode === PrivacyIdeaErrorEnum.PiUnavailableError) {
-      router.push(`/service-not-available/${ServiceIdentifier.TWO_FACTOR_AUTHENTICATION}`);
+      router.push(SERVICE_NOT_AVAILABLE_2FA);
       return false;
     }
 

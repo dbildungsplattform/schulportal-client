@@ -28,6 +28,16 @@ describe('TwoFactorAuthentificationStore', () => {
   });
 
   describe('get2FAState', () => {
+    it('should reset a previous errorCode on a new call', async () => {
+      const personId: string = 'testUser';
+      twoFactorAuthenticationStore.errorCode = 'PI_UNAVAILABLE_ERROR';
+      mockadapter.onGet(`/api/2fa-token/state?personId=${personId}`).replyOnce(200, { hasToken: false });
+
+      await twoFactorAuthenticationStore.get2FAState(personId);
+
+      expect(twoFactorAuthenticationStore.errorCode).toBe('');
+    });
+
     it.each(['software', 'hardware'])('should get 2FA state with token', async (tokenKind: string) => {
       const personId: string = 'testUser';
       const mockResponse: TokenStateResponse = {

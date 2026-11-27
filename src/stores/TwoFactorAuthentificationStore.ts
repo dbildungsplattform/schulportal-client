@@ -70,6 +70,7 @@ export const useTwoFactorAuthentificationStore: StoreDefinition<
     },
     async get2FAState(personId: string) {
       this.loading = true;
+      this.errorCode = '';
       try {
         const twoFactorState: TokenStateResponse = (
           await twoFactorApi.privacyIdeaAdministrationControllerGetTwoAuthState(personId)

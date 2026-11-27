@@ -1,9 +1,16 @@
 <script setup lang="ts">
+  import { PrivacyIdeaErrorEnum } from '@/api-client/generated';
   import ServiceProviderCard from '@/components/cards/ServiceProviderCard.vue';
+  import { SERVICE_NOT_AVAILABLE_2FA } from '@/router/service-identifier.enum';
   import { type AuthStore, StepUpLevel, useAuthStore } from '@/stores/AuthStore';
   import type { StartPageServiceProvider } from '@/stores/ServiceProviderStore';
+  import {
+    type TwoFactorAuthentificationStore,
+    useTwoFactorAuthentificationStore,
+  } from '@/stores/TwoFactorAuthentificationStore';
 
   const authStore: AuthStore = useAuthStore();
+  const twoFactorAuthentificationStore: TwoFactorAuthentificationStore = useTwoFactorAuthentificationStore();
   const NO_SECOND_FACTOR: string = '/no-second-factor';
 
   const props: {
@@ -35,6 +42,14 @@
   }
 
   function computeUrlAndTab(serviceProvider: StartPageServiceProvider): { url: string; newTab: boolean } {
+    if (
+      serviceProvider.requires2fa &&
+      authStore.acr !== StepUpLevel.GOLD &&
+      twoFactorAuthentificationStore.errorCode === PrivacyIdeaErrorEnum.PiUnavailableError
+    ) {
+      return { url: SERVICE_NOT_AVAILABLE_2FA, newTab: false };
+    }
+
     if (serviceProvider.target === 'URL') {
       if (serviceProvider.requires2fa && !props.hasToken && authStore.acr !== StepUpLevel.GOLD) {
         return { url: NO_SECOND_FACTOR, newTab: false };
