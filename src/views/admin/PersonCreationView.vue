@@ -62,7 +62,8 @@
   const personStore: PersonStore = usePersonStore();
   const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
   const rolleStore: RolleStore = useRolleStore();
-  const { t }: Composer = useI18n({ useScope: 'global' });
+  const i18n: Composer = useI18n({ useScope: 'global' });
+  const { t }: Composer = i18n;
 
   type PersonenkontextCreateExposed = {
     isOrganisationAutoselected: boolean;
@@ -412,6 +413,18 @@
     (): boolean =>
       !!personenkontextStore.errorCode && personenkontextStore.errorCode !== 'REQUIRED_STEP_UP_LEVEL_NOT_MET',
   );
+  const saveErrorText: ComputedRef<string> = computed((): string => {
+    const key: string = `admin.personenkontext.errors.${personenkontextStore.errorCode}`;
+    return t(i18n.te(key) ? key : 'admin.person.creationErrorText');
+  });
+  const saveErrorTitle: ComputedRef<string> = computed((): string => {
+    const key: string = `admin.personenkontext.title.${personenkontextStore.errorCode}`;
+    const fallback: string =
+      createType.value === CreationType.AddPersonToOwnSchule
+        ? 'admin.person.assignmentErrorTitle'
+        : 'admin.person.creationErrorTitle';
+    return t(i18n.te(key) ? key : fallback);
+  });
   const hasError: ComputedRef<boolean> = computed(
     (): boolean =>
       (!!personenkontextStore.errorCode && !saveFailed.value) || !!rolleStore.errorCode || !!personStore.errorCode,
@@ -818,8 +831,8 @@
               :model-value="saveFailed"
               type="error"
               data-test-id-prefix="person-creation-save-error"
-              :text="$t('admin.person.creationErrorText')"
-              :title="$t(isOwnSchule ? 'admin.person.assignmentErrorTitle' : 'admin.person.creationErrorTitle')"
+              :text="saveErrorText"
+              :title="saveErrorTitle"
             />
             <!-- If AddPersonToOwnSchule: Persönliche Info first -->
             <template v-if="createType === CreationType.AddPersonToOwnSchule">

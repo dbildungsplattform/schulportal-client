@@ -307,7 +307,7 @@ describe('PersonCreationView', () => {
       const createPerson: MockInstance = vi.mocked(personenkontextStore.createPersonWithKontexte);
       createPerson.mockClear();
       createPerson.mockImplementationOnce((): Promise<void> => {
-        personenkontextStore.errorCode = 'UNSPECIFIED_ERROR';
+        personenkontextStore.errorCode = 'PERSONALNUMMER_NICHT_EINDEUTIG';
         return Promise.resolve();
       });
       return { vorname, familienname, createPerson };
@@ -335,7 +335,10 @@ describe('PersonCreationView', () => {
         await wrapper.get('[data-testid="person-creation-form"]').trigger('submit');
         await vi.waitFor((): void => expect(createPerson).toHaveBeenCalledOnce());
         expect(wrapper.get('[data-testid="person-creation-save-error-alert-text"]').text()).toBe(
-          'Die Änderungen konnten nicht gespeichert werden.',
+          'Die eingegebene KoPers.-Nr. ist bereits vergeben. Bitte korrigieren Sie Ihre Eingabe.',
+        );
+        expect(wrapper.get('[data-testid="person-creation-save-error-alert-title"]').text()).toBe(
+          'KoPers.-Nr. nicht eindeutig',
         );
         expect(vorname.props()).toHaveProperty('modelValue', 'Randy');
         expect(familienname.props()).toHaveProperty('modelValue', 'Cena');
@@ -367,7 +370,7 @@ describe('PersonCreationView', () => {
         await wrapper.get('[data-testid="person-creation-form"]').trigger('submit');
         await vi.waitFor((): void => expect(createPerson).toHaveBeenCalledOnce());
         expect(wrapper.get('[data-testid="person-creation-save-error-alert-text"]').text()).toBe(
-          'Die Änderungen konnten nicht gespeichert werden.',
+          'Die eingegebene KoPers.-Nr. ist bereits vergeben. Bitte korrigieren Sie Ihre Eingabe.',
         );
         expect(vorname.props()).toHaveProperty('modelValue', 'Randy');
         expect(familienname.props()).toHaveProperty('modelValue', 'Cena');
@@ -1207,8 +1210,9 @@ describe('PersonCreationView', () => {
       await flushPromises();
 
       expect(wrapper.get('[data-testid="person-creation-save-error-alert-text"]').text()).toBe(
-        'Die Änderungen konnten nicht gespeichert werden.',
+        'Die Zuordnung konnte nicht aktualisiert werden. Bitte versuchen Sie es später erneut.',
       );
+      expect(wrapper.get('[data-testid="person-creation-save-error-alert-title"]').text()).toBe('Geänderte Daten');
       expect(wrapper.findComponent({ ref: 'personenkontext-create' }).props()).toHaveProperty(
         'selectedOrganisation',
         organisation,
