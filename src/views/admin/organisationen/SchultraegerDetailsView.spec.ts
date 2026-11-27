@@ -1,5 +1,5 @@
 import { expect, test, type Mock, type MockInstance } from 'vitest';
-import { DOMWrapper, VueWrapper, mount } from '@vue/test-utils';
+import { VueWrapper, flushPromises, mount } from '@vue/test-utils';
 import {
   createRouter,
   createWebHistory,
@@ -9,6 +9,7 @@ import {
 } from 'vue-router';
 import routes from '@/router/routes';
 import { nextTick, type Component } from 'vue';
+import { VRadioGroup } from 'vuetify/components';
 import { OrganisationsTyp, useOrganisationStore, type OrganisationStore } from '@/stores/OrganisationStore';
 import { DoFactory } from 'test/DoFactory';
 import SchultraegerDetailsView from './SchultraegerDetailsView.vue';
@@ -205,17 +206,22 @@ describe('SchultraegerDetailsView', () => {
   test('it edits the schultraeger name', async () => {
     organisationStore.updatedOrganisation = null;
     organisationStore.errorCode = '';
-    await nextTick();
+    await flushPromises();
 
     const schultraegerFormWrapper: VueWrapper<never, never> | undefined = wrapper?.findComponent({
       name: 'SchultraegerForm',
     });
 
     // the traeger type selection is disabled
-    const schultraegerRadioGroup: DOMWrapper<HTMLElement> | undefined = schultraegerFormWrapper?.find(
-      '[data-testid="schultraegerform-radio-group"]',
-    );
+    const schultraegerRadioGroup: VueWrapper<InstanceType<typeof VRadioGroup>> | undefined =
+      schultraegerFormWrapper?.findComponent(VRadioGroup);
     expect(schultraegerRadioGroup?.attributes()['class']).toContain('v-input--disabled');
+    expect(schultraegerRadioGroup?.props('modelValue')).toBe(organisationStore.currentOrganisation?.administriertVon);
+    expect(
+      schultraegerRadioGroup?.get<HTMLInputElement>(
+        `input[type="radio"][value="${organisationStore.currentOrganisation?.administriertVon}"]`,
+      ).element.checked,
+    ).toBe(true);
     await nextTick();
 
     await schultraegerFormWrapper?.findComponent({ ref: 'schultraegername-input' }).setValue('Neuer Trägername');
