@@ -1,12 +1,6 @@
 import { RollenArt, RollenMerkmal } from '@/api-client/generated';
 import { useOrganisationStore, type Organisation, type OrganisationStore } from '@/stores/OrganisationStore';
-import {
-  CreationType,
-  OperationContext,
-  RolleDialogMode,
-  usePersonenkontextStore,
-  type PersonenkontextStore,
-} from '@/stores/PersonenkontextStore';
+import { CreationType, OperationContext, RolleDialogMode } from '@/stores/PersonenkontextStore';
 import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
 import { useRolleStore, type RolleStore, type TranslatedRolleWithAttrs } from '@/stores/RolleStore';
 import { PersonenUebersicht } from '@/stores/types/PersonenUebersicht';
@@ -48,7 +42,6 @@ interface MountComponentProps {
 }
 
 let wrapper: VueWrapper | null = null;
-let personenkontextStore: PersonenkontextStore;
 let organisationStore: OrganisationStore;
 let rolleStore: RolleStore;
 const personStore: PersonStore = usePersonStore();
@@ -140,15 +133,8 @@ beforeEach(() => {
       <div id="app"></div>
     </div>
   `;
-  personenkontextStore = usePersonenkontextStore();
   organisationStore = useOrganisationStore();
   rolleStore = useRolleStore();
-
-  personenkontextStore.workflowStepResponse = {
-    selectedOrganisation: null,
-    selectedRollen: null,
-    canCommit: true,
-  };
 
   const mockPersonenuebersicht: PersonenUebersicht = new PersonenUebersicht(
     '1',

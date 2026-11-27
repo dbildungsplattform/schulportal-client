@@ -6,15 +6,7 @@
   import { useAutoselectedSchule } from '@/composables/useAutoselectedSchule';
   import { useDebouncedSearch } from '@/composables/useDebouncedSearch';
   import { OrganisationsTyp, type Organisation } from '@/stores/OrganisationStore';
-  import {
-    CreationType,
-    KlassenOption,
-    OperationContext,
-    RolleDialogMode,
-    usePersonenkontextStore,
-    type PersonenkontextStore,
-    type WorkflowFilter,
-  } from '@/stores/PersonenkontextStore';
+  import { CreationType, KlassenOption, OperationContext, RolleDialogMode } from '@/stores/PersonenkontextStore';
   import { usePersonStore, type PersonStore } from '@/stores/PersonStore';
   import {
     RollenArt,
@@ -34,11 +26,8 @@
 
   useI18n({ useScope: 'global' });
 
-  const personenkontextStore: PersonenkontextStore = usePersonenkontextStore();
   const personStore: PersonStore = usePersonStore();
   const rolleStore: RolleStore = useRolleStore();
-
-  const canCommit: Ref<boolean> = ref(false);
 
   const debouncedSearchInputRolle: Ref<string> = ref('');
   const debouncedSearchInputRollen: Ref<string> = ref('');
@@ -59,7 +48,6 @@
     showHeadline: boolean;
     personId?: string;
     operationContext: OperationContext;
-    skipWorkflowPrevalidation?: boolean;
     selectedKlassenOption?: string | null;
     selectedKlasse?: Organisation;
     selectedKlasseForRadio?: Organisation;
@@ -104,7 +92,6 @@
     (event: 'update:selectedKlasse', value: Organisation | undefined): void;
     (event: 'update:selectedKlasseForRadio', value: Organisation | undefined): void;
     (event: 'update:selectedKlassenOption', value: string | null): void;
-    (event: 'update:canCommit', value: boolean): void;
     (event: 'fieldReset', field: 'selectedOrganisation' | 'selectedRolle' | 'selectedKlasse' | 'selectedRollen'): void;
   };
   const emits: Emits = defineEmits<Emits>();
@@ -188,20 +175,6 @@
     } else {
       return selection.rollenart === RollenArt.Lern;
     }
-  }
-
-  async function handleWorkflowStep(filter: WorkflowFilter): Promise<void> {
-    if (
-      props.skipWorkflowPrevalidation ||
-      filter.operationContext === OperationContext.PERSON_ANLEGEN ||
-      filter.operationContext === OperationContext.LANDESBEDIENSTETEN_KONTEXT_ERWEITERN
-    ) {
-      return;
-    }
-
-    await personenkontextStore.processWorkflowStep(filter);
-
-    canCommit.value = personenkontextStore.workflowStepResponse?.canCommit ?? false;
   }
 
   const handleFocusChange = (focused: boolean): void => {
@@ -305,36 +278,15 @@
 
   watch(
     () => (props.allowMultipleRollen ? selectedRollen.value : selectedRolle.value),
-    async (newValue: SelectedRollen, oldValue: SelectedRollen) => {
-      const filter: WorkflowFilter = {
-        operationContext: props.operationContext,
-        personId: props.personId,
-        organisationId: selectedOrganisation.value?.id,
-        limit: 25,
-      };
-
+    (newValue: SelectedRollen): void => {
       if (props.allowMultipleRollen) {
-        const newRollen: TranslatedRolleWithAttrs[] | undefined = Array.isArray(newValue) ? newValue : undefined;
-
-        if (newRollen && newRollen.length > 0) {
-          filter.rollenIds = newRollen.map((rolle: TranslatedRolleWithAttrs) => rolle.value);
-        } else {
+        if (!Array.isArray(newValue) || !newValue.length) {
           selectedKlasse.value = undefined;
           emits('fieldReset', 'selectedKlasse');
           emits('fieldReset', 'selectedRollen');
-          canCommit.value = false;
         }
-        await handleWorkflowStep(filter);
       } else {
-        const newRolle: TranslatedRolleWithAttrs | undefined = Array.isArray(newValue) ? undefined : newValue;
-
-        if (newRolle && newRolle !== oldValue) {
-          filter.rollenIds = [newRolle.value];
-          await handleWorkflowStep(filter);
-        }
-
-        if (!newRolle) {
-          canCommit.value = false;
+        if (!newValue || Array.isArray(newValue)) {
           selectedKlasse.value = undefined;
           emits('fieldReset', 'selectedKlasse');
         }
@@ -368,30 +320,8 @@
     { immediate: true },
   );
 
-  watch(
-    canCommit,
-    (newValue: boolean) => {
-      emits('update:canCommit', newValue);
-    },
-    { immediate: true },
-  );
-
   onMounted(() => {
     emits('update:selectedKlassenOption', localKlassenOption.value!);
-
-    const organisationId: string | undefined = selectedOrganisation.value?.id;
-    const rollenIds: string[] | undefined = props.allowMultipleRollen
-      ? selectedRollen.value?.map((rolle: TranslatedRolleWithAttrs) => rolle.value)
-      : selectedRolle.value && [selectedRolle.value.value];
-    if (organisationId && rollenIds?.length) {
-      void handleWorkflowStep({
-        operationContext: props.operationContext,
-        personId: props.personId,
-        organisationId,
-        rollenIds,
-        limit: 25,
-      });
-    }
   });
 </script>
 

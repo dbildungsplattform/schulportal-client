@@ -317,7 +317,6 @@
               :person-id="props.personId"
               :rollenart-for-person="existingRollenArt"
               :operation-context="OperationContext.PERSON_BEARBEITEN"
-              skip-workflow-prevalidation
               :allow-multiple-rollen="false"
               :show-headline="false"
               :rollen="filteredRollen"

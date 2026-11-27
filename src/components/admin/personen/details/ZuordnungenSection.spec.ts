@@ -380,6 +380,8 @@ describe('ZuordnungenSection', () => {
       await flushPromises();
       personenkontextCreate.vm.$emit('update:selectedRolle', rollen[1]);
       await flushPromises();
+      personenkontextCreate.vm.$emit('update:selectedKlasse', undefined);
+      await flushPromises();
       expect(submitButton.attributes('disabled')).toBeDefined();
 
       personenkontextCreate.vm.$emit('update:selectedKlasse', oldKlasse);
