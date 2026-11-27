@@ -912,7 +912,7 @@ describe('PersonDetailsView', () => {
 
     test('refreshes the assignment snapshot when the save is rejected due to a count mismatch', async () => {
       const { wrapper, router }: RejectedSaveSetup = await setupRejectedSave('COUNT_MISMATCHING');
-      const reload: MockInstance = vi.spyOn(router, 'go').mockImplementation((): void => {});
+      const reload: MockInstance = vi.spyOn(router, 'go').mockReturnValue(undefined);
       const alertButton: Omit<DOMWrapper<Element>, 'exists'> = wrapper
         .findComponent({ ref: 'personenkontext-store-error-alert' })
         .get('[data-testid="spsh-alert-button"]');
