@@ -1884,21 +1884,6 @@ export type MeldungResponseStatusEnum = typeof MeldungResponseStatusEnum[keyof t
 /**
  * 
  * @export
- * @enum {string}
- */
-
-export const OperationContext = {
-    PersonAnlegen: 'PERSON_ANLEGEN',
-    PersonBearbeiten: 'PERSON_BEARBEITEN',
-    LandesbedienstetenKontextErweitern: 'LANDESBEDIENSTETEN_KONTEXT_ERWEITERN'
-} as const;
-
-export type OperationContext = typeof OperationContext[keyof typeof OperationContext];
-
-
-/**
- * 
- * @export
  * @interface OrganisationByIdBodyParams
  */
 export interface OrganisationByIdBodyParams {
@@ -3661,31 +3646,6 @@ export interface PersonenkontextRolleFieldsResponse {
      * @memberof PersonenkontextRolleFieldsResponse
      */
     'rolle': RollenSystemRechtServiceProviderIDResponse;
-}
-/**
- * 
- * @export
- * @interface PersonenkontextWorkflowResponse
- */
-export interface PersonenkontextWorkflowResponse {
-    /**
-     * Selected organisation.
-     * @type {string}
-     * @memberof PersonenkontextWorkflowResponse
-     */
-    'selectedOrganisation': string | null;
-    /**
-     * Selected rollen.
-     * @type {Array<string>}
-     * @memberof PersonenkontextWorkflowResponse
-     */
-    'selectedRollen': Array<string> | null;
-    /**
-     * Indicates whether the commit action can be performed.
-     * @type {boolean}
-     * @memberof PersonenkontextWorkflowResponse
-     */
-    'canCommit': boolean;
 }
 /**
  * 
@@ -12047,65 +12007,6 @@ export const PersonenkontextApiAxiosParamCreator = function (configuration?: Con
         },
         /**
          * 
-         * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-         * @param {string} [personId] ID of the person to be modified
-         * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
-         * @param {Array<string>} [rollenIds] IDs of the selected rollen.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        dbiamPersonenkontextWorkflowControllerProcessStep: async (operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'operationContext' is not null or undefined
-            assertParamExists('dbiamPersonenkontextWorkflowControllerProcessStep', 'operationContext', operationContext)
-            const localVarPath = `/api/personenkontext-workflow/step`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearer required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-            // authentication oauth2 required
-            // oauth required
-            await setOAuthToObject(localVarHeaderParameter, "oauth2", [], configuration)
-
-            if (operationContext !== undefined) {
-                localVarQueryParameter['operationContext'] = operationContext;
-            }
-
-            if (personId !== undefined) {
-                localVarQueryParameter['personId'] = personId;
-            }
-
-            if (organisationId !== undefined) {
-                localVarQueryParameter['organisationId'] = organisationId;
-            }
-
-            if (rollenIds) {
-                localVarQueryParameter['rollenIds'] = rollenIds;
-            }
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * 
          * @param {string} personId The ID for the person.
          * @param {PersonenzuordnungenBearbeitenBodyParams} personenzuordnungenBearbeitenBodyParams 
          * @param {string} [personalnummer] 
@@ -12230,19 +12131,6 @@ export const PersonenkontextApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
-         * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-         * @param {string} [personId] ID of the person to be modified
-         * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
-         * @param {Array<string>} [rollenIds] IDs of the selected rollen.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PersonenkontextWorkflowResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-        /**
-         * 
          * @param {string} personId The ID for the person.
          * @param {PersonenzuordnungenBearbeitenBodyParams} personenzuordnungenBearbeitenBodyParams 
          * @param {string} [personalnummer] 
@@ -12286,18 +12174,6 @@ export const PersonenkontextApiFactory = function (configuration?: Configuration
         },
         /**
          * 
-         * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-         * @param {string} [personId] ID of the person to be modified
-         * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
-         * @param {Array<string>} [rollenIds] IDs of the selected rollen.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, options?: any): AxiosPromise<PersonenkontextWorkflowResponse> {
-            return localVarFp.dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * 
          * @param {string} personId The ID for the person.
          * @param {PersonenzuordnungenBearbeitenBodyParams} personenzuordnungenBearbeitenBodyParams 
          * @param {string} [personalnummer] 
@@ -12335,18 +12211,6 @@ export interface PersonenkontextApiInterface {
      * @memberof PersonenkontextApiInterface
      */
     dbiamPersonenkontextWorkflowControllerCreatePersonWithPersonenkontexte(dbiamCreatePersonWithPersonenkontexteBodyParams: DbiamCreatePersonWithPersonenkontexteBodyParams, options?: AxiosRequestConfig): AxiosPromise<DBiamPersonResponse>;
-
-    /**
-     * 
-     * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-     * @param {string} [personId] ID of the person to be modified
-     * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
-     * @param {Array<string>} [rollenIds] IDs of the selected rollen.
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof PersonenkontextApiInterface
-     */
-    dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, options?: AxiosRequestConfig): AxiosPromise<PersonenkontextWorkflowResponse>;
 
     /**
      * 
@@ -12388,20 +12252,6 @@ export class PersonenkontextApi extends BaseAPI implements PersonenkontextApiInt
      */
     public dbiamPersonenkontextWorkflowControllerCreatePersonWithPersonenkontexte(dbiamCreatePersonWithPersonenkontexteBodyParams: DbiamCreatePersonWithPersonenkontexteBodyParams, options?: AxiosRequestConfig) {
         return PersonenkontextApiFp(this.configuration).dbiamPersonenkontextWorkflowControllerCreatePersonWithPersonenkontexte(dbiamCreatePersonWithPersonenkontexteBodyParams, options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * 
-     * @param {OperationContext} operationContext The context in which this request happens. Affects permission checks.
-     * @param {string} [personId] ID of the person to be modified
-     * @param {string} [organisationId] ID of the organisation where the Personenkontexte should be created
-     * @param {Array<string>} [rollenIds] IDs of the selected rollen.
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof PersonenkontextApi
-     */
-    public dbiamPersonenkontextWorkflowControllerProcessStep(operationContext: OperationContext, personId?: string, organisationId?: string, rollenIds?: Array<string>, options?: AxiosRequestConfig) {
-        return PersonenkontextApiFp(this.configuration).dbiamPersonenkontextWorkflowControllerProcessStep(operationContext, personId, organisationId, rollenIds, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
